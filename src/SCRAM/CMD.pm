@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.7 2005/02/24 10:34:38 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.8 2005/02/25 17:56:12 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1261,7 +1261,7 @@ sub runtime()
 	 EQUALS => '=',
 	 SEP => ':',
 	 EXPORT => 'export',
-	 PRINTVAR => sub { (exists $ENV{$_[0]}) ? return ':$'.$_[0] : return '' },
+	 PRINTVAR => sub { (exists $ENV{$_[0]}) ? return ':$'.'SCRAMRT_'.$_[0] : return '' },
 	 QUOTE => sub { return "\"$_[0]\";" }
 	 },
       TCSH =>
@@ -1269,7 +1269,7 @@ sub runtime()
 	 EQUALS => ' ',
 	 SEP => ':',
 	 EXPORT => 'setenv',
-	 PRINTVAR => sub { (exists $ENV{$_[0]}) ? return ':{$'.$_[0].'}' : return '' },
+	 PRINTVAR => sub { (exists $ENV{$_[0]}) ? return ':{$'.'SCRAMRT_'.$_[0].'}' : return '' },
 	 QUOTE => sub { return "\"$_[0]\";" }
 	 },
       CYGWIN =>
@@ -1277,7 +1277,7 @@ sub runtime()
 	 EQUALS => '=',
 	 SEP => ';',
 	 EXPORT => 'set',
-	 PRINTVAR => sub { (exists $ENV{$_[0]}) ? return ';%'.$_[0] : return '' },
+	 PRINTVAR => sub { (exists $ENV{$_[0]}) ? return ';%'.'SCRAMRT_'.$_[0] : return '' },
 	 QUOTE => sub { return "\"$_[0]\";" }
 	 }
       };
@@ -1486,7 +1486,7 @@ sub save_environment()
    # the required shell flavour
    my $self=shift;
    my ($shelldata)=@_;
-
+   
    # Use combination of project name and version to set unique ID
    # for SCRAMRT_SET variable:
    my $rtkey =$ENV{SCRAM_PROJECTNAME}.":".$ENV{SCRAM_PROJECTVERSION};
@@ -1498,25 +1498,13 @@ sub save_environment()
       if ($ENV{SCRAMRT_SET} ne $rtkey)
 	 {
 	 $self->restore_environment();
+	 delete $ENV{SCRAMRT_SET};
 	 # Save the environment:
-	 # Store all environment variables as SCRAMRT_x so
-	 # that environment can be reset to original (pre-scram runtime)
-	 # settings:
-	 while (my ($varname, $varvalue) = each %ENV)
-	    {
-	    # We must skip any internal SCRAM environment settings, including
-	    # LOCALTOP and RELEASETOP
-	    next if ($varname eq "_"); # Also, makes no sense to store "_", the last command run:
-	    
-	    if ($varname !~ /^SCRAM_.*/ && $varname !~ /^SCRAM$/ && $varname !~ /^LOCALTOP$|^RELEASETOP$/)
-	       {
-	       # Print out var:
-	       print RTFH $shelldata->{EXPORT}." ".'SCRAMRT_'.$varname.$shelldata->{EQUALS}.$shelldata->{QUOTE}($varvalue)."\n";
-	       }
-	    }
-	 
-	 # Set the key that says "RTDONE":
-	 print RTFH $shelldata->{EXPORT}." ".'SCRAMRT_SET'.$shelldata->{EQUALS}.$shelldata->{QUOTE}($rtkey)."\n";	 	 
+	 $self->save_environment($shelldata);
+	 }
+      else
+	 {
+	 $self->restore_environment();
 	 }
       }
    else
