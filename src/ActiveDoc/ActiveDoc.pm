@@ -264,6 +264,7 @@ sub activatedoc {
 
 	# now parse it for the <DocType> tag
 	my $tempdoc=ActiveDoc::ActiveDoc->new($self->config());
+	$tempdoc->{urlhandler}=$self->{urlhandler};
 	$tempdoc->url($url);
 	$tempdoc->{doctypefound}=0;
 	$tempdoc->newparse("doctype");
@@ -363,10 +364,7 @@ sub Base_start {
         # Keep track of base tags
         push @{$self->{basestack}}, $$hashref{"type"};
         # Set the base
-	print "BASE SET for ".$$hashref{"type"}."\n";
         $self->{urlhandler}->setbase($$hashref{"type"},$hashref);
-	print "BASE SET for ".$$hashref{"type"}."\n";
-
 }
 
 sub Base_end {
