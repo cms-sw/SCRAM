@@ -9,6 +9,7 @@
 # ignore()	: return 1 if directory should be ignored 0 otherwise
 # classname()	: get/set the associated class
 # buildfile()	: get/set BuildFile location
+# makefile()	: get the generated makefile
 
 package BuildSystem::BuildFile;
 use ActiveDoc::SimpleDoc;
@@ -37,6 +38,14 @@ sub buildfile {
 	  $self->{buildfile}=shift;
 	}
 	return $self->{buildfile};
+}
+
+sub makefile {
+	my $self=shift;
+	if ( @_ ) {
+	  $self->{makefile}=shift;
+	}
+	return $self->{makefile};
 }
 
 sub ignore {
@@ -160,8 +169,9 @@ sub ParseBuildFile {
 	$numbins=0;
 	$self->{envnum}=0;
 	$self->{envlevel}=0;
-	$self->{currentenv}="$self->{localtop}/$ENV{INTwork}/$self->{path}/".
+	$self->{makefile}="$self->{localtop}/$ENV{INTwork}/$self->{path}/".
 								"BuildFile.mk";
+	$self->{currentenv}=$self->{makefile};
 	$self->{switch}=$self->_initswitcher();
 	$self->{switch}->filetoparse($fullfilename);
 
@@ -169,37 +179,8 @@ sub ParseBuildFile {
 	#open a temporary gnumakefile to store output.
 	use Utilities::AddDir;
 	AddDir::adddir("$self->{localtop}/$ENV{INTwork}/$self->{path}");
-	my $fh=FileHandle->new();
-	open ( $fh, ">$self->{localtop}/$ENV{INTwork}/".$self->{path}."/BuildFile.mk"
-          ) or die 'Unable to open /$ENV{INTwork}/".$self->{path}."/BuildFile.mk $!\n';
-	@{$self->{filehandlestack}}=($fh);
-	# make an alias
-	*GNUmakefile=$fh;
-	if ( -e $ENV{LatestBuildFile} ) {
-	  print GNUmakefile "include $ENV{LatestBuildFile}\n";
-	}
-#	print "writing to :\n".
-#		"$self->{localtop}/$ENV{INTwork}/$self->{path}/BuildFile.mk\n";
-	$ENV{LatestBuildFile}="$self->{localtop}/$ENV{INTwork}/".$self->{path}."/BuildFile.mk";
-	$self->{switch}->parse("makebuild"); # sort out supported tags
-	if ( $numbins > 0 ) {
-	 print GNUmakefile <<ENDTEXT;
-ifndef BINMODE
-help::
-\t\@echo Generic Binary targets
-\t\@echo ----------------------
-endif
-ENDTEXT
-	 foreach $target ( keys %$targettypes ) {
-	 print GNUmakefile <<ENDTEXT;
-ifndef BINMODE
-help::
-\t\@echo $target
-endif
-ENDTEXT
-	 }
-	}
-	close GNUmakefile;
+	$self->GenerateMakefile($fullfilename,
+          $self->{localtop}."/".$ENV{INTwork}."/".$self->{path}."/BuildFile.mk"); 
 }
 
 sub classname {
