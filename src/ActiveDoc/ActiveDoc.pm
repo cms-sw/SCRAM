@@ -1,157 +1,247 @@
 #
-# The base functionality for the ActiveDocument - inherits from Basetags
+# ActiveDoc.pm
 #
-# Inherits from BaseTags
-# --------
+# Originally Written by Christopher Williams
+#
+# Description
+#
 # Interface
 # ---------
-# new(filename, DOChandler): create a new object based on a file and
-#                                 associate with a base DOChandler
-# parse()			: parse the input file
-# include(url) : Activate include file mechanism, returns the object ref if OK
-# treenode()   : return the associated TreeNode object reference
-# getincludeObjectStore : Return a pointer to the ObectStore that contains all
-#                         included objects
-# find(string)	: find the object reference related to string in the associated
-#		  tree. Mechanism for getting object references
-# _addgroup()	: Add group functionality to document
-# parseerror(String) : Report an error to the user
-# userinterface()	: return the default User Interface object
-# checktag($hashref, param , tagname) : Check a hash returned from switcher
-#					for a given parameter
+# new()		: A new ActiveDoc object
+# url()	        : Return/set the docs url - essential
+# file()	: Return the local filename of document
+#
+# parse(parselabel): Parse the document file for the given parse level
+# newparse(parselabel) : Create a new parse type
+# addtag(parselabel,tagname,start,obj,text,obj,end,obj)
+#				: Add tags to the parse given by label
+# newdoc(file)	: Return an new object of the appropriate type
+# getfile(url)	: get a processedfile object given a url
+# config([ActiveConfig]) : Set up/return Configuration for the document
+# basequery([ActiveConfig]) : Set up/return UserQuery for the doc
+# copydocconfig(ActiveDoc) : Copy the basic configuration from the ActiveDoc
+# copydocquery(ActiveDoc) : Copy the basicquery from the ActiveDoc
+#
+# -- error methods --
+# error(string)       : Report an general error to the user
+# parseerror(string)  : Report an error during parsing a file
+# line()	      : Return the current line number of the document
+#			and the ProcessedFileObj it is in
 
 package ActiveDoc::ActiveDoc;
-require 5.001;
-use ActiveDoc::DOChandler;
-use ActiveDoc::TreeNode;
-use ActiveDoc::UserQuery;
-use ObjectStoreCont;
+require 5.004;
+use ActiveDoc::Parse;
+use ActiveDoc::ActiveConfig;
+use ActiveDoc::PreProcessedFile;
+use ObjectUtilities::ObjectBase;
+use URL::URLhandler;
 
-@ISA = qw(ActiveDoc::BaseTags);
+@ISA = qw(ObjectUtilities::ObjectBase);
 
-# Initialise
-sub _init {
+sub new {
+	my $class=shift;
+	$self={};
+	bless $self, $class;
+	$self->config(shift);
+	
+	# A URL handler per document
+	$self->{urlhandler}=URL::URLhandler->new($self->config()->cache());
+
+	$self->init(@_);
+	return $self;
+}
+
+# ----- parse related routines --------------
+sub parse {
 	my $self=shift;
-	my $DOChandler=shift;
-	my $OC=shift;
+	$parselabel=shift;
 
-	$self->_addurl();
-	$self->{urlhandler}->setcache($DOChandler->defaultcache());
-	$self->{treenode}=ActiveDoc::TreeNode->new();
-        $self->{dochandler}=$DOChandler;
-	$self->{UserQuery}=$DOChandler->{UserQuery};
-        $self->{tags}->addtag("Use", \&Use_Start, "", "");
-	# Add the minimal functionality tag - feel free to override
-        $self->{tags}->addtag("Include", \&Include_Start, "", "");
-	$self->init();
-}
-
-sub init {
-	# Dummy Routine - override for derrived classes
-}
-#
-# use mechanism
-#
-sub include {
-        my $self=shift;
-        my $url=shift;
-	my $linkfile=shift;
-	my $filename;
-        my $obj;
-
-	$file=$self->{urlhandler}->get($url);
-	if ( ( defined $linkfile) && ( $linkfile ne "" ) ) {
-	  $filename=$file."/".$linkfile;
+	my $file=$self->file();
+	print "Parse called on file $file\n";
+	if ( $file ) {
+	  $self->{parsers}{$parselabel}->parse($file,@_);
 	}
 	else {
-	  $filename=$file;
+	  print "Cannot parse - file not known\n";
 	}
-        $obj=$self->{dochandler}->newdoc($filename);
-
-	# Now Extend our tree
-	$self->{treenode}->grow($obj->treenode());
-        return $obj;
 }
 
-sub userinterface {
+sub newparse {
 	my $self=shift;
-	return $self->{dochandler}->{UserInterface};
+	my $parselabel=shift;
+
+	$self->{parsers}{$parselabel}=ActiveDoc::Parse->new();
+	$self->{parsers}{$parselabel}->addignoretags();
+	$self->{parsers}{$parselabel}->addgrouptags();
 }
 
-sub treenode {
+sub addtag {
 	my $self=shift;
-	return $self->{treenode};
-}
-
-sub getincludeObjectStore {
-        my $self=shift;
-        return $self->{includeOS};
-}
-
-sub find($) {
-	my $self=shift;
-	my $string=shift;
-	my $tn;
-
-	$tn=$self->{treenode}->find($string);
-	if ( $tn eq "" ) {
-	  $self->parseerror("Unable to find $string");
+	my $parselabel=shift;
+	if ( $#_ != 6 ) {
+		$self->error("Incorrect addtags specification\n".
+				"called with :\n@_ \n");
 	}
-	return $tn->associate();
+	$self->{parsers}{$parselabel}->addtag(@_);
 }
 
-sub line {
+sub addurltags {
 	my $self=shift;
-	return $self->{switch}->line();
+	my $parselabel=shift;
+	
+	$self->{parsers}{$parselabel}->
+		addtag("Base", \&Base_start, $self, "", $self,
+			\&Base_end, $self);
 }
+
+sub url {
+	my $self=shift;
+	@_ ?$self->{File}=$self->getfile(shift)
+	    : $self->{File};
+}
+
+sub copydocconfig {
+	my $self=shift;
+	my $ActiveDoc=shift;
+	
+	$self->config($ActiveDoc->config());
+
+}
+
+sub copydocquery {
+	my $self=shift;
+        my $ActiveDoc=shift;
+
+	 $self->basequery($ActiveDoc->basequery());
+}
+
+sub config {
+	my $self=shift;
+	@_?$self->{ActiveConfig}=shift
+	   : $self->{ActiveConfig};
+}
+
+sub basequery {
+	my $self=shift;
+	@_ ? $self->{UserQuery}=shift
+	   : $self->{UserQuery};
+}
+
+sub getfile() {
+	my $self=shift;
+	my $origurl=shift; 
+
+	my $fileref;
+	print "GETFILE called\n";
+	my ($url, $file)=$self->{urlhandler}->get($origurl);
+	# do we already have an appropriate object?
+	#my ($fileref)=$self->config()->find("__preprocessed",$url);
+	undef $fileref;
+	if (  defined $fileref ) {
+	 print "found $url in database ----\n";
+	 $fileref->update();
+	}
+	else {
+	 if ( $file eq "" ) {
+	   $self->parseerror("Unable to get $origurl");
+	 }
+	 #-- set up a new preprocess file
+	 print "Making a new file $url----\n";
+	 $fileref=ActiveDoc::PreProcessedFile->new($self->config());
+	 $fileref->url($url);
+	 $fileref->update();
+	 $self->config()->store($fileref,"__preprocessed",$url);
+	}
+	print "---------- returning".$fileref."\n";
+	return $fileref;
+}
+
+# -------- Error Handling and Error services --------------
 
 sub error {
-	my $self=shift;
-	my $string=shift;
+        my $self=shift;
+        my $string=shift;
 
-	die $string."\n";
-
+        die $string."\n";
 }
-sub parseerror {
-	my $self=shift;
-	my $string=shift;
 
-	print "Parse Error in $self->{url}, line ".
-					$self->line()."\n";
-	print $string."\n";
-	die;
+sub parseerror {
+        my $self=shift;
+        my $string=shift;
+
+	($line, $file)=$self->line();
+        print "Parse Error in ".$file->url().", line ".
+                                        $line."\n";
+        print $string."\n";
+        die;
 }
 
 sub checktag {
-	my $self=shift;
-	my $hashref=shift;
-	my $param=shift;
-	my $tagname=shift;
+        my $self=shift;
+        my $tagname=shift;
+        my $hashref=shift;
+        my $param=shift;
 
-	if ( ! exists $$hashref{$param} ) {
-	  $self->parseerror("Incomplete Tag <$tagname> : $param required");  
-	}
+        if ( ! exists $$hashref{$param} ) {
+          $self->parseerror("Incomplete Tag <$tagname> : $param required");
+        }
 }
 
-# ------------------------ Tag Routines ------------------------------
-#
-# The Include tag
-#
-
-sub Include_Start {
-	my $self=shift;
-	my $name=shift;
-	my $hashref=shift;
-
-        $self->{switch}->checkparam( $name, "ref");
-	print "<Include> tag not yet implemented\n";
-#        $self->include($$hashref{'ref'},$$hashref{'linkdoc'});
+sub line {
+	$self=shift;
+	my ($line, $fileobj)=
+		$self->{Processedfile}->line($self->{switch}->line());
+	return ($line, $fileobj);
 }
 
-sub Use_Start {
+sub file {
 	my $self=shift;
+
+	$self->{PPf}->file();
+}
+
+# --------------- Initialisation Methods ---------------------------
+
+sub preprocess_init {
+	my $self=shift;
+	$self->{PPfile}=PreProcessedFile->new($self->config());
+}
+
+sub init {
+        # Dummy Routine - override for derived classes
+}
+
+# ------------------- Tag Routines -----------------------------------
+#
+# Base - for setting url bases
+#
+sub Base_start {
+        my $self=shift;
         my $name=shift;
         my $hashref=shift;
 
-	print "<Use> tag not yet implemented\n";
+        $self->checktag($name, $hashref, 'type' );
+        $self->checktag($name, $hashref, 'base' );
+       
+        # Keep track of base tags
+        push @{$self->{basestack}}, $$hashref{"type"};
+        # Set the base
+        $self->{urlhandler}->setbase($$hashref{"type"},$hashref);
+
+}
+
+sub Base_end {
+        my $self=shift;
+        my $name=shift;
+        my $type;
+
+        if ( $#{$self->{basestack}} == -1 ) {
+                print "Parse Error : unmatched </".$name."> on line ".
+                        $self->line()."\n";
+                die;
+        }
+        else {
+          $type = pop @{$self->{basestack}};
+          $self->{urlhandler}->unsetbase($type);
+        }
 }
