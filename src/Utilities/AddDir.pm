@@ -28,29 +28,39 @@ sub adddir {
  chdir $startdir;
 }
 
-sub copydir {
-	my $src=shift;
-	my $dest=shift;
-	
-	use DirHandle;
-	use File::Copy;
-
-	# print "Copying $src to $dest\n";
-	adddir($dest);
-	my $dh=DirHandle->new($src);
-        if (defined $dh) {
-	my @allfiles=$dh->read();
-	
-	my $file;
-	foreach $file ( @allfiles ) {
+sub copydir
+   {
+   my $src=shift;
+   my $dest=shift;
+   
+   use DirHandle;
+   use File::Copy;
+   
+   # print "Copying $src to $dest\n";
+   adddir($dest);
+   my $dh=DirHandle->new($src);
+   
+   if (defined $dh)
+      {
+      my @allfiles=$dh->read();
+   
+      my $file;
+      foreach $file ( @allfiles )
+	 {
 	 next if $file=~/^\.\.?/;
-	 if ( -d $src."/".$file ) {
-	   copydir($src."/".$file,$dest."/".$file);
+	 if ( -d $src."/".$file )
+	    {
+	    copydir($src."/".$file,$dest."/".$file);
+	    }
+	 else
+	    {
+	    copy($src."/".$file,$dest."/".$file);
+	    }
 	 }
-	 else {
-	   copy($src."/".$file,$dest."/".$file)
-	 }
-	}
-	undef $dh;
-        }
-}
+      undef $dh;
+      }
+   else
+      {
+      die "Attempt to open a non-existent directory ($src). Exitting\n";
+      }
+   }
