@@ -27,13 +27,13 @@
 # copy(location)		: make a copy of the current area at the 
 #				  specified location - return an object
 #				  representing the area
-# linkarea(oref)		: link area with another
 
 package Configuration::ConfigArea;
 use ActiveDoc::ActiveDoc;
 require 5.004;
 use Utilities::AddDir;
 use ObjectUtilities::ObjectStore;
+use Configuration::ConfigStore;
 use Cwd;
 @ISA=qw(ActiveDoc::ActiveDoc ObjectUtilities::StorableObject);
 
@@ -50,17 +50,20 @@ sub init {
 						"", $self, "",$self);
 	$self->addurltags("setup");
 	$self->addtag("setup","use",\&Use_Start,$self, "", $self, "",$self);
+
+	# data init
+	$self->{admindir}=".SCRAM";
 }
 
 
 sub defaultdirname {
 	my $self=shift;
-	my $name=$self->name();
-	my $vers=$self->version();
-	$vers=~s/^$name_//;
-	$name=$name."_".$vers;
-	return $name;
-	
+        my $name=$self->name();
+        my $vers=$self->version();
+        $vers=~s/^$name_//;
+        $name=$name."_".$vers;
+        return $name;
+
 }
 
 sub setup {
@@ -93,7 +96,7 @@ sub setup {
 	$self->parse("setup");
 	
 	# --- store bootstrap info 
-	$self->store($self->location()."/.SCRAM/ConfigArea.dat");
+	$self->store($self->location()."/".$self->{admindir}."/ConfigArea.dat");
 
 	# --- store self in original database
 	$self->parentconfig()->store($self,"ConfigArea",$self->name(),
@@ -103,8 +106,9 @@ sub setup {
 sub _setupstore {
 	my $self=shift;
 
-	# --- make a new ActiveStore at the location and add it to the db list
-	my $ad=ActiveDoc::ActiveConfig->new($self->location()."/\.SCRAM");
+	# --- make a new ConfigStore at the location and add it to the db list
+	my $ad=Configuration::ConfigStore->new($self->location().
+				"/".$self->{admindir});
 
 	$self->parentconfig($self->config());
 #        $self->config(Configuration::ConfigureStore->new());
@@ -123,7 +127,8 @@ sub bootstrapfromlocation {
 	}
 	print "Found top ".$self->location()."\n";
 	$self->_setupstore();
-	$self->restore($self->location()."/.SCRAM/ConfigArea.dat");
+	$self->restore($self->location()."/".$self->{admindir}.
+						"/ConfigArea.dat");
 }
 
 sub parentconfig {
@@ -164,7 +169,7 @@ sub copy {
 	my $newarea=ref($self)->new($self->parentconfig());
 	$newarea->bootstrapfromlocation($destination);
 	# save it with the new location info
-	$newarea->store($self->location()."/.SCRAM/ConfigArea.dat");
+	$newarea->store($self->location()."/".$self->{admindir}."/ConfigArea.dat");
 }
 
 sub restore {
@@ -206,7 +211,7 @@ sub location {
 	}
 	elsif ( ! defined $self->{location} ) {
 	  # try and find the release location
-	  $self->{location}=$self->searchlocation();
+	  #$self->{location}=$self->searchlocation();
 	}
 	return  $self->{location};
 }
@@ -224,7 +229,7 @@ sub searchlocation {
         Sloop:{
 	do {
 #	  print "Searching $thispath\n";
-          if ( -e "$thispath/.SCRAM" ) {
+          if ( -e "$thispath/".$self->{admindir} ) {
 #	    print "Found\n";
 	    $rv=1;
 	    last Sloop;
@@ -254,6 +259,7 @@ sub addconfigitem {
 	my $docref=$self->activatedoc($url);
         # Set up the document
         $docref->setup();
+        $docref->save();
 #	$self->config()->storepolicy("local");
 }
 
