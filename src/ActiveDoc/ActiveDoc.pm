@@ -97,8 +97,9 @@ sub addurltags {
 
 sub url {
 	my $self=shift;
-	@_ ?$self->{File}=$self->getfile(shift)
-	    : $self->{File};
+	# get file & preprocess
+	if ( @_  ) {$self->{File}=$self->getfile(shift)} 
+	$self->{File}->url();
 }
 
 sub copydocconfig {
@@ -188,13 +189,13 @@ sub checktag {
 sub line {
 	my $self=shift;
 	my ($line, $fileobj)=
-		$self->{PPfile}->line($self->{currentparser}->line());
+		$self->{File}->line($self->{currentparser}->line());
 	return ($line, $fileobj);
 }
 
 sub tagstartline {
 	my $self=shift;
-	my ($line, $fileobj)=$self->{PPfile}->line(
+	my ($line, $fileobj)=$self->{File}->line(
 		$self->{currentparser}->tagstartline());
         return ($line, $fileobj);
 }
@@ -202,15 +203,10 @@ sub tagstartline {
 sub file {
 	my $self=shift;
 
-	$self->{PPf}->file();
+	$self->{File}->file();
 }
 
 # --------------- Initialisation Methods ---------------------------
-
-sub preprocess_init {
-	my $self=shift;
-	$self->{PPfile}=PreProcessedFile->new($self->config());
-}
 
 sub init {
         # Dummy Routine - override for derived classes
