@@ -2,7 +2,7 @@
 #
 # Interface
 # ---------
-# new(toolbox)
+# new(ConfigArea)
 # ParseBuildFile($base,$path,$file)
 # ParseBuildFileExport(filename)
 # BlockClassPath() : Return the class path
@@ -21,7 +21,8 @@ sub new {
 	my $class=shift;
 	my $self={};
 	bless $self, $class;
-	$self->{toolbox}=shift;
+	$self->{area}=shift;
+	$self->{toolbox}=$self->{area}->toolbox();
 	$self->{Arch}=1;
 	push @{$self->{ARCHBLOCK}}, $self->{Arch};
 	return $self;
@@ -169,7 +170,7 @@ ENDTEXT
 sub ParseBuildFile_Export {
 	my $self=shift;
         my $filename=shift;
-	my $bf=BuildSystem::BuildFile->new($self->{toolbox});
+	my $bf=BuildSystem::BuildFile->new($self->{area});
 	if ( defined $self->{remoteproject} ) {
 	   $bf->{remoteproject}=$self->{remoteproject};
 	}
