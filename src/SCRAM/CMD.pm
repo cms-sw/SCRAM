@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.12 2005/03/09 19:28:20 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.13 2005/03/10 12:39:28 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1610,7 +1610,8 @@ sub config()
    my %opts;
    my %options =
       ("help"	=> sub { $self->{SCRAM_HELPER}->help('config'); exit(0) },
-       "tools"  => sub { $opts{SCRAM_DUMPCONFIG} = 1 });
+       "tools"  => sub { $opts{SCRAM_DUMPCONFIG} = 1 },
+       "full"   => sub { $opts{SCRAM_DUMPFULL} = 1} );
    
    local @ARGV = @ARGS;
    
@@ -1625,19 +1626,40 @@ sub config()
       # Check to see if we are in a local project area:
       $self->checklocal();
       my $localarea = $self->localarea();
-
-      print "SCRAM_PROJECTNAME=",$localarea->name(),"\n";
-      print "SCRAM_PROJECTVERSION=",$localarea->version(),"\n";      
-      print "SCRAM_TOOLBOXVERSION=",$localarea->toolboxversion(),"\n";
-      # Perhaps show creation time. Check the timestamp of config/requirements:
-      print "SCRAM_PROJECT_TIMESTAMP=",$localarea->creationtime(),"\n";
-      print "SCRAM_PROJECT_RELEASE_TIMESTAMP=",$localarea->creationtime($ENV{RELEASETOP}),"\n"
-	 ,if (exists($ENV{RELEASETOP}));
-      print "LOCALTOP=",$ENV{LOCALTOP},"\n";
-      print "RELEASETOP=",$ENV{RELEASETOP},"\n", if (exists($ENV{RELEASETOP}));	 
       
-      $self->dumpconfig(), if ($opts{SCRAM_DUMPCONFIG});
+      # If full info required:
+      if ($opts{SCRAM_DUMPCONFIG} && $opts{SCRAM_DUMPFULL})
+	 {
+	 print "SCRAM_PROJECTNAME=",$localarea->name(),"\n";
+	 print "SCRAM_PROJECTVERSION=",$localarea->version(),"\n";      
+	 print "SCRAM_TOOLBOXVERSION=",$localarea->toolboxversion(),"\n";
+	 # Perhaps show creation time. Check the timestamp of config/requirements:
+	 print "SCRAM_PROJECT_TIMESTAMP=",$localarea->creationtime(),"\n";
+	 print "SCRAM_PROJECT_RELEASE_TIMESTAMP=",$localarea->creationtime($ENV{RELEASETOP}),"\n"
+	    ,if (exists($ENV{RELEASETOP}));
+	 print "LOCALTOP=",$ENV{LOCALTOP},"\n";
+	 print "RELEASETOP=",$ENV{RELEASETOP},"\n", if (exists($ENV{RELEASETOP}));	 
       
+	 $self->dumpconfig();
+	 }
+      elsif ($opts{SCRAM_DUMPCONFIG})
+	 {
+	 $self->dumpconfig();
+	 }
+      else
+	 {
+	 # Just project info:
+	 print "SCRAM_PROJECTNAME=",$localarea->name(),"\n";
+	 print "SCRAM_PROJECTVERSION=",$localarea->version(),"\n";      
+	 print "SCRAM_TOOLBOXVERSION=",$localarea->toolboxversion(),"\n";
+	 # Perhaps show creation time. Check the timestamp of config/requirements:
+	 print "SCRAM_PROJECT_TIMESTAMP=",$localarea->creationtime(),"\n";
+	 print "SCRAM_PROJECT_RELEASE_TIMESTAMP=",$localarea->creationtime($ENV{RELEASETOP}),"\n"
+	    ,if (exists($ENV{RELEASETOP}));
+	 print "LOCALTOP=",$ENV{LOCALTOP},"\n";
+	 print "RELEASETOP=",$ENV{RELEASETOP},"\n", if (exists($ENV{RELEASETOP}));	 
+	 }
+            
       # Return nice value:
       return (0);
       }

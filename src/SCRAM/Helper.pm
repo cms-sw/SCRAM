@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.4 2005/03/09 19:28:20 sashby Exp $ 
+# Revision: $Id: Helper.pm,v 1.5 2005/03/10 12:39:28 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -74,7 +74,7 @@ sub version()
    $help.="$::bold";
    $help.="\tscram version [-c] [-i] [-h] [<version>]$::normal\n";
    $help.="\n";
-   $help.="The -i option shows CVS commit info (the value of '\$Id: Helper.pm,v 1.4 2005/03/09 19:28:20 sashby Exp $').\n";
+   $help.="The -i option shows CVS commit info (the value of '\$Id: Helper.pm,v 1.5 2005/03/10 12:39:28 sashby Exp $').\n";
    $help.="The -c option prints site CVS parameters to STDOUT. These parameters are used\n";
    $help.="when downloading and installing new SCRAM versions.\n";
 
@@ -466,7 +466,7 @@ sub config()
    $help.="\tDump configuration information for the current project area.\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram config [--tools]$::normal\n";
+   $help.="\tscram config [--tools] [--full] $::normal\n";
    $help.="\n";   
    $help.="The --tools option will dump a list of configured tools, rather like \"tool info\",\n";
    $help.="but in a format parseable by external scripts. This could be used to create RPM/TAR files\n";
@@ -479,6 +479,8 @@ sub config()
    $help.="<base path> can have the value <SYSTEM> if located in system directories (e.g., /lib).\n\n";
    $help.="<dependencies> will be set to <NONE> if there are no external dependencies for this tool.\n";
    $help.="\n";
+   $help.="The --full option will list the tool info and project information too.\n";
+   $help.="\n";      
    
    return $help;
    }
