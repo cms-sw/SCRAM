@@ -126,6 +126,10 @@ sub _commontags
 		   \&IncludePath_Start,$self,
 		   \&OutToMakefile, $self,
 		   "",$self);
+   $switch->addtag($parse,"CompilerMap",
+		   \&CompilerMap_Start,$self,
+		   \&OutToMakefile, $self,
+		   "",$self);
    return $switch;
    }
 
@@ -1223,3 +1227,91 @@ sub Store_start {
                         ."/".$dir.":".$ENV{RELEASETOP}."/".$dir."\n";
         }
 }
+
+sub CompilerMap_Start
+   {
+   ###############################################################
+   # CompilerMap_Start                                           #
+   ###############################################################
+   # modified : Fri Oct  4 15:08:39 2002 / SFA                   #
+   # params   :                                                  #
+   #          :                                                  #
+   #          :                                                  #
+   #          :                                                  #
+   # function : Create a map between a SUBARCH and specific      #
+   #          : compiler and version.                            #
+   #          :                                                  #
+   #          :                                                  #
+   ###############################################################
+   my $self=shift;
+   my $name=shift;
+   my $hashref=shift;
+
+   $self->verbose(">> CompilerMap_Start: NM ".$name." <<");
+
+   # We can only map compilers to already-defined architectures, so
+   # we check for 'Arch':
+   if ( $self->{Arch} )
+      {
+      my @tagnames=keys %{$hashref};
+      my @tagvalues=values %{$hashref};
+      
+      foreach my $tag ( @tagnames )
+	 {
+         $self->{switch}->checktag($name,$hashref,$tag);
+         print GNUmakefile $tag."=".$$hashref{$tag}."\n";
+#  	if ( defined $$hashref{'version'} ) {
+#  		print GNUmakefile "_V_".$$hashref{'version'};
+#  	}
+#  	print GNUmakefile "=true\n";
+
+         }
+#        $self->{switch}->checktag($name,$hashref,'ref');
+
+#  	# -- oo toolbox stuff
+#  	# - get the appropriate tool object
+#  	$$hashref{'ref'}=~tr[A-Z][a-z];
+#  	if ( ! exists $$hashref{'version'} ) {
+#  	 $tool=$self->{toolbox}->gettool($$hashref{'ref'});
+#  	}
+#  	else {
+#  	 $tool=$self->{toolbox}->gettool($$hashref{'ref'},$$hashref{'version'});
+#  	}
+#  	if ( ! defined $tool ) {
+#  	  $self->{switch}->parseerror("Unknown Tool Specified ("
+#  							.$$hashref{'ref'}.")");
+#  	}
+
+#  	# -- old fashioned GNUmakefile stuff
+#  	print GNUmakefile $$hashref{'ref'};
+#  	if ( defined $$hashref{'version'} ) {
+#  		print GNUmakefile "_V_".$$hashref{'version'};
+#  	}
+#  	print GNUmakefile "=true\n";
+	
+#  	# -- Sub system also specified?
+#  	if ( exists $$hashref{'use'} ) {
+#  	   # -- look for a buildfile
+#  	   my @paths=$tool->getfeature("INCLUDE");
+#  	   my $file="";
+#  	   my ($path,$testfile);
+#  	   foreach $path ( @paths ) {
+#  	     $testfile=$path."/".$$hashref{'use'}."/BuildFile" ;
+#  	     if ( -f $testfile ) { 
+#  		$file=$testfile; 
+#  		$self->_pushremoteproject($path);
+#  	     }
+#  	   }
+#  	   if ( $file eq "" ) {
+#  	     $self->{switch}->parseerror("Unable to find SubSystem $testfile");
+#  	   }
+#  	   $self->ParseBuildFile_Export($file);
+#  	   $self->_popremoteproject();
+#  	 }
+      }
+   else
+      {
+      print "No architecture defined: not possible to define a compiler-to-subarch mapping.","\n";
+      }
+   } 
+
