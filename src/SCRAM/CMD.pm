@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.1.2.65 2004/11/23 10:32:39 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.2 2004/12/10 13:41:41 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -690,7 +690,7 @@ sub build()
    my %opts = ( WRITE_GRAPHS => 0, # No graphs produced by default;
 		SCRAM_TEST => 0 ); # test mode: don't run make;
    my %options =
-      ("help"     => sub { $self->{SCRAM_HELPER}->help('build'); $self->build("help"); exit(0) },
+      ("help"     => sub { $self->{SCRAM_HELPER}->help('build'); exit(0) },
        "verbose"  => sub { $ENV{SCRAM_BUILDVERBOSE} = 1 },
        "testrun"  => sub { $opts{SCRAM_TEST} = 1 },
        "reset"    => sub { print "Resetting caches","\n"; system("rm","-f",$builddatastore,$dircache)
