@@ -89,39 +89,45 @@ sub _initswitcher {
 	return $switch;
 }
 
-sub _commontags {
-	my $self=shift;
-	my $switch=shift;
-	my $parse=shift;
-	
-	$self->verbose(">> _commontags: SW ".$switch." PARSE ".$parse." <<");
-	
-	$switch->grouptag("Export",$parse);
-	$switch->addtag($parse,"Use",\&Use_start,$self,
-					       \&OutToMakefile, $self,
-						"", $self);
-	$switch->addtag($parse,"Group",\&Group_start,$self,
-					       \&OutToMakefile, $self,
-						"", $self);
-	$switch->grouptag("Group",$parse);
-	$switch->addtag($parse,"External",
-					\&External_StartTag,$self,
-				        \&OutToMakefile, $self,
-					"", $self);
-	$switch->addtag($parse,"lib",
-					\&lib_start,$self,
-				        \&OutToMakefile, $self,
-					"", $self);
-	$switch->addtag($parse,"Architecture",
-					\&Arch_Start,$self,
-				        \&OutToMakefile, $self,
-					\&Arch_End,$self);
-	$switch->addtag($parse,"INCLUDE_PATH",
-					\&IncludePath_Start,$self,
-				        \&OutToMakefile, $self,
-					"",$self);
-	return $switch;
-}
+sub _commontags
+   {
+   my $self=shift;
+   my $switch=shift;
+   my $parse=shift;
+   
+   $self->verbose(">> _commontags: SW ".$switch." PARSE ".$parse." <<");
+   
+   $switch->grouptag("Export",$parse);
+   $switch->addtag($parse,"Use",
+		   \&Use_start,$self,
+		   \&OutToMakefile, $self,
+		   "", $self);
+   $switch->addtag($parse,"Group",
+		   \&Group_start,$self,
+		   \&OutToMakefile, $self,
+		   "", $self);
+   $switch->grouptag("Group",$parse);
+   $switch->addtag($parse,"External",
+		   \&External_StartTag,$self,
+		   \&OutToMakefile, $self,
+		   "", $self);
+   $switch->addtag($parse,"lib",
+		   \&lib_start,$self,
+		   \&OutToMakefile, $self,"", $self);
+   $switch->addtag($parse,"debuglib",
+		   \&debuglib_start,$self,
+		   \&OutToMakefile, $self,
+		   "", $self);
+   $switch->addtag($parse,"Architecture",
+		   \&Arch_Start,$self,
+		   \&OutToMakefile, $self,
+		   \&Arch_End,$self);
+   $switch->addtag($parse,"INCLUDE_PATH",
+		   \&IncludePath_Start,$self,
+		   \&OutToMakefile, $self,
+		   "",$self);
+   return $switch;
+   }
 
 sub ParseBuildFile {
 	my $self=shift;
@@ -1041,6 +1047,23 @@ sub lib_start
    if ( $self->{Arch} )
       {
       print GNUmakefile "lib+=$$hashref{name}\n";
+      }
+   }
+
+# Standard debug lib tag 
+#
+sub debuglib_start
+   {
+   my $self=shift;
+   my $name=shift;
+   my $hashref=shift;
+   
+   $self->verbose(">> debuglib_start: NM ".$name." <<");
+   $self->{switch}->checktag($name, $hashref, 'name');
+
+   if ( $self->{Arch} )
+      {
+      print GNUmakefile "debuglib+=$$hashref{name}\n";
       }
    }
 
