@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.3 2005/02/02 17:41:41 sashby Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.4 2005/02/02 18:57:01 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -272,6 +272,7 @@ sub toolsetup()
 	    {
 	    use File::Copy;
 	    copy($urlv, $filename);
+	    my $mode = 0644; chmod $mode, $filename;
 	    $toolfile=$filename;
 	    }
 	 else
@@ -325,6 +326,7 @@ sub toolsetup()
 	 use File::Copy;
 	 $tfname=$self->{toolfiledir}."/".$toolname;	 
 	 copy($filename, $tfname);
+	 my $mode = 0644; chmod $mode, $tfname;
 	 $toolfile=$tfname;
 	 }
       else

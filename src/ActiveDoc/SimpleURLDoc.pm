@@ -77,6 +77,7 @@ sub urlget {
 	my $urlstring=shift;
 
 	($fullurl,$filename)=$self->{urlhandler}->get($urlstring, @_);
+	
 	if ( ( ! defined $filename ) || ( $filename eq "" ) ) {
 	  $self->parseerror("Failed to get $fullurl");
 	}
