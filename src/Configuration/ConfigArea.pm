@@ -19,6 +19,10 @@
 # configitem(@keys)		: return a list of fig items that match
 #				  the keys - all if left blank
 # parentstore()			: set/return the parent ObjectStore
+# bootstrapfromlocation([location]): bootstrap the object based on location.
+#				  no location specified - cwd used
+# searchlocation([startdir])	: returns the location directory. search starts
+#				  from cwd if not specified
 
 package Configuration::ConfigArea;
 use ActiveDoc::ActiveDoc;
@@ -29,6 +33,7 @@ use ObjectUtilities::ObjectStore;
 
 sub init {
 	my $self=shift;
+
 	$self->newparse("init");
 	$self->newparse("download");
 	$self->newparse("setup");
@@ -68,6 +73,9 @@ sub setup {
 	# --- and parse the setup file
 	$self->parse("setup");
 	
+	# --- store bootstrap info 
+	$self->store($self->location()."/.SCRAM/ConfigArea.dat");
+
 	# --- store self in original database
 	$self->parentconfig()->store($self,"ConfigArea",$self->name(),
 							$self->version());
@@ -86,6 +94,16 @@ sub _setupstore {
 #        $self->config()->policy("cache","local");
 	$self->config($ad);
         $self->config()->basedoc($self->parentconfig()->basedoc());
+}
+
+sub bootstrapfromlocation {
+	my $self=shift;
+	
+	if ( ! defined $self->location(@_) ) {
+	  $self->error("Unable to locate the top of local configuration area");
+	}
+	$self->_setupstore();
+	$self->restore($self->location()."/.SCRAM/ConfigArea.dat");
 }
 
 sub parentconfig {
@@ -113,7 +131,9 @@ sub restore {
 	my $fh=$self->openfile("<".$location);
 	my $varhash={};
 	$self->restorevars($fh,$varhash);
-        $self->location($$varhash{"location"});
+	if ( ! defined $self->location() ) {
+          $self->location($$varhash{"location"});
+	}
 	$self->_setupstore();
         $self->url($$varhash{"url"});
         $self->name($$varhash{"name"});
@@ -138,8 +158,34 @@ sub version {
 sub location {
 	my $self=shift;
 
-	@_?$self->{location}=shift
-	  :$self->{location};
+	if ( @_ ) {
+	  $self->{location}=shift
+	}
+	elsif ( ! defined $self->{location} ) {
+	  # try and find the release location
+	  $self->searchlocation();
+	}
+	return  $self->{location};
+}
+
+sub searchlocation {
+	my $self=shift;
+	use Cwd;
+
+        #start search in current directory if not specified
+	my $thispath;
+	@_?$thispath=shift
+	  :$thispath=cwd;
+ 
+        my $rv=0;
+
+        do {
+          if ( -e "$thispath/.SCRAM" ) {
+	    $rv=1;
+	  }
+        } while ( ( $thispath=~s/(.*)\/.*/$1/ )=~/./  );
+
+        return $rv?$thispath:undef;
 }
 
 sub meta {
@@ -151,9 +197,8 @@ sub meta {
 
 sub configitem {
 	my $self=shift;
-	my $location=shift;
 	
-	$self->config()->find("ConfigItem",@_);
+	return ($self->config()->find("ConfigItem",@_));
 }
 
 sub addconfigitem {
