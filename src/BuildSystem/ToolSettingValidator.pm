@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-10-14 10:16:21+0200
-# Revision: $Id: ToolSettingValidator.pm,v 1.1.2.2 2004/10/22 17:12:30 sashby Exp $ 
+# Revision: $Id: ToolSettingValidator.pm,v 1.2 2004/12/10 13:41:37 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -61,7 +61,7 @@ sub findvalue()
       {
       # OK, there's a def/val. 
       $path = $self->_expandvars($stringtoeval);
-      
+
       if ($self->validatepath($path))
 	 {
 	 # Save in VARDATA:
@@ -182,6 +182,12 @@ sub validatepath()
    if ( -f $path)
       {
       # File exists:
+      print $self->{STATUS}->{0}." for $path","\n";
+      return 1;
+      }
+   # This is done so that some paths can be added which include ".":
+   elsif ($path =~ /\.:.*/ || $path =~ /\./)
+      {
       print $self->{STATUS}->{0}." for $path","\n";
       return 1;
       }
