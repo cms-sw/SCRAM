@@ -294,7 +294,6 @@ sub IncludePath_Start
    $self->{switch}->checktag( $name, $hashref, 'path');
    if ( $self->{Arch} )
       {
-      print GNUmakefile "INCLUDE:=\$(filter-out ".$self->_location()."/".$$hashref{'path'}.",\$(INCLUDE))","\n"; 
       print GNUmakefile "INCLUDE+=".$self->_location()."/".$$hashref{'path'}."\n";
       }
    }
