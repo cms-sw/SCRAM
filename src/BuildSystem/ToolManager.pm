@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.5 2005/02/02 20:16:45 sashby Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.6 2005/04/06 18:10:33 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -320,11 +320,11 @@ sub toolsetup()
       # Copy the downloaded tool file to InstalledTools directory:
       if ( ! -f $filename )
 	 {
-	 # If the URL is empty, the chances are that this tool was not downloaded to .SCRAM/InstalledTools. We
-	 # give a warning and continue:
+	 # If the URL is empty, the chances are that this tool was not downloaded to .SCRAM/InstalledTools.
+	 # We signal an error and exit:
 	 if ($url eq '')
 	    {
-	    $::scram->scramerror("$toolname was selected in project requirements but is not in the configuration.");
+	    $::scram->scramerror("$toolname was selected in project requirements but is not in the configuration!");
 	    }
 	 else
 	    {
