@@ -2,15 +2,11 @@
 #
 # Interface
 # ---------
-# new(ConfigArea,Builder)
+# new(toolbox)
 # ParseBuildFile($base,$path,$file)
 # ParseBuildFileExport(filename)
-# BlockParse(Block) : perform a parse to modify the block
 # BlockClassPath() : Return the class path
 # ignore()	: return 1 if directory should be ignored 0 otherwise
-# classname()   : get/set the associated class
-# buildfile()   : get/set BuildFile location
-# makefile()    : get the generated makefile
 
 package BuildSystem::BuildFile;
 use ActiveDoc::SimpleDoc;
@@ -25,72 +21,10 @@ sub new {
 	my $class=shift;
 	my $self={};
 	bless $self, $class;
-	$self->{area}=shift;
-	$self->{Builder}=shift;
-        $self->{toolbox}=$self->{area}->toolbox();
-        $self->{localtop}=$self->{area}->location();
-        # -- set RELEASTOP
-        my $rarea=$self->{area}->linkarea();
-        if ( ! defined $rarea ) {
-          $self->{releasetop}=$self->{localtop};
-        }
-        else {
-          $self->{releasetop}=$rarea->location();
-        }
-        $self->{releasetop}=$self->{area}->location();
+	$self->{toolbox}=shift;
 	$self->{Arch}=1;
 	push @{$self->{ARCHBLOCK}}, $self->{Arch};
 	return $self;
-}
-
-sub buildfile {
-        my $self=shift;
-        if ( @_ ) {
-          $self->{buildfile}=shift;
-        }
-        return $self->{buildfile};
-}
-
-sub makefile {
-        my $self=shift;
-        if ( @_ ) {
-          $self->{makefile}=shift;
-        }
-        return $self->{makefile};
-}
-
-sub BlockParse {
-        my $self=shift;
-        $self->{block}=shift;
-
-        # -- set up the block parse
-        my $switch=$self->_initswitcher();
-        my $parse="block";
-        $switch->newparse($parse);
-        $switch->addignoretags($parse);
-        $switch->addtag($parse,"BuildParam", \&BuildBlock_start, $self);
-        $switch->filetoparse($self->buildfile());
-
-        # -- parse away
-        $self->{switch}=$switch;
-        $switch->parse("block");
-}
-
-sub Parsetofh {
-        my $self=shift;
-        my $fh=shift;
-        $self->{buildblock}=shift;
-
-        # -- set up for parse
-        @{$self->{filehandlestack}}=($fh);
-        $self->{switch}->filetoparse($self->buildfile());
-        *GNUmakefile=$fh;
-
-        # -- generate makefile
-        $self->{switch}->parse("makebuild"); # sort out supported tags
-
-        # -- Clean up
-        close GNUmakefile;
 }
 
 sub ignore {
@@ -105,7 +39,7 @@ sub _initswitcher {
 	$switch->newparse($parse);
 	$switch->addignoretags($parse);
 	$self->_commontags($switch,$parse);
-	#$switch->addtag($parse,"Build", \&Build_start, $self);
+	$switch->addtag($parse,"Build", \&Build_start, $self);
 	$switch->addtag($parse,"none",
 					\&OutToMakefile,$self,
 				        \&OutToMakefile, $self,
@@ -177,30 +111,6 @@ sub _commontags {
 	return $switch;
 }
 
-sub GenerateMakefile {
-        my $self=shift;
-        my $infile=shift;
-        my $outfile=shift;
-
-        $self->{switch}=$self->_initswitcher();
-        $self->{switch}->filetoparse($infile);
-
-        # open a temporary gnumakefile to store output.
-        my $fh=FileHandle->new();
-        open ( $fh, ">$outfile") or die "Unable to open $outfile for output ".
-                                                                "$!\n";
-        @{$self->{filehandlestack}}=($fh);
-
-        #  -- make an alias
-        *GNUmakefile=$fh;
-        if ( -e $ENV{LatestBuildFile} ) {
-          print GNUmakefile "include $ENV{LatestBuildFile}\n";
-        }
-        $self->{switch}->parse("makebuild"); # sort out supported tags
-        close GNUmakefile;
-        return $outfile;
-}
-
 sub ParseBuildFile {
 	my $self=shift;
 	my $base=shift;
@@ -218,32 +128,52 @@ sub ParseBuildFile {
 	$numbins=0;
 	$self->{envnum}=0;
 	$self->{envlevel}=0;
-	$self->{makefile}="$self->{localtop}/$ENV{INTwork}/$self->{path}/".
-                                                                "BuildFile.mk";
-        $self->{currentenv}=$self->{makefile};
+	$self->{currentenv}="$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/".
+								"BuildFile.mk";
 	$self->{switch}=$self->_initswitcher();
 	$self->{switch}->filetoparse($fullfilename);
 
 #	$self->{switch}->{Strict_no_cr}='no';
 	#open a temporary gnumakefile to store output.
 	use Utilities::AddDir;
-        AddDir::adddir("$self->{localtop}/$ENV{INTwork}/$self->{path}");
-        $ENV{LatestBuildFile}=$self->GenerateMakefile($fullfilename,
-        $self->{localtop}."/".$ENV{INTwork}."/".$self->{path}."/BuildFile.mk");
-}
-
-sub classname {
-        my $self=shift;
-        if ( @_ ) {
-          $self->{classname}=shift;
-        }
-        return $self->{classname};
+	AddDir::adddir("$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}");
+	my $fh=FileHandle->new();
+	open ( $fh, ">$ENV{LOCALTOP}/$ENV{INTwork}/".$self->{path}."/BuildFile.mk"
+          ) or die "Unable to open /$ENV{INTwork}/".$self->{path}."/BuildFile.mk $!\n";
+	@{$self->{filehandlestack}}=($fh);
+	# make an alias
+	*GNUmakefile=$fh;
+	if ( -e $ENV{LatestBuildFile} ) {
+	  print GNUmakefile "include $ENV{LatestBuildFile}\n";
+	}
+#	print "writing to :\n".
+#		"$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/BuildFile.mk\n";
+	$ENV{LatestBuildFile}="$ENV{LOCALTOP}/$ENV{INTwork}/".$self->{path}."/BuildFile.mk";
+	$self->{switch}->parse("makebuild"); # sort out supported tags
+	if ( $numbins > 0 ) {
+	 print GNUmakefile <<ENDTEXT;
+ifndef BINMODE
+help::
+\t\@echo Generic Binary targets
+\t\@echo ----------------------
+endif
+ENDTEXT
+	 foreach $target ( keys %$targettypes ) {
+	 print GNUmakefile <<ENDTEXT;
+ifndef BINMODE
+help::
+\t\@echo $target
+endif
+ENDTEXT
+	 }
+	}
+	close GNUmakefile;
 }
 
 sub ParseBuildFile_Export {
 	my $self=shift;
         my $filename=shift;
-	my $bf=BuildSystem::BuildFile->new($self->{area},$self->{Builder});
+	my $bf=BuildSystem::BuildFile->new($self->{toolbox});
 	if ( defined $self->{remoteproject} ) {
 	   $bf->{remoteproject}=$self->{remoteproject};
 	}
@@ -319,7 +249,7 @@ sub Class_StartTag {
 	
 	if ( $self->{Arch} ) {
 	 if ( defined $$hashref{'type'} ) {
-		 $self->classname($$hashref{'type'});
+		$ClassName=$$hashref{'type'};
 	 }
 	}
 }
@@ -337,117 +267,14 @@ sub IncludePath_Start {
 }
 
 #
-# --- <Build class=> tag
+# generic build tag
 #
-
-#
-# Parameter collection
-#
-sub BuildBlock_start {
-        my $self=shift;
-        my $name=shift;
-        my $hashref=shift;
-
-
-        my $blockobjid=$self->__blockobjid($hashref);
-
-        if ( $self->{Arch} ) {
-
-           # -- get any objects that match
-           my $inheritobj=$self->{block}->getobj($blockobjid);
-
-           # -- create an object with inherited properties
-           my $obj;
-           if ( ! defined $inheritobj ) {
-               # -- check we have a lookup for the class type
-               my $mapper=$self->_toolmapper();
-               if ( ! $mapper->exists($$hashref{'class'}) ) {
-                 $self->{switch}->parseerror("Unknown class : ".
-                                                        $$hashref{'class'});
-               }
-               $obj=BuildSystem::BuildClass->new();
-           }
-           else {
-               # -- inherit the properties from class with the same id class
-               $obj=$inheritobj->child();
-           }
-
-           # -- add changes from our tag
-           $obj->paramupdate($hashref);
-
-           # -- store the new object in the block
-           $self->{block}->setobj($obj,$blockobjid);
-        }
-}
-
-sub BuilderClass_buildmakefile {
-        my $self=shift;
-        my $name=shift;
-        my $hashref=shift;
-
-        my $blockobjid=$self->__blockobjid($hashref);
-
-        if ( $self->{Arch} ) {
-           # -- get the matching block object
-           my $blockobj=$self->{buildblock}->getobj($blockobjid);
-
-           # -- top level buildfile
-           my $fh=$self->{filehandlestack}[0];
-
-           # -- var initialisation
-           my @deftypes=();
-           my $buildname="";
-           my @types=$self->_toolmapper()->types($$hashref{'class'});
-
-           # -- error checking
-           if ( ! defined $blockobj->param("default") ) {
-             $self->error("No default build parameter defined for ".
-                $$hashref{'class'}." ".$$hashref{'id'});
-           }
-           if ( ! defined $blockobj->param("name") ) {
-             $self->error("\"name\" parameter defined for ".
-                $$hashref{'class'}." ".$$hashref{'id'});
-           }
-
-
-           foreach $param ( $blockobj->paramlist() ) {
-             # -- check for params that need special handling
-             if ( $param eq "default" ) {
-                @deftypes=split /,/, $param;
-             }
-             elsif ( $param eq "name" ) {
-                $buildname=$blockobj->param($param);
-             }
-             else {
-                # -- simple transfer of block object parameters to makefile
-                print $fh $param.":=".$blockobj->param($param)."\n";
-             }
-           }
-
-           # -- construct the targets in the top makefile
-           $self->_generatedefaulttargets($fh,$$hashref{'class'},@deftypes);
-           $self->_generatetypetargets($fh,$$hashref{'class'},$buildname,@types);
-        }
-}
-
-sub _blockobjid {
-        my $self=shift;
-        my $hashref=shift;
-
-        $self->{switch}->checktag($name,$hashref,'class');
-        $self->{switch}->checktag($name,$hashref,'id');
-        my $blockobjid="bc_".$$hashref{'class'},"_".$$hashref{'id'};
-
-        return $blockobjid;
-}
-
 sub Build_start {
 	my $self=shift;
 	my $name=shift;
 	my $hashref=shift;
 
 	$self->{switch}->checktag($name,$hashref,'class');
-	$self->{switch}->checktag($name,$hashref,'id');
 	if ( $self->{Arch} ) {
 
 	  # -- determine the build products name
@@ -814,10 +641,6 @@ sub Use_start {
 	if ( ! defined $self->{remoteproject} ) {
 	  $filename=SCRAMUtils::checkfile(
                 "/$ENV{INTsrc}/$$hashref{name}/BuildFile");
-	  # -- force a dependency check if local
-	  if ( $filename=~/^$self->{localtop}/ ) {
-	    $self->{Builder}->BuildDir($ENV{INTsrc}."/".$$hashref{'name'});
-	  }
 	}
 	else {
 	  $filename=$self->{remoteproject}."/$$hashref{name}/BuildFile";
@@ -832,6 +655,23 @@ sub Use_start {
 		"decription file for <$name name=".$$hashref{name}.">");
 	}
 	}
+}
+
+sub CheckBuildFile {
+	 my $self=shift;
+         my $classdir=shift;
+	 my $ClassName="";
+         my $thisfile="$classdir/$buildfile";
+ 
+         if ( -e $ENV{LOCALTOP}."/".$thisfile ) {
+            $DefaultBuildfile="$ENV{LOCALTOP}/$thisfile";
+            $self->ParseBuildFile($ENV{LOCALTOP}, $classdir, $buildfile);
+         }
+         elsif ( -e $ENV{RELEASETOP}."/".$thisfile ) {
+            $DefaultBuildfile="$ENV{RELEASETOP}/$thisfile";
+            $self->ParseBuildFile($ENV{RELEASETOP}, $classdir, $buildfile);
+         }
+	 return $ClassName;
 }
 
 # List association groups between <AssociateGroup> tags
@@ -1029,7 +869,7 @@ sub Environment_start {
 	  $self->{envnum}++;
 
 	  # open a new Environment File
-	  my $envfile=$self->{localtop}."/$ENV{INTwork}/$self->{path}/Env_".
+	  my $envfile="$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/Env_".
 		$self->{envnum}.".mk";
 	  use FileHandle;
 	  my $fh=FileHandle->new();
@@ -1039,16 +879,16 @@ sub Environment_start {
 
 	  # include the approprate environment file
 	  if ( $self->{envlevel} == 0 ) {
-	     print GNUmakefile "include $self->{localtop}/$ENV{INTwork}/".
+	     print GNUmakefile "include $ENV{LOCALTOP}/$ENV{INTwork}/".
 		$self->{path}."/BuildFile.mk\n";
 	  }
 	  else {
-	     print GNUmakefile "include $self->{localtop}/$ENV{INTwork}/".
+	     print GNUmakefile "include $ENV{LOCALTOP}/$ENV{INTwork}/".
 		$self->{path}."/Env_".$self->{Envlevels}[$self->{envlevel}].".mk\n";
 	  }
 	  $self->{envlevel}++;
 	  $self->{Envlevels}[$self->{envlevel}]=$self->{envnum};
-	  $self->{currentenv}="$self->{localtop}/$ENV{INTwork}/$self->{path}/Env_$self->{envnum}.mk";
+	  $self->{currentenv}="$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/Env_$self->{envnum}.mk";
 	}
 }
 
@@ -1068,12 +908,12 @@ sub Environment_end {
 	  close $fd;
 	  *GNUmakefile=$self->{filehandlestack}[$#{$self->{filehandlestack}}];
 	  if ( $self->{envlevel} < 1 ) {
-	    $self->{currentenv}="$self->{localtop}/$ENV{INTwork}/$self->{path}/".
+	    $self->{currentenv}="$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/".
 			"BuildFile.mk";
 	  }
 	  else {
 	    $self->{currentenv}=
-	     $self->{localtop}."/$ENV{INTwork}/$self->{path}/Env_".
+	     "$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/Env_".
 		$self->{Envlevels}[$self->{envlevel}];
 	  }
 	}
@@ -1089,12 +929,12 @@ sub Store_start {
 
           # -- store creation
           my $dir=$$hashref{'name'};
-          AddDir::adddir($self->{localtop}."/".$dir);
+          AddDir::adddir($ENV{LOCALTOP}."/".$dir);
           if ( exists $$hashref{'type'} ) {
             # -- architecture specific store
             if ( $$hashref{'type'}=~/^arch/i ) {
                 $dir=$dir."/".$ENV{SCRAM_ARCH};
-                AddDir::adddir($self->{localtop}."/".$dir);
+                AddDir::adddir($ENV{LOCALTOP}."/".$dir);
             }
             else {
                 $self->parseerror("Unknown type in <$name> tag");
@@ -1104,9 +944,9 @@ sub Store_start {
           # -- set make variables for the store
           print GNUmakefile "SCRAMSTORENAME_".$$hashref{'name'}.":=".$dir."\n";
           print GNUmakefile "SCRAMSTORE_".$$hashref{'name'}.":=".
-                                        $self->{localtop}."/".$dir."\n";
-          print GNUmakefile "VPATH+=".$self->{localtop}
-                        ."/".$dir.":".$self->{releasetop}."/".$dir."\n";
+                                        $ENV{LOCALTOP}."/".$dir."\n";
+          print GNUmakefile "VPATH+=".$ENV{LOCALTOP}
+                        ."/".$dir.":".$ENV{RELEASETOP}."/".$dir."\n";
         }
 }
 
