@@ -10,8 +10,10 @@
 # new(ActiveConfig[,options])		: A new ActiveDoc object
 # url()	        : Return/set the docs url - essential
 # file()	: Return the local filename of document
+# ProcessFile() : Return the filename of PreProcessed document
 #
 # parse(parselabel): Parse the document file for the given parse level
+# parent()	   : return the object ref of the calling parent
 # newparse(parselabel) : Create a new parse type
 # addtag(parselabel,tagname,start,obj,text,obj,end,obj)
 #				: Add tags to the parse given by label
@@ -64,13 +66,14 @@ sub new {
 	   # --- is there a starter document?
 	   my $basedoc=$self->config()->basedoc();
 	   if ( defined $basedoc ) {
-	     $self->verbose("Initialising from $basedoc");
 	     $self->copydocquery($basedoc);
+	     $self->verbose("Initialising from $basedoc");
 	   }
 	   else {
 	     $self->error("ActiveDoc Error : No base doc found");
 	   }
 	}
+	$self->verbose("New ActiveDoc (".ref($self).") Created");
 	$self->_init2();
 }
 
@@ -93,7 +96,7 @@ sub verbose {
 
 	if ( $self->option('verbose_all') || 
 			$self->option('verbose_'.ref($self)) ) {
-	  print ">".ref($self)." : ".$string."\n";
+	  print ">".ref($self)."($self) : \n->".$string."\n";
 	}
 }
 
@@ -102,14 +105,16 @@ sub parse {
 	my $self=shift;
 	$parselabel=shift;
 
-	my $file=$self->file();
+	my $file=$self->ProcessFile();
 	if ( $file ) {
 	  if ( exists $self->{parsers}{$parselabel} ) {
+	    $self->verbose("Parsing $parselabel in file $file");
 	    $self->{currentparsename}=$parselabel;
 	    $self->{currentparser}=$self->{parsers}{$parselabel};
 	    $self->{parsers}{$parselabel}->parse($file,@_);
 	    delete $self->{currentparser};
 	    $self->{currentparsename}="";
+	    $self->verbose("Parse $parselabel Complete");
 	  }
 	}
 	else {
@@ -181,7 +186,10 @@ sub addurltags {
 sub url {
 	my $self=shift;
 	# get file & preprocess
-	if ( @_  ) {$self->{File}=$self->getfile(shift)} 
+	if ( @_  ) {
+		$self->{File}=$self->getfile(shift);
+		$self->verbose("url downloaded to $self->{File}");
+	} 
 	$self->{File}->url();
 }
 
@@ -213,9 +221,8 @@ sub config {
 
 sub basequery {
 	my $self=shift;
-	@_ ? $self->{Query}=shift
-	   : $self->{Query};
-	return $self->{Query};
+	@_?$self->{Query}=shift
+	   :$self->{Query};
 }
 
 sub option {
@@ -258,11 +265,13 @@ sub getfile() {
 
 	my $fileref;
 	my ($url, $file);
-	if ( defined $self->option('url_update') ) {
-	   $self->verbose("Forced download of $origurl");
-	   ($url, $file)=$self->{urlhandler}->download($origurl);
+	if ( (defined ($it=$self->option('url_update'))) &&
+		( $it eq "1" || $origurl=~/^$it/ )) {
+	     $self->verbose("Forced download of $origurl");
+	     ($url, $file)=$self->{urlhandler}->download($origurl);
 	}
 	else {
+	   $self->verbose("Attempting to get $origurl");
 	   ($url, $file)=$self->{urlhandler}->get($origurl);
 	}
 	# do we already have an appropriate object?
@@ -277,7 +286,7 @@ sub getfile() {
 	   $self->parseerror("Unable to get $origurl");
 	 }
 	 #-- set up a new preprocess file
-	 print "Making a new file $url----\n";
+	 $self->verbose("Making a new preprocessed file $url");
 	 $fileref=ActiveDoc::PreProcessedFile->new($self->config());
 	 $fileref->url($url);
 	 $fileref->update();
@@ -313,8 +322,16 @@ sub activatedoc {
 	my $newobj=$tempdoc->{docobject}->new($self->config());
 	undef $tempdoc;
 	$newobj->url($url);
+	$newobj->parent($self);
 	$newobj->_initparse();
 	return $newobj;
+}
+
+sub parent {
+	my $self=shift;
+
+	@_?$self->{parent}=shift
+	  :$self->{parent};
 }
 
 sub _initparse {
@@ -377,6 +394,12 @@ sub file {
 	my $self=shift;
 
 	$self->{File}->file();
+}
+
+sub ProcessFile {
+	my $self=shift;
+
+	return $self->{File}->ProcessedFile();
 }
 
 # --------------- Initialisation Methods ---------------------------
