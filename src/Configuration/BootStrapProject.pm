@@ -33,7 +33,6 @@ sub _initswitcher {
         my $parse="boot";
         $switch->newparse($parse);
 	$switch->addbasetags($parse);
-	#$switch->addtag($parse,"base", \&Base_start, $self);
 	$switch->addtag($parse,"RequirementsDoc", \&ReqDoc_start, $self,
 				       \&print_text, $self,
 				       \&ReqDoc_end, $self);
@@ -75,8 +74,6 @@ sub boot {
 		"\nAre you sure you are using the correct scram version?");
 	}
 
-	#my ($fullurl,$filename)=$self->{switch}->urlget($url);
-	#$self->{switch}->filetoparse($filename);
 	$self->{switch}->parse("boot");
 	return $self->{area};
 }

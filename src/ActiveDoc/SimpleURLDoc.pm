@@ -33,7 +33,6 @@ sub new {
 	bless $self, $class;
 	$self->cache(shift);
         $self->_initdoc("doc",@_);
-	#$self->{switch}=ActiveDoc::SimpleDoc->new(@_);
 	return $self;
 }
 
@@ -83,19 +82,6 @@ sub urlget {
 	}
 	return ($fullurl,$filename);
 }
-
-#sub AUTOLOAD {
-#	my $self=shift;
-#
-	# dont propogate destroy methods
-#	return if $AUTOLOAD=~/::DESTROY/;
-
-	# remove this package name
-#	($name=$AUTOLOAD)=~s/ActiveDoc::SimpleURLDoc:://;
-
-	# pass the message to SimpleDoc
-#	$self->{switch}->$name(@_);
-#}
 
 # ------------------------ Support Routines ---------------------------
 

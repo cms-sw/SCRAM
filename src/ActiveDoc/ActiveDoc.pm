@@ -86,7 +86,6 @@ sub getfile {
 	 # -- set up a new preprocess file
 	 $self->verbose("Making a new preprocessed file $url");
 	 $fileref=ActiveDoc::PreProcessedFile->new($self->{Ostore});
-	 #$fileref->cache($self->{cache});
 	 $fileref->url($url);
 	 $fileref->update();
 	}
@@ -116,7 +115,6 @@ sub activatedoc {
         die $@ if $@;
 	my $newobj=$doctype->new($self->{Ostore}, $url);
 	$newobj->url($url);
-	#$newobj->parent($self);
 	return $newobj;
 }
 

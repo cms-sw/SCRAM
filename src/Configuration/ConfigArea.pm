@@ -220,6 +220,49 @@ sub scramversion {
 	return $self->{scramversion};
 }
 
+sub sitename
+   {
+   ###############################################################
+   # sitename()                                                  #
+   ###############################################################
+   # modified : Mon Dec  3 15:45:35 2001 / SFA                   #
+   # params   :                                                  #
+   #          :                                                  #
+   #          :                                                  #
+   #          :                                                  #
+   # function : Read the site name from config/site/sitename and #
+   #          : export it.                                       #
+   #          :                                                  #
+   #          :                                                  #
+   ###############################################################
+   my $self = shift;
+   my $sitefile = $self->location()."/".$self->configurationdir()."/site/sitename";
+
+   $self->{sitename} = 'CERN'; # Use CERN as the default site name
+
+   use FileHandle;
+   my $sitefh = FileHandle->new();
+   
+   # See if we can read from the file. If not, just
+   # use default site name:
+   open($sitefh,"<".$sitefile) || 
+      do
+	 {
+	 $self->verbose("Unable to read a site name definition file. Using \'CERN\' as the site name.");
+	 return $self->{sitename};
+	 };
+   
+   $sitename = <$sitefh>;
+   chomp($sitename);
+   $self->{sitename} = $sitename;
+   
+   # Close the file (be tidy!);
+   close($sitefile);
+   # Return:
+   return $self->{sitename};
+   }
+
+
 sub bootstrapfromlocation {
 	my $self=shift;
 

@@ -9,7 +9,7 @@
 #
 # Interface
 # ---------
-# new()		: A new ActiveDoc object
+# new()		        : A new ActiveDoc object
 # verbose(string)	: Print string in verbosity mode
 # verbosity(0|1)	: verbosity off|on 
 
