@@ -35,9 +35,10 @@ sub copydir {
 	use DirHandle;
 	use File::Copy;
 
-	#print "Copying $src to $dest\n";
+	# print "Copying $src to $dest\n";
 	adddir($dest);
 	my $dh=DirHandle->new($src);
+        if (defined $dh) {
 	my @allfiles=$dh->read();
 	
 	my $file;
@@ -51,4 +52,5 @@ sub copydir {
 	 }
 	}
 	undef $dh;
+        }
 }
