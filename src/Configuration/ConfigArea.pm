@@ -27,6 +27,7 @@
 # copy(location)		: make a copy of the current area at the 
 #				  specified location - return an object
 #				  representing the area
+# linkarea(oref)		: link area with another
 
 package Configuration::ConfigArea;
 use ActiveDoc::ActiveDoc;
@@ -43,13 +44,14 @@ sub init {
 	$self->newparse("download");
 	$self->newparse("setup");
 	$self->addtag("init","project",\&Project_Start,$self,
-	\&Project_text,$self,"", $self );
+	    \&Project_text,$self,"", $self );
 	$self->addurltags("download");
 	$self->addtag("download","use",\&Use_download_Start,$self, 
 						"", $self, "",$self);
 	$self->addurltags("setup");
 	$self->addtag("setup","use",\&Use_Start,$self, "", $self, "",$self);
 }
+
 
 sub defaultdirname {
 	my $self=shift;
@@ -64,10 +66,12 @@ sub defaultdirname {
 sub setup {
 	my $self=shift;
 
-	# --- find out the location
-	my $location=$self->requestoption("area_location",
-		"Please Enter the location of the directory");
-	if ( $location!~/^\// ) {
+	# --- find out the location - default is cwd
+	my $location=$self->option("area_location");
+	if ( ! defined $location ) {
+	        $location=cwd();
+	}
+	elsif ( $location!~/^\// ) {
 		$location=cwd()."/".$location;
 	}
 
@@ -148,10 +152,11 @@ sub copy {
 
 	AddDir::adddir(dirname($destination));
 	
-	my @cpcmd=(qw(cp -r), "$self->location()", "$destination");
-	print "@cpcmd";
+	$temp=$self->location();
+	my @cpcmd=(qw(cp -r), "$temp", "$destination");
+	print "@cpcmd"."\n";
 #	File::Copy::copy("$self->location()", "$destination") or 
-	system(@cpcmd) or
+	system(@cpcmd) == 0 or
 			$self->error("Cannot copy ".$self->location().
 			" to $destination ".$!);
 
@@ -250,7 +255,6 @@ sub addconfigitem {
         # Set up the document
         $docref->setup();
 #	$self->config()->storepolicy("local");
-	$docref->save();
 }
 
 # -------------- Tags ---------------------------------
