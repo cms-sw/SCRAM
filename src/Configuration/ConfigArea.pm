@@ -575,6 +575,41 @@ sub save {
 	$self->_SaveEnvFile();
 }
 
+sub reqdoc()
+   {
+   my $self=shift;
+   my ($path)=@_;
+   return $path."/".$self->{reqdoc};
+   }
+
+sub creationtime()
+   {
+   my $self=shift;
+   my ($location)= @_;
+   $location||=$self->location();
+   my $requirementsdoc = $self->reqdoc($location);
+   my ($mode, $time) = (stat($requirementsdoc))[2, 9];
+   my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($time);
+
+   ($sec < 10) ? ($sec = "0".$sec) : $sec;
+   ($min < 10) ? ($min = "0".$min) : $min;
+
+   $year += 1900;
+   my $months =
+      {
+      0 => "Jan", 1 => "Feb",
+      2 => "Mar", 3 => "Apr",
+      4 => "May", 5 => "Jun",
+      6 => "Jul", 7 => "Aug",
+      8 => "Sept", 9 => "Oct",
+      10 => "Nov", 11 => "Dec" };
+   
+   my $days = { 1 => "Mon", 2 => "Tue", 3 => "Wed", 4 => "Thu", 5 => "Fri", 6 => "Sat", 7 => "Sun"};
+   
+   # Return the timestamp (as string) of the requirementsdoc:
+   return $days->{$wday}."-".$mday."-".$months->{$mon}."-".$year." ".$hour.":".$min.":".$sec;
+   }
+
 # ---- support routines
 
 sub _SaveEnvFile

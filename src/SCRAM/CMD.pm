@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.9 2005/03/01 16:44:11 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.10 2005/03/03 16:02:16 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1570,7 +1570,8 @@ sub config()
    my (@ARGS) = @_;
    my %opts;
    my %options =
-      ("help"	=> sub { $self->{SCRAM_HELPER}->help('config'); exit(0) } );
+      ("help"	=> sub { $self->{SCRAM_HELPER}->help('config'); exit(0) },
+       "tools"  => sub { $opts{SCRAM_DUMPCONFIG} = 1 });
    
    local @ARGV = @ARGS;
    
@@ -1583,19 +1584,65 @@ sub config()
    else
       {
       # Check to see if we are in a local project area:
-      $self->checklocal();      
-      print ">> Dumping config info for current area <<\n[don't forget to implement \'help\' function for \'config\'!]","\n";
+      $self->checklocal();
+      my $localarea = $self->localarea();
 
-
-      my $tm = $self->toolmanager();
-#      $tm->writecache(); 
-      print "Cache name:                    ",$self->localarea()->toolcachename(),"\n";
-      print "Cache name (from read tcache): ",$tm->name(),"\n";
+      print "SCRAM_PROJECTNAME=",$localarea->name(),"\n";
+      print "SCRAM_PROJECTVERSION=",$localarea->version(),"\n";      
+      print "SCRAM_TOOLBOXVERSION=",$localarea->toolboxversion(),"\n";
+      # Perhaps show creation time. Check the timestamp of config/requirements:
+      print "SCRAM_PROJECT_TIMESTAMP=",$localarea->creationtime(),"\n";
+      print "SCRAM_PROJECT_RELEASE_TIMESTAMP=",$localarea->creationtime($ENV{RELEASETOP}),"\n"
+	 ,if (exists($ENV{RELEASETOP}));
+      print "LOCALTOP=",$ENV{LOCALTOP},"\n";
+      print "RELEASETOP=",$ENV{RELEASETOP},"\n", if (exists($ENV{RELEASETOP}));	 
+      
+      $self->dumpconfig(), if ($opts{SCRAM_DUMPCONFIG});
+      
       # Return nice value:
       return (0);
       }
    }
 
+sub dumpconfig()
+   {
+   my $self=shift;
+
+   print "##\n## Dumping configuration information for SCRAM_ARCH=",$ENV{SCRAM_ARCH},"\n##\n";
+
+   # Get array of setup tools:
+   my @setuptoolnames = $self->toolmanager()->toolsdata();
+   
+   # Exit if there aren't any tools:
+   $self->scramerror(">>>> No tools set up for current arch or area: unable to dump config. <<<<"),
+   if ( $#setuptoolnames < 0); 
+   
+   # Show list: format is "tool:toolversion:scram_project[0/1]:<base path>:<dependencies>
+   foreach $t (@setuptoolnames)
+      {
+      my $info = $t->toolname().":".$t->toolversion().":".$t->scram_project();
+
+      # Get the base path for this tool:
+      my $tname = $t->toolname();
+      $tname =~ tr/-/_/; # Some tools contain hyphens in name;
+      my $basepath = $t->variable_data(uc($tname)."_BASE");
+      ($basepath eq '') ? ($info .= ":<SYSTEM>") : ($info .= ":".$basepath);
+      
+      my @deps = $t->use();
+      
+      if ($#deps < 0)
+	 {
+	 $info .= ":<NONE>";
+	 }
+      else
+	 {
+	 $info .= ":";
+	 map { $_ =~ tr/A-Z/a-z/; $info .= $_." " } @deps;	 
+	 }
+      
+      print $info,"\n";	 
+      }
+   }
 
 #### End of CMD.pm ####
 1;

@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.1.2.12 2004/11/15 13:29:45 sashby Exp $ 
+# Revision: $Id: Helper.pm,v 1.2 2004/12/10 13:41:41 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -260,7 +260,6 @@ sub remove()
    return $help;
    }
 
-
 sub project()
    {
    my $self=shift;
@@ -406,7 +405,6 @@ sub tool()
    return $help;
    }
 
-
 sub build()
    {
    my $self=shift;
@@ -456,7 +454,31 @@ sub build()
    return $help;
    }
 
-
+sub config()
+   {
+   my $self=shift;
+   my $help;
+   $help.="Description:\n";
+   $help.="\n";
+   $help.="\tDump configuration information for the current project area.\n";
+   $help.="Usage:\n";
+   $help.="$::bold";
+   $help.="\tscram config [--tools]$::normal\n";
+   $help.="\n";   
+   $help.="The --tools option will dump a list of configured tools, rather like \"tool info\",\n";
+   $help.="but in a format parseable by external scripts. This could be used to create RPM/TAR files\n";
+   $help.="of external products required by the project.\n";
+   $help.="\n";
+   $help.="The format of each line of output is:\n";
+   $help.="\n";
+   $help.="\t<tool name>:<tool version>:scram project[0/1]:<base path>:<dependencies>\n";
+   $help.="\n\n";
+   $help.="<base path> can have the value <SYSTEM> if located in system directories (e.g., /lib).\n\n";
+   $help.="<dependencies> will be set to <NONE> if there are no external dependencies for this tool.\n";
+   $help.="\n";
+   
+   return $help;
+   }
 
 #
 # A template routine for future help commands:
