@@ -3,7 +3,8 @@ require 5.001;
 require Exporter;
 use Cwd;
 @ISA	= qw(Exporter);
-@EXPORT = qw(adddir);
+@EXPORT = qw(adddir copydir);
+
 
 sub adddir {
  my $indir=shift;
@@ -25,4 +26,29 @@ sub adddir {
  chdir $dirname;
  }
  chdir $startdir;
+}
+
+sub copydir {
+	my $src=shift;
+	my $dest=shift;
+	
+	use DirHandle;
+	use File::Copy;
+
+	#print "Copying $src to $dest\n";
+	adddir($dest);
+	my $dh=DirHandle->new($src);
+	my @allfiles=$dh->read();
+	
+	my $file;
+	foreach $file ( @allfiles ) {
+	 next if $file=~/^\.\.?/;
+	 if ( -d $src."/".$file ) {
+	   copydir($src."/".$file,$dest."/".$file);
+	 }
+	 else {
+	   copy($src."/".$file,$dest."/".$file)
+	 }
+	}
+	undef $dh;
 }
