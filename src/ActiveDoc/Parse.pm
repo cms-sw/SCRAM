@@ -9,20 +9,20 @@
 #
 # Interface
 # ---------
-# new()		: A new Parse object
+# new()		        : A new Parse object
 # addtag(name,start,text,end,$object)	: Add a new tag
-# addgrouptags()  : add <Group> tag functionality
-# addignoretags() : add <ignore> tag functionality
+# addgrouptags()        : add <Group> tag functionality
+# addignoretags()       : add <ignore> tag functionality
 # parse(filename,[streamhandle], [streamexcludetag]) : 
 #				parse the given file - turn on the stream
 #				   function of the switcher if a filehandle
 #				   supplied as a second argument
-# line()	: return the current linenumber in the file
+# line()	        : return the current linenumber in the file
 # tagstartline()	: return the linenumber of the last tag opening 
-# includeparse(Parse) : include the settings from another parse object
+# includeparse(Parse)   : include the settings from another parse object
 # tags()		: return list of defined tags
 # cleartags()		: clear of all tags
-# opencontext(name)		: open a parse context
+# opencontext(name)	: open a parse context
 # closecontext(name)	: close a parse context
 # includecontext(name)  : Process when in a given context
 # excludecontext(name)  : No Processing when given context
@@ -36,164 +36,217 @@ require 5.004;
 use ActiveDoc::Switcher;
 use ActiveDoc::TagContainer;
 use ActiveDoc::GroupChecker;
+use Utilities::Verbose;
 
-sub new {
-	my $class=shift;
-	$self={};
-	bless $self, $class;
-	$self->init();
-	return $self;
-}
+@ISA=qw(Utilities::Verbose);
 
-sub init {
-	my $self=shift;
-	$self->{gc}=GroupChecker->new();
-	$self->{gc}->include("all");
-	$self->{tags}=ActiveDoc::TagContainer->new();
-}
+sub new
+   {
+   my $class=shift;
+   $self={};
+   bless $self, $class;
+   $self->init();
+   return $self;
+   }
 
-sub parse {
-	my $self=shift;
-	my $file=shift;
-	
-	# basic setup of switcher
-	$self->{switch}=ActiveDoc::Switcher->new($file);
-	$self->{switch}->usegroupchecker($self->{gc});
-	$self->{switch}->usetags($self->{tags});
+sub init
+   {
+   my $self=shift;
+   $self->{gc}=GroupChecker->new();
+   $self->{gc}->include("all");
+   $self->{tags}=ActiveDoc::TagContainer->new();
+   }
 
-	# do we need to switch on the streamer?
-	if ( @_ ) {
-	   $fh=shift;
-	   $self->{switch}->stream($fh);
-	   foreach $tag ( @_ ) {
-		$self->{switch}->streamexclude($tag);
-	   }
-	}
+sub parse
+   {
+   my $self=shift;
+   my $file=shift;
+   
+   # basic setup of switcher
+   $self->{switch}=ActiveDoc::Switcher->new($file);
+   $self->{switch}->usegroupchecker($self->{gc});
+   $self->{switch}->usetags($self->{tags});
 
-	# -- parse
-	$self->{switch}->parse();
-	undef $self->{switch};
-}
+   # do we need to switch on the streamer?
+   if ( @_ )
+      {
+      $fh=shift;
+      $self->{switch}->stream($fh);
+      foreach $tag ( @_ )
+	 {
+	 $self->{switch}->streamexclude($tag);
+	 }
+      }
 
-sub line {
-	my $self=shift;
-	if ( defined $self->{switch} ) {
-	  return $self->{switch}->line();
-	}
-	return undef;
-}
+   # -- parse
+   $self->{switch}->parse();
+   undef $self->{switch};
+   }
 
-sub tagstartline {
-	my $self=shift;
-	if ( defined $self->{switch} ) {
-	  return $self->{switch}->tagstartline();
-	}
-	return undef;
-}
+sub line
+   {
+   my $self=shift;
+   
+   if ( defined $self->{switch} )
+      {
+      return $self->{switch}->line();
+      }
+   return undef;
+   }
 
-sub includeparse {
-	my $self=shift;
-	my $obj=shift;
+sub tagstartline
+   {
+   my $self=shift;
 
-	my $tag;
-	# copy the tags from  the remote parse object
-	foreach $tag ( $obj->tags() ) {
-	  $self->addtag($tag,$obj->{tags}->tagsettings($tag));
-	}
-	# now the group settings
-}
+   if ( defined $self->{switch} )
+      {
+      return $self->{switch}->tagstartline();
+      }
+   return undef;
+   }
 
-sub addtag {
-	my $self=shift;
-	$self->{tags}->addtag(@_);
-}
+sub includeparse
+   {
+   my $self=shift;
+   my $obj=shift;
+   my $tag;
+   
+   # copy the tags from  the remote parse object
+   foreach $tag ( $obj->tags() )
+      {
+      $self->addtag($tag,$obj->{tags}->tagsettings($tag));
+      }
+   # now the group settings
+   }
 
-sub addgrouptags {
-        my $self=shift;
-        $self->{tags}->addtag("Group", \&Group_Start,$self, 
-				"", $self, \&Group_End, $self);
-        $self->{tags}->setgrouptag("Group");
-}
+sub addtag
+   {
+   my $self=shift;
 
-sub addignoretags {
-        my $self=shift;
-        $self->{gc}->exclude("ignore");
-        $self->{tags}->addtag("Ignore", \&Ignore_Start, $self,
-			"",$self, \&Ignore_End,$self);
-        $self->{tags}->setgrouptag("Ignore");
-}
+   $self->{tags}->addtag(@_);
+   $self->verbose(">> Adding tag ".@_." ");
+   }
 
-sub contexttag {
-	my $self=shift;
-	$self->{tags}->setgrouptag(shift);
-}
+sub addgrouptags
+   {
+   my $self=shift;
+   
+   $self->verbose(">> Adding a group tag");
+   $self->{tags}->addtag("Group", \&Group_Start,$self, 
+			 "", $self, \&Group_End, $self);
+   $self->{tags}->setgrouptag("Group");
+   }
 
-sub opencontext {
-	my $self=shift;
-	$self->{gc}->opencontext(shift);
-}
+sub addignoretags
+   {
+   my $self=shift;
 
-sub closecontext {
-	my $self=shift;
-	$self->{gc}->closecontext(shift);
-}
+   $self->verbose(">> Adding an IGNORE tag");
+   $self->{gc}->exclude("ignore");
+   $self->{tags}->addtag("Ignore", \&Ignore_Start, $self,
+			 "",$self, \&Ignore_End,$self);
+   $self->{tags}->setgrouptag("Ignore");
+   }
 
-sub includecontext {
-	my $self=shift;
-	my $name=shift;
+sub contexttag
+   {
+   my $self=shift;
+   my $name=shift;
+   
+   $self->verbose("-- contexttag: ".$name." ");
+   $self->{tags}->setgrouptag($name);
+   }
 
-	$self->{gc}->unexclude($name);
-	$self->{gc}->include($name);
-}
+sub opencontext
+   {
+   my $self=shift;
+   my $name=shift;
 
-sub excludecontext {
-	my $self=shift;
-	my $name=shift;
-	$self->{gc}->exclude($name);
-	$self->{gc}->uninclude($name);
-}
+   $self->verbose("-- opencontext: ".$name." ");
+   $self->{gc}->opencontext($name);
+   }
 
-sub cleartags {
-	my $self=shift;
-	$self->{tags}->cleartags();
-}
+sub closecontext
+   {
+   my $self=shift;
+   my $name=shift;
+
+   $self->verbose("-- closecontext: ".$name." ");
+   $self->{gc}->closecontext($name);
+   }
+
+sub includecontext
+   {
+   my $self=shift;
+   my $name=shift;
+
+   $self->verbose("-- includecontext : ".$name." ");
+   $self->{gc}->unexclude($name);
+   $self->{gc}->include($name);
+   }
+
+sub excludecontext
+   {
+   my $self=shift;
+   my $name=shift;
+   $self->verbose("-- excludecontext: ".$name." ");
+   $self->{gc}->exclude($name);
+   $self->{gc}->uninclude($name);
+   }
+
+sub cleartags
+   {
+   my $self=shift;
+   $self->verbose(">> Clearing TAGS");
+   $self->{tags}->cleartags();
+   }
 
 sub tags {
 	 my $self=shift;
+	 $self->verbose("-- tags");
 	 return $self->{tags}->tags();
 }
 
 # ---------  Basic Group Related Tags ---------------------------------
 
-sub Group_Start {
-        my $self=shift;
-        my $name=shift;
-        my $vars=shift;
-        my $lastgp;
+sub Group_Start
+   {
+   my $self=shift;
+   my $name=shift;
+   my $vars=shift;
+   my $lastgp;
 
-        $lastgp="group::".$$vars{name};
-        $self->{switch}->checkparam($name, 'name');
-        $self->{gc}->opencontext("group::".$$vars{name});
+   $self->verbose(">> Group_Start: ".$name." ");
+   $lastgp="group::".$$vars{name};
+   $self->{switch}->checkparam($name, 'name');
+   $self->{gc}->opencontext("group::".$$vars{name});
+   
+   }
 
-}
+sub Group_End
+   {
+   my $self=shift;
+   my $name=shift;
+   my $lastgp;
+   
+   $self->verbose(">> Group_End: ".$name." ");
+   $self->{gc}->closelastcontext("group");
+   }
 
-sub Group_End {
-        my $self=shift;
-        my $name=shift;
-        my $lastgp;
+sub Ignore_Start
+   {
+   my $self=shift;
+   my $name=shift;
+   
+   $self->verbose(">> Ignore_Start: ".$name." ");
+   $self->{gc}->opencontext("ignore");
+   }
 
-        $self->{gc}->closelastcontext("group");
-}
+sub Ignore_End
+   {
+   my $self=shift;
 
-sub Ignore_Start {
-        my $self=shift;
-        my $name=shift;
-
-        $self->{gc}->opencontext("ignore");
-}
-
-sub Ignore_End {
-        my $self=shift;
-        $self->{gc}->closecontext("ignore");
-}
+   $self->verbose(">> Ignore_End: ".$name." ");
+   $self->{gc}->closecontext("ignore");
+   }
 
