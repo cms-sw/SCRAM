@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.2 2004/12/10 13:41:41 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.3 2005/02/02 16:31:13 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -44,7 +44,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.2 2004/12/10 13:41:41 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.3 2005/02/02 16:31:13 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -373,7 +373,7 @@ sub toolmanager
    my $self = shift;
    my ($location)=@_;
    $location||=$self->localarea();
-   
+
    # This subroutine is used to reload the ToolManager object from file.
    # If this file does not exist, it implies that the area has not yet been set
    # up so we make a copy of whichever one exists and tell the user to run "scram setup":
@@ -382,7 +382,7 @@ sub toolmanager
       # Cache exists, so read it:
       $self->info("Reading tool data from ToolCache.db.") if ($self->{SCRAM_DEBUG});
       use Cache::CacheUtilities;
-      $toolmanager=&Cache::CacheUtilities::read($location->toolcachename());
+      $toolmanager=&Cache::CacheUtilities::read($location->toolcachename());      
       # If this area has been cloned, we must make some adjustments so that the cache
       # is really local and refers to all settings of local area (admin dir etc.):
       if ($ENV{RELEASETOP} && ! $toolmanager->cloned_tm())

@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.1.2.31 2004/11/23 13:17:16 sashby Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.2 2004/12/10 13:41:37 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -69,7 +69,7 @@ sub clone()
    {
    my $self=shift;
    my $projectarea=shift;
-   
+
    # Change cache settings to reflect the new location:
    $self->{topdir}=$projectarea->location();
 

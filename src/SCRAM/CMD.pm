@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.4 2005/02/02 11:10:17 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.5 2005/02/02 16:31:13 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -968,10 +968,8 @@ sub bootfromrelease()
       # Need a toolmanager, then we can setup:
       my $toolmanager = $self->toolmanager($area);
       $toolmanager->setupself($area->location());
+
       # Write the cached info:
-
-      print "DEBUG: writing to cache...","\n";
-
       $toolmanager->writecache();
       
       print "\n\nInstallation procedure complete.\n";
@@ -1211,6 +1209,15 @@ sub setup()
       else
 	 {
 	 print "Setting up all tools in current area","\n";
+
+	 # If there isn't a ToolCache.db file where we expect it, it implies that
+	 # we are setting up tools for the n'th platform:
+	 if (! -f $self->localarea()->toolcachename())
+	    {
+	    $self->create_productdirs($self->localarea()->location());	    
+	    $toolmanager->setupself($self->localarea()->location());
+	    }
+	 
 	 $toolmanager->setupalltools($self->localarea()->location(),0);
 	 }
       
