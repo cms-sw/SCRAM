@@ -23,12 +23,15 @@
 # newdoc(file)	: Return an new object of the appropriate type
 # getfile(url)	: get a processedfile object given a url
 # activatedoc(url) : Return the object ref for a doc described by the given url
+#		     -- any parse called "init" will also be run
 # config([ActiveConfig]) : Set up/return Configuration for the document
 # basequery([ActiveConfig]) : Set up/return UserQuery for the doc
 # copydocconfig(ActiveDoc) : Copy the basic configuration from the ActiveDoc
 # copydocquery(ActiveDoc) : Copy the basicquery from the ActiveDoc
 # userinterface()	: Return the defaullt userinterface
-# options(var)		: return the value of the option var
+# option(var)		: return the value of the option var
+# requestoption("message") : Ask the user to supply a value for an option 
+#			     if it dosnt already exist
 #
 # -- error methods --
 # error(string)       : Report an general error to the user
@@ -51,7 +54,21 @@ sub new {
 	$self={};
 	bless $self, $class;
 	$self->config(shift);
-	
+
+	# --- is there a starter document?
+	my $basedoc=$self->config()->basedoc();
+	if ( defined $basedoc ) {
+	  $self->copydocquery($basedoc);
+	}
+	else {
+	  $self->error("Error : No base doc found");
+	}
+	$self->_init2();
+}
+
+sub _init2 {
+
+	my $self=shift;
 	# A URL handler per document
 	$self->{urlhandler}=URL::URLhandler->new($self->config()->cache());
 
@@ -59,6 +76,7 @@ sub new {
 	$self->{userinterface}=ActiveDoc::SimpleUserInterface->new();
 	$self->init(@_);
 	return $self;
+
 }
 
 # ----- parse related routines --------------
@@ -68,11 +86,13 @@ sub parse {
 
 	my $file=$self->file();
 	if ( $file ) {
-	  $self->{currentparsename}=$parselabel;
-	  $self->{currentparser}=$self->{parsers}{$parselabel};
-	  $self->{parsers}{$parselabel}->parse($file,@_);
-	  delete $self->{currentparser};
-	  $self->{currentparsename}="";
+	  if ( exists $self->{parsers}{$parselabel} ) {
+	    $self->{currentparsename}=$parselabel;
+	    $self->{currentparser}=$self->{parsers}{$parselabel};
+	    $self->{parsers}{$parselabel}->parse($file,@_);
+	    delete $self->{currentparser};
+	    $self->{currentparsename}="";
+	  }
 	}
 	else {
 	  print "Cannot parse - file not known\n";
@@ -159,7 +179,7 @@ sub copydocquery {
 	my $self=shift;
         my $ActiveDoc=shift;
 
-	 $self->basequery($ActiveDoc->basequery());
+	$self->basequery($ActiveDoc->basequery());
 }
 
 sub config {
@@ -174,10 +194,25 @@ sub basequery {
 	   : $self->{Query};
 }
 
-sub options {
+sub option {
 	my $self=shift;
 	my $param=shift;
-	$self->basequery()->getparam('option_'.$param);
+	$self->basequery()->getparam($param);
+}
+
+sub requestoption {
+	my $self=shift;
+        my $param=shift;
+	my $string=shift;
+
+	my $par=$self->basequery()->getparam($param);
+        while ( ! defined $par ) {
+          $self->basequery()->querytype( $param, "basic");
+          $self->basequery()->querymessage( $param, $string);
+          $self->userinterface()->askuser($self->basequery());
+          $par=$self->basequery()->getparam('ActiveConfigdir');
+        }
+	return $par;
 }
 
 sub getfile() {
@@ -211,25 +246,36 @@ sub activatedoc {
 	my $url=shift;
 
 	# first get a preprocessed copy of the file 
-	my $fileob=$self->getfile($url);
+#	my $fileob=$self->getfile($url);
 
 	# now parse it for the <DocType> tag
-	$self->{doctypefound}=0;
-	$self->newparse("doctype");
-	$self->addtag("doctype","Doc", \&Doc_Start, $self,
-                                          "", $self, "", $self);
-	$self->parse("doctype");
+	my $tempdoc=ActiveDoc::ActiveDoc->new($self->config());
+	$tempdoc->url($url);
+	$tempdoc->{doctypefound}=0;
+	$tempdoc->newparse("doctype");
+	$tempdoc->addtag("doctype","Doc", \&Doc_Start, $tempdoc,
+                                          "", $tempdoc, "", $tempdoc);
+	$tempdoc->parse("doctype");
 
-	if ( ! defined $self->{docobject} ) {
-          print "No <Doc type=> Specified in ".$fileob->url()."\n";
+	if ( ! defined $tempdoc->{docobject} ) {
+          print "No <Doc type=> Specified in ".$url."\n";
           exit 1;
         }
 	# Set up a new object of the specified type
-	my $newobj=$self->{docobject}->new($self->config());
+	eval "require $tempdoc->{docobject}";
+        die $@ if $@;
+	my $newobj=$tempdoc->{docobject}->new($self->config());
+	undef $tempdoc;
 	$newobj->url($url);
+	$newobj->_initparse();
 	return $newobj;
 }
 
+sub _initparse {
+	my $self=shift;
+
+	$self->parse("init");
+}
 # -------- Error Handling and Error services --------------
 
 sub error {
