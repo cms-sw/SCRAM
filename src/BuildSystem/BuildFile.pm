@@ -53,7 +53,12 @@ sub _initswitcher {
 					\&Bin_start,$self,
 				        \&OutToScreen, $self,
 					"", $self);
-	 $switch->addtag($parse,"ProductStore",
+	$switch->addtag($parse,"Module",
+					\&Module_start,$self,
+				        \&OutToScreen, $self,
+					"", $self);
+
+	$switch->addtag($parse,"ProductStore",
                                         \&Store_start,$self,
                                         "", $self,
                                         "", $self);
@@ -577,6 +582,181 @@ ENDTEXT
 	}
 	close binGNUmakefile;
 }
+
+sub Module_start {
+	my $self=shift;
+	my $name=shift;
+	my $hashref=shift;
+
+	my $fileclass;
+	my @tools;
+	my $tool;
+	my $filename;
+	my $objectname;
+
+	$self->verbose(">> In module_start: ".$name." <<");
+	
+	$self->{switch}->checktag($name,$hashref,'file');
+	if ( $self->{Arch} ) {
+	if ( ! defined $$hashref{name} ) {
+		($$hashref{name}=$$hashref{file})=~s/\..*//;
+	}
+	($filename=$$hashref{file})=~s/\..*//;
+
+	# Create a new directory for each module target
+	my $dirname="module_".$$hashref{name};
+	AddDir::adddir("$ENV{LOCALTOP}/$ENV{INTwork}/".$self->{path}."/$dirname");
+	open (moduleGNUmakefile, 
+	   ">$ENV{LOCALTOP}/$ENV{INTwork}/".$self->{path}."/$dirname/BuildFile.mk") or die           "Unable to make $ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/$dirname/".
+	   "BuildFile.mk $!\n";
+
+	# Create the link targets
+	$numbins++;
+	my $fh=$self->{filehandlestack}[0];
+	print $fh <<ENDTEXT;
+
+# Link Targets to module directories
+ifdef MODULEMODE
+# We dont want to build a library here
+override files:=
+endif
+ifndef MODULEMODE
+
+BINMODE=true
+   
+define stepdown_$$hashref{'name'}
+if [ -d "$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/$dirname" ]; then \\
+cd $ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/$dirname; \\
+\$(MAKE) MODULEMODE=true LatestBuildFile=$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/$dirname/BuildFile.mk workdir=\$(workdir)/$dirname -f \$(TOOL_HOME)/basics.mk datestamp \$\@; \\
+fi
+endef
+
+define stepdown2_$$hashref{'name'}
+if [ -d "$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/$dirname" ]; then \\
+cd $ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/$dirname; \\
+\$(MAKE) MODULEMODE=true LatestBuildFile=$ENV{LOCALTOP}/$ENV{INTwork}/$self{path}/$dirname/BuildFile.mk workdir=\$(workdir)/$dirname -f \$(TOOL_HOME)/basics.mk datestamp \$\*; \\
+fi
+
+endef
+
+module_$$hashref{'name'}_%:: dummy
+	\@\$(stepdown2_$$hashref{'name'})
+
+$$hashref{'name'}_%:: dummy
+	\@\$(stepdown_$$hashref{'name'})
+
+help module module_debug module_debug_local module_insure module_Insure clean $$hashref{'name'}:: dummy
+	\@\$(stepdown_$$hashref{'name'})
+
+modulefiles+=$$hashref{'file'}
+locmodulefiles+=$dirname/$$hashref{'file'}
+endif
+
+
+ENDTEXT
+
+
+# the module specifics makefile
+	print moduleGNUmakefile "include ".$self->{currentenv}."\n";
+	print moduleGNUmakefile "VPATH+=$ENV{LOCALTOP}/$self{path}\n";
+
+# alias for bin_Insure
+	print moduleGNUmakefile <<ENDTEXT;
+
+module_insure:module_Insure
+ifdef MAKETARGET_module_insure
+MAKETARGET_$$hashref{name}_Insure=1
+endif
+
+# debuggging target
+$$hashref{'name'}_echo_% :: echo_%
+
+# help targets
+help::
+\t\@echo   
+\t\@echo Targets For $$hashref{'name'}
+\t\@echo -------------------------------------
+\t\@echo $$hashref{'name'}  - default build
+\t\@echo module_$$hashref{'name'}_clean - executable specific cleaning
+ENDTEXT
+
+# Make generic rules for each type
+	$targettypes={
+		"module" => 'o',
+		"module_debug" => 'd',
+		"module_debug_local" => 'l_d',
+		"module_Insure" => 'Insure'
+	};
+	#
+	foreach $target ( keys %$targettypes ) {
+	  print moduleGNUmakefile <<ENDTEXT;
+
+# Type $target specifics 
+ifdef MAKETARGET_$target
+MAKETARGET_$$hashref{name}_$$targettypes{$target}=1
+endif
+$target ::$$hashref{name}_$$targettypes{$target}
+
+moduletargets+=$$hashref{name}_$$targettypes{$target}
+help::
+\t\@echo $$hashref{name}_$$targettypes{$target}
+clean::
+\t\@if [ -f \$(modulestore)/$$hashref{name}_$$targettypes{$target} ]; then \\
+\techo Removing \$(modulestore)/$$hashref{name}; \\
+\trm \$(modulestore)/$$hashref{name}_$$targettypes{$target}; \\
+\tfi
+
+ENDTEXT
+	  ($objectname=$$hashref{file})=~s/\..*/_$$targettypes{$target}\.o/;
+	  ${"objectname_$$targettypes{$target}"}=$objectname;
+	  print moduleGNUmakefile "$objectname:$$hashref{name}.dep\n";
+	} # end loop
+	print moduleGNUmakefile "MDFLAGS= -shared -Wl,-soname,\$\@","\n";
+	print moduleGNUmakefile "$$hashref{name}_Insure.so:.psrc\n";
+ 	print moduleGNUmakefile "$$hashref{name}_d.so:$objectname_d\n";
+	print moduleGNUmakefile "\t\$(CClinkCmdDebug) \$(MDFLAGS)\n";
+	print moduleGNUmakefile "\t\@\$(SCRAMPERL) \$(SCRAM_HOME)/src/scramdatestamp \$\@\.ds \$\@ \$\^\n";
+ 	print moduleGNUmakefile "$$hashref{name}_l_d.so:$objectname_d\n";
+	print moduleGNUmakefile "\t\$(CClinkCmdDebugLocal) \$(MDFLAGS)\n";
+	print moduleGNUmakefile "\t\@\$(SCRAMPERL) \$(SCRAM_HOME)/src/scramdatestamp \$\@\.ds \$\@ \$\^\n";
+ 	print moduleGNUmakefile "$$hashref{name}_Insure.so:$objectname_Insure\n";
+	print moduleGNUmakefile "\t\$(CClinkCmdInsure) \$(MDFLAGS)\n";
+	print moduleGNUmakefile "\t\@\$(SCRAMPERL) \$(SCRAM_HOME)/src/scramdatestamp \$\@\.ds \$\@ \$\^\n";
+ 	print moduleGNUmakefile "$$hashref{name}_o.so:$objectname_o\n";
+	print moduleGNUmakefile "\t\$(CClinkCmd) \$(MDFLAGS)\n";
+	print moduleGNUmakefile "\t\@\$(SCRAMPERL) \$(SCRAM_HOME)/src/scramdatestamp \$\@\.ds \$\@ \$\^\n";
+	print moduleGNUmakefile "$$hashref{name}.dep:$$hashref{file}\n";
+	print moduleGNUmakefile "-include $$hashref{name}.dep\n";
+print moduleGNUmakefile <<ENDTEXT;
+clean::
+\t\@if [ -f \$(modulestore)/lib$$hashref{name} ]; then \\
+\techo Removing \$(modulestore)/lib$$hashref{name}; \\
+\trm \$(modulestore)/lib$$hashref{name}; \\
+\tfi
+
+   
+$$hashref{name}_d.so:\$(libslocal_d)
+$$hashref{name}_o.so:\$(libslocal)
+ifdef MCCABE_DATA_DIR
+$$hashref{name}_mccabe.so: \$(libslocal_d) \$(MCCABE_DATA_DIR)/mccabeinstr/instplus.cpp
+endif
+$$hashref{name}_Insure.so:\$(libslocal_I)
+$$hashref{name}_d:$$hashref{name}_d.so
+	\@cp $$hashref{name}_d.so \$(modulestore)/lib$$hashref{name}
+$$hashref{name}_l_d:$$hashref{name}_l_d.so
+	\@cp $$hashref{name}_l_d.so \$(modulestore)/lib$$hashref{name}
+$$hashref{name}_Insure:$$hashref{name}_Insure.so
+	\@cp $$hashref{name}_Insure.so \$(modulestore)/lib$$hashref{name}_Insure
+$$hashref{name}:$$hashref{name}_d.so
+	\@mv $$hashref{name}_d.so \$(modulestore)/lib$$hashref{name}
+$$hashref{name}_o:$$hashref{name}_o.so
+	\@mv $$hashref{name}_o.so \$(modulestore)/lib$$hashref{name}.so
+modulefiles+=$$hashref{file}
+ENDTEXT
+	}
+	close moduleGNUmakefile;
+}
+
 
 sub External_StartTag {
 	my $self=shift;
