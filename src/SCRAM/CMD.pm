@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.5 2005/02/02 16:31:13 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.6 2005/02/02 17:41:42 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -183,6 +183,8 @@ sub toolinfo()
    my $self=shift;
    my ($toolname)=@_;
 
+   $toolname =~ tr/A-Z/a-z/; # Make sure we have lower case toolname
+
    $self->scramfatal("No tool name given: see \"scram tool -help\" for usage info."), if (!$toolname);
 
    # Check to see if we are in a local project area:
@@ -228,6 +230,7 @@ sub tooltag()
    my $self=shift;
    my ($toolname,$tagname) = @_;
    chomp ($tagname);
+   $toolname =~ tr/A-Z/a-z/; # Make sure we have lower case toolname
 
    # Check to see if we are in a local project area:
    $self->checklocal();
@@ -295,6 +298,9 @@ sub toolremove()
    {
    my $self=shift;
    my ($toolname) = @_;
+
+   $toolname =~ tr/A-Z/a-z/; # Make sure we have lower case toolname
+  
    # Check to see if we are in a local project area:
    $self->checklocal();
 
