@@ -28,6 +28,15 @@ sub new {
 	$self->{area}=shift;
 	$self->{toolbox}=$self->{area}->toolbox();
 	$self->{localtop}=$self->{area}->location();
+	# -- set RELEASTOP
+        my $rarea=$self->{area}->linkarea();
+        if ( ! defined $rarea ) {
+          $self->{releasetop}=$self->{localtop};
+        }
+        else {
+          $self->{releasetop}=$rarea->location();
+        }
+	$self->{releasetop}=$self->{area}->location();
 	$self->{Arch}=1;
 	push @{$self->{ARCHBLOCK}}, $self->{Arch};
 	return $self;
@@ -511,7 +520,7 @@ ENDTEXT
 
 # the binary specifics makefile
 	print binGNUmakefile "include ".$self->{currentenv}."\n";
-	print binGNUmakefile "VPATH+=$self->{localtop}/$self{path}\n";
+	print binGNUmakefile "VPATH+=".$self->{localtop}."/$self{path}\n";
 
 # alias for bin_Insure
 	print binGNUmakefile <<ENDTEXT;
