@@ -185,23 +185,6 @@ sub ProcessFile {
 	return $self->{File}->ProcessedFile();
 }
 
-#
-# Delegate all else to the switch
-#
-#sub AUTOLOAD {
-#        my $self=shift;
-
-        # dont propogate destroy methods
-#        return if $AUTOLOAD=~/::DESTROY/;
-
-        # remove this package name
-#        ($name=$AUTOLOAD)=~s/ActiveDoc::ActiveDoc:://;
-
-        # pass the message to SimpleDoc
-#        $self->{switch}->$name(@_);
-#}
-
-
 # ------------------- Tag Routines -----------------------------------
 sub Doc_Start {
 	my $self=shift;
