@@ -1261,26 +1261,26 @@ sub CompilerMap_Start
    my $self=shift;
    my $name=shift;
    my $hashref=shift;
-
+   ## Not working yet !!!!##
    $self->verbose(">> CompilerMap_Start: NM ".$name." <<");
    # We can only map compilers to already-defined architectures, so
    # we check for 'Arch':
-   if ( $self->{Arch} )
-      {
-      my @tagnames=keys %{$hashref};
-      my @tagvalues=values %{$hashref};
+#   if ( $self->{Arch} )
+#      {
+#      my @tagnames=keys %{$hashref};
+#      my @tagvalues=values %{$hashref};
       
-      foreach my $tag ( @tagnames )
-	 {
-         $self->{switch}->checktag($name,$hashref,$tag);
-         print GNUmakefile $tag."=".$$hashref{$tag}."\n";
+#      foreach my $tag ( @tagnames )
+#	 {
+#         $self->{switch}->checktag($name,$hashref,$tag);
+#         print GNUmakefile $tag."=".$$hashref{$tag}."\n";
 
-	 if ( defined $$hashref{'version'} )
-	    {
-	    print GNUmakefile "_V_".$$hashref{'version'};
-	    }
-	 print GNUmakefile "=true\n";
-         }
+#	 if ( defined $$hashref{'version'} )
+#	    {
+#	    print GNUmakefile "_V_".$$hashref{'version'};
+#	    }
+#	 print GNUmakefile "=true\n";
+#         }
 #        $self->{switch}->checktag($name,$hashref,'ref');
 
 #  	# -- oo toolbox stuff
@@ -1323,11 +1323,11 @@ sub CompilerMap_Start
 #  	   $self->ParseBuildFile_Export($file);
 #  	   $self->_popremoteproject();
 #  	 }
-      }
-   else
-      {
-      return;
-      }
+#      }
+#   else
+#      {
+#      return;
+#      }
    } 
 
 
