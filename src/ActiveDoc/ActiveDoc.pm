@@ -15,8 +15,11 @@
 # newparse(parselabel) : Create a new parse type
 # addtag(parselabel,tagname,start,obj,text,obj,end,obj)
 #				: Add tags to the parse given by label
+# checktag(tagname, hashref, param) : check for existence of param in
+#					hashref from a tag call
 # newdoc(file)	: Return an new object of the appropriate type
 # getfile(url)	: get a processedfile object given a url
+# activatedoc(url) : Return the object ref for a doc described by the given url
 # config([ActiveConfig]) : Set up/return Configuration for the document
 # basequery([ActiveConfig]) : Set up/return UserQuery for the doc
 # copydocconfig(ActiveDoc) : Copy the basic configuration from the ActiveDoc
@@ -155,6 +158,28 @@ sub getfile() {
 	return $fileref;
 }
 
+sub activatedoc {
+	my $self=shift;
+	my $url=shift;
+
+	# first get a preprocessed copy of the file 
+	my $fileob=$self->getfile($url);
+
+	# now parse it for the <DocType> tag
+	$self->newparse("doctype");
+	$self->addtag("doctype","Doc", \&Doc_Start, $self,
+                                          "", $self, "", $self);
+	$self->parse("doctype");
+
+	if ( ! defined $self->{docobject} ) {
+          print "No <Doc type=> Specified in ".$fileob->url()."\n";
+          exit 1;
+        }
+	# Set up a new object of the specified type
+	my $newobj=$self->{docobject}->new($self->config());
+	return $newobj;
+}
+
 # -------- Error Handling and Error services --------------
 
 sub error {
@@ -181,6 +206,8 @@ sub checktag {
         my $hashref=shift;
         my $param=shift;
 
+	print keys %$hashref;
+	print "-----------------------------------\n";
         if ( ! exists $$hashref{$param} ) {
           $self->parseerror("Incomplete Tag <$tagname> : $param required");
         }
@@ -188,8 +215,9 @@ sub checktag {
 
 sub line {
 	my $self=shift;
+
 	my ($line, $fileobj)=
-		$self->{File}->line($self->{currentparser}->line());
+		$self->{File}->realline($self->{currentparser}->line());
 	return ($line, $fileobj);
 }
 
@@ -245,4 +273,13 @@ sub Base_end {
           $type = pop @{$self->{basestack}};
           $self->{urlhandler}->unsetbase($type);
         }
+}
+
+sub Doc_Start {
+	my $self=shift;
+	my $name=shift;
+	my $hashref=shift;
+	
+	$self->checktag($name, $hashref, "type");
+	$self->{docobject}=$$hashref{'type'};
 }
