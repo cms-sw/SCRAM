@@ -491,6 +491,22 @@ sub copysetup {
 	return $rv;
 }
 
+sub copyurlcache {
+	my $self=shift;
+	my $dest=shift;	
+	my $rv=1;
+	# copy across the admin dir
+        my $temp=$self->location()."/".$self->{admindir}."/cache";
+	my $temp2=$dest."/".$self->{admindir}."/cache";
+	if ( $temp ne $temp2 ) {
+	 if ( -d $temp ) {
+          AddDir::copydir($temp,$temp2);
+	  $rv=0;
+	 }
+	}
+	return $rv;
+}
+
 sub copywithskip {
 	my $self=shift;
 	my $dest=shift;

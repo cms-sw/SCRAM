@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.2 2004/12/10 13:41:37 sashby Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.3 2005/02/02 17:41:41 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -238,11 +238,11 @@ sub toolsetup()
    my ($arealocation, $toolname, $toolversion, $toolurl) = @_;
    my ($urlcache, $url, $filename, $tfname);
    my $toolfile;
-   
+
    $toolname =~ tr[A-Z][a-z];
    $toolversion ||= $self->defaultversion($toolname);
    $urlcache=URL::URLcache->new($arealocation."/.SCRAM/cache"); # Download tool cache
-   
+
    # Check for the downloaded tools cache:
    if (defined($urlcache))
       {
@@ -251,6 +251,12 @@ sub toolsetup()
    
    $url = $self->toolurls()->{$toolname};
    $filename = $self->{toolfiledir}."/".$toolname;
+   
+   # If .SCRAM/InstalledTools doesn't exist, create it:
+   if (! -d $self->{toolfiledir})
+      {
+      AddDir::adddir($self->{toolfiledir});
+      }
    
    # First, check to see if there was a tool URL given. If so, we might need to read
    # from http or from a file: type URL:
@@ -317,7 +323,7 @@ sub toolsetup()
 	 # Get file from download cache:
 	 ($url,$filename)=$self->{urlhandler}->get($url);
 	 use File::Copy;
-	 $tfname=$self->{toolfiledir}."/".$toolname;
+	 $tfname=$self->{toolfiledir}."/".$toolname;	 
 	 copy($filename, $tfname);
 	 $toolfile=$tfname;
 	 }
