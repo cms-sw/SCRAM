@@ -53,7 +53,7 @@ sub new {
 	$self->{urlhandler}=URL::URLhandler->new($self->config()->cache());
 
 	# A default UserInterface
-	$self->{userinterface}=ActiveDoc::UserInterface_basic->new();
+	$self->{userinterface}=ActiveDoc::SimpleUserInterface->new();
 	$self->init(@_);
 	return $self;
 }
