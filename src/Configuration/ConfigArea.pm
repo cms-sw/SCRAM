@@ -41,7 +41,10 @@
 # archname()		: get/set a string to indicate architecture
 # archdir()		: return the location of the administration arch dep 
 #			  directory
-# objectstore()		: return the objectStore object of the area
+# objectstore(["<"])		: return the objectStore object of the area
+#				  if called with temp - will set as undef
+#				  if it dosnt already exist - otherwise will
+#				  attempt to create it.
 # - temporary
 # align()			: adjust hard paths to suit local loaction
 
@@ -70,24 +73,38 @@ sub new {
 
 sub cache {
 	my $self=shift;
+
+	my $exist=0;
 	if ( @_ ) {
-	  $self->{cache}=shift;
+	  my $cache=shift;
+	  if ( $cache!~/^</ ) {
+	    $self->{cache}=$cache;
+	  }
+	  $exist=1;
 	}
 	elsif ( ! defined $self->{cache} ) {
 	  my $loc=$self->location()."/".$self->{admindir}."/".$self->{cachedir};
-	  $self->{cache}=URL::URLcache->new($loc);
+	  if ( ! $exist ) {
+	    $self->{cache}=URL::URLcache->new($loc);
+	  }
 	}
 	return $self->{cache};
 }
 
 sub objectstore {
 	my $self=shift;
+
+	my $exist="";
 	if ( @_ ) {
-	  $self->{dbstore}=shift;
+	  my $db=shift;
+	  if ( $db!~/^</ ) {
+	    $self->{dbstore}=cache;
+	  }
+	  $exist="<";
 	}
 	elsif ( ! defined $self->{dbstore} ) {
 	  my $loc=$self->location()."/".$self->{admindir}."/".$self->{dbdir};
-	  $self->{dbstore}=ObjectUtilities::ObjectStore->new($loc);
+	  $self->{dbstore}=ObjectUtilities::ObjectStore->new($exist.$loc);
 	}
 	return $self->{dbstore}
 }
@@ -292,8 +309,17 @@ sub satellite {
 	$sat->setup(@_);
 
 	# -- copy across the cache and ObjectStore
-	copy($self->cache()->location(),$sat->cache()->location());
-	copy($self->objectstore()->location(),$sat->objectstore()->location());
+	# -- make sure we dont try building new caches in release areas
+	my $rcache=$self->cache("<");
+	if ( defined $rcache ) {
+	  copy($rcache->location(),$sat->cache()->location());
+	}
+
+	# -- make sure we dont try building new objectstores in release areas
+	my $rostore=$self->objectstore("<");
+	if ( defined $rostore ) {
+	  copy($rostore->location(),$sat->objectstore()->location());
+	}
 
 	# and make sure in reinitialises
 	undef ($sat->{cache});
