@@ -254,7 +254,7 @@ sub location {
 
 sub searchlocation {
 	my $self=shift;
-
+	
         #start search in current directory if not specified
 	my $thispath;
 	if ( @_ ) {
@@ -263,7 +263,7 @@ sub searchlocation {
 	else {
 	  $thispath=cwd();
 	}
- 
+	
         my $rv=0;
 
 	# chop off any files - we only want dirs
@@ -279,7 +279,7 @@ sub searchlocation {
 	    last Sloop;
 	  }
         } while ( ($thispath=~s/(.*)\/.*/$1/)=~/./ ) };
-
+       
         return $rv?$thispath:undef;
 }
 
