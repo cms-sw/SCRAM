@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-02-09 20:14:55+0100
-# Revision: $Id: ToolParser.pm,v 1.1.2.17 2004/10/27 12:35:25 sashby Exp $ 
+# Revision: $Id: ToolParser.pm,v 1.2 2004/12/10 13:41:37 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -572,7 +572,7 @@ sub find_settings()
       my $type = 'RUNTIME';	 
       my $envdata = $tsv->environment($type, $rtname);
       my ($rttype,$realrtname) = split(':',$rtname);      
-
+      
       # Only validate paths:
       if ($rtname =~ /:/)
 	 {	

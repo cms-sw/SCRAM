@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-10-14 10:16:21+0200
-# Revision: $Id: ToolSettingValidator.pm,v 1.2 2004/12/10 13:41:37 sashby Exp $ 
+# Revision: $Id: ToolSettingValidator.pm,v 1.3 2004/12/10 15:29:50 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -39,7 +39,7 @@ sub new()
   $self->{RUNTIME}     = $environments->{RUNTIME};
   $self->{VARDATA}     = {}; # Somewhere to store the variables
   $self->{LOCALENV}    = \%ENV;
-  $self->{STATUS}      = { 0 => $main::good."[OK]".$main::normal, 1 => $main::error."[FAIL]".$main::normal };
+  $self->{STATUS}      = { 0 => $main::good."[OK]".$main::normal, 1 => $main::error."[FAIL]".$main::normal, 2 => $main::good."[OK (but currently missing)]".$main::normal };
   $self->{INVALIDPATHERRORMSG} = $main::error."Invalid path...please try again!".$main::normal;
 
   # Are we interactive or not?
@@ -55,14 +55,19 @@ sub findvalue()
    my ($name, $data) = @_;
    my $stringtoeval;
    my $path;
+
+   # We pass in this var to checdefaults(). The data (hash) used in the
+   # path checking may contain a key 'handler': if this is set to 'warnonly', we
+   # don't prompt for this path setting if it happens to be incorrect:
+   my $handlertype;
    
    # See if there's a default/value in our data element:
-   if ($self->checkdefaults($data,\$stringtoeval))
+   if ($self->checkdefaults($data,\$stringtoeval,\$handlertype))
       {
       # OK, there's a def/val. 
       $path = $self->_expandvars($stringtoeval);
 
-      if ($self->validatepath($path))
+      if ($self->validatepath($path,$handlertype) )
 	 {
 	 # Save in VARDATA:
 	 $self->savevalue($name,$path);
@@ -89,14 +94,18 @@ sub ifindvalue()
    my ($name, $data) = @_;
    my $stringtoeval;
    my ($dpath,$path);
+   # We pass in this var to checdefaults(). The data (hash) used in the
+   # path checking may contain a key 'handler': if this is set to 'warnonly', we
+   # don't prompt for this path setting if it happens to be incorrect:
+   my $handlertype;
 
    # See if there's a default/value in our data element:
-   if ($self->checkdefaults($data,\$stringtoeval))
+   if ($self->checkdefaults($data,\$stringtoeval,\$handlertype))
       {
       # OK, there's a def/val. 
       $dpath = $self->_expandvars($stringtoeval);
       
-      if ($self->validatepath($dpath))
+      if ($self->validatepath($dpath,$handlertype))
 	 {
 	 $path = $self->promptuser($name,$dpath);
 	 # Save in VARDATA:
@@ -163,7 +172,7 @@ sub environment()
 sub validatepath()
    {
    my $self = shift;
-   my ($pathvalue) = @_;
+   my ($pathvalue,$handlertype) = @_;
    my $path;
 
    # Either we use the pathvalue supplied or
@@ -178,7 +187,7 @@ sub validatepath()
       }
    
    print "\tChecks ", if ($path);
-   
+
    if ( -f $path)
       {
       # File exists:
@@ -186,9 +195,14 @@ sub validatepath()
       return 1;
       }
    # This is done so that some paths can be added which include ".":
-   elsif ($path =~ /\.:.*/ || $path =~ /\./)
+   elsif ($path =~ /^\.:.*/ || $path =~ /^\.$/)
       {
       print $self->{STATUS}->{0}." for $path","\n";
+      return 1;
+      }
+   elsif ($handlertype =~ /^[Ww].*$/)
+      {
+      print $self->{STATUS}->{2}." for $path","\n";
       return 1;
       }
    else
@@ -212,7 +226,7 @@ sub validatepath()
 sub checkdefaults()
    {
    my $self=shift;
-   my ($vardata,$pathtoevalref) = @_;
+   my ($vardata,$pathtoevalref,$handlertyperef) = @_;
 
    # If $vardata is actually an array (which it will
    # be if there is more than one VAR element), dereference
@@ -229,6 +243,10 @@ sub checkdefaults()
       $data = $vardata;
       }
 
+   if (exists($data->{'handler'}))
+      {
+      $$handlertyperef = $data->{'handler'};
+      }
    
    if (exists($data->{'default'}))
       {
@@ -371,7 +389,7 @@ sub promptuser()
       # can be used:
 
       $pathvalue=$self->_expandvars($dummy);
-      if ($self->validatepath($pathvalue))
+      if ($self->validatepath($pathvalue,"")) # No handler here;
 	 {
 	 $novalid = 0;
 	 $self->{VARDATA}->{$varname} = $pathvalue;
