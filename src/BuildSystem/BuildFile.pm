@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-12-03 19:03:15+0100
-# Revision: $Id: BuildFile.pm,v 1.25.2.13 2004/11/18 17:38:47 sashby Exp $ 
+# Revision: $Id: BuildFile.pm,v 1.26 2004/12/10 13:41:37 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -106,7 +106,12 @@ sub _initparser()
 			      \&BuildSystem::TagUtils::libtypetagOpen, $self,
 			      "", $self,
 			      "", $self);
-   
+
+   $self->{simpledoc}->addtag("builder","skip",
+			      \&BuildSystem::TagUtils::skippedtagOpen, $self,
+			      "", $self,
+			      "", $self);
+
    $self->{simpledoc}->addtag("builder","makefile",
 			      \&BuildSystem::TagUtils::makefiletagOpen, $self,
 			      \&BuildSystem::TagUtils::makefiletagContent, $self,
