@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.3 2005/02/02 16:31:13 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.4 2005/02/02 17:41:42 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -44,7 +44,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.3 2005/02/02 16:31:13 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.4 2005/02/02 17:41:42 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -280,15 +280,9 @@ sub _initlocalarea()
 	 {
 	 ($ENV{THISDIR}=cwd) =~ s/^\Q$ENV{LOCALTOP}\L//;
 	 $ENV{THISDIR} =~ s/^\///;
-	 # Also set LOCALRT:
+	 # Also set LOCALRT (soon obsolete) and BASE_PATH:
 	 $ENV{LOCALRT} = $ENV{LOCALTOP};
-	 $self->islocal(1);
-	 }
-      elsif (defined ($ENV{'LOCALRT'}))
-	 {
-	 $ENV{LOCALTOP} = $ENV{'LOCALRT'};
-	 ($ENV{THISDIR}=cwd) =~ s/^\Q$ENV{LOCALTOP}\L//;
-	 $ENV{THISDIR} =~ s/^\///;
+	 $ENV{BASE_PATH} = $ENV{LOCALTOP};
 	 $self->islocal(1);
 	 }
       else
