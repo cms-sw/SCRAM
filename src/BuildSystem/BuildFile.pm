@@ -766,7 +766,7 @@ sub OutToMakefile {
 	$self->verbose(">> OutToMakefile: <<");
 
 	if ( $self->{Arch} ) {
-	  $self->verbose(">> CONT: ".$vars[0]." <<");
+	  $self->verbose(">> CONT: ".$#vars." lines <<");
 	  print GNUmakefile @vars;
 	}
 }
