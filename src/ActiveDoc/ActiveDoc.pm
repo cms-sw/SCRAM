@@ -97,11 +97,24 @@ sub find($) {
 	return $tn->associate();
 }
 
+sub line {
+	my $self=shift;
+	return $self->{switch}->line();
+}
+
+sub error {
+	my $self=shift;
+	my $string=shift;
+
+	die $string."\n";
+
+}
 sub parseerror {
 	my $self=shift;
 	my $string=shift;
 
-	print "Parse Error in $self->{url}, line $self-{switch}->line()\n";
+	print "Parse Error in $self->{url}, line ".
+					$self->line()."\n";
 	print $string."\n";
 	die;
 }
