@@ -1,285 +1,213 @@
 #
 # ConfigArea.pm
 #
-# Originally Written by Christopher Williams
+# Written by Christopher Williams
 #
 # Description
 # -----------
 # creates and manages a configuration area
 #
-# Options
+# Notes
 # -------
-# ConfigArea_location
-# ConfigArea_name
+# Persistency - remember to call the save method to make changes persistent
 #
 # Interface
 # ---------
-# new(ActiveConfig)		: A new ConfigArea object
-# setup()		        : setup the configuration area
-# location([dir])		: set/return the location of the area
-# version([version])		: set/return the version of the area
-# name([name])			: set/return the name of the area
-# store(location)		: store data in file location
-# restore(location)		: restore data from file location
-# meta()			: return a description string of the area
-# addconfigitem(url)		: add a new item to the area
-# storeconfigobject(confiItemobj) : store a ready made ConfigItem in the local
-#					area
-# configitem(@keys)		: return a list of fig items that match
-#				  the keys - all if left blank
-# parentstore()			: set/return the parent ObjectStore
-# basearea(ConfigArea)		: Set/Get the base area
-# freebase()			: Remove any link to a base area
-# bootstrapfromlocation([location]): bootstrap the object based on location.
-#				  no location specified - cwd used
+# new()				: A new ConfigArea object
+# name()			: get/set project name
+# setup(dir[,areaname])         : setup a fresh area in dir
+# satellite(dir[,areaname])     : setup a satellite area in dir
+# version()			: get/set project version
+# location([dir])		: set/return the location of the work area
+# bootstrapfromlocation([location]) : bootstrap the object based on location.
+#				      no location specified - cwd used
+#				      return 0 if succesful 1 otherwise
+# requirementsdoc()		: get set the requirements doc
 # searchlocation([startdir])	: returns the location directory. search starts
 #				  from cwd if not specified
-# defaultdirname()		: return the default directory name string
-# copy(location)		: make a copy of the current area at the 
-#				  specified location - defaults to cwd/default
-#				  if not specified . ConfigArea_name, 
-#				  ConfigArea_location also override .
-#				  Return an object representing the area
-# satellite()			: make a satellite area based on $self
-# arch([archobj])		: Set/get the architecture object
-# structure(name)		: return the object corresponding to the
-#				  structure name
-# structurelist()		: return list of structure objectS
-# downloadtotop(dir,url)	: download the url to a dir in the config area
-#				  
+# scramversion()		: return the scram version associated with
+#				  area
+# configurationdir()		: return the location of the project 
+#				  configuration directory
+# copy(location)		: copy a configuration
+# copysetup(location)		: copy the architecture specific tool setup
+#				  returns 0 if successful, 1 otherwise
+# copyenv($ref)			: copy the areas environment into the hashref
+# toolbox()			: return the areas toolbox object
+# save()			: save changes permanently
+# linkto(location)		: link the current area to that at location
+# unlinkarea()			: destroy link (autosave)
+# linkarea([ConfigArea])	: link the current area to the apec Area Object
+# archname()		: get/set a string to indicate architecture
+# archdir()		: return the location of the administration arch dep 
+#			  directory
+# objectstore()		: return the objectStore object of the area
+# - temporary
+# align()			: adjust hard paths to suit local loaction
 
 package Configuration::ConfigArea;
-use ActiveDoc::ActiveDoc;
 require 5.004;
+use URL::URLcache;
 use Utilities::AddDir;
+use Utilities::Verbose;
 use ObjectUtilities::ObjectStore;
-use Configuration::ConfigStore;
-use Configuration::ActiveDoc_arch;
 use Cwd;
-@ISA=qw(Configuration::ActiveDoc_arch ObjectUtilities::StorableObject);
+@ISA=qw(Utilities::Verbose);
 
-sub init {
-	my $self=shift;
-
-	$self->newparse("init");
-	$self->newparse("download");
-	$self->newparse("setup");
-	$self->newparse("setup_tools");
-	$self->addarchtags("setup_tools");
-	$self->addarchtags("setup");
-	$self->addtag("init","project",\&Project_Start,$self,
-	    \&Project_text,$self,"", $self );
-	$self->addurltags("download");
-	$self->addtag("download","download",\&Download_Start,$self, 
-						"", $self, "",$self);
-	$self->addtag("download","use",\&Use_download_Start,$self, 
-						"", $self, "",$self);
-	$self->addurltags("setup");
-	$self->addurltags("setup_tools");
-	$self->addtag("setup_tools","use",\&Use_Start,$self, "", $self, "",$self);
-	$self->addtag("setup","structure",\&Structure_Start,$self,
-			 "", $self, "",$self);
+sub new {
+	my $class=shift;
+	my $self={};
+	bless $self, $class;
 
 	# data init
-	$self->{admindir}=".SCRAM";
+        $self->{admindir}=".SCRAM";
+        $self->{cachedir}="cache";
+        $self->{dbdir}="ObjectDB";
+	undef $self->{linkarea};
+
+	return $self;
 }
 
-sub basearea {
+sub cache {
 	my $self=shift;
-
-	my $area;
 	if ( @_ ) {
-	  $area=shift;
-	  $self->config()->store($area,"BaseArea");
+	  $self->{cache}=shift;
 	}
-	else {
-	  ($area)=$self->config()->find("BaseArea");
+	elsif ( ! defined $self->{cache} ) {
+	  my $loc=$self->location()."/".$self->{admindir}."/".$self->{cachedir};
+	  $self->{cache}=URL::URLcache->new($loc);
 	}
-	return $area;
+	return $self->{cache};
 }
 
-sub freebase {
+sub objectstore {
 	my $self=shift;
-	$self->config()->delete("BaseArea");
-}
-
-sub defaultdirname {
-	my $self=shift;
-        my $name=$self->name();
-        my $vers=$self->version();
-        $vers=~s/^$name\_//;
-        $name=$name."_".$vers;
-        return $name;
-}
-
-
-sub setup {
-	my $self=shift;
-
-	# --- find out the location - default is cwd
-	my $location=$self->option("ConfigArea_location");
-	if ( ! defined $location ) {
-	        $location=cwd();
-	}
-	elsif ( $location!~/^\// ) {
-		$location=cwd()."/".$location;
-	}
-
-	# --- find area directory name , default name projectname_version
-	my $name=$self->option("ConfigArea_name");
-	if ( ! defined $name ) {
-	  $name=$self->defaultdirname();
-	}
-	$self->location($location."/".$name);
-
-	# make a new store handler
-	$self->_setupstore();
-
-	# --- download everything first
-	$self->parse("download");
-	
-	# --- and parse the setup file
-	$self->parse("setup");
-	$self->parse("setup_tools");
-	
-	# --- store bootstrap info 
-	$self->store($self->location()."/".$self->{admindir}."/ConfigArea.dat");
-
-	# --- store self in original database
-	$self->parentconfig()->store($self,"ConfigArea",$self->name(),
-							$self->version());
-}
-
-sub structure {
-	my $self=shift;
-	my $vr=shift;
-	return $self->{structures}{$vr};
-}
-
-sub structurelist {
-	my $self=shift;
-	return ( keys %{$self->{structures}} );
-}
-
-sub _setupstore {
-	my $self=shift;
-
-	# --- make a new ConfigStore at the location and add it to the db list
-	my $ad=Configuration::ConfigStore->new($self->location().
-				"/".$self->{admindir}, $self->arch());
-
-	$self->parentconfig($self->config());
-#        $self->config(Configuration::ConfigureStore->new());
-#        $self->config()->db("local",$ad);
-#        $self->config()->db("parent",$self->parentconfig());
-#        $self->config()->policy("cache","local");
-	$self->config($ad);
-        $self->config()->basedoc($self->parentconfig()->basedoc());
-}
-
-sub bootstrapfromlocation {
-	my $self=shift;
-	
-	if ( ! defined $self->location(@_) ) {
-	  $self->error("Unable to locate the top of local configuration area");
-	}
-	$self->verbose("Found top ".$self->location());
-	$self->_setupstore();
-	my $infofile=$self->location()."/".$self->{admindir}."/ConfigArea.dat";
-	if ( -e $infofile ) {
-	     $self->restore($infofile);
-	}
-	else {
-	     $self->error("Area corrupted - cannot find $infofile");
-	}
-}
-
-sub parentconfig {
-	my $self=shift;
-	@_?$self->{parentconfig}=shift
-	  :$self->{parentconfig};
-}
-
-sub store {
-	my $self=shift;
-	my $location=shift;
-
-	my $fh=$self->openfile(">".$location);
-	$self->savevar($fh,"location", $self->location());
-	$self->savevar($fh,"url", $self->url());
-	$self->savevar($fh,"name", $self->name());
-	$self->savevar($fh,"version", $self->version());
-	$fh->close();
-
-	$self->_storestructures();
-}
-
-sub satellite {
-	my $self=shift;
-	my $newarea=$self->copy(@_);
-	$newarea->_makesatellites();
-	return $newarea;
-}
-
-sub copy {
-	my $self=shift;
-	use File::Basename;
-	# create the area
-
-	my $destination;
 	if ( @_ ) {
-	 $destination=shift;
+	  $self->{dbstore}=shift;
 	}
-	else {
-	  my($location,$name)=$self->_defaultoptions();
-	  $destination=$location."/".$name
+	elsif ( ! defined $self->{dbstore} ) {
+	  my $loc=$self->location()."/".$self->{admindir}."/".$self->{dbdir};
+	  $self->{dbstore}=ObjectUtilities::ObjectStore->new($loc);
 	}
-	#AddDir::adddir(dirname($destination)."/".$self->{admindir});
-	#AddDir::adddir($destination."/".$self->{admindir});
-	
-	# copy across the admin dir
-	$temp=$self->location()."/".$self->{admindir};
-	AddDir::copydir($temp,"$destination/".$self->{admindir});
-	# create a new object based on the new area
-	my $newarea=ref($self)->new($self->parentconfig());
-	$newarea->bootstrapfromlocation($destination);
-	# save it with the new location info
-	$newarea->store($self->location()."/".$self->{admindir}.
-							"/ConfigArea.dat");
-	return $newarea;
-}
-
-sub restore {
-	my $self=shift;
-	my $location=shift;
-
-	my $fh=$self->openfile("<".$location);
-	my $varhash={};
-	$self->restorevars($fh,$varhash);
-	if ( ! defined $self->location() ) {
-          $self->location($$varhash{"location"});
-	}
-	$self->_setupstore();
-        $self->url($$varhash{"url"});
-        $self->name($$varhash{"name"});
-        $self->version($$varhash{"version"});
-        $fh->close();
-
-	$self->_restorestructures();
+	return $self->{dbstore}
 }
 
 sub name {
 	my $self=shift;
-
 	@_?$self->{name}=shift
 	  :$self->{name};
 }
 
 sub version {
 	my $self=shift;
-
 	@_?$self->{version}=shift
 	  :$self->{version};
+}
+
+sub setup {
+	my $self=shift;
+	my $location=shift;
+	my $areaname;
+
+	# -- check we have a project name and version
+	my $name=$self->name();
+        my $vers=$self->version();
+	if ( ( ! defined $name ) && ( ! defined $version )) {
+	  $self->error("Set ConfigArea name and version before setup");
+	}
+
+	# -- check arguments and set location
+	if ( ! defined $location ) {
+	  $self->error("ConfigArea: Cannot setup new area without a location");
+	}
+	if ( @_ ) {
+	  $areaname=shift;
+	}
+	if ( (! defined $areaname) || ( $areaname eq "" ) ) {
+	  # -- make up a name from the project name and version
+          $vers=~s/^$name\_//;
+          $areaname=$name."_".$vers;
+	}
+	my $arealoc=$location."/".$areaname;
+	my $workloc=$arealoc."/".$self->{admindir};
+	$self->verbose("Building at $arealoc");
+	$self->location($arealoc);
+
+	# -- create top level structure and work area
+	AddDir::adddir($workloc);
+
+	# -- add a cache
+	$self->cache();
+
+	# -- Save Environment File
+	$self->_SaveEnvFile();
+
+}
+
+sub configurationdir {
+	my $self=shift;
+	if ( @_ ) {
+	  $self->{configurationdir}=shift;
+	}
+	return (defined $self->{configurationdir})?$self->{configurationdir}:undef;
+}
+
+sub toolbox {
+	my $self=shift;
+	if ( ! defined $self->{toolbox} ) {
+	  $self->{toolbox}=BuildSystem::ToolBox->new($self);
+	}
+	return $self->{toolbox};
+}
+
+sub requirementsdoc {
+	my $self=shift;
+	if ( @_ ) {
+          $self->{reqdoc}=shift;
+        }
+	if ( defined $self->{reqdoc} ) {
+	  return $self->location()."/".$self->{reqdoc};
+	}
+	else {
+	  return undef;
+	}
+}
+
+sub scramversion {
+	my $self=shift;
+	if ( ! defined $self->{scramversion} ) {
+	  my $filename=$self->location()."/".$self->configurationdir()."/".
+							"scram_version";
+	  if ( -f $filename ) {
+	    use FileHandle;
+	    $fh=FileHandle->new();
+	    open ($fh, "<".$filename);
+            my $version=<$fh>;
+            chomp $version;
+	    $self->{scramversion}=$version;
+	    undef $fh;
+	  }
+	}
+	return $self->{scramversion};
+}
+
+sub bootstrapfromlocation {
+	my $self=shift;
+
+	my $rv=0;
+	
+	my $location;
+	if ( ! defined ($location=$self->searchlocation(@_)) ) {
+	 $rv=1;
+	 $self->verbose("Unable to locate the top of local configuration area");
+	}
+	else {
+	 $self->location($location);
+	 $self->verbose("Found top ".$self->location());
+	 my $infofile=$self->location()."/".$self->{admindir}."/ConfigArea.dat";
+	 $self->_LoadEnvFile();
+	}
+	return $rv;
 }
 
 sub location {
@@ -300,16 +228,24 @@ sub searchlocation {
 
         #start search in current directory if not specified
 	my $thispath;
-	@_?$thispath=shift
-	  :$thispath=cwd();
+	if ( @_ ) {
+	  $thispath=shift
+	}
+	else {
+	  $thispath=cwd();
+	}
  
         my $rv=0;
 
+	# chop off any files - we only want dirs
+	if ( -f $thispath ) {
+	  $thispath=~s/(.*)\/.*/$1/;
+	}
         Sloop:{
 	do {
-#	  print "Searching $thispath\n";
+	  $self->verbose("Searching $thispath");
           if ( -e "$thispath/".$self->{admindir} ) {
-#	    print "Found\n";
+	    $self->verbose("Found\n");
 	    $rv=1;
 	    last Sloop;
 	  }
@@ -318,185 +254,224 @@ sub searchlocation {
         return $rv?$thispath:undef;
 }
 
-sub meta {
+sub archname {
 	my $self=shift;
-
-	my $string=$self->name()." ".$self->version()." located at :\n  ".
-		$self->location;
+	if ( @_ ) {
+	  $self->{archname}=shift;
+	}
+	return $self->{archname};
 }
 
-sub configitem {
+sub archdir {
 	my $self=shift;
+	if ( @_ ) {
+	  $self->{archdir}=shift;
+	}
+	if ( ! defined $self->{archdir} ) {
+	 if ( defined $self->{archname} ) {
+	  $self->{archdir}=$self->location()."/".$self->{admindir}."/".
+							$self->{archname};
+	 }
+	 else {
+	  $self->error("ConfigArea : cannot create arch directory - ".
+						"architecture name not set")
+	 }
+	}
+	return $self->{archdir};
+}
+
+sub satellite {
+	my $self=shift;
+
+	# -- create the sat object
+	my $sat=Configuration::ConfigArea->new();
+	$sat->name($self->name());
+	$sat->version($self->version());
+	$sat->requirementsdoc($self->{reqdoc});
+	$sat->configurationdir($self->configurationdir());
+	$sat->setup(@_);
+
+	# -- copy across the cache and ObjectStore
+	copy($self->cache()->location(),$sat->cache()->location());
+	copy($self->objectstore()->location(),$sat->objectstore()->location());
+
+	# and make sure in reinitialises
+	undef ($sat->{cache});
+
+	# -- link it to this area
+	$sat->linkarea($self);
 	
-	return ($self->config()->find("ConfigItem",@_));
+	# -- save it
+	$sat->save();
+
+	return $sat;
 }
 
-sub addconfigitem {
+sub copy {
 	my $self=shift;
-	my $url=shift;
+	my $destination=shift;
 
-	my $docref=$self->activatedoc($url);
-        # Set up the document
-        $docref->setup();
-        $docref->save();
-#	$self->config()->storepolicy("local");
+	# copy across the admin dir
+        my $temp=$self->location()."/".$self->{admindir};
+	AddDir::copydir($temp,"$destination/".$self->{admindir});
 }
 
-sub storeconfigobject {
+sub align {
 	my $self=shift;
-	my $obj=shift;
-	$obj->save($self->config());
-}
+	use File::Copy;
 
-sub downloadtotop {
-	my $self=shift;
-	my $url=shift;
-	my $dir=shift;
-	
-	# only download once
-	if ( ! -e $self->location()."/".$dir ) { 
-	  $self->{urlhandler}->download($url,$self->location()."/".$dir);
+	$self->_LoadEnvFile();
+	my $Envfile=$self->location()."/".$self->{admindir}."/Environment";
+	my $tmpEnvfile=$Envfile.".bak";
+	my $rel=$self->{ENV}{RELEASETOP};
+	my $local=$self->location();
+
+        rename( $Envfile, $tmpEnvfile );
+        use FileHandle;
+        my $fh=FileHandle->new();
+        my $fout=FileHandle->new();
+        open ( $fh, "<".$tmpEnvfile ) or
+                $self->error("Cannot find Environment file. Area Corrupted? ("
+                                .$self->location().")\n $!");
+        open ( $fout, ">".$Envfile ) or
+                $self->error("Cannot find Environment file. Area Corrupted? ("
+                                .$self->location().")\n $!");
+        while ( <$fh> ) {
+	  $_=~s/\Q$rel\L/$local/g;
+	  print $fout $_;
 	}
+	undef $fh;
+	undef $fout;
 }
 
-sub _makesatellites {
+sub copysetup {
 	my $self=shift;
-	foreach $st ( values %{$self->{structures}} ) {
-	   $st->setupsatellite()
+	my $dest=shift;
+
+	my $rv=1;
+	# copy across the admin dir
+        my $temp=$self->location()."/".$self->{admindir}."/".$self->arch();
+	my $temp2=$dest."/".$self->{admindir}."/".$self->arch();
+	if ( $temp ne $temp2 ) {
+	 if ( -d $temp ) {
+          AddDir::copydir($temp,$temp2);
+	  $rv=0;
+	 }
 	}
+	return $rv;
 }
 
-sub _storestructures {
+sub copyenv {
 	my $self=shift;
-	foreach $struct ( values %{$self->{structures}} ) {
-	  $self->config()->store($struct, "Structures", $struct->name());
-	}
-}
-
-sub _restorestructures {
-	my $self=shift;
-	my @strs=$self->config()->find("Structures");
-	foreach $struct ( @strs ) {
-	  $struct->parent($self);
-	  $self->{structures}{$struct->name()}=$struct;
-	}
-}
-
-sub _defaultoptions {
-	my $self=shift;
-	my $name;
-	my $location;
-
-	# --- find out the location - default is cwd
-        $location=$self->option("ConfigArea_location");
-        if ( ! defined $location ) {
-                $location=cwd();
-        }
-        elsif ( $location!~/^\// ) {
-                $location=cwd()."/".$location;
-        }
-
-        # --- find area directory name , default name projectname_version
-        $name=$self->option("ConfigArea_name");
-        if ( ! defined $name ) {
-          $name=$self->defaultdirname();
-        }
-	return ($location,$name);
-}
-# -------------- Tags ---------------------------------
-# -- init parse
-sub Project_Start {
-	my $self=shift;
-	my $name=shift;
 	my $hashref=shift;
-
-	$self->checktag($name,$hashref,'name');
-	$self->checktag($name,$hashref,'version');
-
-	$self->name($$hashref{'name'});
-	$self->version($$hashref{'version'});
-}
-
-
-sub Project_text {
-	my $self=shift;
-	my $name=shift;
-        my $string=shift;
-
-	print $string;
-}
-
-# ---- download parse
-
-sub Download_Start {
-	my $self=shift;
-        my $name=shift;
-        my $hashref=shift;
-
-	$self->checktag($name,$hashref,'url');
-	$self->checktag($name,$hashref,'location');
-	if ( $$hashref{'location'}!~/^\w/ ) {
-	  $self->parseerror("location must start with an".
-		" alphanumeric character");
+	
+	foreach $elem ( keys %{$self->{ENV}} ) {
+	   $$hashref{$elem}=$self->{ENV}{$elem};
 	}
-	print "Downloading .... ".$$hashref{'url'}."\n";
-	$self->downloadtotop($$hashref{'url'},$$hashref{'location'});
 }
 
-sub Use_download_Start {
+sub arch {
 	my $self=shift;
-	my $name=shift;
-        my $hashref=shift;
-
-	$self->checktag($name,$hashref,'url');
-	print "Downloading .... ".$$hashref{'url'}."\n";
-	$self->getfile($$hashref{'url'});
+	return $ENV{SCRAM_ARCH};
 }
 
-# --- setup parse
-
-sub Structure_Start {
+sub linkto {
 	my $self=shift;
-        my $name=shift;
-        my $hashref=shift;
-
-	$self->checktag($name,$hashref,'name');
-	if ( !(( exists $$hashref{'type'}) || ( exists $$hashref{'url'})) ) {
-	    $self->parseerror("No url or type given in <$name> tag");
-	}
-	if ( ! exists $self->{structures}{$$hashref{'name'}} ) {
-	  if ( exists $$hashref{'type'}) {
-	    # create a new object of the specified type
-	    eval "require $$hashref{'type'} ";
-	    if  ( $@ ) {
-		$self->parseerror("Unable to instantiate type=".
-			$$hashref{'type'}." in <$name> .".$@);
-	    }
-	    $self->{structures}{$$hashref{'name'}}=
-		$$hashref{'type'}->new($self->config());
-	    $self->{structures}{$$hashref{'name'}}->name($$hashref{'name'});
-	    $self->{structures}{$$hashref{'name'}}->parent($self);
-	    $self->{structures}{$$hashref{'name'}}->vars($hashref);
-	    $self->{structures}{$$hashref{'name'}}->arch($self->arch());
-	  }
-	  else { # its an activedoc
-		$self->{structures}{$$hashref{'name'}}=
-				$self->activatedoc($$hashref{'url'});
-	  }
-	  $self->{structures}{$$hashref{'name'}}->setupbase();
+	my $location=shift;
+	if ( -d $location ) {
+	my $area=Configuration::ConfigArea->new();
+	$area->bootstrapfromlocation($location);
+	$self->linkarea($area);
 	}
 	else {
-	     $self->parseerror("Multiply defined Structure - ".
-							$$hashref{'name'});
+	  $self->error("ConfigArea : Unable to link to non existing directory ".
+			 $location);
 	}
 }
 
-sub Use_Start {
+sub unlinkarea {
 	my $self=shift;
-	my $name=shift;
-        my $hashref=shift;
-	
-	$self->checktag($name,$hashref,'url');
-	$self->addconfigitem($$hashref{'url'});
+	undef $self->{linkarea};
+	$self->{linkarea}=undef;
+	$self->save();
 }
 
+sub linkarea {
+	my $self=shift;
+	my $area=shift;
+	if ( defined $area ) {
+	  $self->{linkarea}=$area;
+	}
+	return (defined $self->{linkarea} && $self->{linkarea} ne "")?
+			$self->{linkarea}:undef;
+}
+
+sub save {
+	my $self=shift;
+	$self->_SaveEnvFile();
+}
+
+# ---- support routines
+
+sub _SaveEnvFile {
+	my $self=shift;
+	use FileHandle;
+	my $fh=FileHandle->new();
+	open ( $fh, ">".$self->location()."/".$self->{admindir}."/".
+		"Environment" ) or 
+		$self->error("Cannot Open Environment file to Save ("
+				.$self->location().")\n $!"); 
+	
+	print $fh "SCRAM_PROJECTNAME=".$self->name()."\n";
+	print $fh "SCRAM_PROJECTVERSION=".$self->version()."\n";
+	print $fh "projconfigdir=".$self->configurationdir()."\n";
+	print $fh "SCRAM_ProjReqsDoc=".$self->{reqdoc}."\n";
+	if ( defined $self->linkarea() ) {
+	  my $area=$self->linkarea()->location();
+	  if ( $area ne "" ) {
+	  print $fh "RELEASETOP=".$area."\n";
+	  }
+	}
+	undef $fh;
+}
+
+
+sub _LoadEnvFile {
+	my $self=shift;
+
+	use FileHandle;
+	my $fh=FileHandle->new();
+	open ( $fh, "<".$self->location()."/".$self->{admindir}."/".
+		"Environment" ) or 
+		$self->error("Cannot find Environment file. Area Corrupted? ("
+				.$self->location().")\n $!"); 
+        while ( <$fh> ) {
+           chomp;
+           next if /^#/;
+           next if /^\s*$/ ;
+           ($name, $value)=split /=/;
+           eval "\$self->{ENV}{${name}}=\"$value\"";
+        }
+        undef $fh;
+	
+	# -- set internal variables appropriately
+	if ( defined $self->{ENV}{"SCRAM_PROJECTNAME"} ) {
+	  $self->name($self->{ENV}{"SCRAM_PROJECTNAME"});
+	}
+	if ( defined $self->{ENV}{"SCRAM_PROJECTVERSION"} ) {
+	  $self->version($self->{ENV}{"SCRAM_PROJECTVERSION"});
+	}
+	if ( defined $self->{ENV}{"projconfigdir"} ) {
+	  $self->configurationdir($self->{ENV}{projconfigdir});
+	}
+	if ( defined $self->{ENV}{"SCRAM_ProjReqsDoc"} ) {
+          $self->requirementsdoc($self->{ENV}{SCRAM_ProjReqsDoc});
+	}
+	if ( ( defined $self->{ENV}{"RELEASETOP"} ) && 
+			($self->{ENV}{"RELEASETOP"} ne $self->location())) {
+	  $self->linkto($self->{ENV}{"RELEASETOP"});
+	}
+	else {
+	  $self->{ENV}{"RELEASETOP"}=$self->location();
+	}
+}
