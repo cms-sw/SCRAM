@@ -5,6 +5,7 @@
 # new(ConfigArea)
 # ParseBuildFile($base,$path,$file)
 # ParseBuildFileExport(filename)
+# blockparse(Block) : perform a parse to modify the block
 # BlockClassPath() : Return the class path
 # ignore()	: return 1 if directory should be ignored 0 otherwise
 # classname()	: get/set the associated class
@@ -48,6 +49,14 @@ sub makefile {
 	return $self->{makefile};
 }
 
+sub blockparse {
+	my $self=shift;
+	$self->{block}=shift;
+
+	$self->{switch}=$self->_initswitcher();
+	$self->_initblockparse($self->{switch});
+}
+
 sub ignore {
 	my $self=shift;
 	return (defined $self->{ignore})?$self->{ignore}:0;
@@ -60,7 +69,7 @@ sub _initswitcher {
 	$switch->newparse($parse);
 	$switch->addignoretags($parse);
 	$self->_commontags($switch,$parse);
-	$switch->addtag($parse,"Build", \&Build_start, $self);
+	#$switch->addtag($parse,"Build", \&Build_start, $self);
 	$switch->addtag($parse,"none",
 					\&OutToMakefile,$self,
 				        \&OutToMakefile, $self,
@@ -68,6 +77,10 @@ sub _initswitcher {
 	$switch->addtag($parse,"Bin",
 					\&Bin_start,$self,
 				        \&OutToScreen, $self,
+					"", $self);
+	$switch->addtag($parse,"ProductStore",
+					\&Store_start,$self,
+				        "", $self,
 					"", $self);
 	$switch->addtag($parse,"LibType",
 					\&LibType_Start,$self,
@@ -94,6 +107,20 @@ sub _initswitcher {
 				        \&OutToMakefile, $self,
 					\&export_end,$self);
 	return $switch;
+}
+
+sub _initblockparse {
+	my $self=shift;
+	my $switch=shift;
+
+	my $parse="block";
+	$switch->newparse($parse);
+	$switch->addignoretags($parse);
+	$switch->addtag($parse,"DropDown", 
+	 				\&DropDown_start,$self,
+					"", $self,
+					"", $self);
+	$switch->addtag($parse,"Build", \&Build_start, $self);
 }
 
 sub _commontags {
@@ -147,9 +174,9 @@ sub GenerateMakefile {
         if ( -e $ENV{LatestBuildFile} ) {
           print GNUmakefile "include $ENV{LatestBuildFile}\n";
         }
-        $ENV{LatestBuildFile}=$outfile;
         $self->{switch}->parse("makebuild"); # sort out supported tags
         close GNUmakefile;
+	return $outfile;
 }
 
 sub ParseBuildFile {
@@ -179,7 +206,7 @@ sub ParseBuildFile {
 	#open a temporary gnumakefile to store output.
 	use Utilities::AddDir;
 	AddDir::adddir("$self->{localtop}/$ENV{INTwork}/$self->{path}");
-	$self->GenerateMakefile($fullfilename,
+	$ENV{LatestBuildFile}=$self->GenerateMakefile($fullfilename,
           $self->{localtop}."/".$ENV{INTwork}."/".$self->{path}."/BuildFile.mk"); 
 }
 
@@ -296,6 +323,7 @@ sub Build_start {
 	my $hashref=shift;
 
 	$self->{switch}->checktag($name,$hashref,'class');
+	$self->{switch}->checktag($name,$hashref,'id');
 	if ( $self->{Arch} ) {
 
 	  # -- determine the build products name
@@ -920,5 +948,49 @@ sub Environment_end {
 	     $self->{localtop}."/$ENV{INTwork}/$self->{path}/Env_".
 		$self->{Envlevels}[$self->{envlevel}];
 	  }
+	}
+}
+
+sub Store_start {
+	my $self=shift;
+	my $name=shift;
+        my $hashref=shift;
+
+	if ( $self->{Arch} ) {
+	  $self->{switch}->checktag( $name, $hashref, 'name' );
+
+	  # -- store creation
+	  my $dir=$$hashref{'name'};
+	  AddDir::adddir($self->{area}->location()."/".$dir);
+	  if ( exists $$hashref{'type'} ) {
+	    # -- architecture specific store
+	    if ( $$hashref{'type'}=~/^arch/i ) {
+	        $dir=$dir."/".$ENV{SCRAM_ARCH};
+		AddDir::adddir($self->{area}->location()."/".$dir);
+	    }
+	    else {
+	        $self->parseerror("Unknown type in <$name> tag");
+	    }
+	  }
+	
+	  # -- set make variables for the store
+	  print GNUmakefile "SCRAMSTORENAME_".$$hashref{'name'}.":=".$dir."\n";
+	  print GNUmakefile "SCRAMSTORE_".$$hashref{'name'}.":=".
+					$self->{localtop}."/".$dir."\n";
+	  print GNUmakefile "VPATH+=".$self->{localtop}
+			."/".$dir.":".$self->{releasetop}."/".$dir."\n";
+	}
+}
+
+sub DropDown {
+	my $self=shift;
+	my $name=shift;
+        my $hashref=shift;
+
+        if ( $self->{Arch} ) {
+	  # - default values must always be specified
+	  $self->{switch}->checktag( $name, $hashref, 'defaults' );
+	  my @blockdirs=split /,/ , $$hashref{'defaults'};
+	  $self->{block}->defaultblocks(@blockdirs);
 	}
 }
