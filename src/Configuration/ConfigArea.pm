@@ -37,7 +37,7 @@
 # save()			: save changes permanently
 # linkto(location)		: link the current area to that at location
 # unlinkarea()			: destroy link (autosave)
-# linkarea([ConfigArea])	: link the current area to the apec Area Object
+# linkarea([ConfigArea])	: get/set a link from the current area to the apec Area Object
 # archname()		: get/set a string to indicate architecture
 # archdir()		: return the location of the administration arch dep 
 #			  directory
