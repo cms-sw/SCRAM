@@ -27,7 +27,7 @@ use ActiveDoc::TreeNode;
 use ActiveDoc::UserQuery;
 use ObjectStoreCont;
 
-@ISA = qw(BaseTags);
+@ISA = qw(ActiveDoc::BaseTags);
 
 # Initialise
 sub _init {
