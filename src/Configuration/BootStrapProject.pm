@@ -73,6 +73,7 @@ sub _initswitcherDL
 sub boot {
 	my $self=shift;
 	my $url=shift;	
+	my $filemode = 0644; 
 
 	# -- override directory name
 	if ( @_ ) {
@@ -85,6 +86,8 @@ sub boot {
 	# -- initialise file parser 
 	$self->_initswitcher();
 	my ($fullurl,$filename)=$self->{switch}->urldownload($url);
+	chmod $filemode,$filename;
+
 	$self->{switch}->filetoparse($filename);
 
 	# -- document version check
@@ -104,10 +107,13 @@ sub bootupdate
    {
    my $self=shift;
    my $url=shift;	
-   
+   my $filemode = 0644; 
+
    # -- initialise file parser for download only (doesn't care about other tags): 
    $self->_initswitcherDL();
    my ($fullurl,$filename)=$self->{switch}->urldownload($url);
+   chmod $filemode,$filename;
+
    $self->{switch}->filetoparse($filename);
 
    # -- document version check
