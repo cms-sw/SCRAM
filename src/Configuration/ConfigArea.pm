@@ -311,6 +311,13 @@ sub sitename
    return $self->{sitename};
    }
 
+sub admindir()
+   {
+   my $self=shift;
+   
+   @_ ? $self->{admindir} = shift
+      : $self->{admindir};
+   }
 
 sub bootstrapfromlocation {
 	my $self=shift;

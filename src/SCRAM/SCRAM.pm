@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.5 2005/02/07 10:33:22 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.6 2005/03/03 16:02:16 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -44,7 +44,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.5 2005/02/07 10:33:22 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.6 2005/03/03 16:02:16 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -360,6 +360,53 @@ sub getprojectsfromDB()
 
    # Get list of projects from scram database and return them:
    return ($self->scramfunctions()->scramprojectdb()->listall());
+   }
+
+sub isregistered()
+   {
+   my $self=shift;
+   my ($area) = @_;
+   my $archdir = $area->location()."/".$area->admindir()."/".$self->architecture();
+   my $registerfile = $archdir."/.installed";
+   # Check the area to see if .installed exists:
+   ( -f $registerfile) ? return 1 : return 0;
+   }
+
+sub register_install()
+   {
+   my $self=shift;
+   # Register that a project was really installed by creating a file .installed
+   # in the project arch directory. This can then be checked in addition to the
+   # arch-dependent dirs which are created automatically when building:
+   my $area = $self->{localarea};
+   my $archdir = $area->location()."/".$area->admindir()."/".$self->architecture();
+   my $registerfile = $archdir."/.installed";
+
+   # The file should exist in the .SCRAM/<arch> directory. This is better than checking
+   # for product store directories:
+   open(INSTALLFILE, "> $registerfile");
+   print INSTALLFILE time()."\n";
+   close(INSTALLFILE);
+
+   my $filemode = 0444;
+   chmod $filemode, $registerfile;
+   }
+
+sub unregister_install()
+   {
+   my $self=shift;
+   my $area = $self->{localarea};
+   my $archdir = $area->location()."/".$area->admindir()."/".$self->architecture();
+   my $registerfile = $archdir."/.installed";
+   my $retval = 0;
+   
+   # Remove the register file:
+   if ( -f $registerfile)
+      {
+      $retval = system("rm","-f",$registerfile);
+      }
+   
+   return $retval;
    }
 
 sub toolmanager
