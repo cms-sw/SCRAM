@@ -57,16 +57,9 @@ sub setup {
 	}
 	$self->location($location."/".$name);
 
-	# --- make a new ActiveStore at the location and add it to the db list
-	my $ad=ActiveDoc::ActiveConfig->new($self->location()."/\.SCRAM");
 
 	# make a new store handler
-	my $parentconfig=$self->config;
-	$self->config(Configuration::ConfigureStore->new());
-	$self->config()->db("local",$ad);
-	$self->config()->db("parent",$parentconfig);
-	$self->config()->policy("cache","local");
-	$self->config()->basedoc($parentconfig->basedoc());
+	my $parentconfig=$self->_setupstore();
 
 	# --- download everything first
 # FIX-ME --- cacheing is broken
@@ -74,6 +67,25 @@ sub setup {
 	
 	# --- and parse the setup file
 	$self->parse("setup");
+	
+	# --- store self in original database
+	$parentconfig->store($self,"ConfigArea",$self->name(),
+							$self->version());
+}
+
+sub _setupstore {
+	my $self=shift;
+
+	# --- make a new ActiveStore at the location and add it to the db list
+	my $ad=ActiveDoc::ActiveConfig->new($self->location()."/\.SCRAM");
+
+	my $parentconfig=$self->config();
+        $self->config(Configuration::ConfigureStore->new());
+        $self->config()->db("local",$ad);
+        $self->config()->db("parent",$parentconfig);
+        $self->config()->policy("cache","local");
+        $self->config()->basedoc($parentconfig->basedoc());
+	return $parentconfig;
 }
 
 sub store {
