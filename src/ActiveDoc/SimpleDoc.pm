@@ -9,11 +9,12 @@
 #
 # Interface
 # ---------
-# new()		: A new ActiveDoc object
+# new([DocVersionTag])		: A new ActiveDoc object. You can also
+#                                 specify an alternative doc version tag
 # filetoparse([filename])	: Set/Return the filename of document
 # newparse(parselabel) : Create a new parse type
 # parse(parselabel)    : Parse the document file for the given parse level
-# addtag(parselabel,tagname,start,obj,text,obj,end,obj) :
+# addtag(parselabel,tagname,start,obj,[text,obj,end,obj]) :
 #				 Add tags to the parse given by label
 # grouptag(tagname, parselabel)	: Allow a tag to switch context 
 #				  - if not you can never turn a context off!
@@ -31,6 +32,10 @@
 # allowgroup(name,parse) : allow a group so named
 # disallowgroup(name,parse) : disallow the named group
 # restoregroup(name,parse) : restore group access setting (that before last change)
+# doctype()             : return the (type,version) of the document
+#			  as specified by the DocVersionTag
+# filenameref(string)	: A string to refer to the file in parse error messages
+#			  etc. Default is filetoparse
 # --------------- Error handling routines ---------------
 # verbose(string)	: Print string in verbosity mode
 # verbosity(0|1)	: verbosity off|on 
@@ -48,13 +53,39 @@ sub new {
 	my $class=shift;
 	$self={};
 	bless $self, $class;
-	$self->verbose("New SimpleDoc (".ref($self).") Created");
-	$self->init(@_);
+	$self->_initdoc("doc",@_);
 	return $self;
 }
 
-sub init {
-	# dummy to be overridden by inheriting class
+sub doctype {
+        my $self=shift;
+        my $rv=1;
+
+        undef $self->{docversion};
+        undef $self->{doctype};
+        $self->parse("doc");
+        return ($self->{doctype},$self->{docversion});
+}
+
+sub filenameref {
+	my $self=shift;
+	if ( @_ ) {
+	   $self->{filenameref}=shift;
+	}
+	return (defined $self->{filenameref})?$self->{filenameref}
+					     :$self->filetoparse();
+}
+
+sub _initdoc {
+        my $self=shift;
+        my $parsename=shift;
+
+        $self->{doctag}="DOC";
+        if ( @_ ) {
+          $self->{doctag}=shift;
+        }
+        $self->newparse($parsename);
+        $self->addtag($parsename,$self->{doctag},\&Doc_Start, $self);
 }
 
 sub verbosity {
@@ -77,7 +108,7 @@ sub parse {
 	$parselabel=shift;
 
 	my $file=$self->filetoparse();
-	if ( $file ) {
+	if ( -f $file ) {
 	  if ( exists $self->{parsers}{$parselabel} ) {
 	    $self->verbose("Parsing $parselabel in file $file");
 	    $self->{currentparsename}=$parselabel;
@@ -89,7 +120,7 @@ sub parse {
 	  }
 	}
 	else {
-	  $self->error("Cannot parse $parselabel - file not known");
+	  $self->error("Cannot parse \"$parselabel\" - file $file not known");
 	}
 }
 
@@ -149,7 +180,7 @@ sub includeparse {
 sub addtag {
 	my $self=shift;
 	my $parselabel=shift;
-	if ( $#_ != 6 ) {
+	if ( ( $#_ != 6 ) && ( $#_ != 2) ) {
 		$self->error("Incorrect addtags specification\n".
 				"called with :\n@_ \n");
 	}
@@ -229,11 +260,11 @@ sub parseerror {
         my $string=shift;
 
 	if ( $self->currentparsename() eq "" ) {
-		$self->error($string);
+		$self->error("Error In file ".$self->filenameref."\n".$string);
 	}
 	else {
 	 $line=$self->line();
-         print "Parse Error in ".$self->filetoparse().", line ".
+         print "Parse Error in ".$self->filenameref().", line ".
                                         $line."\n";
          print $string."\n";
          exit;
@@ -261,3 +292,15 @@ sub tagstartline {
 	return $self->{currentparser}->tagstartline();
 }
 
+# -- tag routines
+sub Doc_Start {
+        my $self=shift;
+        my $name=shift;
+        my $hashref=shift;
+
+        $self->checktag($name, $hashref, "type");
+        $self->checktag($name, $hashref, "version");
+
+        $self->{doctype}=$$hashref{'type'};
+        $self->{docversion}=$$hashref{'version'};
+}
