@@ -141,7 +141,6 @@ sub newparse {
 	my $parselabel=shift;
 
 	$self->{parsers}{$parselabel}=ActiveDoc::Parse->new();
-#	$self->{parsers}{$parselabel}->addgrouptags();
 }
 
 sub addignoretags {

@@ -242,13 +242,16 @@ sub sitename
 
    use FileHandle;
    my $sitefh = FileHandle->new();
+
+   # Be verbose and print file we're going to read:
+   $self->verbose(">> Going to try to get sitename from: ".$sitefile." ");
    
    # See if we can read from the file. If not, just
    # use default site name:
    open($sitefh,"<".$sitefile) || 
       do
 	 {
-	 $self->verbose("Unable to read a site name definition file. Using \'CERN\' as the site name.");
+	 $self->verbose(">> Unable to read a site name definition file. Using \'CERN\' as the site name.");
 	 return $self->{sitename};
 	 };
    
