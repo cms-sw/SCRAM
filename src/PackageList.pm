@@ -33,12 +33,7 @@
 		BuildSystem::ToolManager.pm
 		BuildSystem::ToolParser.pm
 		BuildSystem::ToolTagUtils.pm
-		BuildSystem::TransientDataObject.pm
-		BuildSystem::Template::Plugins::LibraryPlugin.pm
-		BuildSystem::Template::Plugins::ProjectPlugin.pm
-		BuildSystem::Template::Plugins::PackagePlugin.pm
-		BuildSystem::Template::Plugins::SubsystemPlugin.pm
-		BuildSystem::Template::Plugins::BinaryPlugin.pm
+		BuildSystem::Template::Plugins::PluginCore.pm
 		Configuration::BootStrapProject.pm
 		Configuration::ConfigArea.pm
 		ObjectUtilities::ObjectStore.pm

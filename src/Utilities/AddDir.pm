@@ -3,7 +3,7 @@ require 5.001;
 require Exporter;
 use Cwd;
 @ISA	= qw(Exporter);
-@EXPORT = qw(adddir copydir);
+@EXPORT = qw(adddir copydir copydirwithskip);
 
 
 sub adddir {
@@ -19,7 +19,7 @@ sub adddir {
  foreach $dirname ( @dir ) {
   next if ( $dirname eq "" );
   if ( ! -e $dirname ) {
-   mkdir ( $dirname , 0775) ||
+   mkdir ( $dirname , 0755) ||
                 die "cannot make directory ".$dirname." $!\n";
    print $i." ".$dirname."\n" if $debug;
   }

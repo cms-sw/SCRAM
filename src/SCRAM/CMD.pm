@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.3 2004/12/10 15:46:52 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.4 2005/02/02 11:10:17 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -726,7 +726,8 @@ sub build()
       # Set up file cache object:
       use Cache::Cache;
       use Cache::CacheUtilities;      
-   
+      use Utilities::AddDir;
+
       my $cacheobject=Cache::Cache->new();
       my $cachename=$cacheobject->name($dircache);
 
@@ -746,7 +747,7 @@ sub build()
       $cacheobject->checkfiles() unless $fast;
 
       # Create the working dir if it doesn't exist
-      system("mkdir","-p",$workingdir), if (! -d $workingdir);
+      AddDir::adddir($workingdir), if (! -d $workingdir);
 
       # BuildSystem::Make object created here to handle args passed to gmake:
       use BuildSystem::MakeInterface;
@@ -1068,14 +1069,17 @@ sub create_productdirs()
    my ($location) = @_;
    
    use BuildSystem::BuildFile;
+   use Utilities::AddDir;      
+
    my $toplevelconf = BuildSystem::BuildFile->new();
    my $tlbf = $location."/".$ENV{SCRAM_CONFIGDIR}."/BuildFile";
    $toplevelconf->parse($tlbf);
    $ENV{LOCALTOP} = $location;
    my $stores = $toplevelconf->productstore();
-
-   print "\nInitialising project directory structure:","\n\n";
-
+   
+   print "\nChecking/creating local storage directories","\n";
+   print "\n";
+   
    # Iterate over the stores:
    foreach my $H (@$stores)  
       {
@@ -1100,12 +1104,16 @@ sub create_productdirs()
 	 (exists $$H{'path'}) ? ($storename .= $$H{'path'})
 	    : ($storename .= $$H{'name'});
 	 }
-            
-      # Create the dir: FIXME: may need a more portable mkdir?
-      print "Creating directory $ENV{LOCALTOP}/$storename","\n";
-      system("mkdir","-p",$ENV{LOCALTOP}."/".$storename);
-      system("mkdir","-p",$ENV{LOCALTOP}."/".$ENV{SCRAM_SOURCEDIR});
+      
+      # Create the dir:
+      if (! -d "$ENV{LOCALTOP}/$storename")
+	 {
+	 print "Creating directory $ENV{LOCALTOP}/$storename","\n";	 
+	 AddDir::adddir($ENV{LOCALTOP}."/".$storename);
+	 }
       }
+   # Add the source dir:
+   AddDir::adddir($ENV{LOCALTOP}."/".$ENV{SCRAM_SOURCEDIR});
    }
 
 sub project_template_copy()
@@ -1190,6 +1198,8 @@ sub setup()
 	 {
 	 if ($toolname eq 'self')
 	    {
+	    # First, create the productstore directories if they do not already exist:
+	    $self->create_productdirs($self->localarea()->location());	    
 	    $toolmanager->setupself($self->localarea()->location());
 	    }
 	 else

@@ -561,30 +561,39 @@ sub save {
 
 # ---- support routines
 
-sub _SaveEnvFile {
-	my $self=shift;
-	use FileHandle;
-	my $fh=FileHandle->new();
-	open ( $fh, ">".$self->location()."/".$self->{admindir}."/".
-		"Environment" ) or 
-		$self->error("Cannot Open Environment file to Save ("
-				.$self->location().")\n $!"); 
+sub _SaveEnvFile
+   {
+   my $self=shift;
+   my $filemode = 0644;
+   
+   use FileHandle;
+   my $fh=FileHandle->new();
+   open ( $fh, ">".$self->location()."/".$self->{admindir}."/".
+	  "Environment" ) or 
+	  $self->error("Cannot Open Environment file to Save ("
+		       .$self->location().")\n $!"); 
 	
-	print $fh "SCRAM_PROJECTNAME=".$self->name()."\n";
-	print $fh "SCRAM_PROJECTVERSION=".$self->version()."\n";
-	print $fh "SCRAM_CONFIGDIR=".$self->configurationdir()."\n";
-	print $fh "SCRAM_SOURCEDIR=".$self->sourcedir()."\n";
-	print $fh "SCRAM_ProjReqsDoc=".$self->{reqdoc}."\n";
-	print $fh "SCRAM_TOOLBOXVERSION=".$self->{toolboxversion}."\n";
-	if ( defined $self->linkarea() ) {
-	  my $area=$self->linkarea()->location();
-	  if ( $area ne "" ) {
-	  print $fh "RELEASETOP=".$area."\n";
-	  }
-	}
-	undef $fh;
-}
+   print $fh "SCRAM_PROJECTNAME=".$self->name()."\n";
+   print $fh "SCRAM_PROJECTVERSION=".$self->version()."\n";
+   print $fh "SCRAM_CONFIGDIR=".$self->configurationdir()."\n";
+   print $fh "SCRAM_SOURCEDIR=".$self->sourcedir()."\n";
+   print $fh "SCRAM_ProjReqsDoc=".$self->{reqdoc}."\n";
+   print $fh "SCRAM_TOOLBOXVERSION=".$self->{toolboxversion}."\n";
 
+   if ( defined $self->linkarea() )
+      {
+      my $area=$self->linkarea()->location();
+      if ( $area ne "" )
+	 {
+	 print $fh "RELEASETOP=".$area."\n";
+	 }
+      }
+   
+   undef $fh;
+   
+   # Set the default permissions (-rw-r--r--):
+   chmod $filemode, $self->location()."/".$self->{admindir}."/Environment";
+   }
 
 sub _LoadEnvFile
    {

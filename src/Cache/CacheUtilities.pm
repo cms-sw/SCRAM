@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-30 11:51:58+0100
-# Revision: $Id: CacheUtilities.pm,v 1.2 2004/12/10 13:41:39 sashby Exp $ 
+# Revision: $Id: CacheUtilities.pm,v 1.3 2005/02/02 16:31:11 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -43,7 +43,7 @@ sub write()
    use Data::Dumper;
    use File::Copy;
 
-   print "[ CacheUtilities::write() ] Writing cache ",$cachefilename,"\n";   
+   print "[ CacheUtilities::write() ] Writing cache ",$cachefilename,"\n", if ($ENV{SCRAM_DEBUG});   
    
    # Rename the cache file to make a backup copy:
    move($cachefilename,$cachefilename.".bak") if ( -r $cachefilename);   

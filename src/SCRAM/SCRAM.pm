@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.1.2.17 2004/11/23 10:32:40 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.2 2004/12/10 13:41:41 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -44,7 +44,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.1.2.17 2004/11/23 10:32:40 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.2 2004/12/10 13:41:41 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -408,7 +408,7 @@ sub toolmanager
       # If we don't have our arch subdir, create it before copying:
       if (! -d $cachedir."/".$ENV{SCRAM_ARCH})
 	 {
-	 mkdir($cachedir."/".$ENV{SCRAM_ARCH}) || die
+	 mkdir($cachedir."/".$ENV{SCRAM_ARCH}, 0755) || die
 	    "SCRAM: Unable to create directory $cachedir: $!","\n";
 	 }
       
