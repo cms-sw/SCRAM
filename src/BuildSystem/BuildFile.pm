@@ -7,6 +7,8 @@
 # ParseBuildFileExport(filename)
 # BlockClassPath() : Return the class path
 # ignore()	: return 1 if directory should be ignored 0 otherwise
+# classname()	: get/set the associated class
+# buildfile()	: get/set BuildFile location
 
 package BuildSystem::BuildFile;
 use ActiveDoc::SimpleDoc;
@@ -27,6 +29,14 @@ sub new {
 	$self->{Arch}=1;
 	push @{$self->{ARCHBLOCK}}, $self->{Arch};
 	return $self;
+}
+
+sub buildfile {
+	my $self=shift;
+	if ( @_ ) {
+	  $self->{buildfile}=shift;
+	}
+	return $self->{buildfile};
 }
 
 sub ignore {
@@ -192,6 +202,14 @@ ENDTEXT
 	close GNUmakefile;
 }
 
+sub classname {
+	my $self=shift;
+	if ( @_ ) {
+	  $self->{classname}=shift;
+	}
+	return $self->{classname};
+}
+
 sub ParseBuildFile_Export {
 	my $self=shift;
         my $filename=shift;
@@ -271,7 +289,7 @@ sub Class_StartTag {
 	
 	if ( $self->{Arch} ) {
 	 if ( defined $$hashref{'type'} ) {
-		$ClassName=$$hashref{'type'};
+		$self->classname($$hashref{'type'});
 	 }
 	}
 }
@@ -382,7 +400,7 @@ sub Build_start {
 #	    print $typefile "\t\$(_quietbuild_)";
 #	    print $typefile $mapper->template($$hashref{'class'},$type)."\n";
 #	    print $typefile "\t\$(_quietstamp_)";
-#	    print $typefile "$(SCRAMPERL) $(SCRAM_HOME)/src/scramdatestamp \$@.ds \$@ \$^\n";
+#	    print $typefile "\$(SCRAMPERL) \$(SCRAM_HOME)/src/scramdatestamp \$@.ds \$@ \$^\n";
 
 	    # -- cleaning targets
 	    push @targets, "clean_$dirname";
@@ -540,16 +558,16 @@ ENDTEXT
 	print binGNUmakefile "$$hashref{name}_Insure.exe:.psrc\n";
  	print binGNUmakefile "$$hashref{name}_d.exe:$objectname_d\n";
 	print binGNUmakefile "\t\$(CClinkCmdDebug)\n";
-	print binGNUmakefile "\t\@\$(SCRAMPERL) $(SCRAM_HOME)/src/scramdatestamp \$\@\.ds \$\@ \$\^\n";
+	print binGNUmakefile "\t\@\$(SCRAMPERL) \$(SCRAM_HOME)/src/scramdatestamp \$\@\.ds \$\@ \$\^\n";
  	print binGNUmakefile "$$hashref{name}_l_d.exe:$objectname_d\n";
 	print binGNUmakefile "\t\$(CClinkCmdDebugLocal)\n";
-	print binGNUmakefile "\t\@\$(SCRAMPERL) $(SCRAM_HOME)/src/scramdatestamp \$\@\.ds \$\@ \$\^\n";
+	print binGNUmakefile "\t\@\$(SCRAMPERL) \$(SCRAM_HOME)/src/scramdatestamp \$\@\.ds \$\@ \$\^\n";
  	print binGNUmakefile "$$hashref{name}_Insure.exe:$objectname_Insure\n";
 	print binGNUmakefile "\t\$(CClinkCmdInsure)\n";
-	print binGNUmakefile "\t\@\$(SCRAMPERL) $(SCRAM_HOME)/src/scramdatestamp \$\@\.ds \$\@ \$\^\n";
+	print binGNUmakefile "\t\@\$(SCRAMPERL) \$(SCRAM_HOME)/src/scramdatestamp \$\@\.ds \$\@ \$\^\n";
  	print binGNUmakefile "$$hashref{name}_o.exe:$objectname_o\n";
 	print binGNUmakefile "\t\$(CClinkCmd)\n";
-	print binGNUmakefile "\t\@\$(SCRAMPERL) $(SCRAM_HOME)/src/scramdatestamp \$\@\.ds \$\@ \$\^\n";
+	print binGNUmakefile "\t\@\$(SCRAMPERL) \$(SCRAM_HOME)/src/scramdatestamp \$\@\.ds \$\@ \$\^\n";
 	print binGNUmakefile "$$hashref{name}.dep:$$hashref{file}\n";
 	print binGNUmakefile "-include $$hashref{name}.dep\n";
 print binGNUmakefile <<ENDTEXT;
@@ -677,23 +695,6 @@ sub Use_start {
 		"decription file for <$name name=".$$hashref{name}.">");
 	}
 	}
-}
-
-sub CheckBuildFile {
-	 my $self=shift;
-         my $classdir=shift;
-	 my $ClassName="";
-         my $thisfile="$classdir/$buildfile";
- 
-         if ( -e $self->{localtop}."/".$thisfile ) {
-            $DefaultBuildfile="$self->{localtop}/$thisfile";
-            $self->ParseBuildFile($self->{localtop}, $classdir, $buildfile);
-         }
-         elsif ( -e $ENV{RELEASETOP}."/".$thisfile ) {
-            $DefaultBuildfile="$ENV{RELEASETOP}/$thisfile";
-            $self->ParseBuildFile($ENV{RELEASETOP}, $classdir, $buildfile);
-         }
-	 return $ClassName;
 }
 
 # List association groups between <AssociateGroup> tags
