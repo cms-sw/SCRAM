@@ -21,6 +21,7 @@
 # tagstartline()	: return the linenumber of the last tag opening 
 # includeparse(Parse) : include the settings from another parse object
 # tags()		: return list of defined tags
+# cleartags()		: clear of all tags
 
 
 package ActiveDoc::Parse;
@@ -114,6 +115,16 @@ sub addignoretags {
 			"",$self, \&Ignore_End,$self);
 }
 
+sub cleartags {
+	my $self=shift;
+	$self->{tags}->cleartags();
+}
+
+sub tags {
+	 my $self=shift;
+	 return $self->{tags}->tags();
+}
+
 # ---------  Basic Group Related Tags ---------------------------------
 
 sub Group_Start {
@@ -143,10 +154,6 @@ sub Ignore_Start {
         $self->{gc}->opencontext("ignore");
 }
 
-sub tags {
-	 my $self=shift;
-	 return $self->{tags}->tags();
-}
 sub Ignore_End {
         my $self=shift;
         $self->{gc}->closecontext("ignore");
