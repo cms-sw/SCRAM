@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.6 2005/02/02 17:41:42 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.7 2005/02/24 10:34:38 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1313,7 +1313,7 @@ sub runtime()
 	 $self->scramfatal("Runtime file $runtimefile cannot be found or is not readable!");
 	 }
       
-      # Save the currecnt environment:
+      # Save the current environment:
       $self->save_environment($shelldata->{$SCRAM_RT_SHELL}); # Probably have to do the restore here too so
                                            # that all previous settings are restored before
                                            # applying the runtime environment
@@ -1469,6 +1469,7 @@ sub runtime()
       # Now dump out the path settings in the appropriate flavoured syntax:   
       map
 	 {
+	 print "";
 	 print RTFH $shelldata->{$SCRAM_RT_SHELL}->{EXPORT}." ".$_.
 	    $shelldata->{$SCRAM_RT_SHELL}->{EQUALS}.$shelldata->{$SCRAM_RT_SHELL}->{QUOTE}
 	 (join("$shelldata->{$SCRAM_RT_SHELL}->{SEP}",@{$rtstring->{$_}}).$shelldata->{$SCRAM_RT_SHELL}->{PRINTVAR}($_))."\n";
@@ -1492,10 +1493,31 @@ sub save_environment()
    
    # Check to see if runtime environment has already been set.
    # If it has, no need to save the environment:
-   if (exists($ENV{SCRAMRT_SET}) && 
-       $ENV{SCRAMRT_SET} eq $rtkey)
+   if (exists($ENV{SCRAMRT_SET}))
       {
-      $self->restore_environment();
+      if ($ENV{SCRAMRT_SET} ne $rtkey)
+	 {
+	 $self->restore_environment();
+	 # Save the environment:
+	 # Store all environment variables as SCRAMRT_x so
+	 # that environment can be reset to original (pre-scram runtime)
+	 # settings:
+	 while (my ($varname, $varvalue) = each %ENV)
+	    {
+	    # We must skip any internal SCRAM environment settings, including
+	    # LOCALTOP and RELEASETOP
+	    next if ($varname eq "_"); # Also, makes no sense to store "_", the last command run:
+	    
+	    if ($varname !~ /^SCRAM_.*/ && $varname !~ /^SCRAM$/ && $varname !~ /^LOCALTOP$|^RELEASETOP$/)
+	       {
+	       # Print out var:
+	       print RTFH $shelldata->{EXPORT}." ".'SCRAMRT_'.$varname.$shelldata->{EQUALS}.$shelldata->{QUOTE}($varvalue)."\n";
+	       }
+	    }
+	 
+	 # Set the key that says "RTDONE":
+	 print RTFH $shelldata->{EXPORT}." ".'SCRAMRT_SET'.$shelldata->{EQUALS}.$shelldata->{QUOTE}($rtkey)."\n";	 	 
+	 }
       }
    else
       {
@@ -1505,8 +1527,15 @@ sub save_environment()
       # settings:
       while (my ($varname, $varvalue) = each %ENV)
 	 {
-	 # Print out var:
-	 print RTFH $shelldata->{EXPORT}." ".'SCRAMRT_'.$varname.$shelldata->{EQUALS}.$shelldata->{QUOTE}($varvalue)."\n";
+	 # We must skip any internal SCRAM environment settings, including
+	 # LOCALTOP and RELEASETOP
+	 next if ($varname eq "_"); # Also, makes no sense to store "_", the last command run:
+	 
+	 if ($varname !~ /^SCRAM_.*/ && $varname !~ /^SCRAM$/ && $varname !~ /^LOCALTOP$|^RELEASETOP$/)
+	    {
+	    # Print out var:
+	    print RTFH $shelldata->{EXPORT}." ".'SCRAMRT_'.$varname.$shelldata->{EQUALS}.$shelldata->{QUOTE}($varvalue)."\n";
+	    }
 	 }
       
       # Set the key that says "RTDONE":
@@ -1519,7 +1548,7 @@ sub restore_environment()
    my $self=shift;
    my %currentenv=%ENV;
    my %restoredenv;
-
+   
    # Restore the environment from the SCRAMRT_x variables. We start with a clean slate, copying
    # all SCRAM_x variables, SCRAMRT_x variables and expanding the SCRAMRT_x variables so that x
    # is restored:
@@ -1528,18 +1557,16 @@ sub restore_environment()
       if ($varname =~ /^SCRAMRT_(.*)/)
 	 {
 	 my $var=$1;
-	 # Keep the SCRAMRT variables:
-	 $restoredenv{$varname} = $varvalue;
-	 # Copy SCRAM_x variables to new ENV:
-	 if ($var =~ /^SCRAM.*/)
+	 $currentenv{$var} =~ s/\Q$currentenv{$varname}\E//g;
+	 $currentenv{$var} =~ s/^:*//;  # Deal with any Path variables
+	 $restoredenv{$var} = $currentenv{$varname};
+	 }
+      else
+	 {
+	 # These are the internal SCRAM variables that should be kept:
+	 if ($varname =~ /^SCRAM_.*/ || $varname =~ /^SCRAM$/ || $varname =~ /^LOCALTOP$|^RELEASETOP$/)
 	    {
-	    $restoredenv{$var} = $varvalue;
-	    }
-	 else
-	    {
-	    $currentenv{$var} =~ s/\Q$currentenv{$varname}\E//g;
-	    $currentenv{$var} =~ s/^:*//;  # Deal with any Path variables
-	    $restoredenv{$var} = $currentenv{$varname};
+	    $restoredenv{$varname} = $currentenv{$varname};
 	    }
 	 }
       }
