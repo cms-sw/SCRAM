@@ -259,7 +259,7 @@ sub askuser {
 	return $self->userinterface()->askuser(@_);
 }
 
-sub getfile() {
+sub getfile {
 	my $self=shift;
 	my $origurl=shift; 
 
