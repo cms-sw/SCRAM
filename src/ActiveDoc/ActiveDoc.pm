@@ -123,14 +123,14 @@ sub parse {
 	  }
 	}
 	else {
-	  print "Cannot parse - file not known\n";
+	  $self->error("Cannot parse $parselabel - file not known");
 	}
 }
 
 sub currentparsename {
 	my $self=shift;
 	@_?$self->{currentparsename}=shift
-	  :$self->{currentparsename};
+	  :(defined $self->{currentparsename}?$self->{currentparsename}:"");
 }
 
 sub currentparser {
