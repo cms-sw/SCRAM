@@ -94,6 +94,14 @@ sub newparse {
 	$self->{parsers}{$parselabel}->addgrouptags();
 }
 
+sub cleartags {
+	my $self=shift;
+        my $parselabel=shift;
+
+	$self->{parsers}{$parselabel}->cleartags();
+}
+
+
 sub includeparse {
 	my $self=shift;
         my $parselabel=shift;
