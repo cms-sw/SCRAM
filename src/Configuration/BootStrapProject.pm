@@ -112,15 +112,19 @@ sub Project_end {
 }
 
 # Set where the project specific configuration files live for the project
-sub Config_start {
-	my $self=shift;
-	my $name=shift;
-	my $hashref=shift;
-
-	$self->{switch}->checktag($name, $hashref, "dir");
-	$$hashref{'dir'}=~s/`//g;
-	$self->{area}->configurationdir($$hashref{'dir'});
-}
+sub Config_start
+   {
+   my $self=shift;
+   my $name=shift;
+   my $hashref=shift;
+   
+   $self->{switch}->checktag($name, $hashref, "dir");
+   $$hashref{'dir'}=~s/`//g;
+   # Set the project config dir variable here so that
+   # "projconfigdir" value can be used while bootstrapping:
+   $ENV{projconfigdir} = $$hashref{'dir'};
+   $self->{area}->configurationdir($$hashref{'dir'});
+   }
 
 sub ReqDoc_start {
 	my $self=shift;
