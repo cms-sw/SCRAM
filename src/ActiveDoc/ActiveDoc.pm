@@ -17,6 +17,9 @@
 #				: Add tags to the parse given by label
 # checktag(tagname, hashref, param) : check for existence of param in
 #					hashref from a tag call
+# includeparse(local_parsename, objparsename, activedoc) : copy the parse from 
+#							one object to another
+# currentparsename([name]) : get/set current parse name
 # newdoc(file)	: Return an new object of the appropriate type
 # getfile(url)	: get a processedfile object given a url
 # activatedoc(url) : Return the object ref for a doc described by the given url
@@ -65,13 +68,21 @@ sub parse {
 
 	my $file=$self->file();
 	if ( $file ) {
+	  $self->{currentparsename}=$parselabel;
 	  $self->{currentparser}=$self->{parsers}{$parselabel};
 	  $self->{parsers}{$parselabel}->parse($file,@_);
 	  delete $self->{currentparser};
+	  $self->{currentparsename}="";
 	}
 	else {
 	  print "Cannot parse - file not known\n";
 	}
+}
+
+sub currentparsename {
+	my $self=shift;
+	@_?$self->{currentparsename}=shift
+	  :$self->{currentparsename};
 }
 
 sub newparse {
@@ -81,6 +92,25 @@ sub newparse {
 	$self->{parsers}{$parselabel}=ActiveDoc::Parse->new();
 	$self->{parsers}{$parselabel}->addignoretags();
 	$self->{parsers}{$parselabel}->addgrouptags();
+}
+
+sub includeparse {
+	my $self=shift;
+        my $parselabel=shift;
+	my $remoteparselabel=shift;
+	my $activedoc=shift;
+
+	# Some error trapping
+	if ( ! exists $self->{parsers}{$parselabel} ) {
+	  $self->error("Unknown local parse name specified");
+	}
+	if ( ! exists $activedoc->{parsers}{$remoteparselabel} ) {
+          $self->error("Unknown parse name specified in remote obj $activedoc");
+        }
+
+	#
+	my $rp=$activedoc->{parsers}{$remoteparselabel};
+	$self->{parsers}{$parselabel}->includeparse($rp);
 }
 
 sub addtag {
