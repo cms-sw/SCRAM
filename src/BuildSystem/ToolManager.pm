@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.4 2005/02/02 18:57:01 sashby Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.5 2005/02/02 20:16:45 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -238,17 +238,17 @@ sub toolsetup()
    my ($arealocation, $toolname, $toolversion, $toolurl) = @_;
    my ($urlcache, $url, $filename, $tfname);
    my $toolfile;
-
+   
    $toolname =~ tr[A-Z][a-z];
    $toolversion ||= $self->defaultversion($toolname);
    $urlcache=URL::URLcache->new($arealocation."/.SCRAM/cache"); # Download tool cache
-
+   
    # Check for the downloaded tools cache:
    if (defined($urlcache))
       {
       $self->{urlhandler}=URL::URLhandler->new($urlcache);
       }
-   
+
    $url = $self->toolurls()->{$toolname};
    $filename = $self->{toolfiledir}."/".$toolname;
    
@@ -320,14 +320,24 @@ sub toolsetup()
       # Copy the downloaded tool file to InstalledTools directory:
       if ( ! -f $filename )
 	 {
-	 $self->verbose("Attempting Download of $url");
-	 # Get file from download cache:
-	 ($url,$filename)=$self->{urlhandler}->get($url);
-	 use File::Copy;
-	 $tfname=$self->{toolfiledir}."/".$toolname;	 
-	 copy($filename, $tfname);
-	 my $mode = 0644; chmod $mode, $tfname;
-	 $toolfile=$tfname;
+	 # If the URL is empty, the chances are that this tool was not downloaded to .SCRAM/InstalledTools. We
+	 # give a warning and continue:
+	 if ($url eq '')
+	    {
+	    $::scram->scramerror("$toolname was selected in project requirements but is not in the configuration.");
+	    }
+	 else
+	    {
+	    # Otherwise, we try to download it:
+	    $self->verbose("Attempting Download of $url");
+	    # Get file from download cache:
+	    ($url,$filename)=$self->{urlhandler}->get($url);	    	    
+	    use File::Copy;
+	    $tfname=$self->{toolfiledir}."/".$toolname;	 
+	    copy($filename, $tfname);
+	    my $mode = 0644; chmod $mode, $tfname;
+	    $toolfile=$tfname;
+	    }
 	 }
       else
 	 {

@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.3 2005/03/09 19:28:19 sashby Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.4 2005/03/11 18:55:28 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -615,7 +615,11 @@ sub populate()
    # The tool manager:
    $self->{TOOLMANAGER} = $toolmanager;
 
-   # Get scram projects from toolbox. Each project cache is loaded at this point too:
+   # If there are some paths to iterate over, get scram projects from
+   # toolbox. Each project cache is loaded at this point too.
+   # Note that this could be done later, when running processtree() which
+   # is when access to the project caches is really needed (actually when
+   # running datacollector::processbuildfile):
    $self->scramprojects();
 
    # Check that there's a global config. Exit if not:
