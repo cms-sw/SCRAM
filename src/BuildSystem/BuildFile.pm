@@ -272,19 +272,21 @@ sub Class_StartTag {
 	}
 }
  
-sub IncludePath_Start {
-	my $self=shift;
-	my $name=shift;
-	my $hashref=shift;
-	
-	$self->verbose(">> IncludePath_Start: NM ".$name." <<");
-	
-	$self->{switch}->checktag( $name, $hashref, 'path');
-	if ( $self->{Arch} ) {
-	  print GNUmakefile "INCLUDE+=".$self->_location()."/".
-						$$hashref{'path'}."\n";
-	}
-}
+sub IncludePath_Start
+   {
+   my $self=shift;
+   my $name=shift;
+   my $hashref=shift;
+   
+   $self->verbose(">> IncludePath_Start: NM ".$name." <<");
+   
+   $self->{switch}->checktag( $name, $hashref, 'path');
+   if ( $self->{Arch} )
+      {
+      print GNUmakefile "INCLUDE:=\$(filter-out ".$self->_location()."/".$$hashref{'path'}.",\$(INCLUDE))","\n"; 
+      print GNUmakefile "INCLUDE+=".$self->_location()."/".$$hashref{'path'}."\n";
+      }
+   }
 
 #
 # generic build tag
@@ -846,19 +848,21 @@ sub export_end {
 #
 # Standard lib tag 
 #
-sub lib_start {
-	my $self=shift;
-	my $name=shift;
-        my $hashref=shift;
-	
-	$self->verbose(">> lib_start: NM ".$name." <<");
+sub lib_start
+   {
+   my $self=shift;
+   my $name=shift;
+   my $hashref=shift;
+   
+   $self->verbose(">> lib_start: NM ".$name." <<");
+   
+   $self->{switch}->checktag($name, $hashref, 'name');
 
-	$self->{switch}->checktag($name, $hashref, 'name');
-
-	if ( $self->{Arch} ) {
-	   print GNUmakefile "lib+=$$hashref{name}\n";
-	}
-}
+   if ( $self->{Arch} )
+      {
+      print GNUmakefile "lib+=$$hashref{name}\n";
+      }
+   }
 
 #
 # libtype specification
