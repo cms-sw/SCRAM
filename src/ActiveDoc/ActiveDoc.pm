@@ -28,9 +28,11 @@
 # copydocconfig(ActiveDoc) : Copy the basic configuration from the ActiveDoc
 # copydocquery(ActiveDoc) : Copy the basicquery from the ActiveDoc
 # userinterface()	: Return the defaullt userinterface
-# option(var)		: return the value of the option var
+# option(var)		: return the value of the option var ( or undef )
 # requestoption("message") : Ask the user to supply a value for an option 
 #			     if it dosnt already exist
+# askuser(Query)	: send a query object to the userinterface
+# verbose(string)	: Print string in verbosity mode
 #
 # -- error methods --
 # error(string)       : Report an general error to the user
@@ -62,6 +64,7 @@ sub new {
 	   # --- is there a starter document?
 	   my $basedoc=$self->config()->basedoc();
 	   if ( defined $basedoc ) {
+	     $self->verbose("Initialising from $basedoc");
 	     $self->copydocquery($basedoc);
 	   }
 	   else {
@@ -82,6 +85,16 @@ sub _init2 {
 	$self->init(@_);
 	return $self;
 
+}
+
+sub verbose {
+	my $self=shift;
+	my $string=shift;
+
+	if ( $self->option('verbose_all') || 
+			$self->option('verbose_'.ref($self)) ) {
+	  print ">".ref($self)." : ".$string."\n";
+	}
 }
 
 # ----- parse related routines --------------
@@ -234,17 +247,29 @@ sub requestoption {
 	return $par;
 }
 
+sub askuser {
+	my $self=shift;
+	return $self->userinterface()->askuser(@_);
+}
+
 sub getfile() {
 	my $self=shift;
 	my $origurl=shift; 
 
 	my $fileref;
-	my ($url, $file)=$self->{urlhandler}->get($origurl);
+	my ($url, $file);
+	if ( defined $self->option('url_update') ) {
+	   $self->verbose("Forced download of $origurl");
+	   ($url, $file)=$self->{urlhandler}->download($origurl);
+	}
+	else {
+	   ($url, $file)=$self->{urlhandler}->get($origurl);
+	}
 	# do we already have an appropriate object?
 	($fileref)=$self->config()->find($url);
 	#undef $fileref;
 	if (  defined $fileref ) {
-	 print "found $url in database ----\n";
+	 $self->verbose("Found $url in database");
 	 $fileref->update();
 	}
 	else {
@@ -310,7 +335,7 @@ sub parseerror {
         my $self=shift;
         my $string=shift;
 
-	if ( ! defined $self->{currentparse} ) {
+	if ( $self->currentparsename() eq "" ) {
 		$self->error($string);
 	}
 	else {
@@ -318,7 +343,7 @@ sub parseerror {
          print "Parse Error in ".$file->url().", line ".
                                         $line."\n";
          print $string."\n";
-         die;
+         exit;
 	}
 }
 
