@@ -19,6 +19,8 @@
 #				   supplied as a second argument
 # line()	: return the current linenumber in the file
 # tagstartline()	: return the linenumber of the last tag opening 
+# includeparse(Parse) : include the settings from another parse object
+# tags()		: return list of defined tags
 
 
 package ActiveDoc::Parse;
@@ -80,6 +82,19 @@ sub tagstartline {
 	}
 	return undef;
 }
+
+sub includeparse {
+	my $self=shift;
+	my $obj=shift;
+
+	my $tag;
+	# copy the tags from  the remote parse object
+	foreach $tag ( $obj->tags() ) {
+	  $self->addtag($tag,$obj->{tags}->tagsettings($tag));
+	}
+	# now the group settings
+}
+
 sub addtag {
 	my $self=shift;
 	$self->{tags}->addtag(@_);
@@ -128,6 +143,10 @@ sub Ignore_Start {
         $self->{gc}->opencontext("ignore");
 }
 
+sub tags {
+	 my $self=shift;
+	 return $self->{tags}->tags();
+}
 sub Ignore_End {
         my $self=shift;
         $self->{gc}->closecontext("ignore");
