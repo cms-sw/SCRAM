@@ -22,7 +22,8 @@
 # line([linenumber])	 : Return the line number of the document
 #			and the ProcessedFileObj it is in corresponding to the
 #			supplied number of the expanded document
-# 			If no number supplied - the currentparse number will be #			used
+# 			If no number supplied - the currentparse number will be
+#			used
 
 package ActiveDoc::ActiveDoc;
 require 5.004;
@@ -40,7 +41,6 @@ sub new {
 	$self->cache($self->{Ostore}->cache());
 	$self->{dbstore}=$self->{Ostore};
 	$self->_initdoc("doc",@_);
-#	$self->{switch}=ActiveDoc::SimpleURLDoc->new($self->{cache});
 	return $self;
 }
 
