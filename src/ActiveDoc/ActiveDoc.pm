@@ -57,9 +57,10 @@ sub parse {
 	$parselabel=shift;
 
 	my $file=$self->file();
-	print "Parse called on file $file\n";
 	if ( $file ) {
+	  $self->{currentparser}=$self->{parsers}{$parselabel};
 	  $self->{parsers}{$parselabel}->parse($file,@_);
+	  delete $self->{currentparser};
 	}
 	else {
 	  print "Cannot parse - file not known\n";
@@ -132,11 +133,10 @@ sub getfile() {
 	my $origurl=shift; 
 
 	my $fileref;
-	print "GETFILE called\n";
 	my ($url, $file)=$self->{urlhandler}->get($origurl);
 	# do we already have an appropriate object?
-	#my ($fileref)=$self->config()->find("__preprocessed",$url);
-	undef $fileref;
+	($fileref)=$self->config()->find($url);
+	#undef $fileref;
 	if (  defined $fileref ) {
 	 print "found $url in database ----\n";
 	 $fileref->update();
@@ -150,9 +150,7 @@ sub getfile() {
 	 $fileref=ActiveDoc::PreProcessedFile->new($self->config());
 	 $fileref->url($url);
 	 $fileref->update();
-	 $self->config()->store($fileref,"__preprocessed",$url);
 	}
-	print "---------- returning".$fileref."\n";
 	return $fileref;
 }
 
@@ -188,10 +186,17 @@ sub checktag {
 }
 
 sub line {
-	$self=shift;
+	my $self=shift;
 	my ($line, $fileobj)=
-		$self->{Processedfile}->line($self->{switch}->line());
+		$self->{PPfile}->line($self->{currentparser}->line());
 	return ($line, $fileobj);
+}
+
+sub tagstartline {
+	my $self=shift;
+	my ($line, $fileobj)=$self->{PPfile}->line(
+		$self->{currentparser}->tagstartline());
+        return ($line, $fileobj);
 }
 
 sub file {
