@@ -305,11 +305,16 @@ sub parseerror {
         my $self=shift;
         my $string=shift;
 
-	($line, $file)=$self->line();
-        print "Parse Error in ".$file->url().", line ".
+	if ( ! defined $self->{currentparse} ) {
+		$self->error($string);
+	}
+	else {
+	 ($line, $file)=$self->line();
+         print "Parse Error in ".$file->url().", line ".
                                         $line."\n";
-        print $string."\n";
-        die;
+         print $string."\n";
+         die;
+	}
 }
 
 sub checktag {
