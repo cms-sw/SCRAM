@@ -1,7 +1,5 @@
-#!/usr/local/bin/perl5
-#
-
 package AddDir;
+require 5.001;
 require Exporter;
 use Cwd;
 @ISA	= qw(Exporter);
