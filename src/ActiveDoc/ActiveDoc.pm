@@ -20,7 +20,6 @@
 # includeparse(local_parsename, objparsename, activedoc) : copy the parse from 
 #							one object to another
 # currentparsename([name]) : get/set current parse name
-# newdoc(file)	: Return an new object of the appropriate type
 # getfile(url)	: get a processedfile object given a url
 # activatedoc(url) : Return the object ref for a doc described by the given url
 #		     -- any parse called "init" will also be run
@@ -66,7 +65,7 @@ sub new {
 	     $self->copydocquery($basedoc);
 	   }
 	   else {
-	     $self->error("Error : No base doc found");
+	     $self->error("ActiveDoc Error : No base doc found");
 	   }
 	}
 	$self->_init2();
@@ -185,7 +184,12 @@ sub copydocquery {
 	my $self=shift;
         my $ActiveDoc=shift;
 
-	$self->basequery($ActiveDoc->basequery());
+	if ( defined $ActiveDoc->basequery() ) {
+	  $self->basequery($ActiveDoc->basequery());
+	}
+	else {
+	  $self->error("Cannot copy basequery - undefined");
+	}
 }
 
 sub config {
@@ -198,6 +202,7 @@ sub basequery {
 	my $self=shift;
 	@_ ? $self->{Query}=shift
 	   : $self->{Query};
+	return $self->{Query};
 }
 
 sub option {
@@ -379,9 +384,7 @@ sub Base_end {
         my $type;
 
         if ( $#{$self->{basestack}} == -1 ) {
-                print "Parse Error : unmatched </".$name."> on line ".
-                        $self->line()."\n";
-                die;
+		$self->parseerror("Parse Error : unmatched </$name>");
         }
         else {
           $type = pop @{$self->{basestack}};
