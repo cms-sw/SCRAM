@@ -5,7 +5,7 @@ use Cwd;
 @ISA	= qw(Exporter);
 @EXPORT = qw(adddir);
 
-sub adddir ($directory) {
+sub adddir {
  my $indir=shift;
  my $startdir=cwd;
  my @dir=split /\//,  $indir;
