@@ -9,9 +9,11 @@
 # ignore()	: return 1 if directory should be ignored 0 otherwise
 
 package BuildSystem::BuildFile;
+use Utilities::Verbose;
 use ActiveDoc::SimpleDoc;
 use BuildSystem::ToolBox;
 require 5.004;
+@ISA=qw(Utilities::Verbose);
 
 BEGIN {
 $buildfile="BuildFile";
@@ -29,6 +31,8 @@ sub new {
 
 sub ignore {
 	my $self=shift;
+	$self->verbose(">> ignore......<<");
+	
 	return (defined $self->{ignore})?$self->{ignore}:0;
 }
 
@@ -36,6 +40,7 @@ sub _initswitcher {
 	my $self=shift;
 	my $switch=ActiveDoc::SimpleDoc->new();
 	my $parse="makebuild";
+	$self->verbose(">> _initswitcher: <<");
 	$switch->newparse($parse);
 	$switch->addignoretags($parse);
 	$self->_commontags($switch,$parse);
@@ -83,7 +88,9 @@ sub _commontags {
 	my $self=shift;
 	my $switch=shift;
 	my $parse=shift;
-
+	
+	$self->verbose(">> _commontags: SW ".$switch." PARSE ".$parse." <<");
+	
 	$switch->grouptag("Export",$parse);
 	$switch->addtag($parse,"Use",\&Use_start,$self,
 					       \&OutToMakefile, $self,
@@ -123,6 +130,9 @@ sub ParseBuildFile {
 	else {
 	 $fullfilename=$filename;
 	}
+
+	$self->verbose(">> ParseBuildFile: FN ".$fullfilename." <<");
+	
 	$self->{path}=$path;
 	$numbins=0;
 	$self->{envnum}=0;
@@ -170,6 +180,9 @@ ENDTEXT
 sub ParseBuildFile_Export {
 	my $self=shift;
         my $filename=shift;
+
+	$self->verbose(">> ParseBuildFile_Export: FN ".$filename." <<");
+	
 	my $bf=BuildSystem::BuildFile->new($self->{toolbox});
 	if ( defined $self->{remoteproject} ) {
 	   $bf->{remoteproject}=$self->{remoteproject};
@@ -181,14 +194,15 @@ sub ParseBuildFile_Export {
 sub _location {
 	my $self=shift;
 	use File::Basename;
-
+	$self->verbose(">> _location: <<");
 	return dirname($self->{switch}->filetoparse());
 }
 
 sub _parseexport {
 	my $self=shift;
 	my $filename=shift;
-
+	$self->verbose(">> _parseexport: FN ".$filename." <<");
+	
 	my $switchex=ActiveDoc::SimpleDoc->new();
 	$switchex->filetoparse($filename);
 	$switchex->newparse("export");
@@ -206,6 +220,8 @@ sub _parseexport {
 sub _pushremoteproject {
 	my $self=shift;
 	my $path=shift;
+
+	$self->verbose(">> _pushremoteproject: PATH ".$path." <<");
 	
 	if ( defined $self->{remoteproject} ) {
 	  push @{$self->{rpstack}}, $self->{remoteproject};
@@ -215,6 +231,8 @@ sub _pushremoteproject {
 
 sub _popremoteproject {
 	my $self=shift;
+	$self->verbose(">> _popremoteproject:  <<");
+	
 	if ( $#{$self->{rpstack}} >=0 ) {
 	  $self->{remoteproject}=pop @{$self->{rpstack}};
 	}
@@ -225,10 +243,12 @@ sub _popremoteproject {
 
 sub _toolmapper {
 	my $self=shift;
+
 	if ( ! defined $self->{mapper} ) {
 	   require BuildSystem::ToolMapper;
 	   $self->{mapper}=BuildSystem::ToolMapper->new();
 	}
+	$self->verbose(">> _toolmapper: TM ".$self->{mapper}."<<");
 	return $self->{mapper};
 }
 
@@ -242,6 +262,8 @@ sub Class_StartTag {
 	my $self=shift;
 	my $name=shift;
 	my $hashref=shift;
+
+	$self->verbose(">> Classs_StartTag: NM ".$name." <<");
 	
 	if ( $self->{Arch} ) {
 	 if ( defined $$hashref{'type'} ) {
@@ -254,7 +276,9 @@ sub IncludePath_Start {
 	my $self=shift;
 	my $name=shift;
 	my $hashref=shift;
-
+	
+	$self->verbose(">> IncludePath_Start: NM ".$name." <<");
+	
 	$self->{switch}->checktag( $name, $hashref, 'path');
 	if ( $self->{Arch} ) {
 	  print GNUmakefile "INCLUDE+=".$self->_location()."/".
@@ -270,6 +294,8 @@ sub Build_start {
 	my $name=shift;
 	my $hashref=shift;
 
+	$self->verbose(">> Build_start: NM ".$name." <<");
+	
 	$self->{switch}->checktag($name,$hashref,'class');
 	if ( $self->{Arch} ) {
 
@@ -390,6 +416,8 @@ sub Bin_start {
 	my $tool;
 	my $filename;
 	my $objectname;
+
+	$self->verbose(">>          <<");
 	
 	$self->{switch}->checktag($name,$hashref,'file');
 	if ( $self->{Arch} ) {
@@ -552,6 +580,8 @@ sub External_StartTag {
 	my $self=shift;
 	my $name=shift;
 	my $hashref=shift;
+
+	$self->verbose(">> External_StartTag: NM ".$name." <<");
 	
 	my $tool;
 	if ( $self->{Arch} ) {
@@ -605,6 +635,8 @@ sub Group_start {
 	my $name=shift;
 	my $hashref=shift;
 	
+	$self->verbose(">> Group_start: NM ".$name." <<");
+	
 	$self->{switch}->checktag($name, $hashref, 'name');
 	if ( $self->{Arch} ) {
 	print GNUmakefile "GROUP_".$$hashref{'name'};
@@ -615,43 +647,51 @@ sub Group_start {
 	}
 }	
 
-sub Use_start {
-	my $self=shift;
-	my $name=shift;
-	my $hashref=shift;
-	my $filename;
-	use Utilities::SCRAMUtils;
-	
-	$self->{switch}->checktag($name, $hashref, "name");
-	if ( $self->{Arch} ) {
-	if ( exists $$hashref{'group'} ) {
-	  print GNUmakefile "GROUP_".$$hashref{'group'}."=true\n";
-	}
-	if ( ! defined $self->{remoteproject} ) {
-	  $filename=SCRAMUtils::checkfile(
-                "/$ENV{INTsrc}/$$hashref{name}/BuildFile");
-	}
-	else {
-	  $filename=$self->{remoteproject}."/$$hashref{name}/BuildFile";
-	print "trying $filename\n";
-	  if ( ! -f $filename ) { $filename=""; };
-	}
-	if ( $filename ne "" ) {
-	  $self->ParseBuildFile_Export( $filename );
-	}
-	else {
-	   $self->{switch}->parseerror("Unable to detect Appropriate ".
-		"decription file for <$name name=".$$hashref{name}.">");
-	}
-	}
-}
+sub Use_start
+   {
+   my $self=shift;
+   my $name=shift;
+   my $hashref=shift;
+   my $filename;
+   use Utilities::SCRAMUtils;
+
+   $self->verbose(">> Use_start: NM ".$name." <<");
+   
+   $self->{switch}->checktag($name, $hashref, "name");
+   if ( $self->{Arch} )
+      {
+      if ( exists $$hashref{'group'} )
+	 {
+	 print GNUmakefile "GROUP_".$$hashref{'group'}."=true\n";
+	 }
+      if ( ! defined $self->{remoteproject} )
+	 {
+	 $filename=SCRAMUtils::checkfile("/$ENV{INTsrc}/$$hashref{name}/BuildFile");
+	 }
+      else
+	 {
+	 $filename=$self->{remoteproject}."/$$hashref{name}/BuildFile";
+	 print "Trying $filename\n";
+	 if ( ! -f $filename ) { $filename=""; };
+	 }
+      if ( $filename ne "" )
+	 {
+	 $self->ParseBuildFile_Export( $filename );
+	 }
+      else
+	 {
+	 $self->{switch}->parseerror("Unable to detect Appropriate ".
+				     "decription file for <$name name=".$$hashref{name}.">");
+	 }
+      }
+   }
 
 sub CheckBuildFile {
 	 my $self=shift;
          my $classdir=shift;
 	 my $ClassName="";
          my $thisfile="$classdir/$buildfile";
- 
+	 
          if ( -e $ENV{LOCALTOP}."/".$thisfile ) {
             $DefaultBuildfile="$ENV{LOCALTOP}/$thisfile";
             $self->ParseBuildFile($ENV{LOCALTOP}, $classdir, $buildfile);
@@ -660,6 +700,7 @@ sub CheckBuildFile {
             $DefaultBuildfile="$ENV{RELEASETOP}/$thisfile";
             $self->ParseBuildFile($ENV{RELEASETOP}, $classdir, $buildfile);
          }
+	 $self->verbose(">> CheckBuildFile: FN ".$thisfile." CN ".$ClassName." <<");
 	 return $ClassName;
 }
 
@@ -671,6 +712,8 @@ sub AssociateGroup {
         my $string=shift;
 	my $word;
 
+	$self->verbose(">> AssociateGroup: NM ".$name." ST ".$string." <<");
+	
 	if ( $self->{Arch} ) {
 	foreach $word ( (split /\s/, $string) ){
 		chomp $word;
@@ -687,6 +730,8 @@ sub Arch_Start {
         my $name=shift;
         my $hashref=shift;
 
+	$self->verbose(">> Arch_Start: NM ".$name." <<");
+	
         $self->{switch}->checktag($name, $hashref,'name');
 	( ($ENV{SCRAM_ARCH}=~/$$hashref{name}.*/) )? ($self->{Arch}=1) 
                                                 : ($self->{Arch}=0);
@@ -696,8 +741,10 @@ sub Arch_Start {
 sub Arch_End {
 	my $self=shift;
         my $name=shift;
+	
+	$self->verbose(">> Arch_End: NM ".$name." <<");
 
-        pop @{$self->{ARCHBLOCK}};
+	pop @{$self->{ARCHBLOCK}};
         $self->{Arch}=$self->{ARCHBLOCK}[$#{$self->{ARCHBLOCK}}];
 }
 
@@ -705,6 +752,9 @@ sub Arch_End {
 sub _CutBlock {
     my $self=shift;
     my $string= shift @_;
+
+    $self->verbose(">> _CutBlock: ST ".$string." <<");
+    
     @BlockClassA = split /\//, $string;
 }
 
@@ -712,8 +762,11 @@ sub OutToMakefile {
         my $self=shift;
 	my $name=shift;
         my @vars=@_;
+	
+	$self->verbose(">> OutToMakefile: <<");
 
 	if ( $self->{Arch} ) {
+	  $self->verbose(">> CONT: ".$vars[0]." <<");
 	  print GNUmakefile @vars;
 	}
 }
@@ -721,7 +774,7 @@ sub OutToMakefile {
 sub OutToScreen {
 	my $name=shift;
         my @vars=@_;
-
+	
 	if ( $self->{Arch} ) {
 	  print @vars;
 	}
@@ -731,6 +784,8 @@ sub setBlockClassPath {
 	my $name=shift;
 	my $hashref=shift;
 
+	$self->verbose(">> setBlockClassPath: NM ".$name." <<");
+	
 	$self->{switch}->checktag($name, $hashref, 'path');
 	$self->{BlockClassPath}=$self->{BlockClassPath}.":".$$hashref{path};
 	$self->_CutBlock($$hashref{path});
@@ -738,6 +793,9 @@ sub setBlockClassPath {
 
 sub BlockClassPath {
 	my $self=shift;
+
+	$self->verbose(">> BlockClassPath: <<");
+
 	return $self->{BlockClassPath};
 }
 
@@ -746,6 +804,8 @@ sub export_start_export {
 	my $name=shift;
 	my $hashref=shift;
 
+	$self->verbose(">> export_start_export: NM ".$name." <<");
+	
 	$self->{switch}->opengroup("__export");
 }
 
@@ -754,6 +814,8 @@ sub export_start {
 	my $name=shift;
 	my $hashref=shift;
 
+	$self->verbose(">> export_start: NM ".$name." <<");
+	
 	$self->{switch}->opengroup("__export");
 	if ( exists $$hashref{autoexport} ) {
 	  print GNUmakefile "scram_autoexport=".$$hashref{autoexport}."\n";
@@ -770,11 +832,13 @@ sub export_start {
 
 sub export_end_export {
 	my $self=shift;
+	$self->verbose(">> export_end_export: <<");
 	$self->{switch}->closegroup("__export");
 }
 
 sub export_end {
 	my $self=shift;
+	$self->verbose(">> export_end: <<");
 	$self->{switch}->closegroup("__export");
 	print GNUmakefile "endif\n";
 }
@@ -786,9 +850,12 @@ sub lib_start {
 	my $self=shift;
 	my $name=shift;
         my $hashref=shift;
+	
+	$self->verbose(">> lib_start: NM ".$name." <<");
 
-        $self->{switch}->checktag($name, $hashref, 'name');
-        if ( $self->{Arch} ) {
+	$self->{switch}->checktag($name, $hashref, 'name');
+
+	if ( $self->{Arch} ) {
 	   print GNUmakefile "lib+=$$hashref{name}\n";
 	}
 }
@@ -800,7 +867,9 @@ sub LibType_Start {
 	my $self=shift;
 	my $name=shift;
         my $hashref=shift;
-
+	
+	$self->verbose(">> LibType_Start: NM ".$name." <<");
+	
 	if ( $self->{Arch} ) {
 	if ( defined $self->{libtype_conext} ) {
 	  $self->{switch}->parseerror("<$name> tag cannot be specified".
@@ -833,8 +902,9 @@ sub LibType_text {
 	my $self=shift;
         my $name=shift;
         my $string=shift;
+	$self->verbose(">> LibType_text: NM ".$name." <<");
 
-        if ( $self->{Arch} ) {
+	if ( $self->{Arch} ) {
 	  $string=~s/\n/ /g;
           print GNUmakefile "libmsg::\n\t\@echo Library info: ";
 	  print GNUmakefile $string;
@@ -846,6 +916,8 @@ sub LibType_end {
 	my $self=shift;
         my $name=shift;
 
+	$self->verbose(">> LibType_end: NM ".$name." <<");
+
 	undef $self->{libtype_conext};
 }
 
@@ -854,6 +926,8 @@ sub Environment_start {
 	my $name=shift;
         my $hashref=shift;
 
+	$self->verbose(">> Environment_start: NM ".$name." <<");
+	
         if ( $self->{Arch} ) {
 	  $self->{envnum}++;
 
@@ -885,6 +959,8 @@ sub Environment_end {
 	my $self=shift;
 	my $fd;
 
+	$self->verbose(">> Environment_end: NM ".$name." <<");
+
 	if ( $self->{Arch} ) {
 	  $self->{envlevel}--;
 	  if ( $self->{envlevel} < 0 ) {
@@ -913,6 +989,8 @@ sub Store_start {
         my $name=shift;
         my $hashref=shift;
 
+	$self->verbose(">> Store_start: NM ".$name." <<");
+
         if ( $self->{Arch} ) {
           $self->{switch}->checktag( $name, $hashref, 'name' );
 
@@ -938,4 +1016,3 @@ sub Store_start {
                         ."/".$dir.":".$ENV{RELEASETOP}."/".$dir."\n";
         }
 }
-
