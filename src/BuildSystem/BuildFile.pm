@@ -68,9 +68,11 @@ sub BlockParse {
 	$switch->newparse($parse);
 	$switch->addignoretags($parse);
 	$switch->addtag($parse,"BuildParam", \&BuildBlock_start, $self);
+	$switch->filetoparse($self->buildfile());
 
 	# -- parse away
-	$self->{switch}->parse("block");
+	$self->{switch}=$switch;
+	$switch->parse("block");
 }
 
 sub Parsetofh {
@@ -350,7 +352,6 @@ sub BuildBlock_start {
 
 	if ( $self->{Arch} ) {
 
-	    
 	   # -- get any objects that match
 	   my $inheritobj=$self->{block}->getobj($blockobjid);
 
@@ -425,7 +426,6 @@ sub BuilderClass_buildmakefile {
 	   # -- construct the targets in the top makefile
 	   $self->_generatedefaulttargets($fh,$$hashref{'class'},@deftypes);
 	   $self->_generatetypetargets($fh,$$hashref{'class'},$buildname,@types);
-
 	}
 }
 
