@@ -24,6 +24,8 @@
 # basequery([ActiveConfig]) : Set up/return UserQuery for the doc
 # copydocconfig(ActiveDoc) : Copy the basic configuration from the ActiveDoc
 # copydocquery(ActiveDoc) : Copy the basicquery from the ActiveDoc
+# userinterface()	: Return the defaullt userinterface
+# options(var)		: return the value of the option var
 #
 # -- error methods --
 # error(string)       : Report an general error to the user
@@ -36,10 +38,10 @@ require 5.004;
 use ActiveDoc::Parse;
 use ActiveDoc::ActiveConfig;
 use ActiveDoc::PreProcessedFile;
-use ObjectUtilities::ObjectBase;
+use ObjectUtilities::StorableObject;
 use URL::URLhandler;
 
-@ISA = qw(ObjectUtilities::ObjectBase);
+@ISA = qw(ObjectUtilities::StorableObject);
 
 sub new {
 	my $class=shift;
@@ -50,6 +52,8 @@ sub new {
 	# A URL handler per document
 	$self->{urlhandler}=URL::URLhandler->new($self->config()->cache());
 
+	# A default UserInterface
+	$self->{userinterface}=ActiveDoc::UserInterface_basic->new();
 	$self->init(@_);
 	return $self;
 }
@@ -128,8 +132,14 @@ sub config {
 
 sub basequery {
 	my $self=shift;
-	@_ ? $self->{UserQuery}=shift
-	   : $self->{UserQuery};
+	@_ ? $self->{Query}=shift
+	   : $self->{Query};
+}
+
+sub options {
+	my $self=shift;
+	my $param=shift;
+	$self->basequery()->getparam('option_'.$param);
 }
 
 sub getfile() {
@@ -166,6 +176,7 @@ sub activatedoc {
 	my $fileob=$self->getfile($url);
 
 	# now parse it for the <DocType> tag
+	$self->{doctypefound}=0;
 	$self->newparse("doctype");
 	$self->addtag("doctype","Doc", \&Doc_Start, $self,
                                           "", $self, "", $self);
@@ -177,6 +188,7 @@ sub activatedoc {
         }
 	# Set up a new object of the specified type
 	my $newobj=$self->{docobject}->new($self->config());
+	$newobj->url($url);
 	return $newobj;
 }
 
@@ -206,8 +218,6 @@ sub checktag {
         my $hashref=shift;
         my $param=shift;
 
-	print keys %$hashref;
-	print "-----------------------------------\n";
         if ( ! exists $$hashref{$param} ) {
           $self->parseerror("Incomplete Tag <$tagname> : $param required");
         }
@@ -281,5 +291,14 @@ sub Doc_Start {
 	my $hashref=shift;
 	
 	$self->checktag($name, $hashref, "type");
-	$self->{docobject}=$$hashref{'type'};
+	$self->{doctypefound}++;
+	if ( $self->{doctypefound} == 1 ) { # only take first doctype
+	   $self->{docobject}=$$hashref{'type'};
+	}
+}
+
+sub userinterface {
+	my $self=shift;
+	@_?$self->{userinterface}=shift
+	  :$self->{userinterface}
 }
