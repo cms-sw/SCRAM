@@ -22,6 +22,13 @@
 # includeparse(Parse) : include the settings from another parse object
 # tags()		: return list of defined tags
 # cleartags()		: clear of all tags
+# opencontext(name)		: open a parse context
+# closecontext(name)	: close a parse context
+# includecontext(name)  : Process when in a given context
+# excludecontext(name)  : No Processing when given context
+# contexttag(tagname)   : Register the tagname as one able to change context
+#			  if not registerd - the close tag will be ignored
+#			  too if outside of the specified context!
 
 
 package ActiveDoc::Parse;
@@ -113,6 +120,37 @@ sub addignoretags {
         $self->{gc}->exclude("ignore");
         $self->{tags}->addtag("Ignore", \&Ignore_Start, $self,
 			"",$self, \&Ignore_End,$self);
+        $self->{tags}->setgrouptag("Ignore");
+}
+
+sub contexttag {
+	my $self=shift;
+	$self->{tags}->setgrouptag(shift);
+}
+
+sub opencontext {
+	my $self=shift;
+	$self->{gc}->opencontext(shift);
+}
+
+sub closecontext {
+	my $self=shift;
+	$self->{gc}->closecontext(shift);
+}
+
+sub includecontext {
+	my $self=shift;
+	my $name=shift;
+
+	$self->{gc}->unexclude($name);
+	$self->{gc}->include($name);
+}
+
+sub excludecontext {
+	my $self=shift;
+	my $name=shift;
+	$self->{gc}->exclude($name);
+	$self->{gc}->uninclude($name);
 }
 
 sub cleartags {
