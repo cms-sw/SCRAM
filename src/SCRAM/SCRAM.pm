@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.4 2005/02/02 17:41:42 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.5 2005/02/07 10:33:22 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -44,7 +44,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.4 2005/02/02 17:41:42 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.5 2005/02/07 10:33:22 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -80,7 +80,7 @@ sub _init()
 sub commands()
    {
    my $self = shift;
-   my @env_commands = qw(version arch runtime);
+   my @env_commands = qw(version arch runtime config);
    my @info_commands = qw(list db urlget); 
    my @buildenv_commands = qw(project setup tool);
    my @build_commands=qw(build install remove);
@@ -367,7 +367,7 @@ sub toolmanager
    my $self = shift;
    my ($location)=@_;
    $location||=$self->localarea();
-
+   
    # This subroutine is used to reload the ToolManager object from file.
    # If this file does not exist, it implies that the area has not yet been set
    # up so we make a copy of whichever one exists and tell the user to run "scram setup":
@@ -377,6 +377,7 @@ sub toolmanager
       $self->info("Reading tool data from ToolCache.db.") if ($self->{SCRAM_DEBUG});
       use Cache::CacheUtilities;
       $toolmanager=&Cache::CacheUtilities::read($location->toolcachename());      
+
       # If this area has been cloned, we must make some adjustments so that the cache
       # is really local and refers to all settings of local area (admin dir etc.):
       if ($ENV{RELEASETOP} && ! $toolmanager->cloned_tm())
@@ -385,12 +386,25 @@ sub toolmanager
 	 $toolmanager->clone($location);
 	 $toolmanager->writecache(); # Save the new cache
 	 }
+      
+      # We have a toolmanager in memory. We now check to see if the cachename (i.e. where we
+      # read the cache from) matches the location stored as CACHENAME in the tool manager
+      # object read from the cache file. If it doesn't match, it implies that this area has been
+      # moved: we therefore return to the behaviour of the old V0_xx scram versions which
+      # permitted areas to be moved without problems:
+      if ($location->toolcachename() ne $toolmanager->name())
+	 {
+	 $self->info("This area has been relocated: modifying ToolCache.db CACHENAME.") if ($self->{SCRAM_DEBUG});
+	 # Set the name to be correct:
+	 $toolmanager->name($location->toolcachename());
+	 $toolmanager->writecache(); # Save the new cache
+	 }
       }
    else
       {
       my $found;
       local $toolcachedir;
-
+      
       # Path to cache dir in SCRAM area:
       my $cachedir = $ENV{LOCALTOP}."/.SCRAM";
       # Get a list of subdirs in this dir. There will be a subdir for

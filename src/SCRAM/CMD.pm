@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.8 2005/02/25 17:56:12 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.9 2005/03/01 16:44:11 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1562,6 +1562,40 @@ sub restore_environment()
    # Copy the new env to ENV:
    %ENV=%restoredenv;
    }
+
+
+sub config()
+   {
+   my $self=shift;
+   my (@ARGS) = @_;
+   my %opts;
+   my %options =
+      ("help"	=> sub { $self->{SCRAM_HELPER}->help('config'); exit(0) } );
+   
+   local @ARGV = @ARGS;
+   
+   Getopt::Long::config qw(default no_ignore_case require_order);
+   
+   if (! Getopt::Long::GetOptions(\%opts, %options))
+      {
+      $self->scramfatal("Error parsing arguments. See \"scram config -help\" for usage info.");
+      }
+   else
+      {
+      # Check to see if we are in a local project area:
+      $self->checklocal();      
+      print ">> Dumping config info for current area <<\n[don't forget to implement \'help\' function for \'config\'!]","\n";
+
+
+      my $tm = $self->toolmanager();
+#      $tm->writecache(); 
+      print "Cache name:                    ",$self->localarea()->toolcachename(),"\n";
+      print "Cache name (from read tcache): ",$tm->name(),"\n";
+      # Return nice value:
+      return (0);
+      }
+   }
+
 
 #### End of CMD.pm ####
 1;
