@@ -41,10 +41,7 @@
 # archname()		: get/set a string to indicate architecture
 # archdir()		: return the location of the administration arch dep 
 #			  directory
-# objectstore(["<"])		: return the objectStore object of the area
-#				  if called with temp - will set as undef
-#				  if it dosnt already exist - otherwise will
-#				  attempt to create it.
+# objectstore()		: return the objectStore object of the area
 # - temporary
 # align()			: adjust hard paths to suit local loaction
 
@@ -74,42 +71,51 @@ sub new {
 sub cache {
 	my $self=shift;
 
-	my $exist=0;
-	if ( @_ ) {
-	  my $cache=shift;
-	  if ( $cache!~/^</ ) {
-	    $self->{cache}=$cache;
-	  }
-	  $exist=1;
-	}
-	if ( ! defined $self->{cache} ) {
-	  my $loc=$self->location()."/".$self->{admindir}."/".$self->{cachedir};
-	  if (  !$exist || ( -e $loc ) ) {
-	    $self->{cache}=URL::URLcache->new($loc);
-	  }
-	  else {
-	    $self->{cache}=undef;
-	  }
-	}
-	return $self->{cache};
+        if ( @_ ) {
+           $self->{cache}=shift;
+        }
+        if ( ! defined $self->{cache} ) {
+          my $loc=$self->location()."/".$self->{admindir}."/".$self->{cachedir};
+          if ( -e $loc  ) {
+            $self->{cache}=URL::URLcache->new($loc);
+          }
+          else {
+            $self->{cache}=undef;
+          }
+        }
+        return $self->{cache};
 }
 
-sub objectstore {
-	my $self=shift;
+sub _newcache {
+        my $self=shift;
+        my $loc=$self->location()."/".$self->{admindir}."/".$self->{cachedir};
+        $self->{cache}=URL::URLcache->new($loc);
+        return $self->{cache};
+}
 
-	my $exist="";
-	if ( @_ ) {
-	  my $db=shift;
-	  if ( $db!~/^</ ) {
-	    $self->{dbstore}=cache;
-	  }
-	  $exist="<";
-	}
-	if ( ! defined $self->{dbstore} ) {
-	  my $loc=$self->location()."/".$self->{admindir}."/".$self->{dbdir};
-	  $self->{dbstore}=ObjectUtilities::ObjectStore->new($exist.$loc);
-	}
-	return $self->{dbstore}
+sub _newobjectstore {
+        my $self=shift;
+        my $loc=$self->location()."/".$self->{admindir}."/".$self->{dbdir};
+        $self->{dbstore}=ObjectUtilities::ObjectStore->new($loc);
+        return $self->{dbstore};
+} 
+
+sub objectstore {
+        my $self=shift;
+
+        if ( @_ ) {
+            $self->{dbstore}=shift;
+        }
+        if ( ! defined $self->{dbstore} ) {
+          my $loc=$self->location()."/".$self->{admindir}."/".$self->{dbdir};
+          if ( -e $loc ) {
+            $self->{dbstore}=ObjectUtilities::ObjectStore->new($loc);
+          }
+          else {
+            $self->{dbstore}=undef;
+          }
+        }
+        return $self->{dbstore}
 }
 
 sub name {
@@ -157,7 +163,10 @@ sub setup {
 	AddDir::adddir($workloc);
 
 	# -- add a cache
-	$self->cache();
+	$self->_newcache();
+
+        # -- add an Objectstore
+        $self->_newobjectstore();
 
 	# -- Save Environment File
 	$self->_SaveEnvFile();
@@ -313,13 +322,13 @@ sub satellite {
 
 	# -- copy across the cache and ObjectStore
 	# -- make sure we dont try building new caches in release areas
-	my $rcache=$self->cache("<");
+	my $rcache=$self->cache();
 	if ( defined $rcache ) {
 	  copy($rcache->location(),$sat->cache()->location());
 	}
 
 	# -- make sure we dont try building new objectstores in release areas
-	my $rostore=$self->objectstore("<");
+	my $rostore=$self->objectstore();
 	if ( defined $rostore ) {
 	  copy($rostore->location(),$sat->objectstore()->location());
 	}
