@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.2 2004/12/10 13:41:41 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.3 2004/12/10 15:46:52 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -968,6 +968,9 @@ sub bootfromrelease()
       my $toolmanager = $self->toolmanager($area);
       $toolmanager->setupself($area->location());
       # Write the cached info:
+
+      print "DEBUG: writing to cache...","\n";
+
       $toolmanager->writecache();
       
       print "\n\nInstallation procedure complete.\n";

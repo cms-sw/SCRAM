@@ -64,3 +64,51 @@ sub copydir
       die "Attempt to open a non-existent directory ($src). Exitting\n";
       }
    }
+
+sub copydirwithskip
+   {
+   my $src=shift;
+   my $dest=shift;
+   my ($filetoskip)=@_;
+   
+   use DirHandle;
+   use File::Copy;
+   
+   adddir($dest);
+   
+   my $dh=DirHandle->new($src);
+   
+   if (defined $dh)
+      {
+      my @allfiles=$dh->read();
+   
+      my $file;
+      foreach $file ( @allfiles )
+	 {
+	 next if $file=~/^\.\.?/;
+	 # Skip backup files and x~ files:
+	 next if $file =~ /.*bak$/;
+	 next if $file =~ /.*~$/;
+
+	 if ($file eq $filetoskip)
+	    {
+	    next;
+	    }
+	 
+	 if ( -d $src."/".$file )
+	    {
+	    copydir($src."/".$file,$dest."/".$file);
+	    }
+	 else
+	    {
+	    copy($src."/".$file,$dest."/".$file);
+	    if ( -x $src."/".$file || -X $src."/".$file ) {chmod(0775,$dest."/".$file);}
+	    }
+	 }
+      undef $dh;
+      }
+   else
+      {
+      die "Attempt to open a non-existent directory ($src). Exitting\n";
+      }
+   }

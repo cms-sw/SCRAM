@@ -477,8 +477,7 @@ sub align {
 
 sub copysetup {
 	my $self=shift;
-	my $dest=shift;
-
+	my $dest=shift;	
 	my $rv=1;
 	# copy across the admin dir
         my $temp=$self->location()."/".$self->{admindir}."/".$self->arch();
@@ -486,6 +485,23 @@ sub copysetup {
 	if ( $temp ne $temp2 ) {
 	 if ( -d $temp ) {
           AddDir::copydir($temp,$temp2);
+	  $rv=0;
+	 }
+	}
+	return $rv;
+}
+
+sub copywithskip {
+	my $self=shift;
+	my $dest=shift;
+	my ($filetoskip)=@_;       	
+	my $rv=1;
+	# copy across the admin dir
+        my $temp=$self->location()."/".$self->{admindir}."/".$self->arch();
+	my $temp2=$dest."/".$self->{admindir}."/".$self->arch();
+	if ( $temp ne $temp2 ) {
+	 if ( -d $temp ) {
+          AddDir::copydirwithskip($temp,$temp2,$filetoskip);
 	  $rv=0;
 	 }
 	}
