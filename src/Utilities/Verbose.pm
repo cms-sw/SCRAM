@@ -29,15 +29,20 @@ sub verbosity {
 	if ( @_ ) {
 	   $self->{verbose}=shift;
 	}
+	else {
+	  my $id="VERBOSE_".ref($self);
+	  if ( defined $ENV{$id} ) {
+	     return $ENV{$id};
+	  }
+	}
 	$self->{verbose};
-	
 }
 
 sub verbose {
 	my $self=shift;
 	my $string=shift;
 
-	if ( $self->{verbose} ) {
+	if ( $self->verbosity() ) {
 	  print ">".ref($self)."($self) : \n->".$string."\n";
 	}
 }
