@@ -124,7 +124,6 @@ sub ParseBuildFile {
 	 $fullfilename=$filename;
 	}
 	$self->{path}=$path;
-	#print "Processing $fullfilename\n";
 	$numbins=0;
 	$self->{envnum}=0;
 	$self->{envlevel}=0;
@@ -133,8 +132,7 @@ sub ParseBuildFile {
 	$self->{switch}=$self->_initswitcher();
 	$self->{switch}->filetoparse($fullfilename);
 
-#	$self->{switch}->{Strict_no_cr}='no';
-	#open a temporary gnumakefile to store output.
+	# open a temporary gnumakefile to store output.
 	use Utilities::AddDir;
 	AddDir::adddir("$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}");
 	my $fh=FileHandle->new();
@@ -146,8 +144,7 @@ sub ParseBuildFile {
 	if ( -e $ENV{LatestBuildFile} ) {
 	  print GNUmakefile "include $ENV{LatestBuildFile}\n";
 	}
-#	print "writing to :\n".
-#		"$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/BuildFile.mk\n";
+
 	$ENV{LatestBuildFile}="$ENV{LOCALTOP}/$ENV{INTwork}/".$self->{path}."/BuildFile.mk";
 	$self->{switch}->parse("makebuild"); # sort out supported tags
 	if ( $numbins > 0 ) {
@@ -202,7 +199,6 @@ sub _parseexport {
 					\&export_end_export,$self);
 	$self->_commontags($switchex,"export");
 	$switchex->allowgroup("__export","export");
-#	$switchex->{Strict_no_cr}='no';
 	$self->{switch}=$switchex;
 	$switchex->parse("export"); # sort out supported tags
 }
@@ -284,7 +280,6 @@ sub Build_start {
 	  }
 	  else { 
 	    $self->{switch}->parseerror("No name specified for build product");
-	    #$name="\$(buildname)";
 	  }
 
 	  # -- check we have a lookup for the class type
@@ -324,7 +319,6 @@ sub Build_start {
 	    my $dirname=$$hashref{'class'}."_".$type."_".$name;
 	    my $here="$ENV{LOCALTOP}/$ENV{INTwork}/".$self->{path}."/".$dirname;
 	    my $makefile=$here."/BuildFile.mk";
-#	    AddDir::adddir($here);
 
 	    # -- create link targets to the directory
 	    push @targets, $dirname;
@@ -356,11 +350,6 @@ sub Build_start {
 	    }
 	    print $fh "\tfi\n";
 	    print $fh "\n";
-#	    print $typefile "$name :\n";
-#	    print $typefile "\t\$(_quietbuild_)";
-#	    print $typefile $mapper->template($$hashref{'class'},$type)."\n";
-#	    print $typefile "\t\$(_quietstamp_)";
-#	    print $typefile "\$(SCRAMPERL) \$(SCRAM_HOME)/src/scramdatestamp \$@.ds \$@ \$^\n";
 
 	    # -- cleaning targets
 	    push @targets, "clean_$dirname";
