@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.1.2.15 2004/11/18 13:01:23 sashby Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.2 2004/12/10 13:41:37 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -43,6 +43,7 @@ sub new()
 
   # Somewhere to store the dependencies:
   $self->{DEPENDENCIES} = {};  # GLOBAL dependencies
+  $self->{SKIPPEDDIRS} = {};   # Global skipped dirs
   
   # Initialize the Template Engine:
   $self->init_engine();
@@ -185,6 +186,7 @@ sub scanbranch()
    use BuildSystem::BuildFile;
    my $bfbranch=BuildSystem::BuildFile->new();
    $bfbranch->parsebranchfiles($files);
+
    # Store:
    $self->storebranchmetadata($datapath,$bfbranch);
    return $self;
@@ -328,7 +330,7 @@ sub updatefrommeta()
    # Data for current dir:
    my $treedata = $self->buildtreeitem($startdir);
    # Run the engine:
-   $self->run_engine($treedata);      
+   $self->run_engine($treedata);
 
    foreach my $c ($treedata->children())
       {
@@ -617,8 +619,10 @@ sub populate()
       {
       # Ignore config content here:
       next if ($path !~ m|^\Q$ENV{SCRAM_SOURCEDIR}\L|);
+
       # Set the data path:
-      $datapath = $self->datapath($path);
+      $datapath = $self->datapath($path);     
+      
       # Create a TreeItem object:
       use BuildSystem::TreeItem;
       my $treeitem = BuildSystem::TreeItem->new();
@@ -653,6 +657,12 @@ sub populate()
 	 ($ENV{SCRAM_DEBUG}) ? print "Scanning ",$buildfile,"\n" : print "." ;
 	 }
       
+      if ($self->skipdir($datapath))
+	 {
+	 $treeitem->skip(1);
+	 print $datapath," building skipped.\n", if ($ENV{SCRAM_DEBUG});
+	 }
+
       # Now add the class and path info to the TreeItem:
       my ($class, $classdir, $suffix) = @{$self->buildclass($path)};
       
@@ -670,6 +680,7 @@ sub populate()
 
    # Check dependencies- look for cycles in the global dependency data:
    $self->check_dependencies();
+   $self->skipdir() if ($ENV{SCRAM_DEBUG});
    }
 
 sub check_dependencies()
@@ -913,14 +924,26 @@ sub scan()
    use BuildSystem::BuildFile;
    my $bfparse=BuildSystem::BuildFile->new();   
    $bfparse->parse($buildfile);
+
    # Store group data:
-   $self->addgroup([ $bfparse->defined_group() ], $datapath)
-      if (defined $bfparse->defined_group());
+   $self->addgroup($bfparse->defined_group(), $datapath)
+      if ($bfparse->defined_group());
+
+   # See if there were skipped dirs:
+   my $skipped = $bfparse->skippeddirs($datapath);   
+   # Check to see if there was an info array for this location.
+   # If so, we extract the first element of the array (i.e. ->[1])
+   # and store it under the datapath entry. This is just so that useful
+   # messages explaining why the dir was skipped can be preserved.
+   if (ref($skipped) eq 'ARRAY')
+      {
+      $self->skipdir($datapath,$skipped->[1]);
+      }
 
    $self->storedata($datapath, $bfparse);
    
-   # Add the dependecncy list to our store:
-   $self->{DEPENDENCIES}->{$datapath} = $bfparse->dependencies();
+   # Add the dependency list to our store:
+   $self->{DEPENDENCIES}->{$datapath} = $bfparse->dependencies();   
    return $self;
    }
 
@@ -1045,6 +1068,7 @@ sub storedata
    {
    my $self=shift;
    my ($datapath, $data)=@_;
+
    # Store the content of this BuildFile in cache:
    $self->{BUILDTREE}->{$datapath}->rawdata($data);
    return $self;
@@ -1149,8 +1173,8 @@ sub addgroup
       if (exists $self->{KNOWNGROUPS}->{$group}
 	  && $self->{KNOWNGROUPS}->{$group} ne $datapath)
 	 {
-	 print "WARNING: Group \"",$group,"\" already defined in ",
-	 $self->{KNOWNGROUPS}->{$group}."/BuildFile","","\n";
+	 print "ERROR: Group \"",$group,"\", defined in ",$datapath,"/BuildFile, is already defined in ",
+	 $self->{KNOWNGROUPS}->{$group}."/BuildFile.","\n";
 	 exit(0); # For now, we exit.
 	 }
       else
@@ -1242,6 +1266,47 @@ sub alldirs
    {
    my $self=shift;
    return @{$self->{ALLDIRS}};
+   }
+
+sub skipdir
+   {
+   my $self=shift;
+   my ($dir, $message) = @_;   
+
+   # Set the info if we have both args:
+   if ($dir && $message)
+      {
+      $self->{SKIPPEDDIRS}->{$dir} = $message;
+      }
+   # If we have the dir name only, return true if
+   # this dir is to be skipped:
+   elsif ($dir)
+      {
+      (exists($self->{SKIPPEDDIRS}->{$dir})) ? return 1 : return 0;
+      }
+   else
+      {
+      # Dump the list of directories and the message for each:
+      foreach my $directory (keys %{$self->{SKIPPEDDIRS}})
+	 {
+	 print "Directory \"",$directory,"\" skipped by the build system";
+	 if (length($self->{SKIPPEDDIRS}->{$directory}->[0]) > 10)
+	    {
+	    chomp($self->{SKIPPEDDIRS}->{$directory}->[0]);
+	    my @lines = split("\n",$self->{SKIPPEDDIRS}->{$directory}->[0]); print ":\n";
+	    foreach my $line (@lines)
+	       {
+	       next if ($line =~ /^\s*$/);
+	       print "\t-- ",$line,"\n";
+	       }
+	    print "\n";
+	    }
+	 else
+	    {
+	    print ".","\n";
+	    }
+	 }
+      }
    }
 
 sub verbose

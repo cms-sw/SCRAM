@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.2 2004/12/10 13:41:41 sashby Exp $ 
+# Revision: $Id: Helper.pm,v 1.3 2005/03/04 17:46:58 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -72,8 +72,9 @@ sub version()
    $help.="\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram version [-c] [-h] [<version>]$::normal\n";
+   $help.="\tscram version [-c] [-i] [-h] [<version>]$::normal\n";
    $help.="\n";
+   $help.="The -i option shows CVS commit info (the value of '\$Id:\$').\n";
    $help.="The -c option prints site CVS parameters to STDOUT. These parameters are used\n";
    $help.="when downloading and installing new SCRAM versions.\n";
 

@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-12-03 19:03:15+0100
-# Revision: $Id: BuildFile.pm,v 1.26 2004/12/10 13:41:37 sashby Exp $ 
+# Revision: $Id: BuildFile.pm,v 1.27 2005/02/16 18:02:59 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -108,9 +108,9 @@ sub _initparser()
 			      "", $self);
 
    $self->{simpledoc}->addtag("builder","skip",
-			      \&BuildSystem::TagUtils::skippedtagOpen, $self,
-			      "", $self,
-			      "", $self);
+			      \&BuildSystem::TagUtils::skiptagOpen, $self,
+			      \&BuildSystem::TagUtils::skiptagMessage, $self,
+			      \&BuildSystem::TagUtils::skiptagClose, $self);
 
    $self->{simpledoc}->addtag("builder","makefile",
 			      \&BuildSystem::TagUtils::makefiletagOpen, $self,
@@ -314,6 +314,22 @@ sub dependencies()
    my %DEPS=%{$self->{DEPENDENCIES}};
    delete $self->{DEPENDENCIES};
    return \%DEPS;
+   }
+
+sub skippeddirs()
+   {
+   my $self=shift;
+   my ($here)=@_;
+   my $skipped;
+
+   if ($self->{content}->{SKIPPEDDIRS}->[0] == 1)
+      {
+      $skipped = [ @{$self->{content}->{SKIPPEDDIRS}} ];
+      delete $self->{content}->{SKIPPEDDIRS};
+      }
+   
+   delete $self->{content}->{SKIPPEDDIRS};
+   return $skipped;
    }
 
 #

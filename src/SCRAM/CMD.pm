@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.10 2005/03/03 16:02:16 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.11 2005/03/04 17:46:58 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -691,7 +691,7 @@ sub build()
    my ($packagebuilder,$dataposition,$buildstoreobject);
    my $verbose=0;
    my $configbuildfiledir=$ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};
-   
+
    # Getopt variables:
    my %opts = ( WRITE_GRAPHS => 0, # No graphs produced by default;
 		SCRAM_TEST => 0 ); # test mode: don't run make;

@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-24 12:24:57+0200
-# Revision: $Id: TreeItem.pm,v 1.1.2.6 2004/11/18 13:01:24 sashby Exp $ 
+# Revision: $Id: TreeItem.pm,v 1.2 2004/12/10 13:41:38 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -99,6 +99,14 @@ sub suffix()
       : $self->{SUFFIX};
    }
 
+sub skip()
+   {
+   my $self=shift;
+   # Skip/unskip a directory:
+   @_ ? $self->{SKIP} = shift
+      : $self->{SKIP};
+   }
+
 sub name()
    {
    my $self=shift;
@@ -135,7 +143,7 @@ sub rawdata()
    {
    my $self=shift;
    my ($rawdata)=@_;
-   
+
    if ($rawdata)
       {
       $self->{RAWDATA} = $rawdata;
@@ -258,7 +266,7 @@ sub branchmetadata()
    if ($meta)
       {
       # Delete unneeded entries:
-      $meta->clean(qw( EXPORT DEFINED_GROUP CLASSPATH ));
+      $meta->clean(qw( EXPORT DEFINED_GROUP CLASSPATH SKIPPEDDIRS ));
       $self->{BRANCHMETA} = $meta;
       }
    else
