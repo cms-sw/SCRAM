@@ -60,8 +60,11 @@ sub include {
         my $obj;
 
 	$file=$self->{urlhandler}->get($url);
-	if ( $linkfile ne "" ) {
+	if ( ( defined $linkfile) && ( $linkfile ne "" ) ) {
 	  $filename=$file."/".$linkfile;
+	}
+	else {
+	  $filename=$file;
 	}
         $obj=$self->{dochandler}->newdoc($filename);
 
