@@ -858,7 +858,8 @@ sub Use_start
       else
 	 {
 	 $filename=$self->{remoteproject}."/$$hashref{name}/BuildFile";
-	 print "Trying $filename\n";
+	 # Not sure how useful this statement is, so I'll remove it for now:
+	 # print STDERR "Trying $filename\n";
 	 if ( ! -f $filename ) { $filename=""; };
 	 }
       if ( $filename ne "" )
