@@ -108,6 +108,30 @@ sub _commontags {
 	return $switch;
 }
 
+sub GenerateMakefile {
+        my $self=shift;
+        my $infile=shift;
+        my $outfile=shift;
+
+        $self->{switch}=$self->_initswitcher();
+        $self->{switch}->filetoparse($infile);
+
+        # open a temporary gnumakefile to store output.
+        my $fh=FileHandle->new();
+        open ( $fh, ">$outfile") or die "Unable to open $outfile for output ".
+                                                                "$!\n";
+        @{$self->{filehandlestack}}=($fh);
+
+        #  -- make an alias
+        *GNUmakefile=$fh;
+        if ( -e $ENV{LatestBuildFile} ) {
+          print GNUmakefile "include $ENV{LatestBuildFile}\n";
+        }
+        $ENV{LatestBuildFile}=$outfile;
+        $self->{switch}->parse("makebuild"); # sort out supported tags
+        close GNUmakefile;
+}
+
 sub ParseBuildFile {
 	my $self=shift;
 	my $base=shift;
