@@ -18,8 +18,13 @@ sub new {
 	my $class=shift;
         my $self={};
         bless $self, $class;
+	$self->{havesourcedir}=0;
         $self->{cache}=shift;
         $self->{baselocation}=shift;
+	if ( @_ )
+	   {
+	   $self->{area}=shift;
+	   }
 	$self->{mydoctype}="Configuration::BootStrapProject";
 	$self->{mydocversion}="1.0";
         $self->{Arch}=1;
@@ -45,8 +50,25 @@ sub _initswitcher {
 	$switch->addtag($parse,"download", \&GetToTop_start, $self,
 				       \&print_text, $self,
 				       "", $self);
+	$switch->addtag($parse,"SourceCode",
+			\&Srcdir_Start,$self,
+			\&Srcdir_text, $self,
+			\&Srcdir_end,$self);
 	$self->{switch}=$switch;
 }
+
+sub _initswitcherDL
+   {
+   my $self=shift;
+   my $switch=ActiveDoc::SimpleURLDoc->new($self->{cache});
+   my $parse="bootupd";
+   $switch->newparse($parse);
+   $switch->addbasetags($parse);
+   $switch->addtag($parse,"download", \&GetToTop_start, $self,
+		   \&print_text, $self,
+		   "", $self);
+   $self->{switch}=$switch;
+   }
 
 sub boot {
 	my $self=shift;
@@ -78,6 +100,22 @@ sub boot {
 	return $self->{area};
 }
 
+sub bootupdate
+   {
+   my $self=shift;
+   my $url=shift;	
+   
+   # -- initialise file parser for download only (doesn't care about other tags): 
+   $self->_initswitcherDL();
+   my ($fullurl,$filename)=$self->{switch}->urldownload($url);
+   $self->{switch}->filetoparse($filename);
+
+   # -- document version check
+   my ($doctype,$docversion)=$self->{switch}->doctype();
+   $self->{switch}->parse("bootupd");
+   return $self->{area};
+   }
+
 # --- Tag Routines
 
 sub print_text {
@@ -101,13 +139,19 @@ sub Project_start {
 	$self->{area}->name($$hashref{'name'});
 	$self->{area}->version($$hashref{'version'});
 	$self->{area}->setup($self->{baselocation});
-
 	# new urlhandler based on area cache
 	$self->{switch}->cache($self->{area}->cache());
 }
 
 sub Project_end {
 	my $self=shift;
+	# Check to make sure we have a SourceDir tag. Otherwise,
+	# assume that src is source directory:
+	if ($self->{havesourcedir} ne 1)
+	   {
+	   $self->{area}->sourcedir('src');
+	   $ENV{SCRAM_SOURCEDIR} = $self->{area}->sourcedir();
+	   }
 	$self->{area}->save();
 }
 
@@ -120,9 +164,10 @@ sub Config_start
    
    $self->{switch}->checktag($name, $hashref, "dir");
    $$hashref{'dir'}=~s/`//g;
+   ##`
    # Set the project config dir variable here so that
    # "projconfigdir" value can be used while bootstrapping:
-   $ENV{projconfigdir} = $$hashref{'dir'};
+   $ENV{SCRAM_CONFIGDIR} = $$hashref{'dir'};
    $self->{area}->configurationdir($$hashref{'dir'});
    }
 
@@ -155,3 +200,66 @@ sub GetToTop_start {
 	my ($fullurl,$filename)=$self->{switch}->urlget($$hashref{'url'},
 			$self->{area}->location()."/".$$hashref{'name'});
 }
+
+
+# Moved from BuildFile.pm:
+sub Srcdir_Start
+   {   
+   ###############################################################
+   # Srcdir_Start                                                #
+   ###############################################################
+   # modified : Wed Apr  2 15:47:04 2003 / SFA                   #
+   # params   :                                                  #
+   #          :                                                  #
+   # function : Set INTsrc usig a build file tag.                #
+   #          :                                                  #
+   ###############################################################
+   my $self=shift;
+   my $name=shift;
+   my $hashref=shift;
+
+   $self->verbose(">> Srcdir_Start: NM ".$name." <<");
+
+   $self->{switch}->checktag( $name, $hashref, 'dir' );
+   my $dir=$$hashref{'dir'};
+   $self->{area}->sourcedir($$hashref{'dir'});
+   # If this environment var is set here, the dir
+   # will be created in the project subroutine:
+   $ENV{SCRAM_SOURCEDIR} = $self->{area}->sourcedir();
+   } 
+
+sub Srcdir_text
+   {   
+   ###############################################################
+   # Srcdir_text                                                 #
+   ###############################################################
+   # modified : Wed Apr  2 15:47:04 2003 / SFA                   #
+   # params   :                                                  #
+   #          :                                                  #
+   # function :                                                  #
+   #          :                                                  #
+   ###############################################################
+   my $self=shift;
+   my $name=shift;
+   my @text=shift;
+
+   print "@text\n";
+   
+   }
+
+sub Srcdir_end
+   {   
+   ###############################################################
+   # Srcdir_end                                                  #
+   ###############################################################
+   # modified : Wed Apr  2 15:47:04 2003 / SFA                   #
+   # params   :                                                  #
+   #          :                                                  #
+   # function :                                                  #
+   #          :                                                  #
+   ###############################################################
+   my $self=shift;
+   my $name=shift;
+   my $hashref=shift;
+   $self->{havesourcedir} = 1; # To signal that we have a dir
+   } 

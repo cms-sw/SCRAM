@@ -36,7 +36,6 @@ sub copydir
    use DirHandle;
    use File::Copy;
    
-   # print "Copying $src to $dest\n";
    adddir($dest);
    my $dh=DirHandle->new($src);
    
@@ -55,6 +54,7 @@ sub copydir
 	 else
 	    {
 	    copy($src."/".$file,$dest."/".$file);
+	    if ( -x $src."/".$file || -X $src."/".$file ) {chmod(0775,$dest."/".$file);}
 	    }
 	 }
       undef $dh;

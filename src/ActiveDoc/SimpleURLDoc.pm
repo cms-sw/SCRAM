@@ -94,6 +94,9 @@ sub Base_start {
 
         $self->checktag($name, $hashref, "url");
         my $url=$self->{urlhandler}->setbase($$hashref{'url'});
+	# Add store for url of the file currently being parsed. This info can
+	# then be extracted in Requirements objects
+	$self->{configurl}=$url;
         push @{$self->{basestack}}, $url->type();
 }
 

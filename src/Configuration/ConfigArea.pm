@@ -63,6 +63,7 @@ sub new {
         $self->{admindir}=".SCRAM";
         $self->{cachedir}="cache";
         $self->{dbdir}="ObjectDB";
+	$self->{tbupdate}=0;
 	undef $self->{linkarea};
 
 	return $self;
@@ -85,6 +86,34 @@ sub cache {
 	}
 	return $self->{cache};
 }
+
+# Tool and project cache info:
+sub cacheinfo
+   {
+   my $self=shift;
+   print "\n","<ConfigArea> cacheinfo: ToolCache = ",$self->{toolcachefile},
+   ", ProjectCache = ",$self->{projectcachefile},"\n";
+   }
+
+sub toolcachename
+   {
+   my $self=shift;
+   return ($self->location()."/".$self->{admindir}."/".$ENV{SCRAM_ARCH}."/ToolCache.db");
+   }
+
+sub projectcachename
+   {
+   my $self=shift;
+   return ($self->location()."/".$self->{admindir}."/".$ENV{SCRAM_ARCH}."/ProjectCache.db");
+   }
+
+sub _tbupdate
+   {
+   # Update toolbox relative to new RequirementsDoc:
+   my $self=shift;
+   @_?$self->{tbupdate}=shift
+      :$self->{tbupdate};
+   }
 
 sub _newcache {
 	my $self=shift;
@@ -138,6 +167,7 @@ sub setup {
 	# -- check we have a project name and version
 	my $name=$self->name();
         my $vers=$self->version();
+	
 	if ( ( ! defined $name ) && ( ! defined $version )) {
 	  $self->error("Set ConfigArea name and version before setup");
 	}
@@ -181,12 +211,28 @@ sub configurationdir {
 	return (defined $self->{configurationdir})?$self->{configurationdir}:undef;
 }
 
+sub sourcedir {
+	my $self=shift;
+	if ( @_ ) {
+	  $self->{sourcedir}=shift;
+	}
+	return (defined $self->{sourcedir})?$self->{sourcedir}:undef;
+}
+
 sub toolbox {
 	my $self=shift;
 	if ( ! defined $self->{toolbox} ) {
 	  $self->{toolbox}=BuildSystem::ToolBox->new($self, $ENV{SCRAM_ARCH});
 	}
 	return $self->{toolbox};
+}
+
+sub toolboxversion {
+	my $self=shift;
+	if ( @_ ) {
+	  $self->{toolboxversion}=shift;
+	}
+	return (defined $self->{toolboxversion})?$self->{toolboxversion}:undef;
 }
 
 sub requirementsdoc {
@@ -279,7 +325,6 @@ sub bootstrapfromlocation {
 	else {
 	 $self->location($location);
 	 $self->verbose("Found top ".$self->location());
-	 my $infofile=$self->location()."/".$self->{admindir}."/ConfigArea.dat";
 	 $self->_LoadEnvFile();
 	}
 	return $rv;
@@ -364,6 +409,8 @@ sub satellite {
 	$sat->version($self->version());
 	$sat->requirementsdoc($self->{reqdoc});
 	$sat->configurationdir($self->configurationdir());
+	$sat->sourcedir($self->sourcedir());
+	$sat->toolboxversion($self->toolboxversion());
 	$sat->setup(@_);
 
 	# -- copy across the cache and ObjectStore
@@ -462,6 +509,7 @@ sub arch {
 sub linkto {
 	my $self=shift;
 	my $location=shift;
+
 	if ( -d $location ) {
 	my $area=Configuration::ConfigArea->new();
 	$area->bootstrapfromlocation($location);
@@ -508,8 +556,10 @@ sub _SaveEnvFile {
 	
 	print $fh "SCRAM_PROJECTNAME=".$self->name()."\n";
 	print $fh "SCRAM_PROJECTVERSION=".$self->version()."\n";
-	print $fh "projconfigdir=".$self->configurationdir()."\n";
+	print $fh "SCRAM_CONFIGDIR=".$self->configurationdir()."\n";
+	print $fh "SCRAM_SOURCEDIR=".$self->sourcedir()."\n";
 	print $fh "SCRAM_ProjReqsDoc=".$self->{reqdoc}."\n";
+	print $fh "SCRAM_TOOLBOXVERSION=".$self->{toolboxversion}."\n";
 	if ( defined $self->linkarea() ) {
 	  my $area=$self->linkarea()->location();
 	  if ( $area ne "" ) {
@@ -520,42 +570,55 @@ sub _SaveEnvFile {
 }
 
 
-sub _LoadEnvFile {
-	my $self=shift;
+sub _LoadEnvFile
+   {
+   my $self=shift;
 
-	use FileHandle;
-	my $fh=FileHandle->new();
-	open ( $fh, "<".$self->location()."/".$self->{admindir}."/".
-		"Environment" ) or 
-		$self->error("Cannot find Environment file. Area Corrupted? ("
-				.$self->location().")\n $!"); 
-        while ( <$fh> ) {
-           chomp;
-           next if /^#/;
-           next if /^\s*$/ ;
-           ($name, $value)=split /=/;
-           eval "\$self->{ENV}{${name}}=\"$value\"";
-        }
-        undef $fh;
+   use FileHandle;
+   my $fh=FileHandle->new();
+   open ( $fh, "<".$self->location()."/".$self->{admindir}."/".
+	  "Environment" ) or 
+	  $self->error("Cannot find Environment file. Area Corrupted? ("
+		       .$self->location().")\n $!"); 
+   while ( <$fh> )
+      {
+      chomp;
+      next if /^#/;
+      next if /^\s*$/ ;
+      ($name, $value)=split /=/;
+      eval "\$self->{ENV}{${name}}=\"$value\"";
+      }
+   undef $fh;
 	
-	# -- set internal variables appropriately
-	if ( defined $self->{ENV}{"SCRAM_PROJECTNAME"} ) {
-	  $self->name($self->{ENV}{"SCRAM_PROJECTNAME"});
-	}
-	if ( defined $self->{ENV}{"SCRAM_PROJECTVERSION"} ) {
-	  $self->version($self->{ENV}{"SCRAM_PROJECTVERSION"});
-	}
-	if ( defined $self->{ENV}{"projconfigdir"} ) {
-	  $self->configurationdir($self->{ENV}{projconfigdir});
-	}
-	if ( defined $self->{ENV}{"SCRAM_ProjReqsDoc"} ) {
-          $self->requirementsdoc($self->{ENV}{SCRAM_ProjReqsDoc});
-	}
-	if ( ( defined $self->{ENV}{"RELEASETOP"} ) && 
-			($self->{ENV}{"RELEASETOP"} ne $self->location())) {
-	  $self->linkto($self->{ENV}{"RELEASETOP"});
-	}
-	else {
-	  $self->{ENV}{"RELEASETOP"}=$self->location();
-	}
-}
+   # -- set internal variables appropriately
+   if ( defined $self->{ENV}{"SCRAM_PROJECTNAME"} )
+      {
+      $self->name($self->{ENV}{"SCRAM_PROJECTNAME"});
+      }
+   if ( defined $self->{ENV}{"SCRAM_PROJECTVERSION"} )
+      {
+      $self->version($self->{ENV}{"SCRAM_PROJECTVERSION"});
+      }	
+   if ( defined $self->{ENV}{"SCRAM_CONFIGDIR"} )
+      {
+      $self->configurationdir($self->{ENV}{"SCRAM_CONFIGDIR"});
+      }
+   if ( defined $self->{ENV}{"SCRAM_SOURCEDIR"} )
+      {
+      $self->sourcedir($self->{ENV}{"SCRAM_SOURCEDIR"});
+      }
+   if ( defined $self->{ENV}{"SCRAM_ProjReqsDoc"} )
+      {
+      $self->requirementsdoc($self->{ENV}{"SCRAM_ProjReqsDoc"});
+      }
+   if ( defined $self->{ENV}{"SCRAM_TOOLBOXVERSION"} )
+      {
+      $self->toolboxversion($self->{ENV}{"SCRAM_TOOLBOXVERSION"});
+      }
+   
+   if ( ( defined $self->{ENV}{"RELEASETOP"} ) && 
+	($self->{ENV}{"RELEASETOP"} ne $self->location()))
+      {
+      $self->linkto($self->{ENV}{"RELEASETOP"});
+      }
+   }

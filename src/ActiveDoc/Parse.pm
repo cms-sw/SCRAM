@@ -83,6 +83,20 @@ sub parse
    undef $self->{switch};
    }
 
+sub parsefilelist()
+   {
+   my $self=shift;
+   my ($files)=@_;
+   # basic setup of switcher
+   $self->{switch}=ActiveDoc::Switcher->new($files);   
+   $self->{switch}->usegroupchecker($self->{gc});
+   $self->{switch}->usetags($self->{tags});
+
+   # -- parse
+   $self->{switch}->parsefilelist();
+   undef $self->{switch};
+   }
+
 sub line
    {
    my $self=shift;

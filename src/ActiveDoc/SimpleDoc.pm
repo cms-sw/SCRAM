@@ -106,8 +106,8 @@ sub verbose {
 sub parse {
 	my $self=shift;
 	$parselabel=shift;
-
 	my $file=$self->filetoparse();
+	
 	if ( -f $file ) {
 	  if ( exists $self->{parsers}{$parselabel} ) {
 	    $self->verbose("Parsing $parselabel in file $file");
@@ -123,6 +123,28 @@ sub parse {
 	  $self->error("Cannot parse \"$parselabel\" - file $file not known");
 	}
 }
+
+sub parsefilelist
+   {
+   my $self=shift;
+   my $parselabel=shift;
+   my ($filenames)=@_;
+
+   if ( exists $self->{parsers}{$parselabel} )
+      {
+      $self->verbose("ParsingFileList: Label = $parselabel (files = ".join(",",@$filenames)." ");
+      $self->{currentparsename}=$parselabel;
+      $self->{currentparser}=$self->{parsers}{$parselabel};
+      $self->{parsers}{$parselabel}->parsefilelist($filenames);
+      delete $self->{currentparser};
+      $self->{currentparsename}="";
+      $self->verbose("ParseFileList $parselabel Complete");
+      }
+   else
+      {
+      $self->error("Cannot parse \"$parselabel\" - Unknown parser!!");
+      }
+   }
 
 sub currentparsename {
 	my $self=shift;
