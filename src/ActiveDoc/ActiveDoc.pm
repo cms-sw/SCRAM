@@ -7,7 +7,7 @@
 #
 # Interface
 # ---------
-# new()		: A new ActiveDoc object
+# new(ActiveConfig[,options])		: A new ActiveDoc object
 # url()	        : Return/set the docs url - essential
 # file()	: Return the local filename of document
 #
@@ -55,13 +55,19 @@ sub new {
 	bless $self, $class;
 	$self->config(shift);
 
-	# --- is there a starter document?
-	my $basedoc=$self->config()->basedoc();
-	if ( defined $basedoc ) {
-	  $self->copydocquery($basedoc);
+	# have some override options been passed
+	if ( @_ ) {
+	   $self->basequery(shift);
 	}
 	else {
-	  $self->error("Error : No base doc found");
+	   # --- is there a starter document?
+	   my $basedoc=$self->config()->basedoc();
+	   if ( defined $basedoc ) {
+	     $self->copydocquery($basedoc);
+	   }
+	   else {
+	     $self->error("Error : No base doc found");
+	   }
 	}
 	$self->_init2();
 }
@@ -197,7 +203,12 @@ sub basequery {
 sub option {
 	my $self=shift;
 	my $param=shift;
-	$self->basequery()->getparam($param);
+	if ( defined $self->basequery()) {
+		return $self->basequery()->getparam($param);
+	}
+	else {
+		return $undef;
+	}
 }
 
 sub requestoption {
@@ -205,13 +216,16 @@ sub requestoption {
         my $param=shift;
 	my $string=shift;
 
-	my $par=$self->basequery()->getparam($param);
+	my $par=undef;
+	if ( defined $self->basequery()) {
+	$par=$self->basequery()->getparam($param);
         while ( ! defined $par ) {
           $self->basequery()->querytype( $param, "basic");
           $self->basequery()->querymessage( $param, $string);
           $self->userinterface()->askuser($self->basequery());
-          $par=$self->basequery()->getparam('ActiveConfigdir');
+          $par=$self->basequery()->getparam($param);
         }
+	}
 	return $par;
 }
 
@@ -349,7 +363,9 @@ sub Base_start {
         # Keep track of base tags
         push @{$self->{basestack}}, $$hashref{"type"};
         # Set the base
+	print "BASE SET for ".$$hashref{"type"}."\n";
         $self->{urlhandler}->setbase($$hashref{"type"},$hashref);
+	print "BASE SET for ".$$hashref{"type"}."\n";
 
 }
 
