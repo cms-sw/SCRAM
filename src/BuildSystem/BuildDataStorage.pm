@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.2 2004/12/10 13:41:37 sashby Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.3 2005/03/09 19:28:19 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -182,10 +182,17 @@ sub scanbranch()
    {
    my $self=shift;
    my ($files,$datapath)=@_;
+   # Fix (or rather hack) so that only the current buildfile is parsed, not the parent.
+   # This is required becuase it's not desired to pick up dependencies from the level lower:
+   # one should always do it via a <use name=x> to get the package deps. We don't care about
+   # deps in subsystems (they're only used to define groups) and project-wide deps are added at
+   # template level:
+   my $nfiles = [ $files->[0] ];
+   
    # Scan all buildfiles in a branch:
    use BuildSystem::BuildFile;
    my $bfbranch=BuildSystem::BuildFile->new();
-   $bfbranch->parsebranchfiles($files);
+   $bfbranch->parsebranchfiles($nfiles);
 
    # Store:
    $self->storebranchmetadata($datapath,$bfbranch);
@@ -425,7 +432,7 @@ sub processbuildfile()
    my $CURRENTBF = $self->metaobject($dataposition);
    my $localgrapher=0;
    my $scramgrapher;
-   
+
    if (defined($CURRENTBF))
       {    
       use BuildSystem::DataCollector;	 
@@ -523,7 +530,7 @@ sub processbuildfile()
 	       # followed by some copying of relevant data elements:
 	       $bcollector = $collector->copy($localgrapher);
 	       # The Product object inherits from same core utility packages
-	       # as BuildFile so all BuildFile methids can be used on the Product object:
+	       # as BuildFile so all BuildFile methods can be used on the Product object:
 	       $self->bproductparse($dataposition,$path,$bcollector,$product,$localgrapher);
 	       $product->data($bcollector);
  	       $BUILDP->{$product->safename()} = $product;

@@ -5,7 +5,7 @@
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 #         (with contribution from Lassi.Tuura@cern.ch)
 # Update: 2003-11-27 16:45:18+0100
-# Revision: $Id: Cache.pm,v 1.1.2.9 2004/11/16 18:47:37 sashby Exp $ 
+# Revision: $Id: Cache.pm,v 1.2 2004/12/10 13:41:39 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -47,8 +47,13 @@ sub getdir()
    my $self=shift;
    my ($path) = @_;
    opendir (DIR, $path) || die "$path: cannot read: $!\n";
-   # Skip .admin subdirectories too:
-   my @items = map { "$path/$_" } grep ($_ ne "." && $_ ne ".." && $_ ne ".admin", readdir(DIR));
+   # Skip .admin subdirectories too.
+   # Also skip files that look like backup files or files being modified with emacs:
+   my @items = map { "$path/$_" } grep (
+					$_ ne "." && $_ ne ".." && 
+					$_ ne ".admin" && $_ !~ m|\.#*|,
+					readdir(DIR)
+					);   
    closedir (DIR);
    return @items;
    }
