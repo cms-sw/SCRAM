@@ -689,7 +689,14 @@ sub _LoadEnvFile
       }
    if ( defined $self->{ENV}{"SCRAM_TOOLBOXVERSION"} )
       {
-      $self->toolboxversion($self->{ENV}{"SCRAM_TOOLBOXVERSION"});
+      if ($self->{ENV}{"SCRAM_TOOLBOXVERSION"} eq '')
+	 {
+	 $self->toolboxversion("STANDALONE");
+	 }
+      else
+	 {
+	 $self->toolboxversion($self->{ENV}{"SCRAM_TOOLBOXVERSION"});
+	 }
       }
    
    if ( ( defined $self->{ENV}{"RELEASETOP"} ) && 
