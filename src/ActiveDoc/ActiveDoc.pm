@@ -201,7 +201,10 @@ sub url {
 		$self->{File}=$self->getfile(shift);
 		$self->verbose("url downloaded to $self->{File}");
 	} 
-	$self->{File}->url();
+	if ( defined $self->{File} ) {
+	  return $self->{File}->url();
+	}
+	else { return "undefined"; }
 }
 
 sub copydocconfig {
