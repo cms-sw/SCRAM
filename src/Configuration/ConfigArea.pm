@@ -82,10 +82,13 @@ sub cache {
 	  }
 	  $exist=1;
 	}
-	elsif ( ! defined $self->{cache} ) {
+	if ( ! defined $self->{cache} ) {
 	  my $loc=$self->location()."/".$self->{admindir}."/".$self->{cachedir};
-	  if ( ! $exist ) {
+	  if (  !$exist || ( -e $loc ) ) {
 	    $self->{cache}=URL::URLcache->new($loc);
+	  }
+	  else {
+	    $self->{cache}=undef;
 	  }
 	}
 	return $self->{cache};
@@ -102,7 +105,7 @@ sub objectstore {
 	  }
 	  $exist="<";
 	}
-	elsif ( ! defined $self->{dbstore} ) {
+	if ( ! defined $self->{dbstore} ) {
 	  my $loc=$self->location()."/".$self->{admindir}."/".$self->{dbdir};
 	  $self->{dbstore}=ObjectUtilities::ObjectStore->new($exist.$loc);
 	}
