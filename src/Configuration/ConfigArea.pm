@@ -447,7 +447,7 @@ sub Structure_Start {
         my $hashref=shift;
 
 	$self->checktag($name,$hashref,'name');
-	if ( !( exists $$hashref{'type'}) || ( exists $$hashref{'url'}) ) {
+	if ( !(( exists $$hashref{'type'}) || ( exists $$hashref{'url'})) ) {
 	    $self->parseerror("No url or type given in <$name> tag");
 	}
 	if ( ! exists $self->{structures}{$$hashref{'name'}} ) {
@@ -463,6 +463,7 @@ sub Structure_Start {
 	    $self->{structures}{$$hashref{'name'}}->name($$hashref{'name'});
 	    $self->{structures}{$$hashref{'name'}}->parent($self);
 	    $self->{structures}{$$hashref{'name'}}->vars($hashref);
+	    $self->{structures}{$$hashref{'name'}}->arch($self->arch());
 	  }
 	  else { # its an activedoc
 		$self->{structures}{$$hashref{'name'}}=
