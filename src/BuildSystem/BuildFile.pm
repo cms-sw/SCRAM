@@ -917,18 +917,33 @@ sub AssociateGroup {
 	}
 }
 
-sub Arch_Start {
-	my $self=shift;
-        my $name=shift;
-        my $hashref=shift;
-
-	$self->verbose(">> Arch_Start: NM ".$name." <<");
-	
-        $self->{switch}->checktag($name, $hashref,'name');
-	( ($ENV{SCRAM_ARCH}=~/$$hashref{name}.*/) )? ($self->{Arch}=1) 
-                                                : ($self->{Arch}=0);
-        push @{$self->{ARCHBLOCK}}, $self->{Arch};
-}
+sub Arch_Start
+   {
+   my $self=shift;
+   my $name=shift;
+   my $hashref=shift;
+   
+   $self->verbose(">> Arch_Start: NM ".$name." <<");
+   
+   $self->{switch}->checktag($name, $hashref,'name');
+   
+#   if ($ENV{SCRAM_ARCH} =~ /$$hashref{name}$/)
+   if ( $$hashref{name} eq $ENV{SCRAM_ARCH} )
+      {
+#      print "HASHREFNAME= ",$$hashref{name},"\n";     # The tag read from BuildFile
+#      print "Scram arch()? ",$ENV{SCRAM_ARCH},"\n";   # Also SCRAM_ARCH
+      $self->{Arch}=1;
+      }
+   else
+      {
+      $self->{Arch}=0;
+      }
+#   ( ($ENV{SCRAM_ARCH}=~/$$hashref{name}.*/) )? ($self->{Arch}=1) 
+#      : ($self->{Arch}=0);
+   
+   $self->verbose(($self->{Arch}?"OK":"skipping")." ".$$hashref{name});
+   push @{$self->{ARCHBLOCK}}, $self->{Arch};
+   }
 
 sub Arch_End {
 	my $self=shift;
@@ -1248,7 +1263,8 @@ sub CompilerMap_Start
    my $hashref=shift;
 
    $self->verbose(">> CompilerMap_Start: NM ".$name." <<");
-
+   print "compiler check....",$self->{Arch},"\n";
+   print "ARCH: ",$self->{ArchStack},"\n";
    # We can only map compilers to already-defined architectures, so
    # we check for 'Arch':
    if ( $self->{Arch} )
