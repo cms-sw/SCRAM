@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-21 15:26:07+0100
-# Revision: $Id: ToolData.pm,v 1.1.2.9 2004/10/27 12:35:25 sashby Exp $ 
+# Revision: $Id: ToolData.pm,v 1.2 2004/12/10 13:41:37 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -267,7 +267,7 @@ sub summarize_features()
    # Finally, look for runtime vars:
    if (exists($self->{'RUNTIME'}) && (my ($nkeys) = scalar(keys %{$self->{'RUNTIME'}}) > 0 ))
       {
-      while (my ($rt,$val) = each %{$self->{$feature}})
+      while (my ($rt,$val) = each %{$self->{'RUNTIME'}})
 	 {
 	 if ($rt =~ /:/)
 	    {
