@@ -5,7 +5,7 @@
 #
 # Description
 # -----------
-# Simple multi parsing functionality
+# Simple multi parsing functionality and group manipulation
 #
 # Interface
 # ---------
@@ -15,6 +15,8 @@
 # parse(parselabel)    : Parse the document file for the given parse level
 # addtag(parselabel,tagname,start,obj,text,obj,end,obj) :
 #				 Add tags to the parse given by label
+# grouptag(tagname, parselabel)	: Allow a tag to switch context 
+#				  - if not you can never turn a context off!
 # checktag(tagname, hashref, param) : check for existence of param in
 #					hashref from a tag call
 # includeparse(local_parsename, objparsename, activedoc) : copy the parse from 
@@ -24,6 +26,11 @@
 #
 # addignoretags(parsename) : add <ignore> </igonore> tags funtionality to the
 #				specified parse
+# opengroup(name) : declare a group to be open
+# closegroup(name) : declare a group to be closed
+# allowgroup(name,parse) : allow a group so named
+# disallowgroup(name,parse) : disallow the named group
+# restoregroup(name,parse) : restore group access setting (that before last change)
 # --------------- Error handling routines ---------------
 # verbose(string)	: Print string in verbosity mode
 # verbosity(0|1)	: verbosity off|on 
@@ -156,6 +163,56 @@ sub filetoparse {
 	   $self->{filename}=shift;
 	}
 	return $self->{filename};
+}
+# --------- Group services
+sub grouptag {
+	my $self=shift;
+	my $name=shift;
+	my $parselabel=shift;
+
+	$self->{parsers}{$parselabel}->contexttag($name);
+}
+
+sub opengroup {
+	my $self=shift;
+	my $name=shift;
+
+	if ( defined $self->currentparser ) {
+	   $self->currentparser()->opencontext($name);
+	}
+	else {
+	   $self->error("Cannot Call opengroup outside of a parse (".
+			caller().")");
+	}
+}
+
+sub closegroup {
+	my $self=shift;
+	my $name=shift;
+
+	if ( defined $self->currentparser ) {
+	   $self->currentparser()->closecontext($name);
+	}
+	else {
+	   $self->error("Cannot Call closegroup outside of a parse (".
+			caller().")");
+	}
+}
+
+sub allowgroup {
+	my $self=shift;
+	my $name=shift;
+	my $parselabel=shift;
+
+	$self->{parsers}{$parselabel}->includecontext($name);
+}
+
+sub disallowgroup {
+	my $self=shift;
+	my $name=shift;
+	my $parselabel=shift;
+
+	$self->{parsers}{$parselabel}->excludecontext($name);
 }
 
 # -------- Error Handling and Error services --------------

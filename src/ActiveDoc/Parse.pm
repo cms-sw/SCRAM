@@ -70,7 +70,7 @@ sub parse {
 	   }
 	}
 
-	# parse
+	# -- parse
 	$self->{switch}->parse();
 	undef $self->{switch};
 }
