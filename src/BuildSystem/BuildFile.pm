@@ -1263,8 +1263,6 @@ sub CompilerMap_Start
    my $hashref=shift;
 
    $self->verbose(">> CompilerMap_Start: NM ".$name." <<");
-   print "compiler check....",$self->{Arch},"\n";
-   print "ARCH: ",$self->{ArchStack},"\n";
    # We can only map compilers to already-defined architectures, so
    # we check for 'Arch':
    if ( $self->{Arch} )
@@ -1276,11 +1274,12 @@ sub CompilerMap_Start
 	 {
          $self->{switch}->checktag($name,$hashref,$tag);
          print GNUmakefile $tag."=".$$hashref{$tag}."\n";
-#  	if ( defined $$hashref{'version'} ) {
-#  		print GNUmakefile "_V_".$$hashref{'version'};
-#  	}
-#  	print GNUmakefile "=true\n";
 
+	 if ( defined $$hashref{'version'} )
+	    {
+	    print GNUmakefile "_V_".$$hashref{'version'};
+	    }
+	 print GNUmakefile "=true\n";
          }
 #        $self->{switch}->checktag($name,$hashref,'ref');
 
@@ -1327,7 +1326,8 @@ sub CompilerMap_Start
       }
    else
       {
-      print "No architecture defined: not possible to define a compiler-to-subarch mapping.","\n";
+      return;
       }
    } 
+
 
