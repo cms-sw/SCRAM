@@ -73,6 +73,7 @@ sub init {
 	$self->addtag("download","use",\&Use_download_Start,$self, 
 						"", $self, "",$self);
 	$self->addurltags("setup");
+	$self->addurltags("setup_tools");
 	$self->addtag("setup_tools","use",\&Use_Start,$self, "", $self, "",$self);
 	$self->addtag("setup","structure",\&Structure_Start,$self,
 			 "", $self, "",$self);
@@ -90,7 +91,7 @@ sub basearea {
 	  $self->config()->store($area,"BaseArea");
 	}
 	else {
-	  ($area)=$self->config()->restore("BaseArea");
+	  ($area)=$self->config()->find("BaseArea");
 	}
 	return $area;
 }
@@ -180,10 +181,15 @@ sub bootstrapfromlocation {
 	if ( ! defined $self->location(@_) ) {
 	  $self->error("Unable to locate the top of local configuration area");
 	}
-	print "Found top ".$self->location()."\n";
+	$self->verbose("Found top ".$self->location());
 	$self->_setupstore();
-	$self->restore($self->location()."/".$self->{admindir}.
-						"/ConfigArea.dat");
+	my $infofile=$self->location()."/".$self->{admindir}."/ConfigArea.dat";
+	if ( -e $infofile ) {
+	     $self->restore($infofile);
+	}
+	else {
+	     $self->error("Area corrupted - cannot find $infofile");
+	}
 }
 
 sub parentconfig {
