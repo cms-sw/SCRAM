@@ -265,7 +265,8 @@ sub activatedoc {
 	# now parse it for the <DocType> tag
 	my $tempdoc=ActiveDoc::ActiveDoc->new($self->config());
 	$tempdoc->{urlhandler}=$self->{urlhandler};
-	$tempdoc->url($url);
+	my $fullurl=$tempdoc->url($url);
+	$url=$fullurl;
 	$tempdoc->{doctypefound}=0;
 	$tempdoc->newparse("doctype");
 	$tempdoc->addtag("doctype","Doc", \&Doc_Start, $tempdoc,
