@@ -62,6 +62,9 @@ sub init {
 	$self->newparse("init");
 	$self->newparse("download");
 	$self->newparse("setup");
+	$self->newparse("setup_tools");
+	$self->addarchtags("setup_tools");
+	$self->addarchtags("setup");
 	$self->addtag("init","project",\&Project_Start,$self,
 	    \&Project_text,$self,"", $self );
 	$self->addurltags("download");
@@ -70,7 +73,7 @@ sub init {
 	$self->addtag("download","use",\&Use_download_Start,$self, 
 						"", $self, "",$self);
 	$self->addurltags("setup");
-	$self->addtag("setup","use",\&Use_Start,$self, "", $self, "",$self);
+	$self->addtag("setup_tools","use",\&Use_Start,$self, "", $self, "",$self);
 	$self->addtag("setup","structure",\&Structure_Start,$self,
 			 "", $self, "",$self);
 
@@ -134,6 +137,7 @@ sub setup {
 	
 	# --- and parse the setup file
 	$self->parse("setup");
+	$self->parse("setup_tools");
 	
 	# --- store bootstrap info 
 	$self->store($self->location()."/".$self->{admindir}."/ConfigArea.dat");
