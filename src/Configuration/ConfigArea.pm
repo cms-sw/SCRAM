@@ -62,7 +62,7 @@ sub setup {
 
 	# make a new store handler
 	my $parentconfig=$self->config;
-	$self->config(Configuration::ConfigureStore);
+	$self->config(Configuration::ConfigureStore->new());
 	$self->config()->db("local",$ad);
 	$self->config()->db("parent",$parentconfig);
 	$self->config()->policy("cache","local");
@@ -70,7 +70,7 @@ sub setup {
 
 	# --- download everything first
 # FIX-ME --- cacheing is broken
-#	$self->parse("download");
+	$self->parse("download");
 	
 	# --- and parse the setup file
 	$self->parse("setup");
@@ -137,7 +137,7 @@ sub addconfigitem {
 	my $docref=$self->activatedoc($url);
         # Set up the document
         $docref->setup();
-	$self->config()->savepolicy("local");
+	$self->config()->storepolicy("local");
 	$docref->save();
 }
 
