@@ -23,6 +23,8 @@
 # restore(location)		: restore data from file location
 # meta()			: return a description string of the area
 # addconfigitem(url)		: add a new item to the area
+# storeconfigobject(confiItemobj) : store a ready made ConfigItem in the local
+#					area
 # configitem(@keys)		: return a list of fig items that match
 #				  the keys - all if left blank
 # parentstore()			: set/return the parent ObjectStore
@@ -338,6 +340,12 @@ sub addconfigitem {
         $docref->setup();
         $docref->save();
 #	$self->config()->storepolicy("local");
+}
+
+sub storeconfigobject {
+	my $self=shift;
+	my $obj=shift;
+	$obj->save($self->config());
 }
 
 sub downloadtotop {
