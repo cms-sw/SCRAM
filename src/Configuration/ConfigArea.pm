@@ -37,7 +37,7 @@
 # save()			: save changes permanently
 # linkto(location)		: link the current area to that at location
 # unlinkarea()			: destroy link (autosave)
-# linkarea([ConfigArea])	: get/set a link from the current area to the apec Area Object
+# linkarea([ConfigArea])	: link the current area to the apec Area Object
 # archname()		: get/set a string to indicate architecture
 # archdir()		: return the location of the administration arch dep 
 #			  directory
@@ -71,51 +71,51 @@ sub new {
 sub cache {
 	my $self=shift;
 
-        if ( @_ ) {
-           $self->{cache}=shift;
-        }
-        if ( ! defined $self->{cache} ) {
-          my $loc=$self->location()."/".$self->{admindir}."/".$self->{cachedir};
-          if ( -e $loc  ) {
-            $self->{cache}=URL::URLcache->new($loc);
-          }
-          else {
-            $self->{cache}=undef;
-          }
-        }
-        return $self->{cache};
+	if ( @_ ) {
+	   $self->{cache}=shift;
+	}
+	if ( ! defined $self->{cache} ) {
+	  my $loc=$self->location()."/".$self->{admindir}."/".$self->{cachedir};
+	  if ( -e $loc  ) {
+	    $self->{cache}=URL::URLcache->new($loc);
+	  }
+	  else {
+	    $self->{cache}=undef;
+	  }
+	}
+	return $self->{cache};
 }
 
 sub _newcache {
-        my $self=shift;
-        my $loc=$self->location()."/".$self->{admindir}."/".$self->{cachedir};
-        $self->{cache}=URL::URLcache->new($loc);
-        return $self->{cache};
+	my $self=shift;
+	my $loc=$self->location()."/".$self->{admindir}."/".$self->{cachedir};
+	$self->{cache}=URL::URLcache->new($loc);
+	return $self->{cache};
 }
 
 sub _newobjectstore {
-        my $self=shift;
-        my $loc=$self->location()."/".$self->{admindir}."/".$self->{dbdir};
-        $self->{dbstore}=ObjectUtilities::ObjectStore->new($loc);
-        return $self->{dbstore};
-} 
+	my $self=shift;
+	my $loc=$self->location()."/".$self->{admindir}."/".$self->{dbdir};
+	$self->{dbstore}=ObjectUtilities::ObjectStore->new($loc);
+	return $self->{dbstore};
+}
 
 sub objectstore {
-        my $self=shift;
+	my $self=shift;
 
-        if ( @_ ) {
-            $self->{dbstore}=shift;
-        }
-        if ( ! defined $self->{dbstore} ) {
-          my $loc=$self->location()."/".$self->{admindir}."/".$self->{dbdir};
-          if ( -e $loc ) {
-            $self->{dbstore}=ObjectUtilities::ObjectStore->new($loc);
-          }
-          else {
-            $self->{dbstore}=undef;
-          }
-        }
-        return $self->{dbstore}
+	if ( @_ ) {
+	    $self->{dbstore}=shift;
+	}
+	if ( ! defined $self->{dbstore} ) {
+	  my $loc=$self->location()."/".$self->{admindir}."/".$self->{dbdir};
+	  if ( -e $loc ) {
+	    $self->{dbstore}=ObjectUtilities::ObjectStore->new($loc);
+	  }
+	  else {
+	    $self->{dbstore}=undef;
+	  }
+	}
+	return $self->{dbstore}
 }
 
 sub name {
@@ -165,8 +165,8 @@ sub setup {
 	# -- add a cache
 	$self->_newcache();
 
-        # -- add an Objectstore
-        $self->_newobjectstore();
+	# -- add an Objectstore
+	$self->_newobjectstore();
 
 	# -- Save Environment File
 	$self->_SaveEnvFile();
@@ -184,7 +184,7 @@ sub configurationdir {
 sub toolbox {
 	my $self=shift;
 	if ( ! defined $self->{toolbox} ) {
-	  $self->{toolbox}=BuildSystem::ToolBox->new($self);
+	  $self->{toolbox}=BuildSystem::ToolBox->new($self, $ENV{SCRAM_ARCH});
 	}
 	return $self->{toolbox};
 }
