@@ -23,6 +23,7 @@ sub new {
 	bless $self, $class;
 	$self->{area}=shift;
 	$self->{toolbox}=$self->{area}->toolbox();
+	$self->{localtop}=$self->{area}->location();
 	$self->{Arch}=1;
 	push @{$self->{ARCHBLOCK}}, $self->{Arch};
 	return $self;
@@ -149,7 +150,7 @@ sub ParseBuildFile {
 	$numbins=0;
 	$self->{envnum}=0;
 	$self->{envlevel}=0;
-	$self->{currentenv}="$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/".
+	$self->{currentenv}="$self->{localtop}/$ENV{INTwork}/$self->{path}/".
 								"BuildFile.mk";
 	$self->{switch}=$self->_initswitcher();
 	$self->{switch}->filetoparse($fullfilename);
@@ -157,9 +158,9 @@ sub ParseBuildFile {
 #	$self->{switch}->{Strict_no_cr}='no';
 	#open a temporary gnumakefile to store output.
 	use Utilities::AddDir;
-	AddDir::adddir("$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}");
+	AddDir::adddir("$self->{localtop}/$ENV{INTwork}/$self->{path}");
 	my $fh=FileHandle->new();
-	open ( $fh, ">$ENV{LOCALTOP}/$ENV{INTwork}/".$self->{path}."/BuildFile.mk"
+	open ( $fh, ">$self->{localtop}/$ENV{INTwork}/".$self->{path}."/BuildFile.mk"
           ) or die 'Unable to open /$ENV{INTwork}/".$self->{path}."/BuildFile.mk $!\n';
 	@{$self->{filehandlestack}}=($fh);
 	# make an alias
@@ -168,8 +169,8 @@ sub ParseBuildFile {
 	  print GNUmakefile "include $ENV{LatestBuildFile}\n";
 	}
 #	print "writing to :\n".
-#		"$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/BuildFile.mk\n";
-	$ENV{LatestBuildFile}="$ENV{LOCALTOP}/$ENV{INTwork}/".$self->{path}."/BuildFile.mk";
+#		"$self->{localtop}/$ENV{INTwork}/$self->{path}/BuildFile.mk\n";
+	$ENV{LatestBuildFile}="$self->{localtop}/$ENV{INTwork}/".$self->{path}."/BuildFile.mk";
 	$self->{switch}->parse("makebuild"); # sort out supported tags
 	if ( $numbins > 0 ) {
 	 print GNUmakefile <<ENDTEXT;
@@ -343,7 +344,7 @@ sub Build_start {
 	    # -- create a new directory for each type
 	    push @targets, $pattern;
 	    my $dirname=$$hashref{'class'}."_".$type."_".$name;
-	    my $here="$ENV{LOCALTOP}/$ENV{INTwork}/".$self->{path}."/".$dirname;
+	    my $here="$self->{localtop}/$ENV{INTwork}/".$self->{path}."/".$dirname;
 	    my $makefile=$here."/BuildFile.mk";
 #	    AddDir::adddir($here);
 
@@ -366,7 +367,7 @@ sub Build_start {
 	    print $fh "\t cd $dirname; \\\n";
 	    print $fh "\t echo include ".$self->{currentenv}." > ".
 							"$makefile; \\\n";
-	    print $fh "\t echo VPATH+=$ENV{LOCALTOP}/".$self->{path}.
+	    print $fh "\t echo VPATH+=$self->{localtop}/".$self->{path}.
 					" >> $makefile; \\\n";
 	    print $fh "\t echo buildname=$name >> $makefile;\\\n";
 	    print $fh "\t echo ".$dirname.":".$pattern." >> $makefile;\\\n";
@@ -432,9 +433,9 @@ sub Bin_start {
 
 	# Create a new directory for each binary target
 	my $dirname="bin_".$$hashref{name};
-	AddDir::adddir("$ENV{LOCALTOP}/$ENV{INTwork}/".$self->{path}."/$dirname");
+	AddDir::adddir("$self->{localtop}/$ENV{INTwork}/".$self->{path}."/$dirname");
 	open (binGNUmakefile, 
-	   ">$ENV{LOCALTOP}/$ENV{INTwork}/".$self->{path}."/$dirname/BuildFile.mk") or die           "Unable to make $ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/$dirname/".
+	   ">$self->{localtop}/$ENV{INTwork}/".$self->{path}."/$dirname/BuildFile.mk") or die           "Unable to make $self->{localtop}/$ENV{INTwork}/$self->{path}/$dirname/".
 	   "BuildFile.mk $!\n";
 
 	# Create the link targets
@@ -450,16 +451,16 @@ endif
 ifndef BINMODE
 
 define stepdown_$$hashref{'name'}
-if [ -d "$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/$dirname" ]; then \\
-cd $ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/$dirname; \\
-\$(MAKE) BINMODE=true LatestBuildFile=$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/$dirname/BuildFile.mk workdir=\$(workdir)/$dirname -f \$(TOOL_HOME)/basics.mk datestamp \$\@; \\
+if [ -d "$self->{localtop}/$ENV{INTwork}/$self->{path}/$dirname" ]; then \\
+cd $self->{localtop}/$ENV{INTwork}/$self->{path}/$dirname; \\
+\$(MAKE) BINMODE=true LatestBuildFile=$self->{localtop}/$ENV{INTwork}/$self->{path}/$dirname/BuildFile.mk workdir=\$(workdir)/$dirname -f \$(TOOL_HOME)/basics.mk datestamp \$\@; \\
 fi
 endef
 
 define stepdown2_$$hashref{'name'}
-if [ -d "$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/$dirname" ]; then \\
-cd $ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/$dirname; \\
-\$(MAKE) BINMODE=true LatestBuildFile=$ENV{LOCALTOP}/$ENV{INTwork}/$self{path}/$dirname/BuildFile.mk workdir=\$(workdir)/$dirname -f \$(TOOL_HOME)/basics.mk datestamp \$\*; \\
+if [ -d "$self->{localtop}/$ENV{INTwork}/$self->{path}/$dirname" ]; then \\
+cd $self->{localtop}/$ENV{INTwork}/$self->{path}/$dirname; \\
+\$(MAKE) BINMODE=true LatestBuildFile=$self->{localtop}/$ENV{INTwork}/$self{path}/$dirname/BuildFile.mk workdir=\$(workdir)/$dirname -f \$(TOOL_HOME)/basics.mk datestamp \$\*; \\
 fi
 
 endef
@@ -483,7 +484,7 @@ ENDTEXT
 
 # the binary specifics makefile
 	print binGNUmakefile "include ".$self->{currentenv}."\n";
-	print binGNUmakefile "VPATH+=$ENV{LOCALTOP}/$self{path}\n";
+	print binGNUmakefile "VPATH+=$self->{localtop}/$self{path}\n";
 
 # alias for bin_Insure
 	print binGNUmakefile <<ENDTEXT;
@@ -684,9 +685,9 @@ sub CheckBuildFile {
 	 my $ClassName="";
          my $thisfile="$classdir/$buildfile";
  
-         if ( -e $ENV{LOCALTOP}."/".$thisfile ) {
-            $DefaultBuildfile="$ENV{LOCALTOP}/$thisfile";
-            $self->ParseBuildFile($ENV{LOCALTOP}, $classdir, $buildfile);
+         if ( -e $self->{localtop}."/".$thisfile ) {
+            $DefaultBuildfile="$self->{localtop}/$thisfile";
+            $self->ParseBuildFile($self->{localtop}, $classdir, $buildfile);
          }
          elsif ( -e $ENV{RELEASETOP}."/".$thisfile ) {
             $DefaultBuildfile="$ENV{RELEASETOP}/$thisfile";
@@ -890,7 +891,7 @@ sub Environment_start {
 	  $self->{envnum}++;
 
 	  # open a new Environment File
-	  my $envfile="$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/Env_".
+	  my $envfile="$self->{localtop}/$ENV{INTwork}/$self->{path}/Env_".
 		$self->{envnum}.".mk";
 	  use FileHandle;
 	  my $fh=FileHandle->new();
@@ -900,16 +901,16 @@ sub Environment_start {
 
 	  # include the approprate environment file
 	  if ( $self->{envlevel} == 0 ) {
-	     print GNUmakefile "include $ENV{LOCALTOP}/$ENV{INTwork}/".
+	     print GNUmakefile "include $self->{localtop}/$ENV{INTwork}/".
 		$self->{path}."/BuildFile.mk\n";
 	  }
 	  else {
-	     print GNUmakefile "include $ENV{LOCALTOP}/$ENV{INTwork}/".
+	     print GNUmakefile "include $self->{localtop}/$ENV{INTwork}/".
 		$self->{path}."/Env_".$self->{Envlevels}[$self->{envlevel}].".mk\n";
 	  }
 	  $self->{envlevel}++;
 	  $self->{Envlevels}[$self->{envlevel}]=$self->{envnum};
-	  $self->{currentenv}="$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/Env_$self->{envnum}.mk";
+	  $self->{currentenv}="$self->{localtop}/$ENV{INTwork}/$self->{path}/Env_$self->{envnum}.mk";
 	}
 }
 
@@ -929,12 +930,12 @@ sub Environment_end {
 	  close $fd;
 	  *GNUmakefile=$self->{filehandlestack}[$#{$self->{filehandlestack}}];
 	  if ( $self->{envlevel} < 1 ) {
-	    $self->{currentenv}="$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/".
+	    $self->{currentenv}="$self->{localtop}/$ENV{INTwork}/$self->{path}/".
 			"BuildFile.mk";
 	  }
 	  else {
 	    $self->{currentenv}=
-	     "$ENV{LOCALTOP}/$ENV{INTwork}/$self->{path}/Env_".
+	     $self->{localtop}."/$ENV{INTwork}/$self->{path}/Env_".
 		$self->{Envlevels}[$self->{envlevel}];
 	  }
 	}
