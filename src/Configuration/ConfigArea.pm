@@ -18,6 +18,7 @@
 # addconfigitem(url)		: add a new item to the area
 # configitem(@keys)		: return a list of fig items that match
 #				  the keys - all if left blank
+# parentstore()			: set/return the parent ObjectStore
 
 package Configuration::ConfigArea;
 use ActiveDoc::ActiveDoc;
@@ -57,9 +58,8 @@ sub setup {
 	}
 	$self->location($location."/".$name);
 
-
 	# make a new store handler
-	my $parentconfig=$self->_setupstore();
+	$self->_setupstore();
 
 	# --- download everything first
 # FIX-ME --- cacheing is broken
@@ -69,7 +69,7 @@ sub setup {
 	$self->parse("setup");
 	
 	# --- store self in original database
-	$parentconfig->store($self,"ConfigArea",$self->name(),
+	$self->parentconfig()->store($self,"ConfigArea",$self->name(),
 							$self->version());
 }
 
@@ -79,13 +79,19 @@ sub _setupstore {
 	# --- make a new ActiveStore at the location and add it to the db list
 	my $ad=ActiveDoc::ActiveConfig->new($self->location()."/\.SCRAM");
 
-	my $parentconfig=$self->config();
-        $self->config(Configuration::ConfigureStore->new());
-        $self->config()->db("local",$ad);
-        $self->config()->db("parent",$parentconfig);
-        $self->config()->policy("cache","local");
-        $self->config()->basedoc($parentconfig->basedoc());
-	return $parentconfig;
+	$self->parentconfig($self->config());
+#        $self->config(Configuration::ConfigureStore->new());
+#        $self->config()->db("local",$ad);
+#        $self->config()->db("parent",$self->parentconfig());
+#        $self->config()->policy("cache","local");
+	$self->config($ad);
+        $self->config()->basedoc($self->parentconfig()->basedoc());
+}
+
+sub parentconfig {
+	my $self=shift;
+	@_?$self->{parentconfig}=shift
+	  :$self->{parentconfig};
 }
 
 sub store {
@@ -93,18 +99,26 @@ sub store {
 	my $location=shift;
 
 	my $fh=$self->openfile(">".$location);
-	print $fh $self->location()."\n";
+	$self->savevar($fh,"location", $self->location());
+	$self->savevar($fh,"url", $self->url());
+	$self->savevar($fh,"name", $self->name());
+	$self->savevar($fh,"version", $self->version());
 	$fh->close();
 }
 
 sub restore {
 	my $self=shift;
+	my $location=shift;
 
 	my $fh=$self->openfile("<".$location);
-        $self->{location}=<$fh>;
-	chomp $self->{location};
+	my $varhash={};
+	$self->restorevars($fh,$varhash);
+        $self->location($$varhash{"location"});
+	$self->_setupstore();
+        $self->url($$varhash{"url"});
+        $self->name($$varhash{"name"});
+        $self->version($$varhash{"version"});
         $fh->close();
-
 }
 
 sub name {
@@ -149,7 +163,7 @@ sub addconfigitem {
 	my $docref=$self->activatedoc($url);
         # Set up the document
         $docref->setup();
-	$self->config()->storepolicy("local");
+#	$self->config()->storepolicy("local");
 	$docref->save();
 }
 
