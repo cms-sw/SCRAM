@@ -1,0 +1,206 @@
+#
+# SimpleDoc.pm
+#
+# Originally Written by Christopher Williams
+#
+# Description
+# -----------
+# Simple multi parsing functionality
+#
+# Interface
+# ---------
+# new()		: A new ActiveDoc object
+# filetoparse([filename])	: Set/Return the filename of document
+# newparse(parselabel) : Create a new parse type
+# parse(parselabel)    : Parse the document file for the given parse level
+# addtag(parselabel,tagname,start,obj,text,obj,end,obj) :
+#				 Add tags to the parse given by label
+# checktag(tagname, hashref, param) : check for existence of param in
+#					hashref from a tag call
+# includeparse(local_parsename, objparsename, activedoc) : copy the parse from 
+#							one object to another
+# currentparser() : return the current parser object
+# currentparsename([name]) : get/set current parse name
+#
+# addignoretags(parsename) : add <ignore> </igonore> tags funtionality to the
+#				specified parse
+# --------------- Error handling routines ---------------
+# verbose(string)	: Print string in verbosity mode
+# verbosity(0|1)	: verbosity off|on 
+# line()		: return the current line number in the current parse
+# tagstartline()	: return the line number where the current tag was
+#			  opened
+# parseerror(string)   :  print error and associate with line number etc.
+# error(string)	: handle an error
+
+package ActiveDoc::SimpleDoc;
+require 5.004;
+use ActiveDoc::Parse;
+
+sub new {
+	my $class=shift;
+	$self={};
+	bless $self, $class;
+	$self->verbose("New SimpleDoc (".ref($self).") Created");
+	$self->init(@_);
+	return $self;
+}
+
+sub init {
+	# dummy to be overridden by inheriting class
+}
+
+sub verbosity {
+	my $self=shift;
+	$self->{verbose}=shift;
+}
+
+sub verbose {
+	my $self=shift;
+	my $string=shift;
+
+	if ( $self->{verbose} ) {
+	  print ">".ref($self)."($self) : \n->".$string."\n";
+	}
+}
+
+# ----- parse related routines --------------
+sub parse {
+	my $self=shift;
+	$parselabel=shift;
+
+	my $file=$self->filetoparse();
+	if ( $file ) {
+	  if ( exists $self->{parsers}{$parselabel} ) {
+	    $self->verbose("Parsing $parselabel in file $file");
+	    $self->{currentparsename}=$parselabel;
+	    $self->{currentparser}=$self->{parsers}{$parselabel};
+	    $self->{parsers}{$parselabel}->parse($file,@_);
+	    delete $self->{currentparser};
+	    $self->{currentparsename}="";
+	    $self->verbose("Parse $parselabel Complete");
+	  }
+	}
+	else {
+	  $self->error("Cannot parse $parselabel - file not known");
+	}
+}
+
+sub currentparsename {
+	my $self=shift;
+	@_?$self->{currentparsename}=shift
+	  :(defined $self->{currentparsename}?$self->{currentparsename}:"");
+}
+
+sub currentparser {
+	my $self=shift;
+	return $self->{currentparser};
+}
+
+
+sub newparse {
+	my $self=shift;
+	my $parselabel=shift;
+
+	$self->{parsers}{$parselabel}=ActiveDoc::Parse->new();
+#	$self->{parsers}{$parselabel}->addgrouptags();
+}
+
+sub addignoretags {
+	my $self=shift;
+	my $parselabel=shift;
+	$self->{parsers}{$parselabel}->addignoretags();
+}
+
+sub cleartags {
+	my $self=shift;
+        my $parselabel=shift;
+
+	$self->{parsers}{$parselabel}->cleartags();
+}
+
+
+sub includeparse {
+	my $self=shift;
+        my $parselabel=shift;
+	my $remoteparselabel=shift;
+	my $activedoc=shift;
+
+	# Some error trapping
+	if ( ! exists $self->{parsers}{$parselabel} ) {
+	  $self->error("Unknown local parse name specified");
+	}
+	if ( ! exists $activedoc->{parsers}{$remoteparselabel} ) {
+          $self->error("Unknown parse name specified in remote obj $activedoc");
+        }
+
+	#
+	my $rp=$activedoc->{parsers}{$remoteparselabel};
+	$self->{parsers}{$parselabel}->includeparse($rp);
+}
+
+sub addtag {
+	my $self=shift;
+	my $parselabel=shift;
+	if ( $#_ != 6 ) {
+		$self->error("Incorrect addtags specification\n".
+				"called with :\n@_ \n");
+	}
+	$self->{parsers}{$parselabel}->addtag(@_);
+}
+
+sub filetoparse {
+	my $self=shift;
+
+	if ( @_ ) {
+	   $self->{filename}=shift;
+	}
+	return $self->{filename};
+}
+
+# -------- Error Handling and Error services --------------
+
+sub error {
+        my $self=shift;
+        my $string=shift;
+
+        die $string."\n";
+}
+
+sub parseerror {
+        my $self=shift;
+        my $string=shift;
+
+	if ( $self->currentparsename() eq "" ) {
+		$self->error($string);
+	}
+	else {
+	 $line=$self->line();
+         print "Parse Error in ".$self->filetoparse().", line ".
+                                        $line."\n";
+         print $string."\n";
+         exit;
+	}
+}
+
+sub checktag {
+        my $self=shift;
+        my $tagname=shift;
+        my $hashref=shift;
+        my $param=shift;
+
+        if ( ! exists $$hashref{$param} ) {
+          $self->parseerror("Incomplete Tag <$tagname> : $param required");
+        }
+}
+
+sub line {
+	my $self=shift;
+	return $self->{currentparser}->line();
+}
+
+sub tagstartline {
+	my $self=shift;
+	return $self->{currentparser}->tagstartline();
+}
+
