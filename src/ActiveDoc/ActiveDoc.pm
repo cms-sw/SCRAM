@@ -21,6 +21,7 @@
 #					hashref from a tag call
 # includeparse(local_parsename, objparsename, activedoc) : copy the parse from 
 #							one object to another
+# currentparser() : return the current parser object
 # currentparsename([name]) : get/set current parse name
 # getfile(url)	: get a processedfile object given a url
 # activatedoc(url) : Return the object ref for a doc described by the given url
@@ -41,6 +42,10 @@
 # parseerror(string)  : Report an error during parsing a file
 # line()	      : Return the current line number of the document
 #			and the ProcessedFileObj it is in
+#
+# -- support for inheriting classes
+# _saveactivedoc(filehandle)
+# _restoreactivedoc(filehandle)
 
 package ActiveDoc::ActiveDoc;
 require 5.004;
@@ -127,6 +132,12 @@ sub currentparsename {
 	@_?$self->{currentparsename}=shift
 	  :$self->{currentparsename};
 }
+
+sub currentparser {
+	my $self=shift;
+	return $self->{currentparser};
+}
+
 
 sub newparse {
 	my $self=shift;
@@ -456,4 +467,20 @@ sub userinterface {
 	my $self=shift;
 	@_?$self->{userinterface}=shift
 	  :$self->{userinterface}
+}
+
+sub _saveactivedoc {
+	my $self=shift;
+	my $fh=shift;
+	print "Storing $self\n";
+	print $fh $self->url()."\n";
+}
+
+sub _restoreactivedoc {
+	my $self=shift;
+        my $fh=shift;
+
+	my $url=<$fh>;
+	chomp $url;
+	$self->url($url);
 }
