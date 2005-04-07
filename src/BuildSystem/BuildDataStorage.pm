@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.4 2005/03/11 18:55:28 sashby Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.5 2005/04/06 18:10:33 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -33,6 +33,7 @@ sub new()
      {
      BUILDTREE => {},                # Path/data pairs;
      STATUS => 0,                    # Status of cache
+     UNRESOLVED_DEPS => {},          # Hash containing packages and deps they're missing
      VERBOSE => 0                    # Verbose mode (0/1);
      };	
   
@@ -1175,24 +1176,57 @@ sub addgroup
    {
    my $self=shift;
    my ($grouparray,$datapath)=@_;
+   my $project;
    
    foreach my $group (@{$grouparray})
       {
-      # Only give a warning if the group is defined already in a
-      # BuildFile other than the one at $path (avoids errors because KNOWNGROUPS
-      # is not reset before re-parsing a BuildFile in which a group is defined):
+      # Report an error if the group is defined already in a BuildFile
+      # other than the one at $path (avoids errors because KNOWNGROUPS
+      # is not reset before re-parsing a BuildFile in which a group is defined):           
       if (exists $self->{KNOWNGROUPS}->{$group}
 	  && $self->{KNOWNGROUPS}->{$group} ne $datapath)
 	 {
-	 print "ERROR: Group \"",$group,"\", defined in ",$datapath,"/BuildFile, is already defined in ",
-	 $self->{KNOWNGROUPS}->{$group}."/BuildFile.","\n";
-	 exit(0); # For now, we exit.
+	 # Group already exists locally so exit:
+	 print "\n\n";
+	 $::scram->scramerror("Group \"".$group."\", defined in ".$datapath."/BuildFile, is already defined in ".
+			      $self->{KNOWNGROUPS}->{$group}."/BuildFile.\n");
+	 print "\n";
+	 }
+      elsif ($self->searchprojects($group,\$project))
+	 {
+	 # Group already exists in a scram project so exit:
+	 print "\n\n";
+	 $::scram->scramerror("Group \"".$group."\", defined locally in ".$datapath."/BuildFile, is already defined in ".
+			      $project."\n");
+	 print "\n";	 
 	 }
       else
 	 {
 	 $self->{KNOWNGROUPS}->{$group} = $datapath;
 	 }
       }
+   }
+
+sub searchprojects()
+   {
+   my $self=shift;
+   my ($group,$projectref)=@_;
+   
+   foreach my $pjt (keys %{$self->{SCRAM_PROJECTS}})
+      {
+      print "Checking for group $group in SCRAM project $pjt","\n", if ($ENV{SCRAM_DEBUG});
+      # As soon as a project is found to have defined $group, we return
+      # the project name:
+      if (exists $self->{SCRAM_PROJECTS}->{$pjt}->{KNOWNGROUPS}->{$group})
+	 {
+	 # Store the project name and data path:
+	 $$projectref="project ".uc($pjt)." (".$self->{SCRAM_PROJECTS}->{$pjt}->{KNOWNGROUPS}->{$group}."/BuildFile)";
+	 return(1);
+	 }
+      }
+   
+   # No group found to have been defined already so return false:
+   return (0);
    }
 
 sub findgroup
