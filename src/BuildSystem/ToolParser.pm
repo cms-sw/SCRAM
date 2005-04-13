@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-02-09 20:14:55+0100
-# Revision: $Id: ToolParser.pm,v 1.2 2004/12/10 13:41:37 sashby Exp $ 
+# Revision: $Id: ToolParser.pm,v 1.3 2005/03/03 18:57:58 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -437,6 +437,13 @@ sub processrawtool()
    if (exists ($self->{content}->{SCRAM_PROJECT}))
       {
       $tooldataobj->scram_project($self->{content}->{SCRAM_PROJECT});
+      }
+   
+   # And check to see if this tool is a compiler. If so, set
+   # the SCRAM_COMPILER variable in the ToolData object:
+   if (exists ($self->{content}->{SCRAM_COMPILER}))
+      {
+      $tooldataobj->scram_compiler($self->{content}->{SCRAM_COMPILER});
       }
 
    # Establish the order of parsing the value strings:

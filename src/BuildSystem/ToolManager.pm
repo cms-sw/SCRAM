@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.6 2005/04/06 18:10:33 sashby Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.7 2005/04/06 18:17:15 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -227,6 +227,18 @@ sub coresetup()
    # Make sure that we have this tool in the list of selected tools (just in case this tool was
    # set up by hand afterwards):
    $self->addtoselected($toolname);
+
+   # Check to see if this tool is a compiler. If so, store it.
+   # Also store the language that this compiler supprots, and a
+   # compiler name (e.g. gcc323) which, in conjunction with a stem
+   # architecture name like slc3_ia32_, can be used to build a complete arch string:
+   if ($store->scram_compiler() == 1)
+      {
+      my @supported_language = $store->flags("SCRAM_LANGUAGE_TYPE");
+      my @compilername = $store->flags("SCRAM_COMPILER_NAME");
+      $self->scram_compiler($supported_language[0],$toolname,$compilername[0]);
+      }
+   
    # Store the ToolData object in the cache:
    $self->storeincache($toolparser->toolname(),$store);
    return $self;
@@ -524,6 +536,25 @@ sub scram_projects()
       }
    
    return $scram_projects;
+   }
+
+sub scram_compiler()
+   {
+   my $self=shift;
+   my ($langtype, $toolname, $compilername)=@_;
+
+   if ($langtype)
+      {
+      # Store the compiler info according to supported
+      # language types.
+      #
+      # ---------------------- e.g C++      cxxcompiler    gcc323
+      $self->{SCRAM_COMPILER}->{$langtype}=[ $toolname, $compilername ];
+      }
+   else
+      {
+      return $self->{SCRAM_COMPILER};
+      }
    }
 
 1;

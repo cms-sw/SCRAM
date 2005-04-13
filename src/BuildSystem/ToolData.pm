@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-21 15:26:07+0100
-# Revision: $Id: ToolData.pm,v 1.2 2004/12/10 13:41:37 sashby Exp $ 
+# Revision: $Id: ToolData.pm,v 1.3 2005/02/02 16:31:11 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -131,6 +131,13 @@ sub scram_project()
       : $self->{SCRAM_PROJECT};
    }
 
+sub scram_compiler()
+   {
+   my $self=shift;
+   @_ ? $self->{SCRAM_COMPILER} = shift
+      : $self->{SCRAM_COMPILER};
+   }
+
 sub variable_data()
    {
    my $self=shift;
@@ -233,6 +240,12 @@ sub summarize_features()
    print "SCRAM_PROJECT=";
    ($self->scram_project() == 1) ? print "yes" : print "no";
    print "\n";
+
+   # A compiler tool?
+   if ($self->scram_compiler() == 1)
+      {
+      print "SCRAM_COMPILER=yes\n";
+      }
 
    # Print out any variables:
    foreach my $var (@variables)

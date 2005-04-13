@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.5 2005/03/10 12:39:28 sashby Exp $ 
+# Revision: $Id: Helper.pm,v 1.6 2005/03/14 10:57:35 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -74,7 +74,7 @@ sub version()
    $help.="$::bold";
    $help.="\tscram version [-c] [-i] [-h] [<version>]$::normal\n";
    $help.="\n";
-   $help.="The -i option shows CVS commit info (the value of '\$Id: Helper.pm,v 1.5 2005/03/10 12:39:28 sashby Exp $').\n";
+   $help.="The -i option shows CVS commit info (the value of '\$Id: Helper.pm,v 1.6 2005/03/14 10:57:35 sashby Exp $').\n";
    $help.="The -c option prints site CVS parameters to STDOUT. These parameters are used\n";
    $help.="when downloading and installing new SCRAM versions.\n";
 
@@ -485,6 +485,24 @@ sub config()
    return $help;
    }
 
+sub ui()
+   {
+   my $self=shift;
+   my $help;
+
+   $help.="Description:\n";
+   $help.="\n";
+   $help.="\tAllow user interaction with the build Metadata.\n";
+   $help.="\n";
+   $help.="Usage:\n";
+   $help.="$::bold";
+   $help.="\tscram ui -edit [class]$::normal\n";
+   $help.="$::bold";
+   $help.="\tscram ui -show [meta type]$::normal\n";
+   $help.="\n";
+
+   return $help;
+   }
 #
 # A template routine for future help commands:
 #

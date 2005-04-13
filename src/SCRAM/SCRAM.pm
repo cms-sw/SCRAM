@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.6 2005/03/03 16:02:16 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.7 2005/03/10 12:39:28 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -44,7 +44,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.6 2005/03/03 16:02:16 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.7 2005/03/10 12:39:28 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -82,7 +82,7 @@ sub commands()
    my $self = shift;
    my @env_commands = qw(version arch runtime config);
    my @info_commands = qw(list db urlget); 
-   my @buildenv_commands = qw(project setup tool);
+   my @buildenv_commands = qw(project setup tool ui);
    my @build_commands=qw(build install remove);
    my @dev_cmds=qw();
 

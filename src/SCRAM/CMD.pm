@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.13 2005/03/10 12:39:28 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.14 2005/03/14 10:57:34 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1704,6 +1704,262 @@ sub dumpconfig()
       print $info,"\n";	 
       }
    }
+
+sub ui()
+   {
+   my $self=shift;
+   my (@ARGS) = @_;
+   my $interactive = 0;
+   my ($class, $showmeta);
+   my %opts;
+   my %options =
+      ("help"	=> sub { $self->{SCRAM_HELPER}->help('ui'); exit(0) },
+       "show=s" => sub { $opts{SHOWMETA}=1; $showmeta = $_[1] },
+       "edit=s" => sub { $opts{EDITMETA}=1; $class = $_[1] }
+       );
+   
+   local @ARGV = @ARGS;
+   
+   Getopt::Long::config qw(default no_ignore_case require_order);
+   
+   if (! Getopt::Long::GetOptions(\%opts, %options))
+      {
+      $self->scramfatal("Error parsing arguments. See \"scram ui -help\" for usage info.");
+      }
+   else
+      {
+      # Check to see if we are in a local project area:
+      $self->checklocal();
+
+      # Do we want to edit metadata?
+      if ($opts{EDITMETA} && $class =~ /^[Cc].*/)
+	 {
+	 # Check to make sure that we have Curses support in our Perl:
+	 eval("use Curses");
+
+	 if ($@)
+	    {
+	    die "SCRAM Error: No Perl Curses module available on this system.","\n";
+	    }
+	 
+	 eval("use Curses::UI");
+	 
+	 if ($@)
+	    {
+	    die "SCRAM Error: No Perl Curses::UI module available on this system.","\n";
+	    }
+	 
+	 my $compilers = $self->toolmanager()->scram_compiler();
+	 my $compilerdata={};
+
+	 my $compilerhelp=
+	    {
+	    'C++' => "There isn't a C++ compiler configured.\nFor support for this type, you should set up the appropriate tool.",
+	    'C' => "There isn't a C compiler configured.\nFor support for this type, you should set up the appropriate tool.",
+	    'FORTRAN' => "There isn't a FORTRAN compiler configured.\nFor support for this type, you should set up the appropriate tool.",
+	    'JAVA' => "There isn't a JAVA compiler configured.\nFor support for this type, you should set up the appropriate tool."
+	    };	 
+	 
+	 # NB: Need to make sure that SCRAM_COMPILER in ToolManager is updated when a tool is removed!
+	 while (my ($lang, $info) = each %$compilers)
+	    {
+	    $lang =~ tr[a-z][A-Z];
+	    # Check to see if the compiler is set up. If not, store a message in the help for
+	    # the language type supported by that compiler:
+	    if ($C=$self->toolmanager()->checkifsetup($info->[0]))
+	       {
+	       printf "%-5s language supported via tool %-12s with compiler stem %s\n",$lang,$info->[0],$info->[1], if ($ENV{SCRAM_DEBUG}); 	       
+	       # Load a data structure that we'll load for our edit interface:
+	       $compilerdata->{$lang} = $C->allflags();	    
+	       $compilerhelp->{$lang} = "Compiler flags for the $lang compiler for the current architecture can be edited\nby selecting a flag name below:\n";
+	       }
+	    }
+	 
+	 my $curses_debug=0;
+	 	 
+	 use Curses;
+	 use Curses::UI;
+	 
+	 # Create the root object:
+	 my $cui = Curses::UI->new(
+				   -clear_on_exit => 0,
+				   -color_support => 0,
+				   -debug => $curses_debug
+				   );
+	 
+	 # Window index:
+	 my $current_ = 'root';
+	 
+	 # Windows:
+	 my %w_ = ();
+	 my %w_verbosity_ = ();
+	 
+	 # ----------------------------------------------------------------------
+	 # Create the windows for each menu option. Each selects a new window 
+	 # in which other widgets can appear:
+	 # ----------------------------------------------------------------------
+	 my $window_types =
+	    {
+	    '0' => 'root',
+	    '1' => 'C++',
+	    '2' => 'C',
+	    '3' => 'FORTRAN',
+	    '4' => 'JAVA'
+	       };
+	 
+	 while (my ($n,$win_) = each %$window_types)
+	    {
+	    my $id = "window_$win_";
+	    
+	    next if ($n == 0);
+	    
+	    $w_{$win_} = $cui->add(
+				   $id, 'Window',
+				   -border        => 1, 
+				   -y             => -4, 
+				   -height        => 22
+				   );
+	    
+	    $w_{$win_}->add(
+			    "$win_".'explain', 'Label',
+			    -text => $compilerhelp->{$win_}."\n"
+			    );
+	    
+	    $w_{$win_}->add(
+			    undef, 'Buttonbox',
+			    -x => 2,
+			    -y => 3,
+			    -buttonalignment => 'left',
+			    -vertical => 1,
+			    -buttons => [
+					 map
+					    {
+					       { -label => "$_",
+						 -value => "$_",
+						 -onpress => sub
+						    {
+						    my $this_button=shift;
+						    my $flagname=$this_button->get();						    
+						    my $newflagvalue=$this_button->root->question
+						       (
+							-question => "Current value: ".join(" ",@{$compilerdata->{$current_}->{$flagname}}),
+							-answer => join(" ",@{$compilerdata->{$current_}->{$flagname}}),
+							-title   => "Edit ".$flagname
+							);
+						    
+						    if ($newflagvalue)
+						       {
+						       $this_button->root->dialog("New value = $newflagvalue");
+						       $compilerdata->{$current_}->{$flagname} = [ split(" ",$newflagvalue) ];
+						       }
+						    }},
+					       } keys %{$compilerdata->{$win_}}
+					 ],
+			    );	    
+	    }
+	 
+	 # Now the top window:
+	 my $id = 'top';
+	 $w_{$current_} = $cui->add(
+				    $id, 'Window',
+				    -border        => 0,
+				    -y             => -4,
+				    -height        => 22,
+				    );
+	 
+	 $w_{$current_}->add(
+			     "$current_".'explain', 'Label',
+			     -text => " Select a compiler type to edit from the menu \"Compiler\".\n"
+			     . " Architecture support options can be edited by selecting "
+			     . "\"Architecture\".\n\n"
+			     );
+	 
+	 # Start by focussing the main window:
+	 $w_{$current_}->focus;
+	 
+	 
+	 # Define main menu:
+	 my $cache_menu=[
+			    { -label => 'Write Changes and Exit', -value => sub { exit(0); } },
+			    { -label => 'Exit w/o Save',          -value => sub { exit(0); } },
+			 ];
+	 
+	 my $compiler_menu=[
+			       { -label => 'C++', -value => sub
+				    {
+				    my ($window_index_)='C++';
+				    $current_=$window_index_;
+				    $w_{$current_}->focus;
+				    }},
+			       { -label => 'C', -value => sub
+				    {
+				    my ($window_index_)='C';
+				    $current_=$window_index_;
+				    $w_{$current_}->focus;
+				    }},
+			       { -label => 'FORTRAN', -value => sub
+				    {
+				    my ($window_index_)='FORTRAN';
+				    $current_=$window_index_;
+				    $w_{$current_}->focus;
+				    }},
+			       { -label => 'JAVA', -value => sub
+				    {
+				    my ($window_index_)='JAVA';
+				    $current_=$window_index_;
+				    $w_{$current_}->focus;
+				    }}
+			    ];
+	 
+	 my $arch_menu=[];
+	 
+	 my $menu = [
+			{ -label => 'Save/Exit', -submenu => $cache_menu    },
+			{ -label => 'Compiler',  -submenu => $compiler_menu  },
+			{ -label => 'Architecture',  -submenu => $arch_menu  },	  
+		     ];
+	 
+	 # Add the menu bar to the main window:
+	 $cui->add('menu', 'Menubar', -menu => $menu );
+	 
+	 # ----------------------------------------------------------------------
+	 # Create application info window at the top and the helper window
+	 # at the bottom of the main window:
+	 # ----------------------------------------------------------------------
+	 my $w0bottom = $cui->add(
+				  'w0bottom', 'Window', 
+				  -border        => 1, 
+				  -y             => -1, 
+				  -height        => 3,
+				  );
+	 
+	 $w0bottom->add('explain', 'Label', 
+			-text => "CTRL+X: menu  CTRL+Q: save changes/exit"
+			);
+	 
+	 # ----------------------------------------------------------------------
+	 # Setup bindings and focus 
+	 # ----------------------------------------------------------------------
+	 
+	 # Bind <CTRL+Q> to quit.
+	 $cui->set_binding( sub{ exit(0); }, "\cQ" );
+	 
+	 # Bind <CTRL+X> to menubar.
+	 $cui->set_binding( sub{ shift()->root->focus('menu') }, "\cX" );
+	 
+	 # The main application loop:
+	 MainLoop;	 		 
+	 } # End of EDITMETA
+
+      if ($opts{SHOWMETA})
+	 {
+	 print "Do something for showmeta for class \"".$showmeta."\"","\n";
+	 }
+
+      
+      }
+   }
+
 
 #### End of CMD.pm ####
 1;
