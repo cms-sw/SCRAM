@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.14 2005/03/14 10:57:34 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.15 2005/04/13 16:45:37 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1880,8 +1880,35 @@ sub ui()
 	 
 	 # Define main menu:
 	 my $cache_menu=[
-			    { -label => 'Write Changes and Exit', -value => sub { exit(0); } },
-			    { -label => 'Exit w/o Save',          -value => sub { exit(0); } },
+			    { -label => 'Write Changes and Exit',
+			      -value => sub
+				 {
+				 my $return = $cui->dialog(
+							   -message   => "Exit, Saving Changes to the Cache?",
+							   -title     => "Exit and Save",
+							   -buttons   => ['yes', 'no'],							   
+							   );
+				 
+				 if ($return)
+				    {
+				    $cui->status("Writing to cache...");
+				    use Data::Dumper;
+				    print STDERR Dumper($compilerdata),"\n";
+				    $cui->nostatus;
+				    exit(0);
+				    }
+				 
+				 } },
+			    { -label => 'Exit without Save',
+			      -value => sub
+				 {
+				 my $return = $cui->dialog(
+							   -message   => "Exit, Without Saving Changes?",
+							   -title     => "Exit Without Save",
+							   -buttons   => ['yes', 'no'],							   
+							   );
+				 exit(0) if $return;				 
+				 } },
 			 ];
 	 
 	 my $compiler_menu=[
@@ -1916,7 +1943,7 @@ sub ui()
 	 my $menu = [
 			{ -label => 'Save/Exit', -submenu => $cache_menu    },
 			{ -label => 'Compiler',  -submenu => $compiler_menu  },
-			{ -label => 'Architecture',  -submenu => $arch_menu  },	  
+			{ -label => 'Architecture', -submenu => $arch_menu  },	  
 		     ];
 	 
 	 # Add the menu bar to the main window:
@@ -1942,7 +1969,13 @@ sub ui()
 	 # ----------------------------------------------------------------------
 	 
 	 # Bind <CTRL+Q> to quit.
-	 $cui->set_binding( sub{ exit(0); }, "\cQ" );
+	 $cui->set_binding( sub
+			       {
+			       $cui->status("Exitting - no changes recorded...");
+			       sleep 1;
+			       $cui->nostatus;
+			       exit(0);
+			       }, "\cQ" );
 	 
 	 # Bind <CTRL+X> to menubar.
 	 $cui->set_binding( sub{ shift()->root->focus('menu') }, "\cX" );
