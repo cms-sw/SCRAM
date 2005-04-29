@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.5 2005/04/06 18:10:33 sashby Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.6 2005/04/07 13:47:24 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -182,21 +182,33 @@ sub updatemkfrommeta()
 sub scanbranch()
    {
    my $self=shift;
-   my ($files,$datapath)=@_;
+   my ($files, $datapath)=@_;
+   my $bfbranch;
+   my $buildfiles;
    # Fix (or rather hack) so that only the current buildfile is parsed, not the parent.
    # This is required becuase it's not desired to pick up dependencies from the level lower:
    # one should always do it via a <use name=x> to get the package deps. We don't care about
    # deps in subsystems (they're only used to define groups) and project-wide deps are added at
    # template level:
-   my $nfiles = [ $files->[0] ];
+   if (exists($ENV{SCRAM_XMLBUILDFILES}) && ($ENV{SCRAM_XMLBUILDFILES}))
+      {
+      use BuildSystem::XMLBuildFile;
+      $bfbranch=BuildSystem::XMLBuildFile->new();   
+      $buildfiles = [ $files->[0].".xml" ];
+      }
+   else
+      {
+      use BuildSystem::BuildFile;
+      $bfbranch=BuildSystem::BuildFile->new();
+      $buildfiles=[ $files->[0] ];
+      }
    
    # Scan all buildfiles in a branch:
-   use BuildSystem::BuildFile;
-   my $bfbranch=BuildSystem::BuildFile->new();
-   $bfbranch->parsebranchfiles($nfiles);
-
+   $bfbranch->parsebranchfiles($buildfiles);
+   
    # Store:
    $self->storebranchmetadata($datapath,$bfbranch);
+   
    return $self;
    }
 
@@ -931,12 +943,26 @@ sub updateadir()
 sub scan()
    {
    my $self=shift;
-   my ($buildfile, $datapath) = @_;
+   my ($inputbuildfile, $datapath) = @_;
+   my $bfparse;
+   my $buildfile;
    
-   use BuildSystem::BuildFile;
-   my $bfparse=BuildSystem::BuildFile->new();   
-   $bfparse->parse($buildfile);
+   if (exists($ENV{SCRAM_XMLBUILDFILES}) && ($ENV{SCRAM_XMLBUILDFILES}))
+      {
+      use BuildSystem::XMLBuildFile;
+      $bfparse=BuildSystem::XMLBuildFile->new();   
+      $buildfile=$inputbuildfile.".xml";
+      }
+   else
+      {
+      use BuildSystem::BuildFile;
+      $bfparse=BuildSystem::BuildFile->new();
+      $buildfile=$inputbuildfile;
+      }
 
+   # Execute the parse:
+   $bfparse->parse($buildfile);
+   
    # Store group data:
    $self->addgroup($bfparse->defined_group(), $datapath)
       if ($bfparse->defined_group());
@@ -1395,6 +1421,64 @@ sub save()
    delete $self->{SCRAM_PROJECTS};
    delete $self->{SCRAM_PROJECT_BASES};   
    return $self;
+   }
+
+
+
+
+
+
+
+#### Routines for migrating BuildFile syntax to XML ####
+sub scan2xml()
+   {
+   my $self=shift;
+   my ($buildfile) = @_;
+   print "Migrating $buildfile to XML","\n";
+   use BuildSystem::BuildFileXMLWriter;
+   my $bfparse=BuildSystem::BuildFileXMLWriter->new();
+   $bfparse->parse($buildfile);
+   return $self;
+   }
+
+sub migrate2XML()
+   {
+   my $self=shift;
+   my ($paths)=@_;
+   my $datapath;
+   my $buildfile;
+   $|=1; # Flush
+
+   # Loop over all paths. Apply a sort so that src (shortest path) is first (FIXME!):
+   foreach my $path (sort(@$paths))
+      {
+      # Ignore config content here:
+      next if ($path !~ m|^\Q$ENV{SCRAM_SOURCEDIR}\L|);
+      
+      # If we have the project root (i.e. src), we want to process the
+      # top-level (project config) BuildFile:
+      if ($path eq $ENV{SCRAM_SOURCEDIR})
+	 {
+	 $buildfile = $ENV{SCRAM_CONFIGDIR}."/BuildFile";
+	 # Parse the top-level BuildFile. We must do this here
+	 # because we need the ClassPaths. Store as RAWDATA:
+	 $self->scan2xml($buildfile);
+	 next;
+	 }
+      else
+	 {
+	 $buildfile = $path."/BuildFile";
+	 }
+      
+      # If this BuildFile exists, store in METABF:
+      if ( -f $buildfile )
+	 {
+	 # Scan to resolve groups. Store as RAWDATA:
+	 $self->scan2xml($buildfile);
+	 }
+      }
+   
+   print "\n";
    }
 
 1;
