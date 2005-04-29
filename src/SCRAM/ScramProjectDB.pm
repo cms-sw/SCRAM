@@ -20,7 +20,7 @@
 # link(dblocation) : link with specified db 
 # unlink(dblocation) : remove link with a specified db
 
-package Scram::ScramProjectDB;
+package SCRAM::ScramProjectDB;
 use Utilities::Verbose;
 require 5.004;
 @ISA=qw(Utilities::Verbose);
@@ -254,7 +254,7 @@ sub link {
 	my $self=shift;
 	my $dbfile=shift;
 
-	my $newdb=Scram::ScramProjectDB->new($dbfile);
+	my $newdb=SCRAM::ScramProjectDB->new($dbfile);
 	push @{$self->{linkeddbs}},$newdb; 
 	$self->_save();
 }
@@ -331,7 +331,7 @@ sub _readdbfile {
                 my $db=$1;
                 if ( -f $db ) {
 		  $self->verbose("Getting Linked DB $db");
-                  $newdb=Scram::ScramProjectDB->new($db);
+                  $newdb=SCRAM::ScramProjectDB->new($db);
 		  push @{$self->{linkeddbs}},$newdb; 
                 }
                 next;

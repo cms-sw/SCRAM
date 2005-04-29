@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.16 2005/04/21 17:36:28 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.17 2005/04/29 16:10:35 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1005,11 +1005,11 @@ sub bootfromrelease()
       # this before setting up self:
       $self->create_productdirs($area->location());
       # The lookup db:
-      use Scram::AutoToolSetup;
+      use SCRAM::AutoToolSetup;
 
       # Default path to conf file:
       $toolconf ||= $area->location()."/".$ENV{SCRAM_CONFIGDIR}."/site/tools-".$ENV{SCRAM_SITENAME}.".conf";
-      $::lookupdb = Scram::AutoToolSetup->new($toolconf);  
+      $::lookupdb = SCRAM::AutoToolSetup->new($toolconf);  
       
       # Need a toolmanager, then we can setup:
       my $toolmanager = $self->toolmanager($area);
@@ -1036,7 +1036,7 @@ sub bootnewproject()
    my $areaname="";
    my ($bootstrapfile,$installarea,$toolconf)=@_;
 
-   use Scram::AutoToolSetup;
+   use SCRAM::AutoToolSetup;
    use BuildSystem::ToolManager;
    use BuildSystem::Requirements;
    use Configuration::BootStrapProject;
@@ -1073,7 +1073,7 @@ sub bootnewproject()
    # Need an autotoolssetup object:
    $ENV{'SCRAM_SITENAME'} = $area->sitename();
    $ENV{'SCRAM_PROJECTDIR'} = $area->location();
-   $::lookupdb = Scram::AutoToolSetup->new($toolconf);   
+   $::lookupdb = SCRAM::AutoToolSetup->new($toolconf);   
    
    # Now run the full setup for the area:
    print "\n","Using SCRAM toolbox version ",$area->toolboxversion(),"\n\n";
@@ -1228,8 +1228,8 @@ sub setup()
       $toolmanager->interactive($interactive);
       
       # Initialize the lookup table:
-      use Scram::AutoToolSetup;
-      $::lookupdb = Scram::AutoToolSetup->new($toolconf);
+      use SCRAM::AutoToolSetup;
+      $::lookupdb = SCRAM::AutoToolSetup->new($toolconf);
 
       if ($toolname && $toolversion && $toolurl)
 	 {	 
