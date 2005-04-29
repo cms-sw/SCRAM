@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.15 2005/04/13 16:45:37 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.16 2005/04/21 17:36:28 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -742,7 +742,8 @@ sub build()
 			      if (-f $builddatastore) ;
 			   $now = time; utime $now, $now, $toolcache },
        "fast"     => sub { print "Skipping cache scan...","\n"; $fast=1 },
-       "writegraphs=s"  => sub { $opts{WRITE_GRAPHS} = 1; $graphmode=$_[1] });
+       "writegraphs=s"  => sub { $opts{WRITE_GRAPHS} = 1; $graphmode=$_[1] },
+       "xmlb"     => sub {$ENV{SCRAM_XMLBUILDFILES} = 1; print "SCRAM: Will read XML versions of your BuildFiles.","\n" } );
    
    local (@ARGV) = @_;
 
@@ -1988,11 +1989,99 @@ sub ui()
 	 {
 	 print "Do something for showmeta for class \"".$showmeta."\"","\n";
 	 }
-
+      
       
       }
    }
 
+sub xmlmigrate()
+   {
+   my $self=shift;
+   unshift @INC, $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};
+   # The cache files:
+   my $toolcache=$ENV{LOCALTOP}."/.SCRAM/".$ENV{SCRAM_ARCH}."/ToolCache.db";
+   my $dircache=$ENV{LOCALTOP}."/.SCRAM/DirCache.db";
+   my $builddatastore=$ENV{LOCALTOP}."/.SCRAM/".$ENV{SCRAM_ARCH}."/ProjectCache.db";
+   # Default mode for graphing is package-level:
+   my $graphmode||='PACKAGE';
+   my $fast=0;
+   my $workingdir=$ENV{LOCALTOP}."/".$ENV{SCRAM_INTwork};
+   my $makefilestatus=0;
+   my ($packagebuilder,$dataposition,$buildstoreobject);
+   my $verbose=0;
+   my $configbuildfiledir=$ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};
+
+   # Getopt variables:
+   my %opts = ( WRITE_GRAPHS => 0, # No graphs produced by default;
+		SCRAM_TEST => 0 ); # test mode: don't run make;
+   my %options =
+      ("help"     => sub { $self->{SCRAM_HELPER}->help('xmlmigrate'); exit(0) });
+
+   local (@ARGV) = @_;
+   
+   # Set the options:
+   Getopt::Long::config qw(default no_ignore_case require_order pass_through);
+   
+   if (! Getopt::Long::GetOptions(\%opts, %options))
+      {
+      $self->scramfatal("Error parsing arguments. See \"scram build -help\" for usage info.");
+      }
+   else
+      {
+      # Check to see if we are in a local project area:
+      $self->checklocal();
+
+      # Set location variables:
+      use Cwd;
+      my $current_dir = cwd();
+      
+      # Set THISDIR. If we have a full match on LOCALTOP, set THISDIR to src:
+      ($ENV{THISDIR}) = ($current_dir =~ m|^$ENV{LOCALTOP}/(.*)$|);
+      if ($ENV{THISDIR} eq '')
+	 {
+	 $ENV{THISDIR} = $ENV{SCRAM_SOURCEDIR};
+	 }
+      
+      # Set up file cache object:
+      use Cache::Cache;
+      use Cache::CacheUtilities;      
+      use Utilities::AddDir;
+
+      my $cacheobject=Cache::Cache->new();
+      my $cachename=$cacheobject->name($dircache);
+
+      # Where to search for BuildFiles (from src):
+      chdir($ENV{LOCALTOP});
+
+      if ( -r $cachename )
+	 {
+	 print "Reading cached data","\n",if ($ENV{SCRAM_DEBUG});
+	 $cacheobject=&Cache::CacheUtilities::read($cachename);
+	 }
+
+      # Set verbosity for cache object:
+      $cacheobject->verbose($ENV{SCRAM_CACHEDEBUG});
+      
+      use BuildSystem::BuildDataStorage;
+      $buildstoreobject=BuildSystem::BuildDataStorage->new($configbuildfiledir);
+      $buildstoreobject->name($builddatastore);
+	 
+      if ( -r $builddatastore )
+	 {
+	 print "Reading cached build data","\n";	 
+	 $buildstoreobject=&Cache::CacheUtilities::read($builddatastore);
+	 # We populate our build data cache:
+	 print "Migrating BuildFiles\n";
+	 $buildstoreobject->migrate2XML($cacheobject->paths());
+	 }
+      else
+	 {
+	 die "SCRAM: You must run \"scram b\" first to populate the cache.","\n";
+	 }
+      }
+   
+   return 0;
+   }
 
 #### End of CMD.pm ####
 1;

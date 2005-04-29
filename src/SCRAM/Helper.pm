@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.6 2005/03/14 10:57:35 sashby Exp $ 
+# Revision: $Id: Helper.pm,v 1.7 2005/04/13 16:45:37 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -74,7 +74,7 @@ sub version()
    $help.="$::bold";
    $help.="\tscram version [-c] [-i] [-h] [<version>]$::normal\n";
    $help.="\n";
-   $help.="The -i option shows CVS commit info (the value of '\$Id: Helper.pm,v 1.6 2005/03/14 10:57:35 sashby Exp $').\n";
+   $help.="The -i option shows CVS commit info (the value of '\$Id: Helper.pm,v 1.7 2005/04/13 16:45:37 sashby Exp $').\n";
    $help.="The -c option prints site CVS parameters to STDOUT. These parameters are used\n";
    $help.="when downloading and installing new SCRAM versions.\n";
 
@@ -435,7 +435,9 @@ sub build()
    $help.="                     directory. If you set the environment variable SCRAM_WRITEGRAPHS=X\n";
    $help.="                     (where X is PS/JPEG/GIF), SCRAM will automatically create the graphs in format X.\n\n";
    $help.="                     Note that you must have AT&T's Dot program installed and in\n";
-   $help.="                     your path to be able to use this feature.\n";
+   $help.="                     your path to be able to use this feature.\n\n";
+   $help.="--xmlb               Read XML versions of BuildFiles. This assumes that \"scram xmlmigrate\" has\n";
+   $help.="                     already been run in the current project area.\n";
    $help.="\n";
    $help.="$::bold";
    $help.="Example:$::normal To refresh the current area cache, produce global dependency graphs but not run gmake\n";
@@ -503,6 +505,29 @@ sub ui()
 
    return $help;
    }
+
+sub xmlmigrate()
+   {
+   my $self=shift;
+   my $help;
+
+   $help.="Description:\n";
+   $help.="\n";
+   $help.="\tAllow a user to migrate all BuildFiles in the current area\n";
+   $help.="\tto XML syntax. This command will convert every BuildFile to\n";
+   $help.="\tXML, storing it in a file called \"BuildFile.xml\" in the same\n";
+   $help.="\tlocation. The normal BuildFile will NOT be removed.\n\n";
+   $help.="Usage:\n";
+   $help.="$::bold";
+   $help.="\tscram xmlmigrate$::normal\n";
+   $help.="\n";
+   $help.="Also see \"scram build\" command for how to build from XML BuildFiles.\n\n";
+
+   return $help;
+   }
+
+
+
 #
 # A template routine for future help commands:
 #
