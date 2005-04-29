@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.7 2005/04/06 18:17:15 sashby Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.8 2005/04/13 16:45:36 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -22,7 +22,7 @@ use Utilities::Verbose;
 @ISA=qw(BuildSystem::ToolCache Utilities::Verbose);
 @EXPORT_OK=qw( );
 #
-#
+
 sub new
    ###############################################################
    # new                                                         #
