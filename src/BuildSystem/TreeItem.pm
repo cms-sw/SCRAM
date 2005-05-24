@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-24 12:24:57+0200
-# Revision: $Id: TreeItem.pm,v 1.2 2004/12/10 13:41:38 sashby Exp $ 
+# Revision: $Id: TreeItem.pm,v 1.3 2005/03/09 19:28:20 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -124,6 +124,11 @@ sub name()
       elsif ($self->{CLASS} eq 'SUBSYSTEM')
 	 {
 	 # We want the name of the subsystem:
+	 ($self->{NAME}) = ($classdir =~ m|^.*/(.*)?$|);
+	 }
+      elsif ($self->{CLASS} eq 'DOMAIN')
+	 {
+	 # We want the name of the domain:
 	 ($self->{NAME}) = ($classdir =~ m|^.*/(.*)?$|);
 	 }
       else

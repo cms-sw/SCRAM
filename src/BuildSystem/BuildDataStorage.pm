@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.6 2005/04/07 13:47:24 sashby Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.7 2005/04/29 16:18:56 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -224,7 +224,7 @@ sub procrecursive()
    my $parent = $treedata->parent();
    my $parenttree = $self->buildtreeitem($parent);
    # Base classes. These are structural template classes which are fixed in SCRAM:
-   my $baseclasses = [ qw( SUBSYSTEM PACKAGE ) ];   
+   my $baseclasses = [ qw( DOMAIN SUBSYSTEM PACKAGE ) ];   
    
    # If we have a parent dir, collect METABF. Skip inheriting from config/BuildFile:
    if (defined ($parenttree) && $parenttree->metabf() && $parent ne 'src')
@@ -293,7 +293,7 @@ sub updaterecursive()
    my $parent = $treedata->parent();
    my $parenttree = $self->buildtreeitem($parent);
    # Base classes. These are structural template classes which are fixed in SCRAM:
-   my $baseclasses = [ qw( SUBSYSTEM PACKAGE ) ];   
+   my $baseclasses = [ qw( DOMAIN SUBSYSTEM PACKAGE ) ];   
    
    # If we have a parent dir, collect METABF. Skip inheriting from config/BuildFile:
    if (defined ($parenttree) && $parenttree->metabf() && $parent ne 'src')
