@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.7 2005/04/29 16:18:56 sashby Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.8 2005/05/24 09:09:42 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -918,7 +918,11 @@ sub updateadir()
    # Update the status of the parent. Add the child and update
    # the safe subdirs:
    my $parent = $self->{BUILDTREE}->{$datapath}->parent();
-   $self->{BUILDTREE}->{$parent}->updateparentstatus($datapath);
+
+   if (defined($self->{BUILDTREE}->{$parent}))
+      {
+      $self->{BUILDTREE}->{$parent}->updateparentstatus($datapath);
+      }
    
    # Now check to see if there is a BuildFile here. If there is, parse it:
    if ( -f $possiblebf)
