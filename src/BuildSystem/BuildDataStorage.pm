@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.8 2005/05/24 09:09:42 sashby Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.9 2005/05/24 17:36:19 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -192,6 +192,7 @@ sub scanbranch()
    # template level:
    if (exists($ENV{SCRAM_XMLBUILDFILES}) && ($ENV{SCRAM_XMLBUILDFILES}))
       {
+      print "Reading ".$files->[0].".xml","\n";
       use BuildSystem::XMLBuildFile;
       $bfbranch=BuildSystem::XMLBuildFile->new();   
       $buildfiles = [ $files->[0].".xml" ];
@@ -956,6 +957,7 @@ sub scan()
       use BuildSystem::XMLBuildFile;
       $bfparse=BuildSystem::XMLBuildFile->new();   
       $buildfile=$inputbuildfile.".xml";
+      print "Reading ",$buildfile,"\n";
       }
    else
       {
