@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.18 2005/04/29 16:14:23 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.19 2005/05/27 17:30:51 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1736,6 +1736,8 @@ sub ui()
       if ($opts{EDITMETA} && $class =~ /^[Cc].*/)
 	 {
 	 my $dummy=1;
+#	 $self->start_tk_ui();
+	 $self->do_ui2();
 	 } # End of EDITMETA
 
       if ($opts{SHOWMETA})
@@ -1832,6 +1834,530 @@ sub xmlmigrate()
       }
    
    return 0;
+   }
+
+# The Tk UI:
+sub start_tk_ui()
+   {
+   my $self=shift;
+
+   use Tk;
+   use Tk::DialogBox;
+   use Tk::NoteBook;
+   use Tk::LabEntry;
+   
+   my $name = "cc -c -Wall -ftemplate-depth=300";
+
+   my $top = MainWindow->new;
+   my %language_notebooks;
+   my $language_types=[qw(C++ C F77)];
+
+   $n = $top->NoteBook(-ipadx => 6, -ipady => 6);
+
+#   my $ltype="C++";
+   
+#   foreach my $ltype (@$language_types)
+#      {
+#   my $lab_p =2;
+#   $n->add(lc($ltype)."_w", -label => $ltype." Support", -underline => 0);
+   
+#   $language_notebooks{$ltype} = $n->NoteBook(-ipadx => 6, -ipady => 6);
+   
+   
+#   my $comp_p = $language_notebooks{$ltype}->add("comp".lc($ltype),
+#						 -label => "Compilation ", -underline => 0);
+#      my $link_p = $language_notebooks{$ltype}->add("link".lc($ltype),
+#						    -label => "Linking     ", -underline => 0);
+#      my $arch_p = $language_notebooks{$ltype}->add("arch".lc($ltype),
+#						    -label => "Arch options", -underline => 0);
+   
+#   $language_notebooks{$ltype}->pack(-expand => "yes",
+#				     -fill => "both",
+#				     -padx => 5, -pady => 5,
+	#			     -side => "top");            
+#      }
+   
+
+
+   
+   
+   
+   $n = $top->NoteBook(-ipadx => 6, -ipady => 6);
+   
+   my $comp_p = $n->add("comp", -label => "Compilation ", -underline => 0);
+   my $link_p = $n->add("link", -label => "Linking     ", -underline => 0);
+   my $arch_p = $n->add("arch", -label => "Arch options", -underline => 0);
+   
+   # Iterate over this of flags in the cxxcompiler tool cache item
+
+   
+   $comp_p->LabEntry(-label => "Flags:             ",
+		     -labelPack => [-side => "left", -anchor => "w"],
+		     -width => 20,
+		     -textvariable => \$name)->pack(-side => "top", -anchor => "nw");
+
+   $link_p->LabEntry(-label => "Linker opts:       ",
+		     -labelPack => [-side => "left", -anchor => "w"],
+		     -width => 20,
+		     -textvariable => \$name)->pack(-side => "top", -anchor => "nw");
+   
+   $arch_p->LabEntry(-label => "Arch opts:         ",
+		     -labelPack => [-side => "left", -anchor => "w"],
+		     -width => 20,
+		     -textvariable => \$name)->pack(-side => "top", -anchor => "nw");
+   
+   $n->pack(-expand => "yes",
+ 	    -fill => "both",
+ 	    -padx => 5, -pady => 5,
+ 	    -side => "top");      
+   
+   MainLoop;
+   
+   }
+
+# 	 eval("use Curses");
+
+# 	 if ($@)
+# 	    {
+# 	    die "SCRAM Error: No Perl Curses module available on this system.","\n";
+# 	    }
+	 
+# 	 eval("use Curses::UI");
+	 
+# 	 if ($@)
+# 	    {
+# 	    die "SCRAM Error: No Perl Curses::UI module available on this system.","\n";
+# 	    }
+	 
+# 	 my $compilers = $self->toolmanager()->scram_compiler();
+# 	 my $compilerdata={};
+
+# 	 my $compilerhelp=
+# 	    {
+# 	    'C++' => "There isn't a C++ compiler configured.\nFor support for this type, you should set up the appropriate tool.",
+# 	    'C' => "There isn't a C compiler configured.\nFor support for this type, you should set up the appropriate tool.",
+# 	    'FORTRAN' => "There isn't a FORTRAN compiler configured.\nFor support for this type, you should set up the appropriate tool.",
+# 	    'JAVA' => "There isn't a JAVA compiler configured.\nFor support for this type, you should set up the appropriate tool."
+# 	    };	 
+	 
+# 	 # NB: Need to make sure that SCRAM_COMPILER in ToolManager is updated when a tool is removed!
+# 	 while (my ($lang, $info) = each %$compilers)
+# 	    {
+# 	    $lang =~ tr[a-z][A-Z];
+# 	    # Check to see if the compiler is set up. If not, store a message in the help for
+# 	    # the language type supported by that compiler:
+# 	    if ($C=$self->toolmanager()->checkifsetup($info->[0]))
+# 	       {
+# 	       printf "%-5s language supported via tool %-12s with compiler stem %s\n",$lang,$info->[0],$info->[1], if ($ENV{SCRAM_DEBUG}); 	       
+# 	       # Load a data structure that we'll load for our edit interface:
+# 	       $compilerdata->{$lang} = $C->allflags();	    
+# 	       $compilerhelp->{$lang} = "Compiler flags for the $lang compiler for the current architecture can be edited\nby selecting a flag name below:\n";
+# 	       }
+# 	    }
+	 
+# 	 my $curses_debug=0;
+	 	 
+# 	 use Curses;
+# 	 use Curses::UI;
+	 
+# 	 # Create the root object:
+# 	 my $cui = Curses::UI->new(
+# 				   -clear_on_exit => 0,
+# 				   -color_support => 0,
+# 				   -debug => $curses_debug
+# 				   );
+	 
+# 	 # Window index:
+# 	 my $current_ = 'root';
+	 
+# 	 # Windows:
+# 	 my %w_ = ();
+# 	 my %w_verbosity_ = ();
+	 
+# 	 # ----------------------------------------------------------------------
+# 	 # Create the windows for each menu option. Each selects a new window 
+# 	 # in which other widgets can appear:
+# 	 # ----------------------------------------------------------------------
+# 	 my $window_types =
+# 	    {
+# 	    '0' => 'root',
+# 	    '1' => 'C++',
+# 	    '2' => 'C',
+# 	    '3' => 'FORTRAN',
+# 	    '4' => 'JAVA'
+# 	       };
+	 
+# 	 while (my ($n,$win_) = each %$window_types)
+# 	    {
+# 	    my $id = "window_$win_";
+	    
+# 	    next if ($n == 0);
+	    
+# 	    $w_{$win_} = $cui->add(
+# 				   $id, 'Window',
+# 				   -border        => 1, 
+# 				   -y             => -4, 
+# 				   -height        => 22
+# 				   );
+	    
+# 	    $w_{$win_}->add(
+# 			    "$win_".'explain', 'Label',
+# 			    -text => $compilerhelp->{$win_}."\n"
+# 			    );
+	    
+# 	    $w_{$win_}->add(
+# 			    undef, 'Buttonbox',
+# 			    -x => 2,
+# 			    -y => 3,
+# 			    -buttonalignment => 'left',
+# 			    -vertical => 1,
+# 			    -buttons => [
+# 					 map
+# 					    {
+# 					       { -label => "$_",
+# 						 -value => "$_",
+# 						 -onpress => sub
+# 						    {
+# 						    my $this_button=shift;
+# 						    my $flagname=$this_button->get();						    
+# 						    my $newflagvalue=$this_button->root->question
+# 						       (
+# 							-question => "Current value: ".join(" ",@{$compilerdata->{$current_}->{$flagname}}),
+# 							-answer => join(" ",@{$compilerdata->{$current_}->{$flagname}}),
+# 							-title   => "Edit ".$flagname
+# 							);
+						    
+# 						    if ($newflagvalue)
+# 						       {
+# 						       $this_button->root->dialog("New value = $newflagvalue");
+# 						       $compilerdata->{$current_}->{$flagname} = [ split(" ",$newflagvalue) ];
+# 						       }
+# 						    }},
+# 					       } keys %{$compilerdata->{$win_}}
+# 					 ],
+# 			    );	    
+# 	    }
+	 
+# 	 # Now the top window:
+# 	 my $id = 'top';
+# 	 $w_{$current_} = $cui->add(
+# 				    $id, 'Window',
+# 				    -border        => 0,
+# 				    -y             => -4,
+# 				    -height        => 22,
+# 				    );
+	 
+# 	 $w_{$current_}->add(
+# 			     "$current_".'explain', 'Label',
+# 			     -text => " Select a compiler type to edit from the menu \"Compiler\".\n"
+# 			     . " Architecture support options can be edited by selecting "
+# 			     . "\"Architecture\".\n\n"
+# 			     );
+	 
+# 	 # Start by focussing the main window:
+# 	 $w_{$current_}->focus;
+	 
+	 
+# 	 # Define main menu:
+# 	 my $cache_menu=[
+# 			    { -label => 'Write Changes and Exit',
+# 			      -value => sub
+# 				 {
+# 				 my $return = $cui->dialog(
+# 							   -message   => "Exit, Saving Changes to the Cache?",
+# 							   -title     => "Exit and Save",
+# 							   -buttons   => ['yes', 'no'],							   
+# 							   );
+				 
+# 				 if ($return)
+# 				    {
+# 				    $cui->status("Writing to cache...");
+# 				    use Data::Dumper;
+# 				    print STDERR Dumper($compilerdata),"\n";
+# 				    $cui->nostatus;
+# 				    exit(0);
+# 				    }
+				 
+# 				 } },
+# 			    { -label => 'Exit without Save',
+# 			      -value => sub
+# 				 {
+# 				 my $return = $cui->dialog(
+# 							   -message   => "Exit, Without Saving Changes?",
+# 							   -title     => "Exit Without Save",
+# 							   -buttons   => ['yes', 'no'],							   
+# 							   );
+# 				 exit(0) if $return;				 
+# 				 } },
+# 			 ];
+	 
+# 	 my $compiler_menu=[
+# 			       { -label => 'C++', -value => sub
+# 				    {
+# 				    my ($window_index_)='C++';
+# 				    $current_=$window_index_;
+# 				    $w_{$current_}->focus;
+# 				    }},
+# 			       { -label => 'C', -value => sub
+# 				    {
+# 				    my ($window_index_)='C';
+# 				    $current_=$window_index_;
+# 				    $w_{$current_}->focus;
+# 				    }},
+# 			       { -label => 'FORTRAN', -value => sub
+# 				    {
+# 				    my ($window_index_)='FORTRAN';
+# 				    $current_=$window_index_;
+# 				    $w_{$current_}->focus;
+# 				    }},
+# 			       { -label => 'JAVA', -value => sub
+# 				    {
+# 				    my ($window_index_)='JAVA';
+# 				    $current_=$window_index_;
+# 				    $w_{$current_}->focus;
+# 				    }}
+# 			    ];
+	 
+# 	 my $arch_menu=[];
+	 
+# 	 my $menu = [
+# 			{ -label => 'Save/Exit', -submenu => $cache_menu    },
+# 			{ -label => 'Compiler',  -submenu => $compiler_menu  },
+# 			{ -label => 'Architecture', -submenu => $arch_menu  },	  
+# 		     ];
+	 
+# 	 # Add the menu bar to the main window:
+# 	 $cui->add('menu', 'Menubar', -menu => $menu );
+	 
+# 	 # ----------------------------------------------------------------------
+# 	 # Create application info window at the top and the helper window
+# 	 # at the bottom of the main window:
+# 	 # ----------------------------------------------------------------------
+# 	 my $w0bottom = $cui->add(
+# 				  'w0bottom', 'Window', 
+# 				  -border        => 1, 
+# 				  -y             => -1, 
+# 				  -height        => 3,
+# 				  );
+	 
+# 	 $w0bottom->add('explain', 'Label', 
+# 			-text => "CTRL+X: menu  CTRL+Q: save changes/exit"
+# 			);
+	 
+# 	 # ----------------------------------------------------------------------
+# 	 # Setup bindings and focus 
+# 	 # ----------------------------------------------------------------------
+	 
+# 	 # Bind <CTRL+Q> to quit.
+# 	 $cui->set_binding( sub
+# 			       {
+# 			       $cui->status("Exitting - no changes recorded...");
+# 			       sleep 1;
+# 			       $cui->nostatus;
+# 			       exit(0);
+# 			       }, "\cQ" );
+	 
+# 	 # Bind <CTRL+X> to menubar.
+# 	 $cui->set_binding( sub{ shift()->root->focus('menu') }, "\cX" );
+	 
+# 	 # The main application loop:
+# 	 MainLoop;	 		 
+# 	 } # End of EDITMETA
+
+#       if ($opts{SHOWMETA})
+# 	 {
+# 	 print "Do something for showmeta for class \"".$showmeta."\"","\n";
+# 	 }
+         
+#   use Tk;
+   
+#   my $mw = MainWindow->new;
+   
+#   $mw->title("SCRAM Compiler Option Window");
+#   $mw->geometry("512x198");
+   
+   # We want a frame at the top for buttons:
+#   my $f = $mw->Frame(-relief => 'ridge', -bd => 2)
+#      ->pack(-side => 'top', -anchor => 'n', -expand => 1, -fill => 'x');
+   
+   # We want a frame at the bottom for status messages:
+#   my $f_bottom = $mw->Frame(-relief => 'ridge', -bd => 2)
+#      ->pack(-side => 'bottom', -anchor => 'n', -expand => 1, -fill => 'x');
+   
+   # Add button to the button frame:
+#    my $run_b = $f->Button(-text => "Run",
+# 			  -relief => 'raised',
+# 			  -background => 'lightblue',
+# 			  -foreground => 'black',
+# 			  -activebackground => 'orange',
+# 			  -activeforeground => 'black')->pack(-side => 'left');
+   
+#    my $type_menu = $f->Menubutton(-text => "Film",
+# 				  -relief => 'raised',
+# 				  -tearoff => 0,
+# 				  -background => 'violet',
+# 				  -foreground => 'black',
+# 				  -activebackground => 'orange',
+# 				  -activeforeground => 'black',
+# 				  -menuitems => [ ["command" => "Y",
+# 						   -command => sub { $film = 'y' } ],
+# 						  ["command" => "N",
+# 						   -command => sub { $film = 'n' } ]
+# 						  ])->pack(-side => 'left');
+   
+#    my $loan_menu = $f->Menubutton(-text => "On-loan",
+# 				  -relief => 'raised',
+# 				  -tearoff => 0,
+# 				  -background => 'plum',
+# 				  -foreground => 'black',
+# 				  -activebackground => 'orange',
+# 				  -activeforeground => 'black',
+# 				  -menuitems => [ ["command" => "Y",
+# 						   -command => sub { $onloan = 'y' } ],
+# 						  ["command" => "N",
+# 						   -command => sub { $onloan = 'n' } ]
+# 						  ])->pack(-side => 'left');
+   
+   # A menu button inside the top frame, for exitting:
+#   my $exit_b = $f->Button(-text => "Save&Exit",
+#			   -background => "red",
+#			   -foreground => 'yellow',
+#			   -activebackground => 'orange',
+#			   -activeforeground => 'black',			
+#			   -command => sub { exit; })->pack(-side => 'right');
+   
+# Pack the status label into bottom frame:
+#my $status_label = $f_bottom->Label(-foreground => $statuscolour,
+# 				    -textvariable => \$statusmessage)
+#   ->pack(-side => 'left', -fill => 'x');
+
+# Track mouse and react when buttons are focussed:
+# #&bind_message($status_label,"Add a new film");
+# #&bind_message($run_b,"Running query...");
+# #&bind_message($exit_b,"Quit application");
+
+   # Now set up the main data entry area:
+#   my $entrymain = $mw->Text(-width => 40,
+#			     -wrap => 'none')->pack(-expand => 1, -fill => 'both');
+
+#   my $flagnames = [ qw(CXXFLAGS LDFLAGS DEBUGFLAGS) ];
+#   my $text="-g -O0 -Wall -ftemplate-depth=300";
+   
+#   foreach my $f (@$flagnames)
+#      {
+#      $dataentry = $entrymain->Label(-text => $f,
+#				     -relief => 'groove',
+#				     -width => 20);
+#      $entrymain->windowCreate('end', -window => $dataentry);
+#      
+#      $dataentry = $entrymain->Entry(-width => 50,
+#				     -background => 'lemonchiffon',
+#				     -textvariable => \$text);
+#      $entrymain->windowCreate('end', -window => $dataentry);
+ #     $entrymain->insert('end', "\n");
+#      }      
+ #  
+ #  # Disable text entry in rest of window:
+ #  $entrymain->configure(-state => 'disabled');
+   
+   # The main loop:
+ #  MainLoop;
+   
+##
+#sub bind_message()
+#   {
+#   my ($w, $message) = @_;
+#   $w->bind('<Enter>', [ sub {$statusmessage = $_[1];}, $message]);
+#   }
+   
+ #  }
+
+
+sub do_ui2()
+   {
+   my $self=shift;
+   
+   use Tk;
+   use Tk::NoteBook;
+   
+   $mw = MainWindow->new();
+   $mw->title("SCRAM Compiler Option Window");
+   $mw->geometry("580x225");
+   
+   # We want a frame at the top for buttons:
+   my $f = $mw->Frame(-relief => 'ridge', -bd => 2)
+      ->pack(-side => 'top', -anchor => 'n', -expand => 1, -fill => 'x');
+   
+   # We want a frame at the bottom for status messages:
+   my $f_bottom = $mw->Frame(-relief => 'ridge', -bd => 2)
+      ->pack(-side => 'bottom', -anchor => 'n', -expand => 1, -fill => 'x');
+
+   # A menu button inside the top frame, for exitting:
+   my $exit_b = $f->Button(-text => "Save&Exit",
+			   -background => "red",
+			   -foreground => 'yellow',
+			   -activebackground => 'orange',
+			   -activeforeground => 'black',			
+			   -command => sub { exit; })->pack(-side => 'right');
+
+   my $help_b = $f->Button(-text => "Help",
+			   -background => "lightblue",
+			   -foreground => 'black',
+			   -activebackground => 'white',
+			   -activeforeground => 'black',			
+			   -command => sub { exit; })->pack(-side => 'left');
+
+   $book = $mw->NoteBook()->pack( -fill=>'both', -expand=>1 );
+   
+   $tab1 = $book->add( "Sheet 1", -label=>"Compilation Options",
+		       -createcmd=> sub { $starttime = "Started at " . localtime; } );
+   $tab2 = $book->add( "Sheet 2", -label=>"Linker Options",
+		       -raisecmd=> sub {$raisetime = " Last raised at " . localtime;
+					$book->pageconfigure( "Sheet 3", -state=>'normal' )} );
+   
+   $tab3 = $book->add( "Sheet 3", -label => "Debugging Options", -state => 'normal' );
+   
+   my $flagnames = [ qw(CXXFLAGS LDFLAGS DEBUGFLAGS) ];
+   my $text="-g -O0 -Wall -ftemplate-depth=300";
+   
+   my $entrymain = $tab1->Text(-width => 40,
+			       -wrap => 'none')->pack(-expand => 1, -fill => 'both');
+   
+   $entrymain->Label( -textvariable=>\$text )->pack( -expand => 1 );
+   
+   foreach my $f (@$flagnames)
+      {
+      $dataentry = $entrymain->Label(-text => $f,
+				     -relief => 'groove',
+				     -width => 20);
+      $entrymain->windowCreate('end', -window => $dataentry);
+      
+      $dataentry = $entrymain->Entry(-width => 50,
+				     -background => 'lemonchiffon',
+				     -textvariable => \$text);
+      $entrymain->windowCreate('end', -window => $dataentry);
+      $entrymain->insert('end', "\n");
+      }
+   
+   # Pack the status label into bottom frame:
+   my $statusmessage;
+   my $statuscolour="Red";
+   my $status_label = $f_bottom->Label(-foreground => $statuscolour,
+				       -textvariable => \$statusmessage)
+      ->pack(-side => 'left', -fill => 'x');
+   
+   # Track mouse and react when buttons are focussed:
+   $status_label->bind('<Enter>', [ sub {$statusmessage = ""}, $message]);   
+   $exit_b->bind('<Enter>', [ sub {$statusmessage = "Save changes (if any) and exit.";}, $message]);
+   $help_b->bind('<Enter>', [ sub {$statusmessage = "Show help";}, $message]);
+   $tab1->bind('<Enter>', [ sub {$statusmessage = "Make changes to compiler flags";}, $message]);
+   $tab2->bind('<Enter>', [ sub {$statusmessage = "Make changes to linker flags";}, $message]);
+
+   # Disable text entry in rest of window:
+   $entrymain->configure(-state => 'disabled');
+   
+   MainLoop;
+   
    }
 
 #### End of CMD.pm ####
