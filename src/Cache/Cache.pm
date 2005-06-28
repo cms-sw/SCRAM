@@ -5,7 +5,7 @@
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 #         (with contribution from Lassi.Tuura@cern.ch)
 # Update: 2003-11-27 16:45:18+0100
-# Revision: $Id: Cache.pm,v 1.2 2004/12/10 13:41:39 sashby Exp $ 
+# Revision: $Id: Cache.pm,v 1.3 2005/03/11 18:55:28 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -47,10 +47,10 @@ sub getdir()
    my $self=shift;
    my ($path) = @_;
    opendir (DIR, $path) || die "$path: cannot read: $!\n";
-   # Skip .admin subdirectories too.
+   # Skip .admin and CVS subdirectories too.
    # Also skip files that look like backup files or files being modified with emacs:
    my @items = map { "$path/$_" } grep (
-					$_ ne "." && $_ ne ".." && 
+					$_ ne "." && $_ ne ".." && $_ ne "CVS" && 
 					$_ ne ".admin" && $_ !~ m|\.#*|,
 					readdir(DIR)
 					);   
@@ -82,6 +82,7 @@ sub checktree()
    # non-directories unless $dofiles is set.  Considering only directories is
    # dramatically faster.
    next if ($path =~ /\.admin/); # skip .admin dirs
+   next if ($path =~ /.*CVS/);
 
    # NB: We stat each path only once ever.  The special "_" file handle uses
    # the results from the last stat we've made.  See man perlfunc/stat.

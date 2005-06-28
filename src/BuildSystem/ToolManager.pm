@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.8 2005/04/13 16:45:36 sashby Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.9 2005/04/29 15:54:47 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -277,6 +277,11 @@ sub toolsetup()
       # See what kind of URL (file:, http:, cvs:, svn:, .. ):
       if ($proto eq 'file')
 	 {
+	 # Check to see if there is a ~ and substitute the user
+	 # home directory if there is:
+	 my ($urlpath) = ($urlv =~ m|^\~/(.*)$|);
+	 $urlv = $ENV{HOME}."/".$urlpath;
+
 	 # If the tool url is a file and the file exists,
 	 # copy it to .SCRAM/InstalledTools and set the
 	 # filename accordingly:
@@ -510,15 +515,30 @@ sub remove_tool()
 	 }
       else
 	 {
-	 print "Deleting $toolname from cache.","\n";
+	 # Is this tool a compiler?
+	 if ($tooldata->scram_compiler() == 1)
+	    {
+	    # Also remove this from the compiler info if there happens to be an entry:
+	    while (my ($langtype, $ctool) = each %{$self->{SCRAM_COMPILER}})
+	       {
+	       if ($toolname eq $ctool->[0])
+		  {
+		  delete $self->{SCRAM_COMPILER}->{$langtype};
+		  print "Deleting compiler $toolname from cache.","\n";
+		  }
+	       }
+	    }
+	 else
+	    {
+	    print "Deleting $toolname from cache.","\n";
+	    }
 	 }
       }
    
    $self->{SETUP} = $newtlist;
-
+   
    # Now remove from the RAW tool list:
    $self->cleanup_raw($toolname);
-   
    print "ToolManager: Updating tool cache.","\n";
    $self->writecache();
    }
