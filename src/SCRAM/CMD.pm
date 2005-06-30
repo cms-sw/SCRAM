@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.20 2005/06/20 14:44:57 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.21 2005/06/28 19:08:56 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1732,13 +1732,19 @@ sub ui()
       # Check to see if we are in a local project area:
       $self->checklocal();
 
-      # Do we want to edit metadata?
+      # Do we want to edit metadata? This option for compilers:
       if ($opts{EDITMETA} && $class =~ /^[Cc].*/)
 	 {
 	 my $dummy=1;
-	 $self->show_gui();
+	 $self->show_compiler_gui();
 	 } # End of EDITMETA
-
+      
+      if ($opts{EDITMETA} && $class =~ /^[Tt].*/)
+	 {
+	 my $dummy=1;
+	 $self->show_tools_gui();
+	 } # End of EDITMETA
+      
       if ($opts{SHOWMETA})
 	 {
 	 print "Do something for showmeta for class \"".$showmeta."\"","\n";
@@ -1835,25 +1841,55 @@ sub xmlmigrate()
    return 0;
    }
 
-sub show_gui()
+sub show_compiler_gui()
    {
    my $self=shift;
-   
    use Tk;
    use Tk::NoteBook;
-
+   #
+   #
+   # Notes:
+   # ------
+   #
+   # Could also use this interface as a way to clone other tools and apply some 
+   # customisation (e.g. cloning boost_python to make a boost_regex which differs
+   # in which lib it provides)
+   #
+   # Would need to provide:
+   # - A menu with a list of setup tools
+   #
+   #
+   # Initial Implementation
+   # ----------------------
+   #
+   # - Handle a list of supported languages and the compilers which support
+   #   each language type. Note that there should be support for more than
+   #   one compiler version (e.g. gcc323 vs. gcc 344 via same cxxcompiler tool)
+   #
+   # - Separate tabs for each compiler type. Also separate into categories of flags
+   #   (e.g. for linking, for compilation, for linking binaries, plugins(?) etc.).
+   #
+   # - Implement the mechanism for changing the architecture via a selection panel
+   #   where a user can choose which compiler to use as default (and each compiler
+   #   already has a default string like "_gccXXX" which would be added to the arch
+   #   stem).
+   #
+   #
+   #
+   #
+   
    # Geometry is set automatically:
    $mw = MainWindow->new();
    $mw->title("SCRAM Compiler Option Window");
 
    my $compiler_tools = {};
    my $compiler_db = $self->toolmanager()->scram_compiler();
+   my $supported_lang_list = [ reverse sort keys %$compiler_db ];
 
    while (my ($langtype, $ctool) = each %$compiler_db)
       {
       print "LANG TYPE $langtype provided by ".$ctool->[0]." with arch suffix ".$ctool->[1]."\n",
       if ($ENV{SCRAM_DEBUG});
-
       # Now get the tool corresponding to the this lang type:      
       $compiler_tools->{$langtype} = $self->toolmanager()->checkifsetup($ctool->[0]);
       }
@@ -1881,14 +1917,24 @@ sub show_gui()
 			   -activeforeground => 'black',			
 			   -command => sub { exit; })->pack(-side => 'left');
 
+   # Set the initial page to be the first supported language type:
+   my $sel_lang_type=$supported_lang_list->[0];
+   
+   my $lang_b = $f->Button(-text => $sel_lang_type,
+			   -background => 'grey70',
+			   -foreground => 'darkgreen',
+			   -activebackground => 'grey18',
+			   -activeforeground => 'ivory',			
+			   -command => sub { exit; })->pack(-side => 'left');
+
    # A label to appear above the notebook tabs:
 
    
-   my $libbuild = 'Build/link: $(CXX) $(CXXFLAGS) $(CXXSHAREDFLAGS) <object files> $(LDFLAGS) -o <library> -shared\n';
-   my $compile = '$(CXX) -MMD  -c $(CPPFLAGS) $(CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) <source file> -o <object file>\n';
+#   my $libbuild = 'Build/link: $(CXX) $(CXXFLAGS) $(CXXSHAREDFLAGS) <object files> $(LDFLAGS) -o <library> -shared\n';
+#   my $compile = '$(CXX) -MMD  -c $(CPPFLAGS) $(CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) <source file> -o <object file>\n';
    
    
-   my $toplabelregion = $mw->Label(-text => $libbuild."\nCompile: ".$compile."\n",
+   my $toplabelregion = $mw->Label(-text => "",
 				   -anchor => 'w',
 				   -relief => 'flat',
 				   -width => 90)->pack(-anchor => 'n');
@@ -1899,6 +1945,7 @@ sub show_gui()
    $tab1 = $book->add( "Sheet 1", -label => "Compilation Options" );
    $tab2 = $book->add( "Sheet 2", -label => "Linker Options" );
    $tab3 = $book->add( "Sheet 3", -label => "Debugging Options" );
+   $tab4 = $book->add( "Sheet 4", -label => "Architecture Options" );
 
    my $flagnames = $compiler_tools->{'c++'}->allflags();
    
@@ -1933,8 +1980,17 @@ sub show_gui()
    $status_label->bind('<Enter>', [ sub {$statusmessage = ""}, $message]);   
    $exit_b->bind('<Enter>', [ sub {$statusmessage = "Save changes (if any) and exit.";}, $message]);
    $help_b->bind('<Enter>', [ sub {$statusmessage = "Show help";}, $message]);
+   $lang_b->bind('<Enter>', [ sub {$statusmessage = "Select the language type (e.g. F77, C, C++)";}, $message]);
+
    $tab1->bind('<Enter>', [ sub {$statusmessage = "Make changes to compiler flags";}, $message]);
    $tab2->bind('<Enter>', [ sub {$statusmessage = "Make changes to linker flags";}, $message]);
+
+   $exit_b->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
+   $help_b->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
+   $lang_b->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
+
+   $tab1->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
+   $tab2->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
 
    # Disable text entry in rest of window:
    $entrymain->configure(-state => 'disabled');
@@ -1944,6 +2000,154 @@ sub show_gui()
    MainLoop();   
 
    }
+
+sub show_tools_gui()
+   {
+   my $self=shift;
+   use Tk;
+   use Tk::NoteBook;
+   use Tk::BrowseEntry;
+   use Tk::DialogBox;
+
+   #
+   #
+   # Notes:
+   # ------
+   #
+   # Could also use this interface as a way to clone other tools and apply some 
+   # customisation (e.g. cloning boost_python to make a boost_regex which differs
+   # in which lib it provides)
+
+   my $help_string = "";
+   $help_string .= "This GUI can be used to modify tool settings\n";
+   $help_string .= "or clone tools and modify them to create new tools.\n";
+   
+   # Geometry is set automatically:
+   $mw = MainWindow->new();
+   $mw->title("SCRAM Tool Editor Window");
+
+   my $t_db = [ $self->toolmanager()->tools() ];
+
+   # We want a frame at the top for buttons:
+   my $f = $mw->Frame(-relief => 'ridge', -bd => 2)
+      ->pack(-side => 'top', -anchor => 'n', -expand => 1, -fill => 'x');
+   
+   # We want a frame at the bottom for status messages:
+   my $f_bottom = $mw->Frame(-relief => 'ridge', -bd => 2)
+      ->pack(-side => 'bottom', -anchor => 'n', -expand => 1, -fill => 'x');
+
+   # A menu button inside the top frame, for exitting:
+   my $exit_b = $f->Button(-text => "Save&Exit",
+			   -background => "red",
+			   -foreground => 'yellow',
+			   -activebackground => 'orange',
+			   -activeforeground => 'black',			
+			   -command => sub { exit; })->pack(-side => 'right');
+
+   # Pop up a message box with help:
+   my $help_b = $f->Button(-text => "Help",
+			   -background => "lightblue",
+			   -foreground => 'black',
+			   -activebackground => 'white',
+			   -activeforeground => 'black',			
+			   -command => sub
+			      {
+			      $f->messageBox(-title => "help", -message => $help_string, -type => 'ok');
+			      })->pack(-side => 'left');
+   
+   # The tools menu:
+   my $activated_tool_m = "ARSE";
+   my $top_label_message = "Top-level activity message which changes dynamically...\n";
+
+   my $tool_b = $f->Menubutton(-text => "Tools",
+			       -background => "grey18",
+			       -foreground => 'ivory',
+			       -activebackground => 'white',
+			       -activeforeground => 'black',
+			       -menuitems => [ map { [ 'command' => $_,
+						       -command => [ sub
+									{
+									print "Activating tab for $_[0]","\n";
+									$activated_tool_m = "Some test text: tool = $_[0]\n";
+									}, $_ ]
+						       ],
+									   } @$t_db ]
+			       )->pack(-side => 'left');
+   
+   my $toplabelregion = $mw->Label(-textvariable => \$top_label_message,
+				   -anchor => 'w',
+				   -relief => 'flat',
+				   -width => 90)->pack(-anchor => 'n');
+   
+   # The notebook widget and its tabs:
+   $book = $mw->NoteBook()->pack( -fill => 'y', -expand => 1);
+   
+   $tab1 = $book->add( "Sheet 1", -label => "Tool Editor" );
+   $tab2 = $book->add( "Sheet 2", -label => "BuildFile Helper" );
+   
+   # Main widget embedded in the notebook tab. This is the widget in which the
+   # label widgets are added:
+#   my $nb_frame = $tab1->Frame(-width => 90, -relief => 'ridge', -bd => 2)
+#      ->pack(-side => left,
+#	     -anchor => 'w', -expand => 1, -fill => 'x');
+   
+   my $entrymain = $tab1->Text(-width => 90,
+			       -wrap => 'none')->pack(-expand => 1, -fill => 'both');
+   $dataentry = $entrymain->Label(-textvariable => $activated_tool_m,
+				  -anchor => 'w',
+				  -relief => 'flat',
+				  -width => 85)->pack(-anchor => 'n');
+   $entrymain->insert('end',$activated_tool_m);
+   $entrymain->windowCreate('end', -window => $dataentry);
+   
+#   my $be = $tab1->BrowseEntry( -variable => \$var,
+#				    -choices => $t_db,
+#				    -state => normal )->pack;
+   
+# foreach my $f (keys %$flagnames)
+#       {
+#       $dataentry = $entrymain->Label(-text => $f,
+# 				     -anchor => 'w',
+# 				     -relief => 'flat',
+# 				     -width => 25);
+#       $entrymain->windowCreate('end', -window => $dataentry);
+      
+#       $dataentry = $entrymain->Entry(-width => 63,
+# 				     -background => 'lemonchiffon',
+# 				     -textvariable => join(" ",@{$flagnames->{$f}}));
+#       $entrymain->windowCreate('end', -window => $dataentry);
+#       $entrymain->insert('end', "\n");
+#       }
+   
+   # Pack the status label into bottom frame:
+   my $statusmessage;
+   my $statuscolour="Red";
+   my $status_label = $f_bottom->Label(-foreground => $statuscolour,
+				       -textvariable => \$statusmessage)
+      ->pack(-side => 'left', -fill => 'x');
+   
+   # Track mouse and react when buttons are focussed:
+   $status_label->bind('<Enter>', [ sub {$statusmessage = ""}, $message]);   
+
+   $exit_b->bind('<Enter>', [ sub {$statusmessage = "Save changes (if any) and exit.";}, $message]);
+   $help_b->bind('<Enter>', [ sub {$statusmessage = "Show help";}, $message]);
+   $tab1->bind('<Enter>', [ sub {$statusmessage = "Make changes to tools or clone tools";}, $message]);
+   $tab2->bind('<Enter>', [ sub {$statusmessage = "Create BuildFiles";}, $message]);
+   
+   $exit_b->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
+   $help_b->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
+   $tab1->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
+   $tab2->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
+
+   # Disable text entry in rest of window:
+   $entrymain->configure(-state => 'disabled');
+
+   
+   # Enter the main loop:
+   MainLoop();   
+
+   }
+
 
 #### End of CMD.pm ####
 1;
