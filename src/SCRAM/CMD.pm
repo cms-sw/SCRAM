@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.21 2005/06/28 19:08:56 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.22 2005/06/30 16:17:08 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1846,6 +1846,7 @@ sub show_compiler_gui()
    my $self=shift;
    use Tk;
    use Tk::NoteBook;
+   use Tk::BrowseEntry;
    #
    #
    # Notes:
@@ -1877,9 +1878,12 @@ sub show_compiler_gui()
    #
    #
    #
+   my $help_string = "";
+   $help_string .= "This GUI can be used to modify compiler settings\n";
+   $help_string .= "and to set compiler-dependent architectures.\n";
    
    # Geometry is set automatically:
-   $mw = MainWindow->new();
+   my $mw = MainWindow->new();
    $mw->title("SCRAM Compiler Option Window");
 
    my $compiler_tools = {};
@@ -1909,65 +1913,111 @@ sub show_compiler_gui()
 			   -activebackground => 'orange',
 			   -activeforeground => 'black',			
 			   -command => sub { exit; })->pack(-side => 'right');
-
+   
    my $help_b = $f->Button(-text => "Help",
 			   -background => "lightblue",
 			   -foreground => 'black',
 			   -activebackground => 'white',
-			   -activeforeground => 'black',			
-			   -command => sub { exit; })->pack(-side => 'left');
-
-   # Set the initial page to be the first supported language type:
-   my $sel_lang_type=$supported_lang_list->[0];
+			   -activeforeground => 'black',
+			   -command => sub
+			      {
+			      $f->messageBox(-title => "help", -message => $help_string, -type => 'ok');
+			      })->pack(-side => 'left');
    
-   my $lang_b = $f->Button(-text => $sel_lang_type,
-			   -background => 'grey70',
-			   -foreground => 'darkgreen',
-			   -activebackground => 'grey18',
-			   -activeforeground => 'ivory',			
-			   -command => sub { exit; })->pack(-side => 'left');
-
-   # A label to appear above the notebook tabs:
-
-   
-#   my $libbuild = 'Build/link: $(CXX) $(CXXFLAGS) $(CXXSHAREDFLAGS) <object files> $(LDFLAGS) -o <library> -shared\n';
-#   my $compile = '$(CXX) -MMD  -c $(CPPFLAGS) $(CXXFLAGS) $(CXXOPTIMISEDFLAGS) $(CXXSHAREDOBJECTFLAGS) <source file> -o <object file>\n';
-   
-   
-   my $toplabelregion = $mw->Label(-text => "",
-				   -anchor => 'w',
-				   -relief => 'flat',
-				   -width => 90)->pack(-anchor => 'n');
-   
-   # The notebook widget and its tabs:
-   $book = $mw->NoteBook()->pack( -fill => 'y', -expand => 1);
-   
-   $tab1 = $book->add( "Sheet 1", -label => "Compilation Options" );
-   $tab2 = $book->add( "Sheet 2", -label => "Linker Options" );
-   $tab3 = $book->add( "Sheet 3", -label => "Debugging Options" );
-   $tab4 = $book->add( "Sheet 4", -label => "Architecture Options" );
-
-   my $flagnames = $compiler_tools->{'c++'}->allflags();
-   
-   # Main widget embedded in the notebook tab. This is the widget in which the
-   # label widgets are added:
-   my $entrymain = $tab1->Text(-width => 90,
-			       -wrap => 'none')->pack(-expand => 1, -fill => 'both');
-   
-   foreach my $f (keys %$flagnames)
-      {
-      $dataentry = $entrymain->Label(-text => $f,
+   my $top_label_message = "Select a language type to display compiler metadata.";
+   my $top_label_region = $mw->Label(-textvariable => \$top_label_message,
 				     -anchor => 'w',
 				     -relief => 'flat',
-				     -width => 25);
-      $entrymain->windowCreate('end', -window => $dataentry);
+				     -width => 90)->pack(-anchor => 'n');
+   
+   # Set the initial page to be the first supported language type:
+   my $sel_lang_type=uc($supported_lang_list->[0]);
+   my $lang_b = $f->Menubutton(-textvariable => \$sel_lang_type,
+			       -background => 'grey70',
+			       -foreground => 'darkgreen',
+			       -activebackground => 'grey18',
+			       -activeforeground => 'ivory',			
+			       -menuitems => [ map { [ 'command' => $_,
+						       -command => [ sub
+									{
+									$top_label_message = "Showing compiler info for ".$_[0]."\n";
+									$sel_lang_type=uc($_[0]);	
+									}, $_ ]
+						       ],
+									   } @$supported_lang_list ]
+			       )->pack(-side => 'left');
+   
+   # The notebook widget and its tabs:
+   my $notebook = $mw->NoteBook()->pack( -fill => 'y', -expand => 1);
+   
+   my $comp_opts_tab = $notebook->add( "Sheet 1", -label => "Compilation Options" );
+   my $link_opts_tab = $notebook->add( "Sheet 2", -label => "Linker Options" );
+   my $debug_opts_tab= $notebook->add( "Sheet 3", -label => "Debugging Options" );
+   my $arch_opts_tab = $notebook->add( "Sheet 4", -label => "Architecture Options" );
+   
+   my $flagnames = $compiler_tools->{'c++'}->allflags();
+   
+   # Main comp widget embedded in the notebook tab. This is the widget in which the
+   # label widgets are added:
+   my $comp_entrymain = $comp_opts_tab->Text(-width => 90,
+					     -wrap => 'none')->pack(-expand => 1, -fill => 'both');
+   my $comp_dataentry;
+   
+   # Set up the compiler window first:
+   foreach my $f (keys %$flagnames)
+      {
+      $comp_dataentry = $comp_entrymain->Label(-text => $f,
+					       -anchor => 'w',
+					       -relief => 'flat',
+					       -width => 25);
+      $comp_entrymain->windowCreate('end', -window => $comp_dataentry);
       
-      $dataentry = $entrymain->Entry(-width => 63,
-				     -background => 'lemonchiffon',
-				     -textvariable => join(" ",@{$flagnames->{$f}}));
-      $entrymain->windowCreate('end', -window => $dataentry);
-      $entrymain->insert('end', "\n");
+      $comp_dataentry = $comp_entrymain->Entry(-width => 63,
+					       -background => 'lemonchiffon',
+					       -textvariable => join(" ",@{$flagnames->{$f}}));
+      $comp_entrymain->windowCreate('end', -window => $comp_dataentry);
+      $comp_entrymain->insert('end', "\n");
       }
+   
+   # Finally disable the text widget (not the entry widgets, obviously):
+   $comp_entrymain->configure( -state => 'disabled');
+   
+   # The architecture opts:
+   my $arch_entrymain = $arch_opts_tab->Text(-width => 90,
+					     -wrap => 'none')->pack(-expand => 1, -fill => 'both');
+   my $arch_dataentry;
+   my $sysarch=$self->system_architecture();
+   my $current_arch_string="Current system architecture is: ".$sysarch."_";
+   $arch_dataentry = $arch_entrymain->Label(-text => $current_arch_string,
+					    -anchor => 'w',
+					    -relief => 'flat',
+					    -width => length($current_arch_string));
+   
+   $arch_entrymain->windowCreate('end', -window => $arch_dataentry);
+   
+   # Add a browse entry widget for each compiler arch name:
+   my $compiler_arch_name="gcc323";
+   my $known_comp_types=[qw( gcc323 gcc344 icc81 )];
+
+   my $arch_be = $arch_entrymain->BrowseEntry( -variable => \$compiler_arch_name,
+					       -choices => $known_comp_types,
+					       -state => 'normal' )->pack(-side => 'right');
+   
+   $arch_entrymain->windowCreate('end', -window => $arch_be);
+   
+   # Disable at the end:
+   $arch_entrymain->configure( -state => 'disabled');
+   
+   my $silly_b = $arch_entrymain->Button(-text => "OK",
+					 -background => "orange",
+					 -foreground => 'black',
+					 -activebackground => 'black',
+					 -activeforeground => 'orange',			
+					 -command => sub
+					    {
+					    print "Full arch = ",$sysarch."_".$compiler_arch_name,"\n";
+					    })->pack(-side => 'bottom');
+   
    
    # Pack the status label into bottom frame:
    my $statusmessage;
@@ -1982,23 +2032,22 @@ sub show_compiler_gui()
    $help_b->bind('<Enter>', [ sub {$statusmessage = "Show help";}, $message]);
    $lang_b->bind('<Enter>', [ sub {$statusmessage = "Select the language type (e.g. F77, C, C++)";}, $message]);
 
-   $tab1->bind('<Enter>', [ sub {$statusmessage = "Make changes to compiler flags";}, $message]);
-   $tab2->bind('<Enter>', [ sub {$statusmessage = "Make changes to linker flags";}, $message]);
+   $comp_opts_tab->bind('<Enter>', [ sub {$statusmessage = "Make changes to compiler flags";}, $message]);
+   $link_opts_tab->bind('<Enter>', [ sub {$statusmessage = "Make changes to linker flags";}, $message]);
+   $debug_opts_tab->bind('<Enter>', [ sub {$statusmessage = "Set debug options";}, $message]);
+   $arch_opts_tab->bind('<Enter>', [ sub {$statusmessage = "Set architecture options";}, $message]);
 
    $exit_b->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
    $help_b->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
    $lang_b->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
 
-   $tab1->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
-   $tab2->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
+   $comp_opts_tab->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
+   $link_opts_tab->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
+   $debug_opts_tab->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
+   $arch_opts_tab->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
 
-   # Disable text entry in rest of window:
-   $entrymain->configure(-state => 'disabled');
-
-   
    # Enter the main loop:
    MainLoop();   
-
    }
 
 sub show_tools_gui()
@@ -2008,16 +2057,14 @@ sub show_tools_gui()
    use Tk::NoteBook;
    use Tk::BrowseEntry;
    use Tk::DialogBox;
-
-   #
-   #
    # Notes:
    # ------
    #
    # Could also use this interface as a way to clone other tools and apply some 
    # customisation (e.g. cloning boost_python to make a boost_regex which differs
    # in which lib it provides)
-
+   #
+   
    my $help_string = "";
    $help_string .= "This GUI can be used to modify tool settings\n";
    $help_string .= "or clone tools and modify them to create new tools.\n";
@@ -2056,8 +2103,21 @@ sub show_tools_gui()
 			      })->pack(-side => 'left');
    
    # The tools menu:
-   my $activated_tool_m = "ARSE";
-   my $top_label_message = "Top-level activity message which changes dynamically...\n";
+   my $tool_entrymain;
+   my $top_label_message = "Select an action: clone/edit a tool or create a BuildFile.\n";
+
+   # The notebook widget and its tabs:
+   $book = $mw->NoteBook()->pack( -fill => 'y', -expand => 1);
+
+   $tab1 = $book->add( "Sheet 1", -label => "Tool Editor" );
+   $tab2 = $book->add( "Sheet 2", -label => "BuildFile Helper" );
+
+   # Main widgets in the notebook:
+   $tool_entrymain = $tab1->Text(-width => 90,
+			    -wrap => 'none')->pack(-expand => 1, -fill => 'both');
+
+   $bf_entrymain = $tab2->Text(-width => 90,
+			       -wrap => 'none')->pack(-expand => 1, -fill => 'both');
 
    my $tool_b = $f->Menubutton(-text => "Tools",
 			       -background => "grey18",
@@ -2067,8 +2127,15 @@ sub show_tools_gui()
 			       -menuitems => [ map { [ 'command' => $_,
 						       -command => [ sub
 									{
-									print "Activating tab for $_[0]","\n";
-									$activated_tool_m = "Some test text: tool = $_[0]\n";
+									open(TOOL,"< ".$ENV{LOCALTOP}."/.SCRAM/InstalledTools/".$_[0]);
+									while (<TOOL>)
+									   {
+									   $tool_entrymain->insert('end',$_);
+									   }
+									# Set status message:
+									$top_label_message="Tool ".$_[0]." loaded.\n";
+									# Disable until we actually want to edit:
+									$tool_entrymain->configure(-state => 'disabled');
 									}, $_ ]
 						       ],
 									   } @$t_db ]
@@ -2079,26 +2146,6 @@ sub show_tools_gui()
 				   -relief => 'flat',
 				   -width => 90)->pack(-anchor => 'n');
    
-   # The notebook widget and its tabs:
-   $book = $mw->NoteBook()->pack( -fill => 'y', -expand => 1);
-   
-   $tab1 = $book->add( "Sheet 1", -label => "Tool Editor" );
-   $tab2 = $book->add( "Sheet 2", -label => "BuildFile Helper" );
-   
-   # Main widget embedded in the notebook tab. This is the widget in which the
-   # label widgets are added:
-#   my $nb_frame = $tab1->Frame(-width => 90, -relief => 'ridge', -bd => 2)
-#      ->pack(-side => left,
-#	     -anchor => 'w', -expand => 1, -fill => 'x');
-   
-   my $entrymain = $tab1->Text(-width => 90,
-			       -wrap => 'none')->pack(-expand => 1, -fill => 'both');
-   $dataentry = $entrymain->Label(-textvariable => $activated_tool_m,
-				  -anchor => 'w',
-				  -relief => 'flat',
-				  -width => 85)->pack(-anchor => 'n');
-   $entrymain->insert('end',$activated_tool_m);
-   $entrymain->windowCreate('end', -window => $dataentry);
    
 #   my $be = $tab1->BrowseEntry( -variable => \$var,
 #				    -choices => $t_db,
@@ -2138,14 +2185,9 @@ sub show_tools_gui()
    $help_b->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
    $tab1->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
    $tab2->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
-
-   # Disable text entry in rest of window:
-   $entrymain->configure(-state => 'disabled');
-
    
    # Enter the main loop:
-   MainLoop();   
-
+   MainLoop();
    }
 
 

@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.8 2005/04/13 16:45:37 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.9 2005/04/29 16:10:35 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -44,7 +44,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.8 2005/04/13 16:45:37 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.9 2005/04/29 16:10:35 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -170,6 +170,7 @@ sub _initenv()
       {
       my $a = Architecture->new();
       $self->architecture($a->arch());
+      $self->system_architecture($a->system_arch_stem());
       $ENV{SCRAM_ARCH} = $self->architecture();
       }
    
@@ -352,6 +353,14 @@ sub architecture()
 
    @_ ? $self->{SCRAM_ARCH} = shift # Modify or
       : $self->{SCRAM_ARCH};        # retrieve
+   }
+
+sub system_architecture()
+   {
+   my $self=shift;
+
+   @_ ? $self->{SCRAM_SYSARCH} = shift # Modify or
+      : $self->{SCRAM_SYSARCH};        # retrieve
    }
 
 sub getprojectsfromDB()
