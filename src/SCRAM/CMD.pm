@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.22 2005/06/30 16:17:08 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.23 2005/07/01 15:23:35 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1875,7 +1875,10 @@ sub show_compiler_gui()
    #   already has a default string like "_gccXXX" which would be added to the arch
    #   stem).
    #
+   # Must have the following variables set in the compiler tools:
    #
+   #        SCRAM_COMPILER_NAME e.g., gcc323
+   #        SCRAM_LANGUAGE_TYPE e.g., C++ (upper-case)
    #
    #
    my $help_string = "";
@@ -2070,7 +2073,7 @@ sub show_tools_gui()
    $help_string .= "or clone tools and modify them to create new tools.\n";
    
    # Geometry is set automatically:
-   $mw = MainWindow->new();
+   my $mw = MainWindow->new();
    $mw->title("SCRAM Tool Editor Window");
 
    my $t_db = [ $self->toolmanager()->tools() ];
@@ -2090,7 +2093,7 @@ sub show_tools_gui()
 			   -activebackground => 'orange',
 			   -activeforeground => 'black',			
 			   -command => sub { exit; })->pack(-side => 'right');
-
+   
    # Pop up a message box with help:
    my $help_b = $f->Button(-text => "Help",
 			   -background => "lightblue",
@@ -2104,92 +2107,123 @@ sub show_tools_gui()
    
    # The tools menu:
    my $tool_entrymain;
+   my $bf_entrymain;
+   
    my $top_label_message = "Select an action: clone/edit a tool or create a BuildFile.\n";
 
    # The notebook widget and its tabs:
-   $book = $mw->NoteBook()->pack( -fill => 'y', -expand => 1);
-
-   $tab1 = $book->add( "Sheet 1", -label => "Tool Editor" );
-   $tab2 = $book->add( "Sheet 2", -label => "BuildFile Helper" );
+   my $notebook = $mw->NoteBook()->pack( -fill => 'y', -expand => 1);
+   
+   $tool_editor_tab = $notebook->add( "Sheet 1", -label => "Tool Editor", -raisecmd => sub { print "TOOLS sheet raised!\n"; });
+   $buildfile_helper_tab = $notebook->add( "Sheet 2", -label => "BuildFile Helper", -raisecmd => sub { print "BF sheet raised!\n"; $top_label_message="";});
 
    # Main widgets in the notebook:
-   $tool_entrymain = $tab1->Text(-width => 90,
-			    -wrap => 'none')->pack(-expand => 1, -fill => 'both');
+   $tool_entrymain = $tool_editor_tab->Text(-width => 90,
+					    -wrap => 'none')->pack(-expand => 1, -fill => 'both');
+   
+   $bf_entrymain = $buildfile_helper_tab->Text(-width => 90,
+					       -wrap => 'none')->pack(-expand => 1, -fill => 'both');
 
-   $bf_entrymain = $tab2->Text(-width => 90,
-			       -wrap => 'none')->pack(-expand => 1, -fill => 'both');
-
-   my $tool_b = $f->Menubutton(-text => "Tools",
-			       -background => "grey18",
-			       -foreground => 'ivory',
-			       -activebackground => 'white',
-			       -activeforeground => 'black',
-			       -menuitems => [ map { [ 'command' => $_,
-						       -command => [ sub
-									{
-									open(TOOL,"< ".$ENV{LOCALTOP}."/.SCRAM/InstalledTools/".$_[0]);
-									while (<TOOL>)
-									   {
-									   $tool_entrymain->insert('end',$_);
-									   }
-									# Set status message:
-									$top_label_message="Tool ".$_[0]." loaded.\n";
-									# Disable until we actually want to edit:
-									$tool_entrymain->configure(-state => 'disabled');
-									}, $_ ]
-						       ],
-									   } @$t_db ]
-			       )->pack(-side => 'left');
+   my ($tool_option_b, $tool_option_b_c);
+   my $tool_loaded;
+   my $tool_selector_b = $tool_editor_tab->Menubutton(-text => "Tools",
+						      -relief => 'ridge',
+						      -background => "grey18",
+						      -foreground => 'ivory',
+						      -activebackground => 'white',
+						      -activeforeground => 'black',
+						      -menuitems => [ map { [ 'command' => $_,
+									      -command => [ sub
+											       {
+											       $tool_loaded = $_[0];
+											       # Allow text in the widget to be edited:
+											       $tool_entrymain->configure(-state => 'normal');
+											       # Delete all existing text:
+											       $tool_entrymain->delete('1.0','end');
+											       # Load up the file into the text widget:
+											       open(TOOL,"< ".$ENV{LOCALTOP}."/.SCRAM/InstalledTools/".$_[0]);
+											       while (<TOOL>)
+												  {
+												  next if ($_ =~ /^\#.*/);
+												  $tool_entrymain->insert('end',$_);
+												  }
+											       
+											       close(TOOL);
+											       
+											       # Set status message:
+											       $top_label_message="Tool ".$_[0]." loaded.\n";
+											       # Now that a tool is loaded, activate the buttons:
+											       $tool_option_b->configure( -state => 'normal');
+											       $tool_option_b_c->configure( -state => 'normal');
+											       # Disable until we actually want to edit:
+											       $tool_entrymain->configure(-state => 'disabled');
+											       }, $_ ]
+									      ],
+												  } @$t_db ]
+						      )->pack(-side => 'left');
    
-   my $toplabelregion = $mw->Label(-textvariable => \$top_label_message,
-				   -anchor => 'w',
-				   -relief => 'flat',
-				   -width => 90)->pack(-anchor => 'n');
    
+   # Now pack new button into top button bar:
+   $tool_option_b = $tool_editor_tab->Button(-text => "New",
+					     -background => "blue",
+					     -foreground => 'yellow',
+					     -activebackground => 'yellow',
+					     -activeforeground => 'blue',			
+					     -command => sub
+						{
+						$top_label_message="Creating a new tool from $tool_loaded\n";
+						$tool_entrymain->configure(-state => 'normal');
+						$tool_entrymain->insert('end',"\n##### < just to test text insertion > ####");
+						})
+      ->pack(-side => 'left', -anchor => 'n');
    
-#   my $be = $tab1->BrowseEntry( -variable => \$var,
-#				    -choices => $t_db,
-#				    -state => normal )->pack;
+   $tool_option_b_c = $tool_editor_tab->Button(-text => "Clone",
+					       -background => "magenta",
+					       -foreground => 'yellow',
+					       -activebackground => 'yellow',
+					       -activeforeground => 'magenta',			
+					       -command => sub
+						  {
+						  $top_label_message="Creating a new tool by cloning $tool_loaded\n";						  
+						  })
+      ->pack(-side => 'left', -anchor => 'n');
    
-# foreach my $f (keys %$flagnames)
-#       {
-#       $dataentry = $entrymain->Label(-text => $f,
-# 				     -anchor => 'w',
-# 				     -relief => 'flat',
-# 				     -width => 25);
-#       $entrymain->windowCreate('end', -window => $dataentry);
-      
-#       $dataentry = $entrymain->Entry(-width => 63,
-# 				     -background => 'lemonchiffon',
-# 				     -textvariable => join(" ",@{$flagnames->{$f}}));
-#       $entrymain->windowCreate('end', -window => $dataentry);
-#       $entrymain->insert('end', "\n");
-#       }
+   # Both buttons are disabled until a tool is selected:
+   $tool_option_b->configure( -state => 'disabled');
+   $tool_option_b_c->configure( -state => 'disabled');
+   
+   # The top-level message widget:
+   my $top_label_region = $mw->Label(-textvariable => \$top_label_message,
+				     -anchor => 'w',
+				     -relief => 'flat',
+				     -width => 90)->pack(-anchor => 'n');
    
    # Pack the status label into bottom frame:
    my $statusmessage;
    my $statuscolour="Red";
    my $status_label = $f_bottom->Label(-foreground => $statuscolour,
+				       -relief => 'flat',
 				       -textvariable => \$statusmessage)
-      ->pack(-side => 'left', -fill => 'x');
+      ->pack(-side => 'left', -fill => 'x', -anchor => 'w');
    
    # Track mouse and react when buttons are focussed:
    $status_label->bind('<Enter>', [ sub {$statusmessage = ""}, $message]);   
-
+   
    $exit_b->bind('<Enter>', [ sub {$statusmessage = "Save changes (if any) and exit.";}, $message]);
    $help_b->bind('<Enter>', [ sub {$statusmessage = "Show help";}, $message]);
-   $tab1->bind('<Enter>', [ sub {$statusmessage = "Make changes to tools or clone tools";}, $message]);
-   $tab2->bind('<Enter>', [ sub {$statusmessage = "Create BuildFiles";}, $message]);
+   $tool_selector_b->bind('<Enter>', [ sub {$statusmessage = "Select a tool to modify or clone";}, $message]);
+   $tool_editor_tab->bind('<Enter>', [ sub {$statusmessage = "Make changes to tools or clone tools";}, $message]);
+   $buildfile_helper_tab->bind('<Enter>', [ sub {$statusmessage = "Create BuildFiles";}, $message]);
    
    $exit_b->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
    $help_b->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
-   $tab1->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
-   $tab2->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
+   $tool_selector_b->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
+   $tool_editor_tab->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
+   $buildfile_helper_tab->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
    
    # Enter the main loop:
    MainLoop();
    }
-
 
 #### End of CMD.pm ####
 1;
