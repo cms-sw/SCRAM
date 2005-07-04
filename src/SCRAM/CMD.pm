@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.23 2005/07/01 15:23:35 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.24 2005/07/01 17:21:45 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1987,17 +1987,18 @@ sub show_compiler_gui()
    
    # The architecture opts:
    my $arch_entrymain = $arch_opts_tab->Text(-width => 90,
-					     -wrap => 'none')->pack(-expand => 1, -fill => 'both');
+					     )->pack(-expand => 1, -fill => 'both');
    my $arch_dataentry;
    my $sysarch=$self->system_architecture();
    my $current_arch_string="Current system architecture is: ".$sysarch."_";
+
    $arch_dataentry = $arch_entrymain->Label(-text => $current_arch_string,
 					    -anchor => 'w',
 					    -relief => 'flat',
 					    -width => length($current_arch_string));
    
    $arch_entrymain->windowCreate('end', -window => $arch_dataentry);
-   
+
    # Add a browse entry widget for each compiler arch name:
    my $compiler_arch_name="gcc323";
    my $known_comp_types=[qw( gcc323 gcc344 icc81 )];
@@ -2007,7 +2008,24 @@ sub show_compiler_gui()
 					       -state => 'normal' )->pack(-side => 'right');
    
    $arch_entrymain->windowCreate('end', -window => $arch_be);
+
+   my $arch_status_message = "Selected SCRAM_ARCH is ".$sysarch."_";
+
+
+   my $arch_msg_b = $arch_entrymain->Label(-text => $arch_status_message,
+					      -anchor => 'w',
+					      -relief => 'flat',
+					      -width => length($arch_status_message)-2);
    
+   $arch_entrymain->windowCreate('end', -window => $arch_msg_b);
+
+   my $arch_status_b = $arch_entrymain->Label(-textvariable => \$compiler_arch_name,
+					      -anchor => 'w',
+					      -relief => 'flat',
+					      -width => length(\$compiler_arch_name));
+   
+   $arch_entrymain->windowCreate('end', -window => $arch_status_b);
+
    # Disable at the end:
    $arch_entrymain->configure( -state => 'disabled');
    
