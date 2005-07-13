@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.25 2005/07/04 17:34:33 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.26 2005/07/04 18:49:14 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1958,15 +1958,7 @@ sub show_compiler_gui()
    my $debug_opts_tab= $notebook->add( "Sheet 3", -label => "Debugging Options" );
    my $arch_opts_tab = $notebook->add( "Sheet 4", -label => "Architecture Options" );
 
-   # A hack...
-   if (exists ($compiler_tools->{'C++'}))
-      {
-      my $flagnames = $compiler_tools->{'C++'}->allflags();
-      }
-   else
-      {
-      my $flagnames = $compiler_tools->{'c++'}->allflags();
-      }
+   my $flagnames = $compiler_tools->{'c++'}->allflags();
    
    # Main comp widget embedded in the notebook tab. This is the widget in which the
    # label widgets are added:
