@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.26 2005/07/04 18:49:14 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.27 2005/07/13 15:38:03 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1889,9 +1889,12 @@ sub show_compiler_gui()
    my $mw = MainWindow->new();
    $mw->title("SCRAM Compiler Option Window");
 
+   # To record whether something was modified:
+   my $tool_cache_status=0;
+   
    my $compiler_tools = {};
    my $compiler_db = $self->toolmanager()->scram_compiler();
-   my $supported_lang_list = [ reverse sort keys %$compiler_db ];
+   my $supported_lang_list = [ sort keys %$compiler_db ];
 
    while (my ($langtype, $ctool) = each %$compiler_db)
       {
@@ -1958,30 +1961,38 @@ sub show_compiler_gui()
    my $debug_opts_tab= $notebook->add( "Sheet 3", -label => "Debugging Options" );
    my $arch_opts_tab = $notebook->add( "Sheet 4", -label => "Architecture Options" );
 
-   my $flagnames = $compiler_tools->{'c++'}->allflags();
+   my $flagnames = $compiler_tools->{'C++'}->allflags();
    
    # Main comp widget embedded in the notebook tab. This is the widget in which the
    # label widgets are added:
    my $comp_entrymain = $comp_opts_tab->Text(-width => 90,
 					     -wrap => 'none')->pack(-expand => 1, -fill => 'both');
-   my $comp_dataentry;
+   my %comp_dataentry_label;
+   my %comp_dataentry_entry;
    
+   my $comp_data_content = {};
+   my $comp_data_content_new = {};
+
    # Set up the compiler window first:
    foreach my $f (keys %$flagnames)
       {
-      $comp_dataentry = $comp_entrymain->Label(-text => $f,
-					       -anchor => 'w',
-					       -relief => 'flat',
-					       -width => 25);
-      $comp_entrymain->windowCreate('end', -window => $comp_dataentry);
+      $comp_data_content->{$f}=join(" ",@{$flagnames->{$f}});
+      $comp_data_content_new->{$f}=join(" ",@{$flagnames->{$f}});
+
+      $comp_dataentry_label{$f} = $comp_entrymain->Label(-text => $f,
+							 -anchor => 'w',
+							 -relief => 'flat',
+							 -width => 25);
+      $comp_entrymain->windowCreate('end', -window => $comp_dataentry_label{$f});
       
-      $comp_dataentry = $comp_entrymain->Entry(-width => 63,
-					       -background => 'lemonchiffon',
-					       -textvariable => join(" ",@{$flagnames->{$f}}));
-      $comp_entrymain->windowCreate('end', -window => $comp_dataentry);
-      $comp_entrymain->insert('end', "\n");
+      $comp_dataentry_entry{$f} = $comp_entrymain->Entry(-width => 63,
+							 -background => 'lemonchiffon',
+							 -textvariable => $comp_data_content_new->{$f});
+      $comp_entrymain->windowCreate('end', -window => $comp_dataentry_entry{$f});
+      $comp_entrymain->insert('end', "\n");      
       }
-   
+
+
    # Finally disable the text widget (not the entry widgets, obviously):
    $comp_entrymain->configure( -state => 'disabled');
    
@@ -2039,7 +2050,7 @@ sub show_compiler_gui()
 					    print "Full arch = ",$sysarch."_".$compiler_arch_name,"\n";
 					    })->pack(-side => 'bottom');
    
-   
+
    # Pack the status label into bottom frame:
    my $statusmessage;
    my $statuscolour="Red";
@@ -2067,6 +2078,25 @@ sub show_compiler_gui()
    $debug_opts_tab->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
    $arch_opts_tab->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
 
+   foreach my $f (keys %$flagnames)
+      {
+      $comp_dataentry_label{$f}->bind('<Enter>', [ sub {$statusmessage = "";}, $label_widget]);
+      $comp_dataentry_label{$f}->bind('<Leave>', [ sub {$statusmessage = "";}, $label_widget]);
+      $comp_dataentry_entry{$f}->bind('<Enter>', [ sub {$statusmessage = "";}, $entry_widget]);				      
+      
+      $comp_dataentry_entry{$f}->bind('<Leave>', [
+						  sub {
+						  my $new_value = $_[0]->get();
+						  
+						  if ($new_value ne $comp_data_content->{$f})
+						     {
+						     $comp_data_content_new->{$f} = $new_value;
+						     print "Flag ".$f." was changed from ".$comp_data_content->{$f}." to ".$comp_data_content_new->{$f}."\n";
+						     }
+						  }, $e ]
+				      );
+      }
+   
    # Enter the main loop:
    MainLoop();   
    }
