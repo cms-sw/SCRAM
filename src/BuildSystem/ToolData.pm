@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-21 15:26:07+0100
-# Revision: $Id: ToolData.pm,v 1.3 2005/02/02 16:31:11 sashby Exp $ 
+# Revision: $Id: ToolData.pm,v 1.4 2005/04/13 16:45:36 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -116,6 +116,19 @@ sub flags()
       {
       return "";
       }
+   }
+
+sub updateflags()
+   {
+   my $self=shift;
+   my ($flag,$flagvalue) = @_;
+   # Reset:
+   if (exists $self->{FLAGS}->{$flag})
+      {
+      delete $self->{FLAGS}->{$flag};
+      }
+   # Reinsert:
+   $self->flags($flag,$flagvalue);
    }
 
 sub allflags()

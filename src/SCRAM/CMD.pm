@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.27 2005/07/13 15:38:03 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.28 2005/07/14 18:20:56 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1885,25 +1885,44 @@ sub show_compiler_gui()
    $help_string .= "This GUI can be used to modify compiler settings\n";
    $help_string .= "and to set compiler-dependent architectures.\n";
    
-   # Geometry is set automatically:
-   my $mw = MainWindow->new();
-   $mw->title("SCRAM Compiler Option Window");
-
    # To record whether something was modified:
-   my $tool_cache_status=0;
+   my $tool_cache_status={};
    
    my $compiler_tools = {};
    my $compiler_db = $self->toolmanager()->scram_compiler();
    my $supported_lang_list = [ sort keys %$compiler_db ];
+   my $comp_data_content = {};
+   my $comp_data_content_new = {};
 
    while (my ($langtype, $ctool) = each %$compiler_db)
       {
       print "LANG TYPE $langtype provided by ".$ctool->[0]." with arch suffix ".$ctool->[1]."\n",
       if ($ENV{SCRAM_DEBUG});
-      # Now get the tool corresponding to the this lang type:      
+      # Now get the tool corresponding to the this lang type:
       $compiler_tools->{$langtype} = $self->toolmanager()->checkifsetup($ctool->[0]);
+      # Populate a hash with the data for the compiler tool for this lang type:
+      $comp_data_content->{$langtype} = $compiler_tools->{$langtype}->allflags();
+      # Set the status of the tool object to 0. Change it to 1 if something in the
+      # tool was changed:
+      $tool_cache_status->{$langtype} = 0;
       }
+
+   # Set the initial page to be the first supported language type:
+   my $sel_lang_type=uc($supported_lang_list->[0]);
+
+   # Geometry is set automatically:
+   my $mw = MainWindow->new();
+   $mw->title("SCRAM Compiler Option Window");
    
+   # The notebook widget and its tabs:
+   my $notebook = $mw->NoteBook();
+
+   # Add the tabs:
+   my $comp_opts_tab = $notebook->add( "Sheet 1", -label => "Compilation Options" );
+   my $link_opts_tab = $notebook->add( "Sheet 2", -label => "Linker Options" );
+   my $debug_opts_tab= $notebook->add( "Sheet 3", -label => "Debugging Options" );
+   my $arch_opts_tab = $notebook->add( "Sheet 4", -label => "Architecture Options" );
+
    # We want a frame at the top for buttons:
    my $f = $mw->Frame(-relief => 'ridge', -bd => 2)
       ->pack(-side => 'top', -anchor => 'n', -expand => 1, -fill => 'x');
@@ -1911,14 +1930,27 @@ sub show_compiler_gui()
    # We want a frame at the bottom for status messages:
    my $f_bottom = $mw->Frame(-relief => 'ridge', -bd => 2)
       ->pack(-side => 'bottom', -anchor => 'n', -expand => 1, -fill => 'x');
-
+   
    # A menu button inside the top frame, for exitting:
    my $exit_b = $f->Button(-text => "Save&Exit",
 			   -background => "red",
 			   -foreground => 'yellow',
 			   -activebackground => 'orange',
 			   -activeforeground => 'black',			
-			   -command => sub { exit; })->pack(-side => 'right');
+			   -command => sub {
+
+			   foreach my $langt (keys %{$tool_cache_status})
+			      {
+			      # Only write the changes to the cache if our status flag changed:
+			      if ($tool_cache_status->{$langt})
+				 {
+				 print "SAVE/EXIT: Updating toolmanager copy of ".$compiler_db->{$langt}->[0]."\n",
+				 if ($ENV{SCRAM_DEBUG});				 
+				 $self->toolmanager()->updatecompiler($compiler_db->{$langt}->[0], $compiler_tools->{$langt});
+				 }
+			      }
+			   exit;
+			   })->pack(-side => 'right');
    
    my $help_b = $f->Button(-text => "Help",
 			   -background => "lightblue",
@@ -1935,33 +1967,9 @@ sub show_compiler_gui()
 				     -anchor => 'w',
 				     -relief => 'flat',
 				     -width => 90)->pack(-anchor => 'n');
-   
-   # Set the initial page to be the first supported language type:
-   my $sel_lang_type=uc($supported_lang_list->[0]);
-   my $lang_b = $f->Menubutton(-textvariable => \$sel_lang_type,
-			       -background => 'grey70',
-			       -foreground => 'darkgreen',
-			       -activebackground => 'grey18',
-			       -activeforeground => 'ivory',			
-			       -menuitems => [ map { [ 'command' => $_,
-						       -command => [ sub
-									{
-									$top_label_message = "Showing compiler info for ".$_[0]."\n";
-									$sel_lang_type=uc($_[0]);	
-									}, $_ ]
-						       ],
-									   } @$supported_lang_list ]
-			       )->pack(-side => 'left');
-   
-   # The notebook widget and its tabs:
-   my $notebook = $mw->NoteBook()->pack( -fill => 'y', -expand => 1);
-   
-   my $comp_opts_tab = $notebook->add( "Sheet 1", -label => "Compilation Options" );
-   my $link_opts_tab = $notebook->add( "Sheet 2", -label => "Linker Options" );
-   my $debug_opts_tab= $notebook->add( "Sheet 3", -label => "Debugging Options" );
-   my $arch_opts_tab = $notebook->add( "Sheet 4", -label => "Architecture Options" );
 
-   my $flagnames = $compiler_tools->{'C++'}->allflags();
+   # Pack the notebook widget:
+   $notebook->pack( -fill => 'y', -expand => 1);
    
    # Main comp widget embedded in the notebook tab. This is the widget in which the
    # label widgets are added:
@@ -1970,15 +1978,11 @@ sub show_compiler_gui()
    my %comp_dataentry_label;
    my %comp_dataentry_entry;
    
-   my $comp_data_content = {};
-   my $comp_data_content_new = {};
-
    # Set up the compiler window first:
-   foreach my $f (keys %$flagnames)
+   foreach my $f (keys %{$comp_data_content->{$sel_lang_type}})      
       {
-      $comp_data_content->{$f}=join(" ",@{$flagnames->{$f}});
-      $comp_data_content_new->{$f}=join(" ",@{$flagnames->{$f}});
-
+      $comp_data_content_new->{$sel_lang_type}->{$f}=join(" ",@{$comp_data_content->{$sel_lang_type}->{$f}});
+      
       $comp_dataentry_label{$f} = $comp_entrymain->Label(-text => $f,
 							 -anchor => 'w',
 							 -relief => 'flat',
@@ -1987,12 +1991,69 @@ sub show_compiler_gui()
       
       $comp_dataentry_entry{$f} = $comp_entrymain->Entry(-width => 63,
 							 -background => 'lemonchiffon',
-							 -textvariable => $comp_data_content_new->{$f});
+							 -textvariable => $comp_data_content_new->{$sel_lang_type}->{$f});
       $comp_entrymain->windowCreate('end', -window => $comp_dataentry_entry{$f});
       $comp_entrymain->insert('end', "\n");      
       }
+   
+   my $lang_b = $f->Menubutton(-textvariable => \$sel_lang_type,
+			       -background => 'grey70',
+			       -relief => 'raised',
+			       -foreground => 'darkgreen',
+			       -activebackground => 'grey18',
+			       -activeforeground => 'ivory',			
+			       -menuitems => [ map { [ 'command' => $_,
+						       -command => [ sub
+									{
+									$top_label_message = "Showing compiler info for ".$_[0]."\n";
+									$sel_lang_type=uc($_[0]);
 
-
+									# Delete the existing text widget and re-generate it:
+									$comp_entrymain->destroy() if Tk::Exists($comp_entrymain);
+									$comp_entrymain = $comp_opts_tab->Text(-width => 90,
+													       -wrap => 'none')->pack(-expand => 1, -fill => 'both');
+									
+									# Set up the compiler window first:
+									foreach my $f (keys %{$comp_data_content->{$sel_lang_type}})
+									   {
+									   $comp_data_content_new->{$sel_lang_type}->{$f}=join(" ",@{$comp_data_content->{$sel_lang_type}->{$f}});
+									   
+									   $comp_dataentry_label{$f} = $comp_entrymain->Label(-text => $f,
+															      -anchor => 'w',
+															      -relief => 'flat',
+															      -width => 25);
+									   $comp_entrymain->windowCreate('end', -window => $comp_dataentry_label{$f});
+									   
+									   $comp_dataentry_entry{$f} = $comp_entrymain->Entry(-width => 63,
+															      -background => 'lemonchiffon',
+															      -textvariable => $comp_data_content_new->{$sel_lang_type}->{$f});
+									   $comp_entrymain->windowCreate('end', -window => $comp_dataentry_entry{$f});
+									   $comp_entrymain->insert('end', "\n");
+									   
+									   # When the cursor leaves the entry widget, track the event:
+									   $comp_dataentry_entry{$f}->bind('<Leave>', [
+														       sub {
+														       my $new_value = $_[0]->get();
+														       
+														       if ($new_value ne $comp_data_content_new->{$sel_lang_type}->{$f})
+															  {
+															  $comp_data_content->{$sel_lang_type}->{$f} = [ split(' ',$new_value) ];
+															  # Write the changes to the compiler tool object:
+															  $compiler_tools->{$sel_lang_type}->updateflags($f,$comp_data_content->{$sel_lang_type}->{$f}),"\n";
+															  # This compiler tool was changed:
+															  $tool_cache_status->{$sel_lang_type} = 1;
+															  }
+														       }, $e ]
+													   );						   
+									   }
+									
+									# Disable the text widget:
+									$comp_entrymain->configure( -state => 'disabled');									
+									}, $_ ]
+						       ],
+									   } @$supported_lang_list ]
+			       )->pack(-side => 'left');
+   
    # Finally disable the text widget (not the entry widgets, obviously):
    $comp_entrymain->configure( -state => 'disabled');
    
@@ -2078,20 +2139,20 @@ sub show_compiler_gui()
    $debug_opts_tab->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
    $arch_opts_tab->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
 
-   foreach my $f (keys %$flagnames)
+   foreach my $f (keys %{$comp_data_content->{$sel_lang_type}})
       {
-      $comp_dataentry_label{$f}->bind('<Enter>', [ sub {$statusmessage = "";}, $label_widget]);
-      $comp_dataentry_label{$f}->bind('<Leave>', [ sub {$statusmessage = "";}, $label_widget]);
-      $comp_dataentry_entry{$f}->bind('<Enter>', [ sub {$statusmessage = "";}, $entry_widget]);				      
-      
+      # When the cursor leaves the entry widget, track the event:
       $comp_dataentry_entry{$f}->bind('<Leave>', [
 						  sub {
 						  my $new_value = $_[0]->get();
 						  
-						  if ($new_value ne $comp_data_content->{$f})
+						  if ($new_value ne $comp_data_content_new->{$sel_lang_type}->{$f})
 						     {
-						     $comp_data_content_new->{$f} = $new_value;
-						     print "Flag ".$f." was changed from ".$comp_data_content->{$f}." to ".$comp_data_content_new->{$f}."\n";
+						     $comp_data_content->{$sel_lang_type}->{$f} = [ split(' ',$new_value) ];
+						     # Write the changes to the compiler tool object:
+						     $compiler_tools->{$sel_lang_type}->updateflags($f,$comp_data_content->{$sel_lang_type}->{$f}),"\n";
+						     # This compiler tool was changed:
+						     $tool_cache_status->{$sel_lang_type} = 1;
 						     }
 						  }, $e ]
 				      );
