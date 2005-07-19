@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.29 2005/07/15 15:27:28 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.30 2005/07/19 10:09:28 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -2175,8 +2175,7 @@ sub show_tools_gui()
    # Could also use this interface as a way to clone other tools and apply some 
    # customisation (e.g. cloning boost_python to make a boost_regex which differs
    # in which lib it provides)
-   #
-   
+   #   
    my $help_string = "";
    $help_string .= "This GUI can be used to modify tool settings\n";
    $help_string .= "or clone tools and modify them to create new tools.\n";
@@ -2222,11 +2221,14 @@ sub show_tools_gui()
    # The notebook widget and its tabs:
    my $notebook = $mw->NoteBook()->pack( -fill => 'y', -expand => 1);
    
-   $tool_editor_tab = $notebook->add( "Sheet 1", -label => "Tool Editor", -raisecmd => sub { print "TOOLS sheet raised!\n"; });
+   $tool_editor_tab = $notebook->add( "Sheet 1", -label => "Tool Editor", -raisecmd => sub { });
    $buildfile_helper_tab = $notebook->add( "Sheet 2", -label => "BuildFile Helper",
 					   -raisecmd => sub
 					      {
+					      $top_label_message="Create a BuildFile for the current package by scanning the source files";
 					      use SCRAM::DepTracker;
+					      # Eventually the source and include dir names should
+					      # be defined in the site defaults:
 					      my $dtracker = SCRAM::DepTracker->new("src","interface");
 					      $bf_entrymain->delete('1.0','end');
 					      $bf_entrymain->insert('end',$dtracker->show_buildfile());
@@ -2239,7 +2241,7 @@ sub show_tools_gui()
    $bf_entrymain = $buildfile_helper_tab->Text(-width => 90,
 					       -wrap => 'none')->pack(-expand => 1, -fill => 'both');
 
-   my ($tool_option_b, $tool_option_b_c);
+   my ($tool_option_b, $tool_option_b_c,$tool_option_b_e);
    my $tool_loaded;
    my $tool_selector_b = $tool_editor_tab->Menubutton(-text => "Tools",
 						      -relief => 'ridge',
@@ -2270,6 +2272,7 @@ sub show_tools_gui()
 											       # Now that a tool is loaded, activate the buttons:
 											       $tool_option_b->configure( -state => 'normal');
 											       $tool_option_b_c->configure( -state => 'normal');
+											       $tool_option_b_e->configure( -state => 'normal');
 											       # Disable until we actually want to edit:
 											       $tool_entrymain->configure(-state => 'disabled');
 											       }, $_ ]
@@ -2289,7 +2292,7 @@ sub show_tools_gui()
 						$top_label_message="Creating a new tool from $tool_loaded\n";
 						$tool_entrymain->configure(-state => 'normal');
 						$tool_entrymain->insert('end',"\n##### < just to test text insertion > ####");
-						})
+						   })
       ->pack(-side => 'left', -anchor => 'n');
    
    $tool_option_b_c = $tool_editor_tab->Button(-text => "Clone",
@@ -2303,9 +2306,52 @@ sub show_tools_gui()
 						  })
       ->pack(-side => 'left', -anchor => 'n');
    
+   $tool_option_b_e = $tool_editor_tab->Button(-text => "Edit",
+					       -background => "lightyellow",
+					       -foreground => 'grey15',
+					       -activebackground => 'grey15',
+					       -activeforeground => 'lightyellow',			
+					       -command => sub
+						  {
+						  $top_label_message="Editing $tool_loaded\n";
+
+						  my $dialog = $mw->DialogBox(-title => "Editing tool $tool_loaded",
+									      -buttons => ["OK", "Cancel"]);						  
+						  my $t_edit_main = $dialog->Text(-width => 90,
+										  -wrap => 'none')->pack(-expand => 1, -fill => 'both');
+						  my $this_tool = $self->toolmanager()->checkifsetup($tool_loaded);						  
+
+						  # If someone tries to edit a compiler tool, return (perhaps with
+						  # a nice warning message):
+						  if ($this_tool->scram_compiler())
+						     {
+						     $top_label_message="Warning: unable to edit a compiler tool with this GUI.";
+						     return;
+						     }
+						  
+						  # Get the features:
+						  my $tool_features = $this_tool->allfeatures();
+						  
+						  foreach my $f (keys %$tool_features)
+						     {
+						     $t_dt_label_content=$tool_features->{$f};
+						     $t_dt_label= $dialog->Label(-text => $f, -anchor => 'w', -relief => 'flat', -width => 25);
+						     $t_edit_main->windowCreate('end', -window => $t_dt_label);						     
+						     $t_dt_label_entry = $t_edit_main->Entry(-width => 63,
+											     -background => 'lemonchiffon',
+											     -textvariable => $t_dt_label_content);
+						     $t_edit_main->windowCreate('end', -window => $t_dt_label_entry);
+						     $t_edit_main->insert('end', "\n");
+						     }
+						  
+						  # Finally, display the dialog box:
+						  $dialog->Show();						  
+						  })->pack(-side => 'left', -anchor => 'n');
+   
    # Both buttons are disabled until a tool is selected:
    $tool_option_b->configure( -state => 'disabled');
    $tool_option_b_c->configure( -state => 'disabled');
+   $tool_option_b_e->configure( -state => 'disabled');
    
    # The top-level message widget:
    my $top_label_region = $mw->Label(-textvariable => \$top_label_message,
@@ -2326,12 +2372,14 @@ sub show_tools_gui()
    
    $exit_b->bind('<Enter>', [ sub {$statusmessage = "Save changes (if any) and exit.";}, $message]);
    $help_b->bind('<Enter>', [ sub {$statusmessage = "Show help";}, $message]);
+
    $tool_selector_b->bind('<Enter>', [ sub {$statusmessage = "Select a tool to modify or clone";}, $message]);
-   $tool_editor_tab->bind('<Enter>', [ sub {$statusmessage = "Make changes to tools or clone tools";}, $message]);
-   $buildfile_helper_tab->bind('<Enter>', [ sub {$statusmessage = "Create BuildFiles";}, $message]);
+   $tool_editor_tab->bind('<Enter>', [ sub {$statusmessage = "Create, edit or clone tools";}, $message]);
+   $buildfile_helper_tab->bind('<Enter>', [ sub {$statusmessage = "Create a BuildFile for the current package"; $top_label_message="";}, $message]);
    
    $exit_b->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
    $help_b->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
+
    $tool_selector_b->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
    $tool_editor_tab->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);
    $buildfile_helper_tab->bind('<Leave>', [ sub {$statusmessage = "";}, $message]);

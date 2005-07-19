@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-21 15:26:07+0100
-# Revision: $Id: ToolData.pm,v 1.4 2005/04/13 16:45:36 sashby Exp $ 
+# Revision: $Id: ToolData.pm,v 1.5 2005/07/15 15:27:27 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -370,6 +370,33 @@ sub addreleasetoself()
 	 }
       }
    
+   }
+
+sub allfeatures()
+   {
+   my $self=shift;
+   my @feature_vars=$self->list_variables();
+   my @features;
+   push (@features, @feature_vars, qw(LIB LIBDIR INCLUDE USE));   
+
+   # Make sure feature name is uppercase:
+   $feature =~ tr/a-z/A-Z/;
+   $feature_data={};
+   map
+      {
+      if (exists ($self->{$_}))
+	 {
+	 if (ref($self->{$_}) eq 'ARRAY')
+	    {
+	    $feature_data->{$_} = join(" ",@{$self->{$_}});
+	    }
+	 else
+	    {
+	    $feature_data->{$_} = $self->{$_}; # A string
+	    }
+	 }
+      } @features;
+   return $feature_data;
    }
 
 1;
