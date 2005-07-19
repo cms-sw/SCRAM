@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.28 2005/07/14 18:20:56 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.29 2005/07/15 15:27:28 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -2216,16 +2216,22 @@ sub show_tools_gui()
    
    # The tools menu:
    my $tool_entrymain;
-   my $bf_entrymain;
-   
+   my $bf_entrymain;   
    my $top_label_message = "Select an action: clone/edit a tool or create a BuildFile.\n";
 
    # The notebook widget and its tabs:
    my $notebook = $mw->NoteBook()->pack( -fill => 'y', -expand => 1);
    
    $tool_editor_tab = $notebook->add( "Sheet 1", -label => "Tool Editor", -raisecmd => sub { print "TOOLS sheet raised!\n"; });
-   $buildfile_helper_tab = $notebook->add( "Sheet 2", -label => "BuildFile Helper", -raisecmd => sub { print "BF sheet raised!\n"; $top_label_message="";});
-
+   $buildfile_helper_tab = $notebook->add( "Sheet 2", -label => "BuildFile Helper",
+					   -raisecmd => sub
+					      {
+					      use SCRAM::DepTracker;
+					      my $dtracker = SCRAM::DepTracker->new("src","interface");
+					      $bf_entrymain->delete('1.0','end');
+					      $bf_entrymain->insert('end',$dtracker->show_buildfile());
+					      });
+   
    # Main widgets in the notebook:
    $tool_entrymain = $tool_editor_tab->Text(-width => 90,
 					    -wrap => 'none')->pack(-expand => 1, -fill => 'both');
