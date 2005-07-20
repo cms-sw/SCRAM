@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.30 2005/07/19 10:09:28 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.31 2005/07/19 15:45:40 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1946,7 +1946,7 @@ sub show_compiler_gui()
 				 {
 				 print "SAVE/EXIT: Updating toolmanager copy of ".$compiler_db->{$langt}->[0]."\n",
 				 if ($ENV{SCRAM_DEBUG});				 
-				 $self->toolmanager()->updatecompiler($compiler_db->{$langt}->[0], $compiler_tools->{$langt});
+				 $self->toolmanager()->updatetool($compiler_db->{$langt}->[0], $compiler_tools->{$langt});
 				 }
 			      }
 			   exit;
@@ -2108,6 +2108,10 @@ sub show_compiler_gui()
 					 -activeforeground => 'orange',			
 					 -command => sub
 					    {
+					    # Interact with the rest of SCRAM by setting the architecture
+					    # in the main block. Then, make the change persistent via
+					    # a file(?) or %ENV entry:
+					    
 					    print "Full arch = ",$sysarch."_".$compiler_arch_name,"\n";
 					    })->pack(-side => 'bottom');
    
@@ -2325,27 +2329,60 @@ sub show_tools_gui()
 						  # a nice warning message):
 						  if ($this_tool->scram_compiler())
 						     {
-						     $top_label_message="Warning: unable to edit a compiler tool with this GUI.";
+						     $top_label_message="Warning: unable to edit a compiler tool with this GUI.\nUse \"scram ui -edit comp\" instead.";
 						     return;
 						     }
 						  
 						  # Get the features:
 						  my $tool_features = $this_tool->allfeatures();
+						  my $t_dt_label_content={};
+						  my $t_dt_label_entry={};
 						  
 						  foreach my $f (keys %$tool_features)
 						     {
-						     $t_dt_label_content=$tool_features->{$f};
+						     $t_dt_label_content->{$f} = $tool_features->{$f};
 						     $t_dt_label= $dialog->Label(-text => $f, -anchor => 'w', -relief => 'flat', -width => 25);
 						     $t_edit_main->windowCreate('end', -window => $t_dt_label);						     
-						     $t_dt_label_entry = $t_edit_main->Entry(-width => 63,
-											     -background => 'lemonchiffon',
-											     -textvariable => $t_dt_label_content);
-						     $t_edit_main->windowCreate('end', -window => $t_dt_label_entry);
+						     $t_dt_label_entry->{$f} = $t_edit_main->Entry(-width => 63,
+												   -background => 'lemonchiffon',
+												   -textvariable => $t_dt_label_content->{$f});
+						     $t_edit_main->windowCreate('end', -window => $t_dt_label_entry->{$f});
 						     $t_edit_main->insert('end', "\n");
 						     }
 						  
+						  # Disable the rest of the text widget:
+						  $t_edit_main->configure( -state => 'disabled' );
+
 						  # Finally, display the dialog box:
-						  $dialog->Show();						  
+						  my $button_pressed=$dialog->Show();
+
+						  if ($button_pressed =~ /OK/)
+						     {
+						     my $update_status=0;
+						     foreach my $f (keys %$tool_features)
+							{						     
+							my $new_value = $t_dt_label_entry->{$f}->get();							
+
+							if ($new_value ne $t_dt_label_content->{$f})
+							   {
+							   $update_status=1;
+							   if ($this_tool->can(lc($f)))
+							      {
+							      my $subrtn=lc($f);
+							      # Reset the array:
+							      $this_tool->reset($f);
+							      $this_tool->$subrtn([ split(" ", $new_value) ]);
+							      }
+							   else
+							      {
+							      $this_tool->variable_data($f,$new_value);
+							      }
+							   }
+							}
+						     # Update the copy of the tool in the cache
+						     # if some value really changed:
+						     $self->toolmanager()->updatetool($tool_loaded, $this_tool), if ($update_status);						     
+						     }
 						  })->pack(-side => 'left', -anchor => 'n');
    
    # Both buttons are disabled until a tool is selected:

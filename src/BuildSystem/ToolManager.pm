@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.10 2005/06/28 19:08:55 sashby Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.11 2005/07/15 15:27:27 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -577,32 +577,32 @@ sub scram_compiler()
       }
    }
 
-sub updatecompiler()
+sub updatetool()
    {
    my $self=shift;
-   my ($compilername, $compilerobj) = @_;
+   my ($name, $obj) = @_;
 
    # Replace the existing copy of the tool with the new one:
-   if (exists $self->{SETUP}->{$compilername})
+   if (exists $self->{SETUP}->{$name})
       {
       # Check to make sure that we were really passed a compiler with
       # the desired name:
-      if ($compilerobj->toolname() eq $compilername)
+      if ($obj->toolname() eq $name)
 	 {
-	 print "ToolManager: Updating the cached copy of ".$compilername."\n";
-	 delete $self->{SETUP}->{$compilername};
-	 $self->{SETUP}->{$compilername} = $compilerobj;
+	 print "ToolManager: Updating the cached copy of ".$name."\n";
+	 delete $self->{SETUP}->{$name};
+	 $self->{SETUP}->{$name} = $obj;
 	 $self->writecache();
 	 }
       else
 	 {
-	 print "WARNING: compiler name (".$compilername.") and tool obj name (".$compilerobj->toolname().") don't match!","\n";
+	 print "WARNING: Tool name (".$name.") and tool obj name (".$obj->toolname().") don't match!","\n";
 	 print "         Not making any changes.","\n";
 	 }
       }
    else
       {
-      print "WARNING: No entry in cache for ".$compilername.". Not making any updates.\n";
+      print "WARNING: No entry in cache for ".$name.". Not making any updates.\n";
       }
    }
 

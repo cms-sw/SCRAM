@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.9 2005/04/29 16:10:35 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.10 2005/07/01 15:23:35 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -44,7 +44,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.9 2005/04/29 16:10:35 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.10 2005/07/01 15:23:35 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -165,7 +165,7 @@ sub _initenv()
    # Read the Environment file if inside a project:
    $self->localarea()->copyenv(\%ENV), if ($self->islocal());
 
-   # Check and set architectuer:
+   # Check and set architecture:
    if (! defined $self->{SCRAM_ARCH})
       {
       my $a = Architecture->new();

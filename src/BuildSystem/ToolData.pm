@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-21 15:26:07+0100
-# Revision: $Id: ToolData.pm,v 1.5 2005/07/15 15:27:27 sashby Exp $ 
+# Revision: $Id: ToolData.pm,v 1.6 2005/07/19 15:45:40 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -397,6 +397,17 @@ sub allfeatures()
 	 }
       } @features;
    return $feature_data;
+   }
+
+sub reset()
+   {
+   my $self=shift;
+   my ($entryname)=@_;
+
+   if (exists($self->{$entryname}))
+      {
+      $self->{$entryname} = undef;
+      }   
    }
 
 1;
