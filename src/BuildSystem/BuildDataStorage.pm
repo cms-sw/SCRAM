@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.9 2005/05/24 17:36:19 sashby Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.10 2005/05/27 17:30:51 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -33,7 +33,6 @@ sub new()
      {
      BUILDTREE => {},                # Path/data pairs;
      STATUS => 0,                    # Status of cache
-     UNRESOLVED_DEPS => {},          # Hash containing packages and deps they're missing
      VERBOSE => 0                    # Verbose mode (0/1);
      };	
   
@@ -218,7 +217,7 @@ sub procrecursive()
    my $self=shift;
    my ($dir)=@_;
    my $datacollector;
-   
+
    # Data for current dir:
    my $treedata = $self->buildtreeitem($dir);
    # Data for the parent:
@@ -287,7 +286,6 @@ sub updaterecursive()
    my $datacollector;
    # updaterecursive() only SCANS and UPDATES METADATA. The Makefile is rebuilt in
    # its entirety using updatefrommeta(), called after metadata is updated and stored:
-
    # Data for current dir:
    my $treedata = $self->buildtreeitem($dir);
    # Data for the parent:
@@ -874,6 +872,19 @@ sub update_newdirs()
       {
       print "Processing new directory \"",$path,"\"\n",if ($ENV{SCRAM_DEBUG});
       $self->updateadir($path);
+      # Now check to see if the current (newly-added) package is needed by some
+      # packages that have already built their metadata. If so, force an update
+      # of those packages:
+      my $locations = $self->unresolved_locations($self->datapath($path));
+      if ($#$locations >= 0)
+	 {
+	 # Also need to check to see if a location is updated more than once. 
+	 foreach my $notified_dir (@$locations)
+	    {
+	    $self->updateadir($notified_dir);
+	    $self->remove_unresolved($self->datapath($path),$notified_dir);
+	    }	 
+	 }
       }
    }
 
@@ -1016,6 +1027,8 @@ sub buildclass
    my $self=shift;
    my ($path)=@_;
    my $cache=[];
+   # From Lassi TUURA (with mods by me):
+   #
    # Associate a path with ClassPath setting.
    # For now, just assumes global data has been scanned and class settings
    # are already known (in $self->{CONFIGDATA}->classpath()).   
@@ -1383,6 +1396,60 @@ sub skipdir
 	    print ".","\n";
 	    }
 	 }
+      }
+   }
+
+# Keep a record of which packages are missed by each location
+# so that, on subsequent updates, these can be inserted auto-
+# matically in the metadata for the location:
+sub unresolved()
+   {
+   my $self=shift;
+   my ($location, $pneeded) = @_;   
+   # Need to record a mapping "LOCATION -> [ missing packages ]" and a
+   # reverse-lookup "<missing package> -> [ LOCATIONS (where update required) ]"   
+   $self->{UNRESOLVED_DEPS_BY_LOC}->{$location}->{$pneeded} = 1;
+   $self->{UNRESOLVED_DEPS_BY_PKG}->{$pneeded}->{$location} = 1;
+   }
+
+sub remove_unresolved()
+   {
+   my $self=shift;
+   my ($package, $dir) = @_;
+   if (exists($self->{UNRESOLVED_DEPS_BY_PKG}->{$package}->{$dir}))
+      {
+      delete $self->{UNRESOLVED_DEPS_BY_PKG}->{$package}->{$dir};
+      # Check to see if there are any keys left. If not, remove the
+      # package entry:
+      my $nkeys = scalar(keys %{$self->{UNRESOLVED_DEPS_BY_PKG}->{$package}});
+      if ($nkeys == 0)
+	 {
+	 delete $self->{UNRESOLVED_DEPS_BY_PKG}->{$package};
+	 }
+      }
+   }
+
+sub unresolved_locations()
+   {
+   my $self=shift;
+   my ($package)=@_;
+   
+   if (exists ($self->{UNRESOLVED_DEPS_BY_PKG}->{$package}))
+      {      
+      # Return locations which miss the metadata of $package:
+      return [ keys %{$self->{UNRESOLVED_DEPS_BY_PKG}->{$package}} ];
+      }
+   }
+
+sub unresolved_packages()
+   {
+   my $self=shift;
+   my ($location)=@_;
+   
+   if (exists ($self->{UNRESOLVED_DEPS_BY_LOC}->{$location}))
+      {
+      # Return packages which are needed by $location:
+      return [ keys %{$self->{UNRESOLVED_DEPS_BY_LOC}->{$location}} ];
       }
    }
 
