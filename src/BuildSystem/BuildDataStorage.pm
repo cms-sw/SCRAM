@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.10 2005/05/27 17:30:51 sashby Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.11 2005/07/25 08:16:52 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -881,6 +881,7 @@ sub update_newdirs()
 	 # Also need to check to see if a location is updated more than once. 
 	 foreach my $notified_dir (@$locations)
 	    {
+	    print "Going to notify $notified_dir of update","\n", if ($ENV{SCRAM_DEBUG});
 	    $self->updateadir($notified_dir);
 	    $self->remove_unresolved($self->datapath($path),$notified_dir);
 	    }	 

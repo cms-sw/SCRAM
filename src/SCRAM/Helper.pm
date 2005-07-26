@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.7 2005/04/13 16:45:37 sashby Exp $ 
+# Revision: $Id: Helper.pm,v 1.8 2005/04/29 16:10:35 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -74,7 +74,7 @@ sub version()
    $help.="$::bold";
    $help.="\tscram version [-c] [-i] [-h] [<version>]$::normal\n";
    $help.="\n";
-   $help.="The -i option shows CVS commit info (the value of '\$Id: Helper.pm,v 1.7 2005/04/13 16:45:37 sashby Exp $').\n";
+   $help.="The -i option shows CVS commit info (the value of '\$Id: Helper.pm,v 1.8 2005/04/29 16:10:35 sashby Exp $').\n";
    $help.="The -c option prints site CVS parameters to STDOUT. These parameters are used\n";
    $help.="when downloading and installing new SCRAM versions.\n";
 
@@ -269,12 +269,15 @@ sub project()
    my $help;
    $help.="Description:\n";
    $help.="\n";
-   $help.="\tSet up a new project development area. The new area will appear in the\n";
+   $help.="\tSet up a new project development area or update an existing one. A new area will appear in the\n";
    $help.="\tcurrent working directory by default.\n";
    $help.="\n";
    $help.="Usage:\n";
    $help.="$::bold";
    $help.="\tscram project [-t] [-d <area>] [-n <dir>] [-f <tools.conf>] <projecturl> [<projectversion>]$::normal\n";
+   $help.="\n";
+   $help.="$::bold";
+   $help.="\tscram project -update [<projectversion>]$::normal\n";
    $help.="\n";
    $help.="Options:\n";
    $help.="\n";
@@ -323,6 +326,14 @@ sub project()
    $help.="\tscram project -template$::normal\n";
    $help.="\n";			      
    $help.="The templates will be copied to a directory called \"config\" in the current directory.\n";
+   $help.="\n";
+   $help.="An existing developer area for a project can be updated to a more recent version of\n";
+   $help.="the SAME project by running \"scram project -update <VERSION>\" in the developer area.\n";
+   $help.="If no VERSION is given, the command is considered like a query and will return a list\n";
+   $help.="of project versions which are compatible with the configuration of the current area.\n";
+   $help.="\n";
+   $help.="A subsequent invocation of the command with a valid VERSION will then update the area\n";
+   $help.="to that version.\n";
    $help.="\n";
    
    return $help;

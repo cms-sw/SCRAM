@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.10 2005/07/01 15:23:35 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.11 2005/07/20 13:33:49 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -44,7 +44,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.10 2005/07/01 15:23:35 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.11 2005/07/20 13:33:49 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -284,6 +284,9 @@ sub _initlocalarea()
 	 # Also set LOCALRT (soon obsolete) and BASE_PATH:
 	 $ENV{LOCALRT} = $ENV{LOCALTOP};
 	 $ENV{BASE_PATH} = $ENV{LOCALTOP};
+	 $self->projectname($self->localarea()->name());
+	 $self->projectversion($self->localarea()->version());
+	 $self->configversion($self->localarea()->toolboxversion());
 	 $self->islocal(1);
 	 }
       else
@@ -345,6 +348,27 @@ sub cvsid()
 
    @_ ? $self->{SCRAM_CVSID} = shift # Modify or
       : $self->{SCRAM_CVSID};        # retrieve
+   }
+
+sub projectname()
+   {
+   my $self=shift;
+   @_ ? $self->{SCRAM_PROJECTNAME} = shift # Modify or
+      : $self->{SCRAM_PROJECTNAME};        # retrieve
+   }
+
+sub projectversion()
+   {
+   my $self=shift;
+   @_ ? $self->{SCRAM_PROJECTVERSION} = shift # Modify or
+      : $self->{SCRAM_PROJECTVERSION};        # retrieve
+   }
+
+sub configversion()
+   {
+   my $self=shift;
+   @_ ? $self->{SCRAM_CONFIGVERSION} = shift # Modify or
+      : $self->{SCRAM_CONFIGVERSION};        # retrieve
    }
 
 sub architecture()

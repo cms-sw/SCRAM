@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.31 2005/07/19 15:45:40 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.32 2005/07/20 13:33:49 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -916,11 +916,12 @@ sub project()
    my $self=shift;
    my (@ARGS) = @_;
    my ($installdir, $installname);
-   my ($toolconf,$bootfile,$bootstrapfile);   
+   my ($toolconf,$bootfile,$bootstrapfile);
    my %opts = (
 	       SCRAM_INSTALL_DIR => 0,
 	       SCRAM_INSTALL_NAME => 0,
 	       SCRAM_TOOLCONF_NAME => 0,
+	       SCRAM_UPDATE_AREA => 0,
 	       SCRAM_BOOTSTRAPFILE_NAME => 0
 	       );
    # Here are the options for the project command. We need to support changing the location
@@ -937,6 +938,7 @@ sub project()
        "name=s" => sub { $opts{SCRAM_INSTALL_NAME} = 1; $installname = $_[1] },
        "file=s" => sub { $opts{SCRAM_TOOLCONF_NAME} = 1; $toolconf = $_[1] },
        "template" => sub { $self->project_template_copy(); exit(0) },
+       "update" => sub { $opts{SCRAM_UPDATE_AREA} = 1 },
        "boot=s" => sub { $opts{SCRAM_BOOTSTRAPFILE_NAME} = 1; $bootstrapfile = 'file:'.$_[1]; $bootfile = $_[1] }
        );
 
@@ -953,8 +955,55 @@ sub project()
       use Cwd;
       $installdir ||= cwd(); # Current working dir unless set above
       
-      # Check to see which type of boot we should do:
-      if ($opts{SCRAM_BOOTSTRAPFILE_NAME})
+      # Check to see which type of boot we should do or whether we should do an update:
+      if ($opts{SCRAM_UPDATE_AREA})
+	 {
+	 # We must be in a project area to start with:
+	 $self->checklocal();
+	 if (! @ARGV)
+	    {
+	    my @compatvers;
+	    # Get list of all project versions from database:
+	    my @pdb = $self->getprojectsfromDB();
+	    foreach my $p (@pdb)
+	       {
+	       # Check the project name and config version matches
+	       # FIXME: what about the case where area was renamed (-n xx)?
+	       if ($p->[0] eq $self->projectname() && $p->[1] ne $self->projectversion())
+		  {
+		  my $parea=$self->scramfunctions()->scramprojectdb()->getarea($p->[0], $p->[1]);
+		  if ($parea->toolboxversion() eq $self->configversion())
+		     {
+		     push(@compatvers, $p->[1]);
+		     }
+		  }
+	       }
+	    print "SCRAM Project update mode: ","\n\n";
+	    if ($#compatvers != -1)
+	       {
+	       print "You can update to one of the following versions","\n";
+	       print "\n";
+	       map
+		  {
+		  print "\t".$_."\n";
+		  } @compatvers;
+	       }
+	    else
+	       {
+	       print "No compatible versions of ".$self->projectname()." found to upgrade to.","\n";
+	       }
+	    print "\n";
+	    }
+	 else
+	    {
+	    print "Going to update current area to version ",$ARGV[0],"\n";
+
+	    # Check to make sure that the required version exists:
+
+	    
+	    }
+	 }
+      elsif ($opts{SCRAM_BOOTSTRAPFILE_NAME})
 	 {
 	 print "Bootstrapping a new project from ",$bootfile,"\n";
 	 print "NB: The -name option is not supported when booting a new project from scratch!","\n",
