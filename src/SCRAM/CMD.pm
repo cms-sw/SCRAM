@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.32 2005/07/20 13:33:49 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.33 2005/07/26 15:14:01 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -958,50 +958,11 @@ sub project()
       # Check to see which type of boot we should do or whether we should do an update:
       if ($opts{SCRAM_UPDATE_AREA})
 	 {
+	 # See if we hav a version arg:
+	 my $projectversion = shift(@ARGV);
 	 # We must be in a project area to start with:
 	 $self->checklocal();
-	 if (! @ARGV)
-	    {
-	    my @compatvers;
-	    # Get list of all project versions from database:
-	    my @pdb = $self->getprojectsfromDB();
-	    foreach my $p (@pdb)
-	       {
-	       # Check the project name and config version matches
-	       # FIXME: what about the case where area was renamed (-n xx)?
-	       if ($p->[0] eq $self->projectname() && $p->[1] ne $self->projectversion())
-		  {
-		  my $parea=$self->scramfunctions()->scramprojectdb()->getarea($p->[0], $p->[1]);
-		  if ($parea->toolboxversion() eq $self->configversion())
-		     {
-		     push(@compatvers, $p->[1]);
-		     }
-		  }
-	       }
-	    print "SCRAM Project update mode: ","\n\n";
-	    if ($#compatvers != -1)
-	       {
-	       print "You can update to one of the following versions","\n";
-	       print "\n";
-	       map
-		  {
-		  print "\t".$_."\n";
-		  } @compatvers;
-	       }
-	    else
-	       {
-	       print "No compatible versions of ".$self->projectname()." found to upgrade to.","\n";
-	       }
-	    print "\n";
-	    }
-	 else
-	    {
-	    print "Going to update current area to version ",$ARGV[0],"\n";
-
-	    # Check to make sure that the required version exists:
-
-	    
-	    }
+	 $self->update_project_area($installdir, $projectversion);
 	 }
       elsif ($opts{SCRAM_BOOTSTRAPFILE_NAME})
 	 {
@@ -1154,6 +1115,122 @@ sub bootnewproject()
 
    # Return nice value:
    return 0;
+   }
+
+sub update_project_area()
+   {
+   my $self=shift;
+   my ($installdir, $pversion) = @_;
+   my %compatvers;
+
+   # Get list of all project versions from database
+   # and store the compatible projects in an array.
+   # This information is needed whether the user is
+   # just querying or actually updating:
+   my @pdb = $self->getprojectsfromDB();
+
+   foreach my $p (@pdb)
+      {
+      # Check the project name and config version matches
+      # FIXME: what about the case where area was renamed (-n xx)?
+      if ($p->[0] eq $self->projectname() && $p->[1] ne $self->projectversion())
+	 {
+	 my $parea=$self->scramfunctions()->scramprojectdb()->getarea($p->[0], $p->[1]);
+	 if ($parea->toolboxversion() eq $self->configversion())
+	    {
+	    # Save the corresponding compatible area objects:
+	    $compatvers{$p->[1]} = $parea;
+	    }
+	 }
+      }
+   
+   # Check to make sure that the returned array is valid, i.e. that there are versions that
+   # one can update to:
+   print "SCRAM Project update mode: ","\n\n";
+   my ($nkeys) = scalar(keys %compatvers);
+   if ($nkeys > 0)
+      {      
+      # If no args then it's a query:
+      if (! $pversion)
+	 {
+	 print "You can update to one of the following versions","\n";
+	 print "\n";
+	 map
+	    {
+	    print "\t".$_."\n";
+	    } keys %compatvers;
+	 }
+      else
+	 {
+	 # Otherwise we try to update to a version:
+	 if (grep($pversion eq $_, keys %compatvers))
+	    {
+	    print "Going to update current area to version ",$pversion,"\n";
+	    # Create backup dir with name of current version:
+	    use Utilities::AddDir;
+	    my $backupdir = $ENV{LOCALTOP}."/.".$self->projectversion();
+	    # Delete the dir if the backup already exists (i.e. only
+	    # keep last backup):
+	    if (-d $backupdir)
+	       {
+	       system("rm","-rf",$backupdir);
+	       }
+	    
+	    AddDir::adddir($backupdir);
+	    # Move .SCRAM and config dirs there
+	    system("mv",$ENV{SCRAM_CONFIGDIR},$backupdir);
+	    system("mv",$self->localarea()->admindir(),$backupdir);
+
+	    # Create the new version. Basically create a satellite area in
+	    # the current (i.e. project) area:
+	    my $relarea = $compatvers{$pversion};
+
+	    # Set RELEASETOP:
+	    $ENV{RELEASETOP} = $relarea->location();
+	    $self->versioncheck($relarea->scramversion());
+
+	    # Copy the admin dir (and with it, the ToolCache):   
+	    $relarea->copywithskip($ENV{LOCALTOP},'ProjectCache.db');
+	    # Also, we need to copy .SCRAM/cache from the release area. This eliminates the need
+	    # to download tools again from CVS:
+	    $relarea->copyurlcache($ENV{LOCALTOP});
+	    # Copy the config dir:
+	    AddDir::copydir($relarea->location()."/".$relarea->configurationdir(),
+		      $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR});
+
+	    # Change the project version to the new one:
+	    $self->localarea()->version($pversion);
+	    # Link to the release area and save the environment data:
+	    $self->localarea()->linkarea($relarea);
+	    $self->localarea()->save();
+	    # The lookup db:
+	    use SCRAM::AutoToolSetup;
+	    
+	    # Default path to conf file:
+	    my $toolconf ||= $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR}."/site/tools-".$ENV{SCRAM_SITENAME}.".conf";
+	    $::lookupdb = SCRAM::AutoToolSetup->new($toolconf);  
+	    
+	    # Update Self and write the updated cache info:
+	    my $toolmanager = $self->toolmanager();
+	    $toolmanager->setupself($ENV{LOCALTOP}); # FIXME// The toolmanager should be reloaded before setting up self....
+	    $toolmanager->writecache();	    
+	    print "\n\nUpdate procedure complete.\n";	    
+	    }
+	 else
+	    {
+	    print "Version \"".$pversion."\" of ".$self->projectname()." is not valid.","\n";
+	    print "\n";
+	    return 1;
+	    }
+	 }
+      print "\n";
+      }
+   else
+      {
+      print "No compatible versions of ".$self->projectname()." found to update to.","\n";      
+      print "\n";
+      return 1;
+      }
    }
 
 sub create_productdirs()
