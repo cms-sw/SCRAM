@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.11 2005/07/25 08:16:52 sashby Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.12 2005/07/26 15:14:00 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -218,6 +218,14 @@ sub procrecursive()
    my ($dir)=@_;
    my $datacollector;
 
+   # Check to see if the dir was skipped. If so, don't push anything to
+   # the Makefile:
+   if ($self->skipdir($dir))
+      {
+      print "procrecursive -> $dir skipped.","\n",if ($ENV{SCRAM_DEBUG});
+      return $self;
+      }
+   
    # Data for current dir:
    my $treedata = $self->buildtreeitem($dir);
    # Data for the parent:
@@ -284,6 +292,15 @@ sub updaterecursive()
    my $self=shift;
    my ($dir)=@_;
    my $datacollector;
+
+   # Check to see if the dir was skipped. If so, don't push anything to
+   # the Makefile:
+   if ($self->skipdir($dir))
+      {
+      print "updaterecursive -> $dir: skipped.","\n",if ($ENV{SCRAM_DEBUG});
+      return;
+      }
+
    # updaterecursive() only SCANS and UPDATES METADATA. The Makefile is rebuilt in
    # its entirety using updatefrommeta(), called after metadata is updated and stored:
    # Data for current dir:
@@ -346,6 +363,15 @@ sub updatefrommeta()
    my $self=shift;
    my $datacollector;
    my ($startdir)=@_;
+   
+   # Check to see if the dir was skipped. If so, don't push anything to
+   # the Makefile:
+   if ($self->skipdir($startdir))
+      {
+      print "updatefrommeta -> $startdir: skipped.","\n",if ($ENV{SCRAM_DEBUG});
+      return;
+      }
+   
    # Data for current dir:
    my $treedata = $self->buildtreeitem($startdir);
    # Run the engine:
