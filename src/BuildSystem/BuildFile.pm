@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-12-03 19:03:15+0100
-# Revision: $Id: BuildFile.pm,v 1.27 2005/02/16 18:02:59 sashby Exp $ 
+# Revision: $Id: BuildFile.pm,v 1.28 2005/03/09 19:28:19 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -158,7 +158,6 @@ sub parse()
    $self->{simpledoc}=$self->_initparser();
    $self->{simpledoc}->filetoparse($filename);
    $self->{simpledoc}->parse("builder");
-   
    # We're done with the SimpleDoc object so delete it:
    delete $self->{simpledoc};
    }

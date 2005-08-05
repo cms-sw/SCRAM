@@ -4,15 +4,14 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.33 2005/07/26 15:14:01 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.34 2005/07/28 17:03:03 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
 #--------------------------------------------------------------------
-#
-# Package for the individual subroutines for the scram commands:
-#
 package SCRAM::CMD;
+
+
 require 5.004;
 
 use Exporter;
