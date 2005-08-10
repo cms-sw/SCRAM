@@ -1,18 +1,41 @@
-#
-# Verbose.pm
-#
-# Originally Written by Christopher Williams
-#
-# Description
-# -----------
-# Simple multi parsing functionality
-#
-# Interface
-# ---------
-# new()		        : A new ActiveDoc object
-# verbose(string)	: Print string in verbosity mode
-# verbosity(0|1)	: verbosity off|on 
+=head1 NAME
 
+Utilities::Verbose - Add verbosity to the current package.
+
+=head1 DESCRIPTION
+
+Provide a verbosity framework.
+
+=head1 METHODS
+
+=over
+
+=cut
+
+=item C<new()>
+
+   A new Verbose object.
+
+=item C<verbose(string)>
+
+   Print string in verbosity mode.
+
+=item C<verbosity($sw)>
+
+   Turn verbosity on or off ($sw is 0 or 1).
+
+=back
+
+=head1 AUTHOR
+
+Originally Written by Christopher Williams.   
+   
+=head1 MAINTAINER
+
+Shaun ASHBY L<mailTo:Shaun.Ashby@cern.ch>
+
+=cut
+   
 package Utilities::Verbose;
 require 5.004;
 

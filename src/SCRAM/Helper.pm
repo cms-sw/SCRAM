@@ -4,11 +4,22 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.8 2005/04/29 16:10:35 sashby Exp $ 
+# Revision: $Id: Helper.pm,v 1.9 2005/07/26 15:14:01 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
 #--------------------------------------------------------------------
+
+=head1 NAME
+
+Helper - A package which provides each command with a helper function.
+   
+=head1 METHODS
+
+=over
+
+=cut
+
 package Helper;
 require 5.004;
 
@@ -17,6 +28,11 @@ use Exporter;
 @ISA=qw(Exporter);
 @EXPORT_OK=qw( );
 
+=item   C<new()>
+
+Create a new Helper object. This is done once when the SCRAM::SCRAM object is created.
+
+=cut
 
 sub new()
    {
@@ -38,6 +54,12 @@ sub new()
    return $self;
    }
 
+=item   C<help($command)>
+
+Execute the helper function for the command $command.
+   
+=cut
+
 sub help()
    {
    my $self=shift;
@@ -46,6 +68,12 @@ sub help()
    my $help.= $self->helpheader($helpcmd);
    print ($help.= &{$helpcmd});
    }
+
+=item   C<helpheader($command)>
+
+Print the help header (just a string). Called only by help().
+   
+=cut
 
 sub helpheader($)
    {
@@ -74,7 +102,7 @@ sub version()
    $help.="$::bold";
    $help.="\tscram version [-c] [-i] [-h] [<version>]$::normal\n";
    $help.="\n";
-   $help.="The -i option shows CVS commit info (the value of '\$Id: Helper.pm,v 1.8 2005/04/29 16:10:35 sashby Exp $').\n";
+   $help.="The -i option shows CVS commit info (the value of '\$Id: Helper.pm,v 1.9 2005/07/26 15:14:01 sashby Exp $').\n";
    $help.="The -c option prints site CVS parameters to STDOUT. These parameters are used\n";
    $help.="when downloading and installing new SCRAM versions.\n";
 
@@ -556,3 +584,12 @@ sub xmlmigrate()
 
 ## 
 1;
+
+=back
+
+=head1 AUTHOR/MAINTAINER
+
+Shaun ASHBY L<mailTo:Shaun.Ashby@cern.ch>
+
+=cut
+

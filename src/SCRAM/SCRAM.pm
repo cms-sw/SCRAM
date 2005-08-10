@@ -4,11 +4,32 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.12 2005/07/26 15:14:01 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.13 2005/07/28 17:03:03 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
 #--------------------------------------------------------------------
+
+=head1 NAME
+
+SCRAM::SCRAM - The main SCRAM package, providing all core functionality
+               to command subroutines.
+   
+=head1 SYNOPSIS
+
+	my $obj = SCRAM::SCRAM->new();
+
+=head1 DESCRIPTION
+
+All functionality needed by the command subroutines is derived from this package.
+This includes prerequisite checks, version checking and environment checks.
+
+=head1 METHODS
+
+=over
+
+=cut
+
 package SCRAM::SCRAM;
 require 5.004;
 
@@ -21,17 +42,20 @@ use SCRAM::CMD;
 @ISA=qw(Exporter Utilities::Verbose SCRAM::CMD);
 @EXPORT_OK=qw( );
 
+=item   C<new()>
+
+Create a new instance. Usually this is accessible everywhere from
+the global variable $::scram.
+The initialisation process sets up the command environment, determines
+whether the current directory is a SCRAM project area and handles
+environment configuration.
+
+A SCRAM::Helper object is also created to handle help requests.
+
+=cut
+
 sub new()
    {
-   ###############################################################
-   # new()                                                       #
-   ###############################################################
-   # modified : Wed Jun 18 18:04:48 2003 / SFA                   #
-   # params   :                                                  #
-   #          :                                                  #
-   # function :                                                  #
-   #          :                                                  #
-   ###############################################################
    my $proto=shift;
    my $class=ref($proto) || $proto;
    my $self=
@@ -44,7 +68,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.12 2005/07/26 15:14:01 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.13 2005/07/28 17:03:03 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -55,6 +79,13 @@ sub new()
    $self->_init();
    return $self;
    }
+
+=item   C<_init()>
+
+Initialize command environment and area parameters. Called only
+by new().
+
+=cut
 
 sub _init()
    {
@@ -77,6 +108,13 @@ sub _init()
    return $self;
    }
 
+=item   C<commands()>
+
+Returns a reference to a list of supported commands which are also
+defined here. Sets $self->{SCRAM_ALLOWEDCMDS} in the $::scram object.
+
+=cut
+
 sub commands()
    {
    my $self = shift;
@@ -90,11 +128,26 @@ sub commands()
 	   [@env_commands,@info_commands,@buildenv_commands,@build_commands,@dev_cmds]);
    }
 
+=item   C<showcommands()>
+
+Returns the array of supported commands (the contents of the
+$self->{SCRAM_ALLOWEDCMDS}) element in the $::scram object.
+
+=cut
+
 sub showcommands()
    {
    my $self=shift;
    return @{$self->{SCRAM_ALLOWEDCMDS}};
    }
+
+=item   C<execcommand($cmd, @ARGS)>
+
+Execute a command. This is only used by the main script B<scram.pl>. $cmd is the
+command to be run, which can be abbreviated, and all other arguments are passed
+directly via @ARGS.
+
+=cut
 
 sub execcommand()
    {
@@ -124,12 +177,30 @@ sub execcommand()
    return $rval;
    }
 
+=item   C<prerequisites()>
+
+Check for prerequisites to running SCRAM. Once the check is complete
+and is successful, set $self->{SCRAM_PREREQCHECK} = 1.
+Note that this function is run but is not really doing any checks due
+to site ambiguities.
+   
+=cut
+
 sub prerequisites()
    {
    my $self=shift;
    $self->{SCRAM_PREREQCHECK} = 1;
    return $self;
    }
+
+=item   C<versioncheck(@ARGS)>
+
+Check that the appropriate version of SCRAM is being run and
+pass down all arguments to the new instance of $::scram.
+Once completed, $self->{SCRAM_VERSIONCHECK} is set to 1 and 
+$self->{SCRAM_VERSION} is set to the required version.
+
+=cut
 
 sub versioncheck()
    {
@@ -157,6 +228,14 @@ sub versioncheck()
    $self->{SCRAM_VERSION} = $version;
    return $self;
    }
+
+=item   C<_initenv()>
+
+Initialise the environment for SCRAM. Also set the current
+architecture (SCRAM_ARCH) and the basic environment variables
+required by the build system.
+
+=cut
 
 sub _initenv()
    {
@@ -198,6 +277,16 @@ sub _initenv()
       }
    }
 
+=item   C<_loadscramdb()>
+
+Read the local SCRAM project database and populate $self->{SCRAM_PDB} to keep
+track of which external tools in the current configuration are managed by SCRAM.
+This is basically a lookup table from which the base directory of scram projects
+can be looked up: functions needing access to project caches can use the base
+dir to find these caches.
+
+=cut
+
 sub _loadscramdb()
    {
    my $self=shift;
@@ -222,6 +311,13 @@ sub _loadscramdb()
    return $self->{SCRAM_PDB};
    }
 
+=item   C<islocal()>
+
+Return true/false depending on whether the current directory
+is a SCRAM project area. This is set in _initlocalarea().
+
+=cut
+
 sub islocal()
    {
    my $self=shift;
@@ -230,6 +326,16 @@ sub islocal()
       : $self->{ISPROJECT};        # retrieve
 
    }
+
+=item   C<scramfunctions()>
+
+Provide access to a SCRAM::ScramFunctions object. A lot of
+core functionality is implemented (probably for historical
+reasons) in this package. Many commands are executed via calls
+like $self->scramfunctions()->X(). These include project
+bootstrapping and listing.
+
+=cut
 
 sub scramfunctions()
    {
@@ -246,6 +352,16 @@ sub scramfunctions()
       return $self->{functions};
       }
    }
+
+=item   C<_initlocalarea()>
+
+Initialise the local area. Once this function has been run, a
+call to $self->islocal() will return true or false depending on
+whether the current area is a SCRAM project area.
+This sets the local Configuration::ConfigArea  object so that
+calls to $self->localarea() can be used to access it.
+   
+=cut
 
 sub _initlocalarea()
    {
@@ -298,11 +414,24 @@ sub _initlocalarea()
       }
    }
 
+=item   C<align()>
+
+Align the current area. Not even sure if this is ever called.
+
+=cut
+
 sub align
    {
    my $self=shift;   
    $self->localarea()->align(); 
    }
+
+=item   C<localarea()>
+
+Return the Configuration::ConfigArea object for the current
+project area. This is first set by a call to _initlocalarea().
+
+=cut
 
 sub localarea()
    {
@@ -311,6 +440,14 @@ sub localarea()
    @_ ? $self->{localarea} = shift # Modify or
       : $self->{localarea};        # retrieve
    }
+
+=item   C<_initreleasearea()>
+
+Create a Configuration::ConfigArea object for the release
+area of the current project area if the local area is a developer
+area.
+
+=cut
 
 sub _initreleasearea()
    {
@@ -326,6 +463,14 @@ sub _initreleasearea()
    return $self->releasearea();
    }
 
+=item   C<releasearea()>
+
+Return the Configuration::ConfigArea object for the release
+area (if this area is a developer area). This is first set
+by a call to _initreleasearea().
+
+=cut
+
 sub releasearea()
    {
    my $self=shift;
@@ -333,6 +478,12 @@ sub releasearea()
    @_ ? $self->{releasearea} = shift # Modify or
       : $self->{releasearea};        # retrieve
    }
+
+=item   C<debuglevel()>
+
+Set or retrieve the debug level. Not yet used.
+
+=cut
 
 sub debuglevel()
    {
@@ -342,6 +493,13 @@ sub debuglevel()
       : $self->{SCRAM_DEBUG};        # retrieve
    }
 
+=item   C<cvsid()>
+
+Return the current CVS id string (which contains information
+on last commit).				  
+
+=cut
+
 sub cvsid()
    {
    my $self=shift;
@@ -350,12 +508,24 @@ sub cvsid()
       : $self->{SCRAM_CVSID};        # retrieve
    }
 
+=item   C<projectname()>
+
+Set/return the project name.
+
+=cut
+
 sub projectname()
    {
    my $self=shift;
    @_ ? $self->{SCRAM_PROJECTNAME} = shift # Modify or
       : $self->{SCRAM_PROJECTNAME};        # retrieve
    }
+
+=item   C<projectversion()>
+
+Set/return the project version.
+
+=cut
 
 sub projectversion()
    {
@@ -364,12 +534,24 @@ sub projectversion()
       : $self->{SCRAM_PROJECTVERSION};        # retrieve
    }
 
+=item   C<configversion()>
+
+Set/return the configuration version.
+
+=cut
+
 sub configversion()
    {
    my $self=shift;
    @_ ? $self->{SCRAM_CONFIGVERSION} = shift # Modify or
       : $self->{SCRAM_CONFIGVERSION};        # retrieve
    }
+
+=item   C<architecture()>
+
+Set/return the current SCRAM architecture, e.g. B<slc3_ia32_gcc323>.
+
+=cut
 
 sub architecture()
    {
@@ -379,6 +561,12 @@ sub architecture()
       : $self->{SCRAM_ARCH};        # retrieve
    }
 
+=item   C<system_architecture()>
+
+Set/return the current SCRAM system architecture, e.g. B<slc3_ia32>.
+
+=cut
+
 sub system_architecture()
    {
    my $self=shift;
@@ -387,6 +575,15 @@ sub system_architecture()
       : $self->{SCRAM_SYSARCH};        # retrieve
    }
 
+=item   C<getprojectsfromDB()>
+
+Retrieve the list of installed projects from the local SCRAM
+project database (as determined from value of SCRAM_LOOKUPDB
+environment variable which was set for the current site when
+SCRAM was installed.)
+
+=cut
+
 sub getprojectsfromDB()
    {
    my $self=shift;
@@ -394,6 +591,17 @@ sub getprojectsfromDB()
    # Get list of projects from scram database and return them:
    return ($self->scramfunctions()->scramprojectdb()->listall());
    }
+
+=item   C<isregistered($area)>
+
+Return true or false depending on whether the SCRAM project area
+$area is registered in the SCRAM database as having been installed.
+The status is set according to whether a file B<.installed> exists
+in the architecture-dependent directories under the admin dir of
+the project. This allows a project to be installed for one architecture
+only, while other architectures may not be released.
+   
+=cut
 
 sub isregistered()
    {
@@ -404,6 +612,14 @@ sub isregistered()
    # Check the area to see if .installed exists:
    ( -f $registerfile) ? return 1 : return 0;
    }
+
+=item   C<register_install()>
+
+Register that a project was really installed by creating a file B<.installed>
+in the project architecture directory. This can then be checked in addition to the
+architecture-dependent directories which are created automatically when building.
+
+=cut
 
 sub register_install()
    {
@@ -425,6 +641,12 @@ sub register_install()
    chmod $filemode, $registerfile;
    }
 
+=item   C<unregister_install()>
+
+Remove a project from the SCRAM database. Reverse the process of register_install().
+
+=cut
+
 sub unregister_install()
    {
    my $self=shift;
@@ -441,6 +663,18 @@ sub unregister_install()
    
    return $retval;
    }
+
+=item   C<toolmanager($location)>
+
+Reload the BuildSystem::ToolManager object from the tool cache file.
+If the cache file does not exist, it implies that the area has not yet
+been set up so a copy of whichever one exists is made and informs the
+user to run B<scram setup>.
+
+If this area has been cloned, adjustments must be made so that the cache
+is really local and refers to all settings of local area (admin dir etc.).
+   
+=cut
 
 sub toolmanager()
    {
@@ -529,18 +763,35 @@ sub toolmanager()
    return $toolmanager;
    }
 
+=item   C<checklocal()>
+
+Check that the current area is a project area and continue or exit otherwise.
+
+=cut
+
 sub checklocal()
    {
    my $self=shift;
    $self->scramfatal("Unable to locate the top of local release. Exitting."), if (! $self->islocal());   
    }
 
-#### Verbosity routines (warnings and error messages) ####
+=item   C<msg(@text)>
+
+Print a message using @text as text input.
+
+=cut
+
 sub msg()
    {
    my $self=shift;
    return "> ",join(' ',@_);
    }
+
+=item   C<warning(@message)>
+
+Print a warning message @message.
+
+=cut
 
 sub warning()
    {
@@ -548,11 +799,23 @@ sub warning()
    return "warning: ",join(' ',@_);
    }
 
+=item   C<error(@message)>
+
+Print an error message @message.
+
+=cut
+
 sub error()
    {
    my $self=shift;
    return "error: ",join(' ',@_);
    }
+
+=item   C<fatal(@message)>
+
+Print a fatal error message @message.
+
+=cut
 
 sub fatal()
    {
@@ -560,11 +823,23 @@ sub fatal()
    return "fatal: ",join(' ',@_);
    }
 
+=item   C<info(@message)>
+
+Print an information message @message.
+
+=cut
+
 sub info()
    {
    my $self=shift;
    print STDOUT "SCRAM info: ",$self->msg(@_),"\n";   
    }
+
+=item   C<scramwarning($message)>
+
+Print a warning message string $message.
+
+=cut
 
 sub scramwarning()
    {
@@ -579,7 +854,13 @@ sub scramwarning()
       print "SCRAM ",$self->warning(@_),"\n";
       }
    }
-   
+
+=item   C<scramerror($message)>
+
+Print an error message string $message and exit.
+
+=cut
+
 sub scramerror()
    {
    my $self=shift;
@@ -596,12 +877,24 @@ sub scramerror()
    exit(1);
    }
 
+=item   C<scramfatal($message)>
+
+Print a fatal error message string $message and exit.
+
+=cut
+
 sub scramfatal()
    {
    my $self=shift;
    print "SCRAM ",$self->fatal(@_),"\n";
    exit(1);
    }
+
+=item   C<classverbosity($classlist)>
+
+Turn on verbosity for all package classes in $classlist.
+
+=cut
 
 sub classverbosity
    {
@@ -620,6 +913,13 @@ sub classverbosity
       }
    }
 
+=item   C<fullverbosity()>
+
+Turn on verbosity for all package classes defined
+in B<PackageList.pm>.
+
+=cut
+
 sub fullverbosity
    {
    my $self=shift;
@@ -631,8 +931,12 @@ sub fullverbosity
       }
    }
 
+=item   C<usage()>
 
-#### Usage block ####
+Dump out a general usage message.
+
+=cut
+
 sub usage()
    {
    my $self=shift;
@@ -667,3 +971,13 @@ sub usage()
 
 #### End of SCRAM.pm ####
 1;
+
+
+=back
+
+=head1 AUTHOR/MAINTAINER
+
+Shaun ASHBY L<mailTo:Shaun.Ashby@cern.ch>
+
+=cut
+

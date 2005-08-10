@@ -1,3 +1,19 @@
+=head1 NAME
+
+Utilities::AddDir - Utility functions for creating or copying directories.
+
+=head1 SYNOPSIS
+
+	&Utilities::AddDir::adddir($dir);
+	&Utilities::AddDir::copydir($src,$dest);
+	&Utilities::AddDir::copydirwithskip($src,$dest,@files_to_skip);
+
+=head1 METHODS
+
+=over
+
+=cut
+
 package AddDir;
 require 5.001;
 require Exporter;
@@ -5,6 +21,11 @@ use Cwd;
 @ISA	= qw(Exporter);
 @EXPORT = qw(adddir copydir copydirwithskip);
 
+=item   C<adddir($dir)>
+
+Create a new directory.
+
+=cut
 
 sub adddir {
  my $indir=shift;
@@ -27,6 +48,13 @@ sub adddir {
  }
  chdir $startdir;
 }
+
+
+=item   C<copydir($src, $dest)>
+
+Copy a directory $src and contents to $dest.
+
+=cut
 
 sub copydir
    {
@@ -64,6 +92,13 @@ sub copydir
       die "Attempt to open a non-existent directory ($src). Exitting\n";
       }
    }
+
+=item   C<copydirwithskip($src, $dest, @files_to_skip)>
+
+Recursively copy a directory $src to $dest. All files
+in @files_to_skip will be skipped.
+
+=cut
 
 sub copydirwithskip
    {
@@ -112,3 +147,16 @@ sub copydirwithskip
       die "Attempt to open a non-existent directory ($src). Exitting\n";
       }
    }
+
+=back
+
+=head1 AUTHOR
+
+Originally written by Christopher Williams.
+
+=head1 MAINTAINER
+
+Shaun ASHBY L<mailTo:Shaun.Ashby@cern.ch>
+
+=cut
+
