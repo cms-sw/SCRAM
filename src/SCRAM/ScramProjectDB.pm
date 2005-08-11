@@ -1,24 +1,74 @@
-#
-# ScramProjectDB.pm - Keep a track of available projects
-#
-# Originally Written by Christopher Williams
-#
-# Description
-# -----------
-# Stores project area information
-#
-# Interface
-# ---------
-# new(dbfile)		   : A new dbobject object
-# file()		   : return the db file
-# getarea(name,version) : return the object matching the name version
-# addarea(ConfigArea)   : add a project - return 0 for success 1 for abort
-# list()		: list local areas (retunns $name,$version pairs)
-# listall()		: list local and linked areas
-# listlinks()		: Show a list of links
-# removearea(name,version) : remove the named project
-# link(dblocation) : link with specified db 
-# unlink(dblocation) : remove link with a specified db
+=head1 NAME
+
+SCRAM::ScramProjectDB - Keep track of available projects.
+
+=head1 SYNOPSIS
+
+	my $obj = SCRAM::ScramProjectDB->new($databasefile);
+
+=head1 DESCRIPTION
+
+Stores project area information.
+
+=head1 METHODS
+
+=over
+
+=cut
+
+=item C<new($databasefile)>
+
+A new SCRAM::ScramProjectDB object. Receives a database file
+path $databasefile as argument.
+
+=item C<file()>
+
+Return the database file.
+
+=item C<getarea($name,$version)>
+
+Return the object matching the name $name and version $version.
+
+=item C<addarea($area)>
+
+Add a project area $area (a Configuration::ConfigArea object)
+and return 0 for success or 1 for abort.
+
+=item C<list()>
+
+List local areas (returns $name, $version pairs).
+
+=item C<listall()>
+
+List local and linked areas.
+
+=item C<listlinks()>
+
+Show a list of links (linked databases).
+
+=item C<removearea($name, $version)>
+
+Remove the named project.
+
+=item C<link($dblocation)>
+
+Link with specified location $dblocation. 
+
+=item C<unlink($dblocation)>
+
+Remove link with a specified location $dblocation (i.e. path).
+
+=back
+
+=head1 AUTHOR
+
+Originally written by Christopher Williams.
+
+=head1 MAINTAINER
+
+Shaun ASHBY L<mailTo:Shaun.Ashby@cern.ch>
+
+=cut
 
 package SCRAM::ScramProjectDB;
 use Utilities::Verbose;

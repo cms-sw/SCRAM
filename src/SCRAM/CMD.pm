@@ -4,16 +4,24 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.34 2005/07/28 17:03:03 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.35 2005/08/05 16:47:56 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
 #--------------------------------------------------------------------
+
+=head1 NAME
+
+SCRAM::CMD - Package containing all SCRAM command functions.
+
+=head1 METHODS
+
+=over
+
+=cut
+
 package SCRAM::CMD;
-
-
 require 5.004;
-
 use Exporter;
 use Utilities::Verbose;
 use Getopt::Long ();
@@ -21,24 +29,31 @@ use Getopt::Long ();
 @ISA=qw(Exporter Utilities::Verbose);
 @EXPORT_OK=qw();
 
-sub new
-  ###############################################################
-  # new                                                         #
-  ###############################################################
-  # modified : Fri Oct 24 10:23:01 2003 / SFA                   #
-  # params   :                                                  #
-  #          :                                                  #
-  # function :                                                  #
-  #          :                                                  #
-  ###############################################################
-  {
-  my $proto=shift;
-  my $class=ref($proto) || $proto;
-  my $self={};
-              
-  bless $self,$class;
-  return $self;
-  }
+# sub new
+#   ###############################################################
+#   # new                                                         #
+#   ###############################################################
+#   # modified : Fri Oct 24 10:23:01 2003 / SFA                   #
+#   # params   :                                                  #
+#   #          :                                                  #
+#   # function :                                                  #
+#   #          :                                                  #
+#   ###############################################################
+#   {
+#   my $proto=shift;
+#   my $class=ref($proto) || $proto;
+#   my $self={};
+#   print "SCRAM::CMD::new() called","\n";
+#   bless $self,$class;
+#   return $self;
+#   }
+
+=item   C<urlget($url)>
+
+Retrieve URL information. For example, show location in the cache
+of a local copy of a Tool Document.
+
+=cut
 
 sub urlget()
    {
@@ -77,6 +92,12 @@ sub urlget()
    return 0;
    }
 
+=item   C<arch()>
+
+Print the current SCRAM_ARCH to STDOUT.
+   
+=cut
+
 sub arch()
    {
    my $self=shift;
@@ -100,6 +121,12 @@ sub arch()
       return (0);
       }
    }
+
+=item   C<tool()>
+
+Manage the tools in the current SCRAM project area.
+   
+=cut
 
 sub tool()
    {
@@ -145,6 +172,10 @@ sub tool()
    return $rval;
    }
 
+=item   C<toollist()>
+
+=cut
+
 sub toollist()
    {
    my $self=shift;
@@ -176,6 +207,10 @@ sub toollist()
    # Return nice value:
    return 0;
    }
+
+=item   C<toolinfo()>
+
+=cut
 
 sub toolinfo()
    {
@@ -224,6 +259,10 @@ sub toolinfo()
    return 0;
    }
 
+=item   C<tooltag()>
+
+=cut
+
 sub tooltag()
    {
    my $self=shift;
@@ -254,6 +293,10 @@ sub tooltag()
    # Return nice value:
    return 0;
    }
+
+=item   C<tooltemplate()>
+
+=cut
 
 sub tooltemplate()
    {
@@ -293,6 +336,10 @@ sub tooltemplate()
    return 0;
    }
 
+=item   C<toolremove()>
+
+=cut
+
 sub toolremove()
    {
    my $self=shift;
@@ -324,6 +371,10 @@ sub toolremove()
    # Return nice value:
    return 0;
    }
+
+=item   C<install()>
+
+=cut
 
 sub install()
    {
@@ -358,6 +409,10 @@ sub install()
       return 0;
       }
    }
+
+=item   C<remove()>
+
+=cut
 
 sub remove()
    {
@@ -398,6 +453,9 @@ sub remove()
       }
    }
 
+=item   C<version()>
+
+=cut
 
 sub version()
    {
@@ -477,6 +535,10 @@ sub version()
    # Return nice value: 
    return 0;
    }
+
+=item   C<list()>
+
+=cut
 
 sub list()
    {
@@ -630,6 +692,10 @@ sub list()
    return 0;
    }
 
+=item   C<db()>
+
+=cut
+
 sub db()
    {
    my $self=shift;
@@ -712,6 +778,10 @@ sub db()
    # Return nice value:
    return 0;
    }
+
+=item   C<build()>
+
+=cut
 
 sub build()
    {
@@ -910,6 +980,10 @@ sub build()
    return 0;
    }
 
+=item   C<project()>
+
+=cut
+
 sub project()
    {
    my $self=shift;
@@ -984,6 +1058,10 @@ sub project()
    return 0;
    }
 
+=item   C<bootfromrelease()>
+
+=cut
+
 sub bootfromrelease()
    {
    my $self=shift;
@@ -1038,6 +1116,10 @@ sub bootfromrelease()
    # Return nice value:
    return 0;
    }
+
+=item   C<bootnewproject()>
+
+=cut
 
 sub bootnewproject()
    {
@@ -1115,6 +1197,10 @@ sub bootnewproject()
    # Return nice value:
    return 0;
    }
+
+=item   C<update_project_area()>
+
+=cut
 
 sub update_project_area()
    {
@@ -1232,6 +1318,10 @@ sub update_project_area()
       }
    }
 
+=item   C<create_productdirs()>
+
+=cut
+
 sub create_productdirs()
    {
    my $self=shift;
@@ -1285,6 +1375,10 @@ sub create_productdirs()
    AddDir::adddir($ENV{LOCALTOP}."/".$ENV{SCRAM_SOURCEDIR});
    }
 
+=item   C<project_template_copy()>
+
+=cut
+
 sub project_template_copy()
    {
    my $self=shift;
@@ -1313,6 +1407,10 @@ sub project_template_copy()
    # Return nice value:
    return 0;
    }
+
+=item   C<setup()>
+
+=cut
 
 sub setup()
    {
@@ -1399,6 +1497,10 @@ sub setup()
    # Return nice value: 
    return 0;
    }
+
+=item   C<runtime()>
+
+=cut
 
 sub runtime()
    {
@@ -1645,6 +1747,10 @@ sub runtime()
    return 0;
    }
 
+=item   C<save_environment()>
+
+=cut
+
 sub save_environment()
    {
    # The SCRAMRT_x variables must also be written out in
@@ -1696,6 +1802,10 @@ sub save_environment()
       }
    }
 
+=item   C<restore_environment()>
+
+=cut
+
 sub restore_environment()
    {
    my $self=shift;
@@ -1728,6 +1838,9 @@ sub restore_environment()
    %ENV=%restoredenv;
    }
 
+=item   C<config()>
+
+=cut
 
 sub config()
    {
@@ -1791,6 +1904,10 @@ sub config()
       }
    }
 
+=item   C<dumpconfig()>
+
+=cut
+
 sub dumpconfig()
    {
    my $self=shift;
@@ -1830,6 +1947,10 @@ sub dumpconfig()
       print $info,"\n";	 
       }
    }
+
+=item   C<ui()>
+
+=cut
 
 sub ui()
    {
@@ -1876,6 +1997,10 @@ sub ui()
 	 }            
       }
    }
+
+=item   C<xmlmigrate()>
+
+=cut
 
 sub xmlmigrate()
    {
@@ -1965,6 +2090,10 @@ sub xmlmigrate()
    
    return 0;
    }
+
+=item   C<show_compiler_gui()>
+
+=cut
 
 sub show_compiler_gui()
    {
@@ -2291,6 +2420,10 @@ sub show_compiler_gui()
    MainLoop();   
    }
 
+=item   C<show_tools_gui()>
+
+=cut
+
 sub show_tools_gui()
    {
    my $self=shift;
@@ -2552,3 +2685,13 @@ sub show_tools_gui()
 
 #### End of CMD.pm ####
 1;
+
+
+=back
+
+=head1 AUTHOR/MAINTAINER
+
+Shaun ASHBY L<mailTo:Shaun.Ashby@cern.ch>
+
+=cut
+
