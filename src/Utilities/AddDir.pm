@@ -156,7 +156,7 @@ Originally written by Christopher Williams.
 
 =head1 MAINTAINER
 
-Shaun ASHBY L<mailTo:Shaun.Ashby@cern.ch>
+Shaun ASHBY 
 
 =cut
 
