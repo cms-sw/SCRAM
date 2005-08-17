@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.14 2005/08/10 17:27:31 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.15 2005/08/17 11:20:55 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -68,7 +68,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.14 2005/08/10 17:27:31 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.15 2005/08/17 11:20:55 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -262,7 +262,15 @@ sub _initenv()
    $ENV{SCRAM_BASEDIR} =~ s!:$!:/! if $^O eq 'MSWin32';
    $ENV{SCRAM_TOOL_HOME}=$ENV{SCRAM_HOME}."/src";
    
-   # Need a lookup database:
+   # Need a lookup database. Try the user's environment first to override
+   # the value set at install time (in SCRAM_SITE.pm):
+   if (exists $ENV{SCRAM_USERLOOKUPDB} && -f "$ENV{SCRAM_USERLOOKUPDB}")
+      {
+      print "Using $ENV{SCRAM_USERLOOKUPDB} as the database.","\n", if ($ENV{SCRAM_DEBUG});
+      $ENV{SCRAM_LOOKUPDB}=$ENV{SCRAM_USERLOOKUPDB};
+      }
+   
+   # A fallback option:
    if ( ! ( exists $ENV{SCRAM_LOOKUPDB} ) )
       {
       if ( -d "$ENV{SCRAM_BASEDIR}/scramdb/" )
