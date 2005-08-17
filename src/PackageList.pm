@@ -2,25 +2,14 @@
 		Cache::Cache.pm
 		Cache::CacheUtilities.pm
 		ActiveDoc::Activate.pm
-		ActiveDoc::ActiveConfig.pm
 		ActiveDoc::ActiveDoc.pm
 		ActiveDoc::ActiveStore.pm
-		ActiveDoc::Application.pm
-		ActiveDoc::BaseTags.pm
-		ActiveDoc::Check.pm
-		ActiveDoc::Checker.pm
-		ActiveDoc::CommandLineInterface.pm
-		ActiveDoc::DOChandler.pm
-		ActiveDoc::DocTester.pm
 		ActiveDoc::GroupChecker.pm
 		ActiveDoc::IncFile.pm
 		ActiveDoc::Parse.pm
 		ActiveDoc::PreProcessedFile.pm
-		ActiveDoc::Query.pm
 		ActiveDoc::SimpleDoc.pm
 		ActiveDoc::SimpleURLDoc.pm
-		ActiveDoc::SimpleUserInterface.pm
-		ActiveDoc::StarterDoc.pm
 		ActiveDoc::Switcher.pm
 		ActiveDoc::TagContainer.pm
 		BuildSystem::BuildDataUtils.pm
@@ -53,7 +42,6 @@
 		URL::URL_http.pm
 		URL::URL_interface.pm
 		URL::URL_label.pm
-		URL::URL_test.pm
 		URL::URLcache.pm
 		URL::URLclass.pm
 		URL::URLhandler.pm
@@ -63,12 +51,8 @@
 		Utilities::DataItem.pm
 		Utilities::HashDB.pm
 		Utilities::IndexedFileStore.pm
-		Utilities::List.pm
-		Utilities::ListIterator.pm
-		Utilities::Message.pm
 		Utilities::PathMod.pm
 		Utilities::SCRAMUtils.pm
-		Utilities::SearchPath.pm
 		Utilities::TestClass.pm
 		Utilities::Verbose.pm
 		Utilities::setarchitecture.pm

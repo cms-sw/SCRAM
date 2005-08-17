@@ -5,17 +5,45 @@
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 #         (with contribution from Lassi.Tuura@cern.ch)
 # Update: 2003-11-27 16:45:18+0100
-# Revision: $Id: Cache.pm,v 1.3 2005/03/11 18:55:28 sashby Exp $ 
+# Revision: $Id: Cache.pm,v 1.4 2005/06/28 19:08:55 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
 #--------------------------------------------------------------------
+
+=head1 NAME
+
+Cache::Cache - A generic directory cache object.
+
+=head1 SYNOPSIS
+
+	my $obj = Cache::Cache->new();
+
+=head1 DESCRIPTION
+
+A package to provide caching of directory information. Directory timestamps
+are tracked on further reading of an existing cache and lists of modified
+directories and BuildFiles can be obtained.
+
+=head1 METHODS
+
+=over
+
+=cut
+
 package Cache::Cache;
 require 5.004;
 
 use Exporter;
 @ISA=qw(Exporter);
 #
+
+=item   C<new()>
+
+Create a new Cache::Cache object. The name of the cache is B<DirCache.db> by default.
+
+=cut
+
 sub new()
    ###############################################################
    # new                                                         #
@@ -41,6 +69,12 @@ sub new()
    bless $self,$class;
    return $self;
    }
+
+=item   C<getdir($path)>
+
+
+
+=cut
 
 sub getdir()
    {
@@ -485,3 +519,16 @@ sub name()
    }
 
 1;
+
+=back
+
+=head1 AUTHOR
+
+Shaun Ashby (with contribution from Lassi Tuura)
+
+=head1 MAINTAINER
+
+Shaun Ashby
+   
+=cut
+

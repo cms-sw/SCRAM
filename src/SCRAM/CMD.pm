@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.35 2005/08/05 16:47:56 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.36 2005/08/11 16:45:34 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -28,25 +28,6 @@ use Getopt::Long ();
 
 @ISA=qw(Exporter Utilities::Verbose);
 @EXPORT_OK=qw();
-
-# sub new
-#   ###############################################################
-#   # new                                                         #
-#   ###############################################################
-#   # modified : Fri Oct 24 10:23:01 2003 / SFA                   #
-#   # params   :                                                  #
-#   #          :                                                  #
-#   # function :                                                  #
-#   #          :                                                  #
-#   ###############################################################
-#   {
-#   my $proto=shift;
-#   my $class=ref($proto) || $proto;
-#   my $self={};
-#   print "SCRAM::CMD::new() called","\n";
-#   bless $self,$class;
-#   return $self;
-#   }
 
 =item   C<urlget($url)>
 
@@ -124,7 +105,8 @@ sub arch()
 
 =item   C<tool()>
 
-Manage the tools in the current SCRAM project area.
+Manage the tools in the current SCRAM project area. Supported
+sub-commands are list, info, tag, remove and template.
    
 =cut
 
@@ -174,6 +156,8 @@ sub tool()
 
 =item   C<toollist()>
 
+Print the list of tools that are set up for the current architecture.
+   
 =cut
 
 sub toollist()
@@ -208,8 +192,10 @@ sub toollist()
    return 0;
    }
 
-=item   C<toolinfo()>
+=item   C<toolinfo($toolname)>
 
+Print the information for tool $toolname.
+   
 =cut
 
 sub toolinfo()
@@ -259,8 +245,13 @@ sub toolinfo()
    return 0;
    }
 
-=item   C<tooltag()>
+=item   C<tooltag($toolname [,$tagname])>
 
+Print the list of defined variables (tags) for the current tool. These tags
+can include B<LIB>, B<LIBDIR>, B<INCLUDE> and B<T_BASE> (where B<T> is the tool name).
+If the optional tagname $tagname is given, only the setting for this one tag will
+be shown.
+   
 =cut
 
 sub tooltag()
@@ -296,6 +287,9 @@ sub tooltag()
 
 =item   C<tooltemplate()>
 
+Install compiler or tool templates to the current directory. This is
+an out of date command.
+   
 =cut
 
 sub tooltemplate()
@@ -336,8 +330,10 @@ sub tooltemplate()
    return 0;
    }
 
-=item   C<toolremove()>
+=item   C<toolremove($toolname)>
 
+Remove the configured tool $toolname from the current configuration.
+   
 =cut
 
 sub toolremove()
@@ -374,6 +370,9 @@ sub toolremove()
 
 =item   C<install()>
 
+Install the current project in the local SCRAM project database so that it will
+be listed by C<scram list>.
+   
 =cut
 
 sub install()
@@ -410,7 +409,10 @@ sub install()
       }
    }
 
-=item   C<remove()>
+=item   C<remove($project,$projectversion)>
+
+Remove project $project version $projectversion from the local
+SCRAM project database.
 
 =cut
 
@@ -453,8 +455,11 @@ sub remove()
       }
    }
 
-=item   C<version()>
+=item   C<version([ $version ])>
 
+Print the version of SCRAM. If $version argument is given, run $version of SCRAM.
+Install locally if it is not already available.
+   
 =cut
 
 sub version()
@@ -538,6 +543,9 @@ sub version()
 
 =item   C<list()>
 
+List the projects which are currently installed at the local site. Developer
+areas can be created from any of the projects listed by this command.
+   
 =cut
 
 sub list()
@@ -694,6 +702,8 @@ sub list()
 
 =item   C<db()>
 
+Show the location of the local SCRAM project database and any other databases that are linked.
+   
 =cut
 
 sub db()
@@ -781,6 +791,8 @@ sub db()
 
 =item   C<build()>
 
+Compile the source code in the current project area. 
+   
 =cut
 
 sub build()
@@ -981,6 +993,8 @@ sub build()
    }
 
 =item   C<project()>
+   
+Create a SCRAM developer area or bootstrap a new SCRAM project area.
 
 =cut
 
@@ -1060,6 +1074,8 @@ sub project()
 
 =item   C<bootfromrelease()>
 
+Function to create a developer area from an existing release (only used locally).
+   
 =cut
 
 sub bootfromrelease()
@@ -1118,6 +1134,8 @@ sub bootfromrelease()
    }
 
 =item   C<bootnewproject()>
+
+Function to create a new SCRAM project area from a boot file (only used locally).
 
 =cut
 
@@ -1200,6 +1218,9 @@ sub bootnewproject()
 
 =item   C<update_project_area()>
 
+Function to update a developer area to a new, compatible, release. A message
+is issued to warn if no compatible area exists. Only used internally.
+   
 =cut
 
 sub update_project_area()
@@ -1320,6 +1341,9 @@ sub update_project_area()
 
 =item   C<create_productdirs()>
 
+Create all product storage directories defined in the top-level project
+BuildFile (B<config/BuildFile>).
+
 =cut
 
 sub create_productdirs()
@@ -1377,6 +1401,8 @@ sub create_productdirs()
 
 =item   C<project_template_copy()>
 
+Copy a basic set of build templates to the current directory.
+   
 =cut
 
 sub project_template_copy()
@@ -1410,6 +1436,8 @@ sub project_template_copy()
 
 =item   C<setup()>
 
+Set up tools in the current project area.
+   
 =cut
 
 sub setup()
@@ -1500,6 +1528,8 @@ sub setup()
 
 =item   C<runtime()>
 
+Set the runtime environment for the current area.
+   
 =cut
 
 sub runtime()
@@ -1749,6 +1779,10 @@ sub runtime()
 
 =item   C<save_environment()>
 
+Save the current runtime environment. This function is used to
+restore an environment to its original state, usually before
+setting the runtime for a new area. Only used internally.
+ 
 =cut
 
 sub save_environment()
@@ -1804,6 +1838,10 @@ sub save_environment()
 
 =item   C<restore_environment()>
 
+Restore the original runtime environment. This function is used to
+restore an environment to its original state, usually before
+setting the runtime for a new area. Only used internally.
+
 =cut
 
 sub restore_environment()
@@ -1840,6 +1878,9 @@ sub restore_environment()
 
 =item   C<config()>
 
+Dump some configuration information pertaining to the current area. Full
+tool information can also be dumped.
+   
 =cut
 
 sub config()
@@ -1906,6 +1947,8 @@ sub config()
 
 =item   C<dumpconfig()>
 
+Dump configuration information for the current B<SCRAM_ARCH>. Only used internally.
+
 =cut
 
 sub dumpconfig()
@@ -1950,6 +1993,8 @@ sub dumpconfig()
 
 =item   C<ui()>
 
+Function to create a GUI to allow interaction with build metadata.
+   
 =cut
 
 sub ui()
@@ -2000,6 +2045,8 @@ sub ui()
 
 =item   C<xmlmigrate()>
 
+Function to migrate all BuildFiles in the current area to XML.
+   
 =cut
 
 sub xmlmigrate()
@@ -2422,6 +2469,8 @@ sub show_compiler_gui()
 
 =item   C<show_tools_gui()>
 
+GUI functions.
+   
 =cut
 
 sub show_tools_gui()
@@ -2691,7 +2740,7 @@ sub show_tools_gui()
 
 =head1 AUTHOR/MAINTAINER
 
-Shaun ASHBY L<mailTo:Shaun.Ashby@cern.ch>
+Shaun ASHBY
 
 =cut
 

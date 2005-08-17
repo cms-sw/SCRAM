@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.13 2005/07/28 17:03:03 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.14 2005/08/10 17:27:31 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -68,7 +68,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.13 2005/07/28 17:03:03 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.14 2005/08/10 17:27:31 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -977,7 +977,7 @@ sub usage()
 
 =head1 AUTHOR/MAINTAINER
 
-Shaun ASHBY L<mailTo:Shaun.Ashby@cern.ch>
+Shaun ASHBY 
 
 =cut
 
