@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.36 2005/08/11 16:45:34 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.37 2005/08/17 11:20:55 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -2079,7 +2079,7 @@ sub xmlmigrate()
    
    if (! Getopt::Long::GetOptions(\%opts, %options))
       {
-      $self->scramfatal("Error parsing arguments. See \"scram build -help\" for usage info.");
+      $self->scramfatal("Error parsing arguments. See \"scram xmlmigrate -help\" for usage info.");
       }
    else
       {

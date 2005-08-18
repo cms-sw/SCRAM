@@ -5,7 +5,7 @@
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 #         (with contribution from Lassi.Tuura@cern.ch)
 # Update: 2003-11-27 16:45:18+0100
-# Revision: $Id: Cache.pm,v 1.4 2005/06/28 19:08:55 sashby Exp $ 
+# Revision: $Id: Cache.pm,v 1.5 2005/08/17 11:20:54 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -16,8 +16,8 @@
 Cache::Cache - A generic directory cache object.
 
 =head1 SYNOPSIS
-
-	my $obj = Cache::Cache->new();
+   
+      my $cacheobject=Cache::Cache->new();
 
 =head1 DESCRIPTION
 
@@ -72,7 +72,7 @@ sub new()
 
 =item   C<getdir($path)>
 
-
+Return a list of directories starting from $path.
 
 =cut
 
@@ -92,6 +92,12 @@ sub getdir()
    return @items;
    }
 
+=item   C<prune($path)>
+
+Recursively remove directories from the cache starting at $path.
+
+=cut
+
 sub prune()
    {
    my $self=shift;
@@ -105,6 +111,13 @@ sub prune()
       $self->prune($sub);
       }
    }
+
+=item   C<checktree($path, $required, $dofiles)>
+
+A timestamp checking routine. Starting from $path, check all timestamps of
+directories and their files. Skip all files unless $dofiles is 1. 
+
+=cut
 
 sub checktree()
    {
@@ -209,6 +222,12 @@ sub checktree()
       }
    }
 
+=item   C<clean_cache_recursive($startdir)>
+
+Recursive remove cached data for directories under $startdir.
+
+=cut
+
 sub clean_cache_recursive()
    {
    my $self=shift;
@@ -226,6 +245,13 @@ sub clean_cache_recursive()
    return $self;
    }
 
+=item   C<dirtree($dir,$dofiles)>
+
+Starting from $dir, scan the directory tree. Ignore files unless $dofiles is set. This
+function just calls checktree().
+
+=cut
+
 sub dirtree()
    {
    my $self=shift;
@@ -235,6 +261,13 @@ sub dirtree()
    $self->checktree($dir, 1, $dofiles);
    return $self;
    }
+
+=item   C<checkfiles()>
+
+Function to actually run the timestamp checks. This is only run from
+SCRAM::CMD::build().
+
+=cut
 
 sub checkfiles()
    {
@@ -329,12 +362,25 @@ sub checkfiles()
    return $self;
    }
 
+=item   C<dircache()>
+
+Return a reference to the directory cache hash.
+
+=cut
+
 sub dircache()
    {
    my $self=shift;
    # Return the file cache:
    return $self->{DIRCACHE};
    }
+
+=item   C<added_dirs($path)>
+
+Add $path to the list of directories added since last scan, or return
+the list of added directories if no argument given.
+
+=cut
 
 sub added_dirs()
    {
@@ -361,6 +407,15 @@ sub added_dirs()
       return \@addeddirs;
       }
    }
+
+=item   C<modified_parentdirs($path)>
+
+Add a directory $path to the list of parent directories (directories
+having subdirectories), or return a reference to the list.
+Storing this parent allows any update to be taken recursively from this 
+location.
+   
+=cut
 
 sub modified_parentdirs()
    {
@@ -390,6 +445,15 @@ sub modified_parentdirs()
       }
    }
 
+=item   C<schedremoval($d)>
+
+Add directory $d to list of directories that should be removed
+recursively from the cache.
+If no arguments given, return a reference to a list of
+directories to be removed.
+   
+=cut
+
 sub schedremoval()
    {
    my $self=shift;
@@ -414,6 +478,13 @@ sub schedremoval()
       }
    }
 
+=item   C<filestatus()>
+
+Return a true or false value depending on whether
+a BuildFile was changed or not.
+
+=cut
+
 sub filestatus()
    {
    my $self=shift;
@@ -422,6 +493,13 @@ sub filestatus()
    return $self->{STATUSSRC};
    }
 
+=item   C<configstatus()>
+
+Return a true or false value depending on whether
+a file in the config directory was changed or not.
+
+=cut
+
 sub configstatus()
    {
    my $self=shift;
@@ -429,6 +507,16 @@ sub configstatus()
    # in config dir was changed:
    return $self->{STATUSCONFIG};
    }
+
+=item   C<bf_for_scanning()>
+
+Return a list of BuildFiles to re-read. Note that this is only done
+if the status was changed (i.e. not necessary to read through the list
+of BuildFiles to know whether something changed as the flag B<STATUSSRC>
+is set as the source tree is checked).
+If B<STATUSCONFIG> is true, all BuildFiles are marked to be read. 
+
+=cut
 
 sub bf_for_scanning()
    {
@@ -456,6 +544,12 @@ sub bf_for_scanning()
       }
    return $MODIFIED;
    }
+
+=item   C<paths()>
+
+Return a reference to an array of directories for the current source tree.
+
+=cut
 
 sub paths()
    {
@@ -487,6 +581,12 @@ sub paths()
    return $self->{ALLDIRS};
    }
 
+=item   C<verbose()>
+
+Turn verbosity for the cache on or off.
+
+=cut
+
 sub verbose()
    {
    my $self=shift;
@@ -494,6 +594,13 @@ sub verbose()
    @_ ? $self->{VERBOSE} = shift
       : $self->{VERBOSE}
    }
+
+=item   C<cachestatus()>
+
+Set or return the cache status to indicate whether or not a file
+timestamp has changed since the last pass.
+
+=cut
 
 sub cachestatus()
    {
@@ -503,12 +610,26 @@ sub cachestatus()
       : $self->{STATUS}
    }
 
+=item   C<logmsg(@message)>
+
+Print a message to B<STDERR>. This is only used in
+checktree(), checkfiles() and paths().
+
+=cut
+
 sub logmsg()
    {
    my $self=shift;
    # Print a message to STDOUT if VERBOSE is true:
    print STDERR @_ if $self->verbose();
    }
+
+=item   C<name()>
+
+Set or return the name of the cache. Normally set
+to B<DirCache.db> (and not architecture dependent).
+
+=cut
 
 sub name()
    {

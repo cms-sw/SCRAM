@@ -4,11 +4,40 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-30 11:51:58+0100
-# Revision: $Id: CacheUtilities.pm,v 1.3 2005/02/02 16:31:11 sashby Exp $ 
+# Revision: $Id: CacheUtilities.pm,v 1.4 2005/02/02 16:33:52 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
 #--------------------------------------------------------------------
+
+=head1 NAME
+
+Cache::CacheUtilities - Utilities for reading and writing of cache files.
+
+=head1 SYNOPSIS
+
+Reading:
+
+         print "Reading cached data","\n",if ($ENV{SCRAM_DEBUG});
+	 $cacheobject=&Cache::CacheUtilities::read($cachename);
+
+Writing:
+   
+	 &Cache::CacheUtilities::write($cacheobject,$cachename);
+
+=head1 DESCRIPTION
+
+Functions for reading and writing of cache files. This uses Data::Dumper to
+write out Perl data structures to files. For reading, the complete data structure
+is read from the cache file and stored in a variable which is then evalled to
+restore the original object.
+
+=head1 METHODS
+
+=over
+
+=cut
+
 package Cache::CacheUtilities;
 require 5.004;
 
@@ -21,6 +50,12 @@ use Exporter;
 #
 # Common functions for interacting with caches:
 #
+
+=item   C<read($cachefilename)>
+
+Read the cache file $cachefilename and return a Perl object.
+
+=cut
 
 sub read()
    {
@@ -35,6 +70,12 @@ sub read()
    die "Cache load error: ",$EVAL_ERROR,"\n", if ($EVAL_ERROR);
    return $cache;
    }
+
+=item   C<write($cacheobject,$cachefilenam)>
+
+Dump the Perl object $cacheobject to a file $cachefilename.
+
+=cut
 
 sub write()
    {
@@ -66,3 +107,12 @@ sub write()
    }
 
 1;
+
+
+=back
+
+=head1 AUTHOR/MAINTAINER
+
+Shaun Ashby
+
+=cut
