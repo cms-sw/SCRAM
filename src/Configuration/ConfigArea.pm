@@ -1,49 +1,130 @@
-#
-# ConfigArea.pm
-#
-# Written by Christopher Williams
-#
-# Description
-# -----------
-# creates and manages a configuration area
-#
-# Notes
-# -------
-# Persistency - remember to call the save method to make changes persistent
-#
-# Interface
-# ---------
-# new()				: A new ConfigArea object
-# name()			: get/set project name
-# setup(dir[,areaname])         : setup a fresh area in dir
-# satellite(dir[,areaname])     : setup a satellite area in dir
-# version()			: get/set project version
-# location([dir])		: set/return the location of the work area
-# bootstrapfromlocation([location]) : bootstrap the object based on location.
-#				      no location specified - cwd used
-#				      return 0 if succesful 1 otherwise
-# requirementsdoc()		: get set the requirements doc
-# searchlocation([startdir])	: returns the location directory. search starts
-#				  from cwd if not specified
-# scramversion()		: return the scram version associated with
-#				  area
-# configurationdir()		: return the location of the project 
-#				  configuration directory
-# copy(location)		: copy a configuration
-# copysetup(location)		: copy the architecture specific tool setup
-#				  returns 0 if successful, 1 otherwise
-# copyenv($ref)			: copy the areas environment into the hashref
-# toolbox()			: return the areas toolbox object
-# save()			: save changes permanently
-# linkto(location)		: link the current area to that at location
-# unlinkarea()			: destroy link (autosave)
-# linkarea([ConfigArea])	: link the current area to the apec Area Object
-# archname()		: get/set a string to indicate architecture
-# archdir()		: return the location of the administration arch dep 
-#			  directory
-# objectstore()		: return the objectStore object of the area
-# - temporary
-# align()			: adjust hard paths to suit local loaction
+=head1 NAME
+
+Configuration::ConfigArea - Creates and manages a configuration area (i.e. a project area).
+
+=head1 SYNOPSIS
+
+	my $obj = Configuration::ConfigArea->new();
+
+=head1 DESCRIPTION
+
+Create and manage SCRAM project configuration areas.
+
+=head1 METHODS
+
+=over
+
+=cut
+
+=item C<new()>
+
+Create a new Configuration::ConfigArea object.
+
+=item C<name()>
+
+Get/set project name.
+
+=item C<setup($dir[,$areaname])>
+
+Set up a fresh area in $dir.
+
+=item C<satellite($dir[,$areaname])>
+
+Set up a satellite area in $dir.
+
+=item C<version()>
+
+Get/set project version.
+
+=item C<location([$dir])>
+
+Set/return the location of the work area.
+
+=item C<bootstrapfromlocation([$location])>
+
+Bootstrap the object based on location.
+No location specified - current directory used
+Return 0 if succesful, 1 otherwise.
+
+=item C<requirementsdoc()>
+
+Get or set the requirements document.
+
+=item C<searchlocation([$startdir])>
+
+Returns the location directory. search starts
+from current directory if not specified.
+
+=item C<scramversion()>
+
+Return the scram version associated with the area.
+
+=item C<configurationdir()>
+
+Return the location of the project configuration directory.
+
+=item C<copy($location)>
+
+Copy a configuration from $location.
+
+=item C<copysetup($location)>
+
+Copy the architecture-specific tool setup.
+Returns 0 if successful, 1 otherwise.
+
+=item C<copyenv($ref)>
+
+Copy the area environment into the hashref $ref.
+
+=item C<toolbox()>
+
+Return the area toolbox object.
+
+=item C<save()>
+
+Save changes permanently.
+
+=item C<linkto($location)>
+
+Link the current area to that at location.
+
+=item C<unlinkarea()>
+
+Destroy link ($autosave).
+
+=item C<linkarea([Configuration::ConfigArea])>
+
+Link the current area to the specified area object.
+
+=item C<archname()>
+
+Get/set a string to indicate architecture.
+
+=item C<archdir()>
+
+Return the location of the administration
+architecture-dependent directory.
+
+=item C<objectstore()>
+
+Return the B<objectStore> object of the area temporary.
+
+=item C<align()>
+
+Adjust hard paths to suit local location.
+
+
+=back
+
+=head1 AUTHOR
+
+Originally written by Christopher Williams.
+   
+=head1 MAINTAINER
+
+Shaun ASHBY
+
+=cut
 
 package Configuration::ConfigArea;
 require 5.004;

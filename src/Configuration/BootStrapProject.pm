@@ -1,9 +1,40 @@
-# Bootstrap file parser
-#
-# Interface
-# ---------
-# new(cache,installbase) : a new bootstrapper
-# boot(url[,devareaname]) : boot up a new project , return the ConfigArea
+=head1 NAME
+
+Configuration::BootStrapProject - File parsing utilities for boot files.
+
+=head1 SYNOPSIS
+
+	my $obj = Configuration::BootStrapProject->new([$area]);
+
+=head1 DESCRIPTION
+
+Package containing functions for parsing bootstrap files (project initialisation documents).
+   
+=head1 METHODS
+
+=over
+
+=cut
+
+=item C<new($cache,$installbase)>
+
+A new bootstrapper.
+
+=item C<boot(url[,$devareaname])>
+
+Boot up a new project and return the Configuration::ConfigArea.
+
+=back
+
+=head1 AUTHOR
+
+Originally written by Christopher Williams.
+
+=head1 MAINTAINER
+
+Shaun ASHBY
+
+=cut
 
 package Configuration::BootStrapProject;
 use ActiveDoc::SimpleURLDoc;
@@ -269,3 +300,4 @@ sub Srcdir_end
    my $hashref=shift;
    $self->{havesourcedir} = 1; # To signal that we have a dir
    } 
+
