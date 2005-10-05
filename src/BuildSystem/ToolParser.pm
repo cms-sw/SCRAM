@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-02-09 20:14:55+0100
-# Revision: $Id: ToolParser.pm,v 1.3 2005/03/03 18:57:58 sashby Exp $ 
+# Revision: $Id: ToolParser.pm,v 1.4 2005/04/13 16:45:36 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -559,6 +559,7 @@ sub find_settings()
       elsif (exists($ENV{$envname}))
 	 {
 	 # Nothing to do here:
+	 push(@$runtime, $envname); # FIX From Shahzad.
 	 next;
 	 }
       else
