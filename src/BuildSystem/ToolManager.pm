@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.11 2005/07/15 15:27:27 sashby Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.12 2005/07/20 13:33:48 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -197,7 +197,7 @@ sub setupalltools()
 sub coresetup()
    {
    my $self=shift;
-   my ($toolname, $toolversion, $toolfile) = @_;
+   my ($toolname, $toolversion, $toolfile, $force) = @_;
    my ($toolcheck, $toolparser);
    
    print "\n";
@@ -213,13 +213,14 @@ sub coresetup()
       } $self->rawtools();
    
    # Tool not known so we create a new ToolParser object and parse it:
-   if ($toolcheck != 1)
+   if ($toolcheck != 1 || $force == 1)
       {
       $toolparser = BuildSystem::ToolParser->new();
       # We only want to store the stuff relevant for one particular version:
       $toolparser->parse($toolname, $toolversion, $toolfile);
       # Store the ToolParser object in the cache:
       $self->store($toolparser);
+      print "\nFile $toolfile reparsed (modified)","\n",if ($ENV{SCRAM_DEBUG});
       }
    
    # Next, set up the tool:
@@ -250,6 +251,7 @@ sub toolsetup()
    my ($arealocation, $toolname, $toolversion, $toolurl) = @_;
    my ($urlcache, $url, $filename, $tfname);
    my $toolfile;
+   my $force = 0; # we may have to force a reparse of a tool file
    
    $toolname =~ tr[A-Z][a-z];
    $toolversion ||= $self->defaultversion($toolname);
@@ -278,10 +280,18 @@ sub toolsetup()
       if ($proto eq 'file')
 	 {
 	 # Check to see if there is a ~ and substitute the user
-	 # home directory if there is:
-	 my ($urlpath) = ($urlv =~ m|^\~/(.*)$|);
-	 $urlv = $ENV{HOME}."/".$urlpath;
-
+	 # home directory if there is (file:~/xyz):	 
+	 if (my ($urlpath) = ($urlv =~ m|^\~/(.*)$|))
+	    {
+	    $urlv = $ENV{HOME}."/".$urlpath;
+	    }
+	 elsif (my ($urlpath) = ($urlv =~ m|^\./(.*)$|))
+	    {
+	    # Relative to current directory (file:./xyz):
+	    use Cwd qw(&cwd);
+	    $urlv = cwd()."/".$urlpath;
+	    }
+	 
 	 # If the tool url is a file and the file exists,
 	 # copy it to .SCRAM/InstalledTools and set the
 	 # filename accordingly:
@@ -291,10 +301,15 @@ sub toolsetup()
 	    copy($urlv, $filename);
 	    my $mode = 0644; chmod $mode, $filename;
 	    $toolfile=$filename;
+	    # Here we must account for the fact that the file tool doc may be
+	    # a modified version of an existing tool in the current config. we
+	    # make sure that this file is reparsed, even if there is already a
+	    # ToolParser object for the tool:
+	    $force = 1;
 	    }
 	 else
 	    {
-	    $::scram->scramerror("Unable to set up $toolname from URL $toolurl-- $urlv does not exist!");		    
+	    $::scram->scramerror("Unable to set up $toolname from URL \"$toolurl\" - $urlv does not exist!");		    
 	    }
 	 }
       elsif ($proto eq 'http')
@@ -303,7 +318,7 @@ sub toolsetup()
 	 # Download from WWW first:
 	 use LWP::Simple qw(&getstore);
 	 my $http_response_val = &getstore($toolurl, $filename);
-
+	 
 	 # Check the HTTP status. If doc not found, exit:
 	 if ($http_response_val != 200)
 	    {
@@ -364,7 +379,7 @@ sub toolsetup()
       }
    
    # Run the core setup routine:
-   $self->coresetup($toolname, $toolversion, $toolfile);
+   $self->coresetup($toolname, $toolversion, $toolfile,$force);
    return $self;
    }
 

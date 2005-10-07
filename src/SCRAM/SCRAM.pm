@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.15 2005/08/17 11:20:55 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.16 2005/08/17 16:25:26 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -68,7 +68,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.15 2005/08/17 11:20:55 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.16 2005/08/17 16:25:26 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -783,10 +783,29 @@ sub checklocal()
    $self->scramfatal("Unable to locate the top of local release. Exitting."), if (! $self->islocal());   
    }
 
+=item   C<checkareatype()>
+
+Check that the current area is a SCRAM Version 1.0 series project area and continue or exit otherwise.
+
+=cut
+
+sub checkareatype()
+   {
+   my $self=shift;
+   my ($areapath, $message)=@_;
+
+   # Simple check: see if the file cache exists. Of course, this assumes that
+   # something has been built in the area (i.e. that there are some source files):
+   if (! -f $areapath."/.SCRAM/DirCache.db")
+      {
+      $self->scramfatal($message);
+      }
+   }
+
 =item   C<msg(@text)>
-
+   
 Print a message using @text as text input.
-
+   
 =cut
 
 sub msg()

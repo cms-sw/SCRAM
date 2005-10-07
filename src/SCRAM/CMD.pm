@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.37 2005/08/17 11:20:55 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.38 2005/08/18 15:03:45 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -396,6 +396,8 @@ sub install()
       {
       # Check to see if we are in a local project area:
       $self->checklocal();
+      # Check to make sure that the project is a SCRAM V1 project:
+      $self->checkareatype($self->localarea()->location(),"Area type mismatch. Trying to execute a SCRAM command in a V0 project area using a V1x version of SCRAM. Exitting.");
       
       # Install the project:
       my $project = shift(@ARGV);
@@ -1097,9 +1099,11 @@ sub bootfromrelease()
 
       # Set RELEASETOP:
       $ENV{RELEASETOP} = $relarea->location();
-      
-      print "Checking SCRAM version....","\n";
 
+      # Check that the areas are compatible:
+      $self->checkareatype($ENV{RELEASETOP},"Project release area SCRAM version mismatch: current is V1, area is V0. Exitting.");      
+      print "Checking SCRAM version....","\n";
+      
       $self->versioncheck($relarea->scramversion());
       $area=$self->scramfunctions()->satellite($projectname,$projectversion,$installdir,$installname);
       $ENV{SCRAM_CONFIGDIR} = $area->configurationdir();
@@ -1823,8 +1827,9 @@ sub save_environment()
 	 # We must skip any internal SCRAM environment settings, including
 	 # LOCALTOP and RELEASETOP
 	 next if ($varname eq "_"); # Also, makes no sense to store "_", the last command run:
-	 
-	 if ($varname !~ /^SCRAM_.*/ && $varname !~ /^SCRAM$/ && $varname !~ /^LOCALTOP$|^RELEASETOP$/)
+	 next if ($varname eq "PWD"); # Also, don't want to override PWD!
+
+	 if ($varname !~ /^SCRAM_.*/ && $varname !~ /^SCRAM$/ && $varname !~ /^LOCALTOP$|^RELEASETOP$|^LOCALRT$|^BASE_PATH$/)
 	    {
 	    # Print out var:
 	    print RTFH $shelldata->{EXPORT}." ".'SCRAMRT_'.$varname.$shelldata->{EQUALS}.$shelldata->{QUOTE}($varvalue)."\n";
