@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.16 2005/08/17 16:25:26 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.17 2005/10/07 16:05:45 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -68,7 +68,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.16 2005/08/17 16:25:26 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.17 2005/10/07 16:05:45 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -120,7 +120,7 @@ sub commands()
    my $self = shift;
    my @env_commands = qw(version arch runtime config);
    my @info_commands = qw(list db urlget); 
-   my @buildenv_commands = qw(project setup tool ui);
+   my @buildenv_commands = qw(project setup tool gui);
    my @build_commands=qw(build xmlmigrate install remove);
    my @dev_cmds=qw();
 
@@ -157,7 +157,10 @@ sub execcommand()
    my $status=1;
    
    local @ARGV = @ARGS;
-
+   # Add the "dbghook_" function here rather than via "showcommands"
+   # since we don't want this to be public (it's only for debugging).
+   # dbghook_ is just a hook subroutine to test command routines
+   # called inside it:
    map
       {
       if ( $_ =~ /^$cmd/i)
@@ -165,15 +168,15 @@ sub execcommand()
 	 $status=0; # Command found so OK;
 	 $rval = $self->$_(@ARGV);
 	 }
-      } $self->showcommands();
-
+      } $self->showcommands(),"dbghook_";
+   
    # Print usage and exit if no command matched:
    if ($status)
       {
       print $self->usage();
       $rval = 1;
       }
-
+   
    return $rval;
    }
 

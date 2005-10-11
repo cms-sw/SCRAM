@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.11 2005/08/17 11:20:55 sashby Exp $ 
+# Revision: $Id: Helper.pm,v 1.12 2005/08/25 17:27:18 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -526,7 +526,7 @@ sub config()
    return $help;
    }
 
-sub ui()
+sub gui()
    {
    my $self=shift;
    my $help;
@@ -537,9 +537,9 @@ sub ui()
    $help.="\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram ui -edit [class]$::normal\n";
+   $help.="\tscram gui -edit [class]$::normal\n";
    $help.="$::bold";
-   $help.="\tscram ui -show [meta type]$::normal\n";
+   $help.="\tscram gui -show [meta type]$::normal\n";
    $help.="\n";
 
    return $help;

@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.38 2005/08/18 15:03:45 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.39 2005/10/07 16:05:45 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -800,6 +800,9 @@ Compile the source code in the current project area.
 sub build()
    {
    my $self=shift;
+   # Set the runtime environment. The environments are set in %ENV
+   $self->runtimebuildenv_();
+   
    unshift @INC, $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};
    # The cache files:
    my $toolcache=$ENV{LOCALTOP}."/.SCRAM/".$ENV{SCRAM_ARCH}."/ToolCache.db";
@@ -1996,13 +1999,13 @@ sub dumpconfig()
       }
    }
 
-=item   C<ui()>
+=item   C<gui()>
 
 Function to create a GUI to allow interaction with build metadata.
    
 =cut
 
-sub ui()
+sub gui()
    {
    my $self=shift;
    my (@ARGS) = @_;
@@ -2010,7 +2013,7 @@ sub ui()
    my ($class, $showmeta);
    my %opts;
    my %options =
-      ("help"	=> sub { $self->{SCRAM_HELPER}->help('ui'); exit(0) },
+      ("help"	=> sub { $self->{SCRAM_HELPER}->help('gui'); exit(0) },
        "show=s" => sub { $opts{SHOWMETA}=1; $showmeta = $_[1] },
        "edit=s" => sub { $opts{EDITMETA}=1; $class = $_[1] }
        );
@@ -2021,7 +2024,7 @@ sub ui()
    
    if (! Getopt::Long::GetOptions(\%opts, %options))
       {
-      $self->scramfatal("Error parsing arguments. See \"scram ui -help\" for usage info.");
+      $self->scramfatal("Error parsing arguments. See \"scram gui -help\" for usage info.");
       }
    else
       {
@@ -2033,18 +2036,20 @@ sub ui()
 	 {
 	 my $dummy=1;
 	 $self->show_compiler_gui();
-	 } # End of EDITMETA
-      
-      if ($opts{EDITMETA} && $class =~ /^[Tt].*/)
+	 } # End of EDITMETA for compiler  
+      elsif ($opts{EDITMETA} && $class =~ /^[Tt].*/)
 	 {
 	 my $dummy=1;
 	 $self->show_tools_gui();
-	 } # End of EDITMETA
-      
-      if ($opts{SHOWMETA})
+	 } # End of EDITMETA for tools
+      elsif ($opts{SHOWMETA})
 	 {
 	 print "Do something for showmeta for class \"".$showmeta."\"","\n";
-	 }            
+	 }
+      else
+	 {
+	 $self->{SCRAM_HELPER}->help('gui'); exit(0);
+	 }
       }
    }
 
@@ -2573,7 +2578,8 @@ sub show_tools_gui()
 											       $tool_entrymain->configure(-state => 'normal');
 											       # Delete all existing text:
 											       $tool_entrymain->delete('1.0','end');
-											       # Load up the file into the text widget:
+											       # Load up the file into the text widget. Sometimes the file will
+											       # not exist locally so good idea to warn if this is so << FIXME:
 											       open(TOOL,"< ".$ENV{LOCALTOP}."/.SCRAM/InstalledTools/".$_[0]);
 											       while (<TOOL>)
 												  {
@@ -2737,12 +2743,149 @@ sub show_tools_gui()
    MainLoop();
    }
 
+
+sub dbghook_()
+   {
+   my $self=shift;
+   local (@ARGV) = @_;
+
+   $self->runtimebuildenv_();
+
+   }
+
+=item   C<runtimebuildenv_()>
+
+Set the build runtime environment.
+   
+=cut
+
+sub runtimebuildenv_()
+   {
+   my $self=shift;
+   my $SCRAM_RT_SHELL="BOURNE"; # Make shell is /bin/sh
+   my $paths={}; 
+   my $variables={};
+   my $rtstring={};
+   my $shelldata =
+      {
+      BOURNE =>
+	 {
+	 EQUALS => '=',
+	 SEP => ':',
+	 EXPORT => 'export',
+	 PRINTVAR => sub { (exists $ENV{$_[0]}) ? return ':'.$ENV{$_[0]} : return '' },
+	 QUOTE => sub { return "\"$_[0]\";" },
+	 SETSTRING => sub { return "$_[0]" }
+	 }
+      };
+
+   # We need to process ourself. Check to see if tool "self" is
+   # defined and if so, process it first.
+   my $rawselected = $self->toolmanager()->selected();
+   # Get list of setup tools:
+   my $tools = $self->toolmanager()->setup();
+   # NB: At the moment, all SELF settings (i.e. local ones) come before
+   # any other runtime envs from tools:
+   if (exists ($tools->{'self'}) && (my $toolrt = $tools->{'self'}->runtime()))
+      {
+      while (my ($toolrt, $trtval) = each %{$toolrt})
+	 {
+	 if ($toolrt =~ /^PATH:(.*?)$/)
+	    {
+	    # Need an array where we can store the path elements:
+	    (! exists $rtstring->{$1}) ? $rtstring->{$1} = [] : undef;
+	    
+	    # $trtval is an array reference so we need to
+	    # iterate over the elements of the array:
+	    map
+	       {
+	       if (! exists ($paths->{$1}->{$_}))
+		  {
+		  # Keep track of which paths we've already seen:
+		  $paths->{$1}->{$_} = 1 ;
+		  # Add the path element onto the array:
+		  push(@{$rtstring->{$1}},$_);
+		  }
+	       } @$trtval; 
+	    }
+	 else
+	    {
+	    # Ordinary variable:
+	    if (! exists ($variables->{$toolrt}))
+	       {
+	       $variables->{$toolrt} = 1;
+	       $ENV{$toolrt} = $shelldata->{$SCRAM_RT_SHELL}->{SETSTRING}(@$trtval);
+	       }
+	    }
+	 }
+      }
+   
+   # Since we want to prepend to any existing paths, we want to append
+   # ":${VAR}" or suchlike. We start with the tools.
+   # Sort according to the order in which the tools were selected (i.e., the order in which
+   # they appear in RequirementsDoc):
+   foreach $tool ( sort { %{$rawselected}->{$a}
+			  <=> %{$rawselected}->{$b}}
+		   keys %{$rawselected} )
+      {
+      # Extract the runtime content for this tool:
+      my $toolrt = $tools->{$tool}->runtime(), if (exists $tools->{$tool});
+      
+      # If we really have a some runtime data, continue:
+      if (defined ($toolrt))
+	 {
+	 while (my ($toolrt, $trtval) = each %{$toolrt})
+	    {
+	    if ($toolrt =~ /^PATH:(.*?)$/)
+	       {
+	       # Need an array where we can store the path elements:
+	       (! exists $rtstring->{$1}) ? $rtstring->{$1} = [] : undef;
+	       
+	       # $trtval is an array reference so we need to
+	       # iterate over the elements of the array:
+	       map
+		  {
+		  if (! exists ($paths->{$1}->{$_}))
+		     {
+		     # Keep track of which paths we've already seen:
+		     $paths->{$1}->{$_} = 1 ;
+		     # Add the path element onto the array:
+		     push(@{$rtstring->{$1}},$_);
+		     }
+		  } @$trtval; 
+	       }
+	    else
+	       {
+	       # Ordinary variable:
+	       if (! exists ($variables->{$toolrt}))
+		  {
+		  $variables->{$toolrt} = 1;
+		  $ENV{$toolrt} = $shelldata->{$SCRAM_RT_SHELL}->{SETSTRING}(@$trtval);
+		  }
+	       }
+	    }
+	 }
+      }
+   
+   # Now dump out the path settings in the appropriate flavoured syntax:   
+   map
+      {
+      print "";
+      $ENV{$_} = $shelldata->{$SCRAM_RT_SHELL}->{SETSTRING}
+      (join("$shelldata->{$SCRAM_RT_SHELL}->{SEP}",@{$rtstring->{$_}}).$shelldata->{$SCRAM_RT_SHELL}->{PRINTVAR}($_));
+      } keys %{$rtstring};
+      
+   # Return nice value: 
+   return 0;
+   }
+
+
 #### End of CMD.pm ####
 1;
 
 
 =back
-
+   
 =head1 AUTHOR/MAINTAINER
 
 Shaun ASHBY
