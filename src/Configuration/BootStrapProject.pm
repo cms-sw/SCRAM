@@ -170,7 +170,7 @@ sub Project_start {
 
 	$self->{switch}->checktag($name, $hashref, 'name');
 	$self->{switch}->checktag($name, $hashref, 'version');
-	print "Installing Project $$hashref{'name'} ".
+	print "Creating New Project $$hashref{'name'} ".
 		"Version $$hashref{'version'}\n";
 	$self->{area}=Configuration::ConfigArea->new();
 	$self->{area}->name($$hashref{'name'});

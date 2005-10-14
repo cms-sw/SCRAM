@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.39 2005/10/07 16:05:45 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.40 2005/10/11 11:06:42 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1058,7 +1058,7 @@ sub project()
 	 }
       elsif ($opts{SCRAM_BOOTSTRAPFILE_NAME})
 	 {
-	 print "Bootstrapping a new project from ",$bootfile,"\n";
+	 print "Bootstrapping a new project from ",$bootfile,"\n",if ($ENV{SCRAM_DEBUG});
 	 print "NB: The -name option is not supported when booting a new project from scratch!","\n",
 	 if ($opts{SCRAM_INSTALL_NAME});	 
 	 print "\n";
