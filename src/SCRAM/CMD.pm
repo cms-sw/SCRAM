@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.40 2005/10/11 11:06:42 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.41 2005/10/14 15:56:09 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -2699,7 +2699,7 @@ sub show_tools_gui()
 							}
 						     # Update the copy of the tool in the cache
 						     # if some value really changed:
-						     $self->toolmanager()->updatetool($tool_loaded, $this_tool), if ($update_status);						     
+						     $self->toolmanager()->updatetool($tool_loaded, $this_tool), if ($update_status);
 						     }
 						  })->pack(-side => 'left', -anchor => 'n');
    
