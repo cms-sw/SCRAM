@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-30 11:51:58+0100
-# Revision: $Id: CacheUtilities.pm,v 1.4 2005/02/02 16:33:52 sashby Exp $ 
+# Revision: $Id: CacheUtilities.pm,v 1.5 2005/08/18 15:03:44 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -71,7 +71,7 @@ sub read()
    return $cache;
    }
 
-=item   C<write($cacheobject,$cachefilenam)>
+=item   C<write($cacheobject,$cachefilename)>
 
 Dump the Perl object $cacheobject to a file $cachefilename.
 
