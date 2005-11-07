@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.17 2005/10/07 16:05:45 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.18 2005/10/11 11:06:42 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -68,7 +68,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.17 2005/10/07 16:05:45 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.18 2005/10/11 11:06:42 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -803,6 +803,27 @@ sub checkareatype()
       {
       $self->scramfatal($message);
       }
+   }
+
+=item   C<missing_package($package)>
+   
+Print a message that the package $package is not available
+on the current system and exit. This is part of a check when
+loading Perl modules like Tk which might not be installed.
+   
+=cut
+
+sub missing_package()
+   {
+   my $self=shift;
+   my ($p)=@_;
+   print "The following Perl modules appear(s) to be missing\n";
+   print "on this machine:\n\n";
+   print " ".$p."\n";
+   print "\n";
+   print "For now, this command is disabled.\n";
+   print "\n";
+   exit(1);  
    }
 
 =item   C<msg(@text)>

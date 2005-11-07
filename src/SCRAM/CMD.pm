@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.41 2005/10/14 15:56:09 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.42 2005/10/26 17:06:21 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -2155,10 +2155,11 @@ sub xmlmigrate()
 sub show_compiler_gui()
    {
    my $self=shift;
-   use Tk;
-   use Tk::NoteBook;
-   use Tk::BrowseEntry;
-   #
+   
+   eval "use Tk;"; $self->missing_package('Tk') if $@;   
+   eval "use Tk::NoteBook;"; $self->missing_package('Tk::NoteBook') if $@;
+   eval "use Tk::BrowseEntry;"; $self->missing_package('Tk::BrowseEntry') if $@;
+   
    #
    # Notes:
    # ------
@@ -2486,10 +2487,12 @@ GUI functions.
 sub show_tools_gui()
    {
    my $self=shift;
-   use Tk;
-   use Tk::NoteBook;
-   use Tk::BrowseEntry;
-   use Tk::DialogBox;
+
+   eval "use Tk;"; $self->missing_package('Tk') if $@;   
+   eval "use Tk::NoteBook;"; $self->missing_package('Tk::NoteBook') if $@;
+   eval "use Tk::BrowseEntry;"; $self->missing_package('Tk::BrowseEntry') if $@;
+   eval "use Tk::DialogBox;"; $self->missing_package('Tk::DialogBox') if $@;
+
    # Notes:
    # ------
    #
