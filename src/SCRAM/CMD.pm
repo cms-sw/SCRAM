@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.43 2005/11/07 10:02:57 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.44 2005/11/08 13:28:29 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -2751,14 +2751,11 @@ sub show_tools_gui()
    MainLoop();
    }
 
-
 sub dbghook_()
    {
    my $self=shift;
    local (@ARGV) = @_;
-
-   $self->runtimebuildenv_();
-
+   return 0;
    }
 
 =item   C<runtimebuildenv_()>
@@ -2786,7 +2783,7 @@ sub runtimebuildenv_()
 	 SETSTRING => sub { return "$_[0]" }
 	 }
       };
-
+   
    # We need to process ourself. Check to see if tool "self" is
    # defined and if so, process it first.
    my $rawselected = $self->toolmanager()->selected();
