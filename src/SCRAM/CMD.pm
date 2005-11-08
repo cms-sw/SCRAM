@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.42 2005/10/26 17:06:21 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.43 2005/11/07 10:02:57 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -800,22 +800,24 @@ Compile the source code in the current project area.
 sub build()
    {
    my $self=shift;
-   # Set the runtime environment. The environments are set in %ENV
-   $self->runtimebuildenv_();
-   
+   # Add config directory to @INC so that custom plugin packages can be used:
    unshift @INC, $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};
+   
    # The cache files:
    my $toolcache=$ENV{LOCALTOP}."/.SCRAM/".$ENV{SCRAM_ARCH}."/ToolCache.db";
    my $dircache=$ENV{LOCALTOP}."/.SCRAM/DirCache.db";
    my $builddatastore=$ENV{LOCALTOP}."/.SCRAM/".$ENV{SCRAM_ARCH}."/ProjectCache.db";
+
+   # The directories:
+   my $workingdir=$ENV{LOCALTOP}."/".$ENV{SCRAM_INTwork};
+   my $configbuildfiledir=$ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};
+
    # Default mode for graphing is package-level:
    my $graphmode||='PACKAGE';
    my $fast=0;
-   my $workingdir=$ENV{LOCALTOP}."/".$ENV{SCRAM_INTwork};
    my $makefilestatus=0;
    my ($packagebuilder,$dataposition,$buildstoreobject);
    my $verbose=0;
-   my $configbuildfiledir=$ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};
 
    # Getopt variables:
    my %opts = ( WRITE_GRAPHS => 0, # No graphs produced by default;
@@ -842,8 +844,11 @@ sub build()
       }
    else
       {
-      # Check to see if we are in a local project area:
+      # Check to see if we are in a local project area, then set the
+      # runtime environment. The environments are set in %ENV:
       $self->checklocal();
+      $self->runtimebuildenv_();
+      
       # Set location variables:
       use Cwd;
       my $current_dir = cwd();
