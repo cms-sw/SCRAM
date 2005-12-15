@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.44 2005/11/08 13:28:29 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.45 2005/11/08 15:49:05 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -2754,7 +2754,88 @@ sub show_tools_gui()
 sub dbghook_()
    {
    my $self=shift;
-   local (@ARGV) = @_;
+   my $areaname="";
+   my ($bootstrapfile,$installarea,$toolconf)=@_;
+
+
+#    use URL::URLcache;
+#    use SCRAM::AutoToolSetup;
+#    use BuildSystem::ToolManager;
+#    use BuildSystem::Requirements;
+   use Configuration::Project;
+#    use ActiveDoc::ActiveStore;
+
+   # Set up a cache (old-style, for URLs):
+   #my $globalcache = URL::URLcache->new($ENV{HOME}."/.scramrc/globalcache");
+   use Cwd;
+
+   my $bootfile=cwd()."/boot.xml";
+   if ( ! -f $bootfile )
+      {
+      print "Cannot read: $bootfile.","\n";
+      exit(1);
+      }
+   my $globalcache="";
+   # Set up the bootstrapper:
+   my $pbs=Configuration::Project->new($globalcache, $bootfile);
+   $pbs->boot($bootfile);
+#   my $area=$bs->boot($bootstrapfile, $installarea);
+
+#    $area->archname($ENV{'SCRAM_ARCH'});
+
+#    my $name=$area->location();
+#    my $doc=$area->requirementsdoc();
+#    my $cache=$area->cache();
+#    my $db=$area->objectstore();
+#    my $astore=ActiveDoc::ActiveStore->new($db, $cache);
+#    my $req = BuildSystem::Requirements->new($astore, "file:".$doc, 
+# 			$ENV{SCRAM_ARCH});
+
+#    $area->toolboxversion($req->configversion());
+
+#    # Add ToolManager object to store all tool info:
+#    my $toolmanager = BuildSystem::ToolManager->new($area, $ENV{SCRAM_ARCH});
+
+#    # Tell the Requirements class that there's a ToolManager to use:
+#    $req->toolmanager($toolmanager);
+
+#    # download the tools:
+#    $req->download();
+
+#    # Need an autotoolssetup object:
+#    $ENV{'SCRAM_SITENAME'} = $area->sitename();
+#    $ENV{'SCRAM_PROJECTDIR'} = $area->location();
+#    $::lookupdb = SCRAM::AutoToolSetup->new($toolconf);   
+   
+#    # Now run the full setup for the area:
+#    print "\n","Using SCRAM toolbox version ",$area->toolboxversion(),"\n\n";
+   
+#    # Now set up selected tools:
+#    print "Setting up tools in project area","\n";
+#    print "------------------------------------------------","\n";
+#    print "\n";
+   
+#    $toolmanager->setupalltools($area->location(),1);
+
+#    # Read the top-level BuildFile and create the required storage dirs. Do
+#    # this before setting up self:
+#    $self->create_productdirs($area->location());
+      
+#    # Now setup SELF:
+#    $toolmanager->setupself($area->location());
+
+#    # New tm's are not clones:
+#    $toolmanager->cloned_tm(0);
+   
+#    # Write the cached info:
+#    $toolmanager->writecache();
+#    # Save the area info (toolbox version):
+#    $area->save();
+
+#    print "\n";
+#    print ">> Installation Located at: ".$area->location()." <<\n\n";
+
+   # Return nice value:
    return 0;
    }
 
