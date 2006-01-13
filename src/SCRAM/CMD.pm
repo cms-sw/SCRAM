@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.45 2005/11/08 15:49:05 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.46 2005/12/15 16:38:11 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -2754,32 +2754,24 @@ sub show_tools_gui()
 sub dbghook_()
    {
    my $self=shift;
-   my $areaname="";
-   my ($bootstrapfile,$installarea,$toolconf)=@_;
+   my ($bootfile,$installarea,$toolconf)=@_;
 
-
-#    use URL::URLcache;
-#    use SCRAM::AutoToolSetup;
-#    use BuildSystem::ToolManager;
-#    use BuildSystem::Requirements;
+   use Cwd;
+   use URL::URLcache;
    use Configuration::Project;
-#    use ActiveDoc::ActiveStore;
+   use ActiveDoc::ActiveStore;
 
    # Set up a cache (old-style, for URLs):
-   #my $globalcache = URL::URLcache->new($ENV{HOME}."/.scramrc/globalcache");
-   use Cwd;
+   my $globalcache = URL::URLcache->new($ENV{HOME}."/.scramrc/globalcache");
 
-   my $bootfile=cwd()."/boot.xml";
    if ( ! -f $bootfile )
       {
-      print "Cannot read: $bootfile.","\n";
-      exit(1);
+      die "Cannot read $bootfile: $!","\n";
       }
-   my $globalcache="";
+   
    # Set up the bootstrapper:
-   my $pbs=Configuration::Project->new($globalcache, $bootfile);
-   $pbs->boot($bootfile);
-#   my $area=$bs->boot($bootstrapfile, $installarea);
+   my $pbs=Configuration::Project->new($globalcache, $installarea);
+   my $area=$pbs->boot($bootfile);
 
 #    $area->archname($ENV{'SCRAM_ARCH'});
 
