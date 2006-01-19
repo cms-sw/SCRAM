@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.46 2005/12/15 16:38:11 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.47 2006/01/13 18:48:29 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -2754,9 +2754,12 @@ sub show_tools_gui()
 sub dbghook_()
    {
    my $self=shift;
-   my ($bootfile,$installarea,$toolconf)=@_;
+   my ($bootfile,$installdir,$installname,$toolconf)=@_;
 
    use Cwd;
+   # Install in current dir unless a directory arg is given:
+   $installdir||=cwd();
+   
    use URL::URLcache;
    use Configuration::Project;
    use ActiveDoc::ActiveStore;
@@ -2768,14 +2771,22 @@ sub dbghook_()
       {
       die "Cannot read $bootfile: $!","\n";
       }
+
+   # Bootfile has URL type "file:"
+   $bootfile="file:".$bootfile;
    
    # Set up the bootstrapper:
-   my $pbs=Configuration::Project->new($globalcache, $installarea);
-   my $area=$pbs->boot($bootfile);
+   my $pbs=Configuration::Project->new($globalcache, $installdir);
+   # Boot the project, with support for the option to
+   # give an area a different name (but the prooject internally is still
+   # called NAME with version VERSION (from the XML tags)):
+   my $area=$pbs->boot($bootfile,$installname);
 
-#    $area->archname($ENV{'SCRAM_ARCH'});
+   $area->archname($ENV{'SCRAM_ARCH'});
+   my $name=$area->location();
 
-#    my $name=$area->location();
+   print $name,"\n";
+
 #    my $doc=$area->requirementsdoc();
 #    my $cache=$area->cache();
 #    my $db=$area->objectstore();
