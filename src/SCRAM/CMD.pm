@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.47 2006/01/13 18:48:29 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.48 2006/01/19 17:26:29 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -103,12 +103,78 @@ sub arch()
       }
    }
 
+=item   C<toolbox()>
+
+Create and manage toolbox projects.
+sub-commands are create, get and validate.
+   
+=cut
+
+sub toolbox()
+   {
+   my $self=shift;
+   my (@ARGS) = @_;
+   my %opts;
+   my %options = ("help"     => sub { $self->{SCRAM_HELPER}->help('toolbox'); exit(0) },
+		  "create"   => sub { $opts{TOOLBOX_CMD} = 'tbxcreate' },
+		  "get"      => sub { $opts{TOOLBOX_CMD} = 'tbxget' },
+		  "query"    => sub { $opts{TOOLBOX_CMD} = 'tbxquery' },
+		  "validate" => sub { $opts{TOOLBOX_CMD} = 'tbxvalidate' });
+   
+   local @ARGV = @ARGS;
+
+   Getopt::Long::config qw(default no_ignore_case require_order pass_through);
+   
+   if (! Getopt::Long::GetOptions(\%opts, %options))
+      {
+      $self->scramfatal("Error parsing arguments. See \"scram toolbox -help\" for usage info.");
+      }
+   else
+      {
+      my $cmd=$opts{TOOLBOX_CMD};
+      return $self->$cmd(@ARGV);
+      }
+   
+   # Return nice value:
+   return 0;
+   }
+
 =item   C<tool()>
 
 Manage the tools in the current SCRAM project area. Supported
 sub-commands are list, info, tag, remove and template.
    
 =cut
+sub tbxcreate()
+   {
+   my $self=shift;
+   my (@ARGS) = @_;
+   my %opts;
+   my ($tag, $path, $verbose, $interactive);
+   my %options = ("help"    => sub { $self->{SCRAM_HELPER}->help('toolbox'); exit(0) },
+		  "tag=s"   => sub { $tag = $_[1]; });
+   
+   local @ARGV = @ARGS;
+   # Catch the no arguments scenario:
+   die "toolbox create: No arguments given.","\n", if ($#ARGV < 0);
+
+   Getopt::Long::config qw(default no_ignore_case require_order);
+   
+   if (! Getopt::Long::GetOptions(\%opts, %options))
+      {
+      $self->scramfatal("Error parsing arguments. See \"scram toolbox -help\" for usage info.");
+      }
+   else
+      {
+      
+      print "Creating new toolbox with tag ",$tag,"\n";
+      
+      
+      
+      }
+   
+   return 0;
+   }
 
 sub tool()
    {
@@ -1926,6 +1992,7 @@ sub config()
 	 print "SCRAM_PROJECTNAME=",$localarea->name(),"\n";
 	 print "SCRAM_PROJECTVERSION=",$localarea->version(),"\n";      
 	 print "SCRAM_TOOLBOXVERSION=",$localarea->toolboxversion(),"\n";
+#	 print "SCRAM_CONFIGFILENAME=",$localarea->tbxconfigfile(),"\n";
 	 # Perhaps show creation time. Check the timestamp of config/requirements:
 	 print "SCRAM_PROJECT_TIMESTAMP=",$localarea->creationtime(),"\n";
 	 print "SCRAM_PROJECT_RELEASE_TIMESTAMP=",$localarea->creationtime($ENV{RELEASETOP}),"\n"
@@ -1945,6 +2012,7 @@ sub config()
 	 print "SCRAM_PROJECTNAME=",$localarea->name(),"\n";
 	 print "SCRAM_PROJECTVERSION=",$localarea->version(),"\n";      
 	 print "SCRAM_TOOLBOXVERSION=",$localarea->toolboxversion(),"\n";
+#	 print "SCRAM_CONFIGFILENAME=",$localarea->tbxconfigfile(),"\n";
 	 # Perhaps show creation time. Check the timestamp of config/requirements:
 	 print "SCRAM_PROJECT_TIMESTAMP=",$localarea->creationtime(),"\n";
 	 print "SCRAM_PROJECT_RELEASE_TIMESTAMP=",$localarea->creationtime($ENV{RELEASETOP}),"\n"
@@ -2754,65 +2822,62 @@ sub show_tools_gui()
 sub dbghook_()
    {
    my $self=shift;
-   my ($bootfile,$installdir,$installname,$toolconf)=@_;
-
-   use Cwd;
-   # Install in current dir unless a directory arg is given:
-   $installdir||=cwd();
+   my (@ARGS) = @_;
+   my ($bootfile,$installdir,$installname);
+   my %opts;
+   my %options = ("boot=s"	=> sub { $bootfile=$_[1]; },
+		  "dir=s"       => sub { $installdir=$_[1]; },
+		  "name=s"      => sub { $installname=$_[1]; });
    
-   use URL::URLcache;
-   use Configuration::Project;
-   use ActiveDoc::ActiveStore;
-
-   # Set up a cache (old-style, for URLs):
-   my $globalcache = URL::URLcache->new($ENV{HOME}."/.scramrc/globalcache");
-
-   if ( ! -f $bootfile )
+   local @ARGV = @ARGS;
+   my $toolconf;
+   
+   Getopt::Long::config qw(default no_ignore_case require_order);
+   
+   if (! Getopt::Long::GetOptions(\%opts, %options))
       {
-      die "Cannot read $bootfile: $!","\n";
+      $self->scramfatal("Error parsing arguments.");
       }
-
-   # Bootfile has URL type "file:"
-   $bootfile="file:".$bootfile;
+   else
+      {
+      use Cwd;
+      # Install in current dir unless a directory arg is given:
+      $installdir||=cwd();
+      
+      use URL::URLcache;
+      use Configuration::Project;
+      use ActiveDoc::ActiveStore;
+      
+      # Set up a cache (old-style, for URLs):
+      my $globalcache = URL::URLcache->new($ENV{HOME}."/.scramrc/globalcache");
+      
+      if ( ! -f $bootfile )
+	 {
+	 $self->scramfatal("Cannot read $bootfile!");
+	 }
+      
+      # Bootfile has URL type "file:"
+      $bootfile="file:".$bootfile;
+      
+      # Set up the bootstrapper:
+      my $pbs=Configuration::Project->new($globalcache, $installdir);
+      # Boot the project, with support for the option to
+      # give an area a different name (but the prooject internally is still
+      # called NAME with version VERSION (from the XML tags)):
+      my $area=$pbs->boot($bootfile,$installname);
+      
+      $area->archname($ENV{'SCRAM_ARCH'});
+      my $name=$area->location();
+      
+      print $name,"\n";
+      
+      
+      }
    
-   # Set up the bootstrapper:
-   my $pbs=Configuration::Project->new($globalcache, $installdir);
-   # Boot the project, with support for the option to
-   # give an area a different name (but the prooject internally is still
-   # called NAME with version VERSION (from the XML tags)):
-   my $area=$pbs->boot($bootfile,$installname);
+   # Return nice value:
+   return 0;
+   }
 
-   $area->archname($ENV{'SCRAM_ARCH'});
-   my $name=$area->location();
-
-   print $name,"\n";
-
-#    my $doc=$area->requirementsdoc();
-#    my $cache=$area->cache();
-#    my $db=$area->objectstore();
-#    my $astore=ActiveDoc::ActiveStore->new($db, $cache);
-#    my $req = BuildSystem::Requirements->new($astore, "file:".$doc, 
-# 			$ENV{SCRAM_ARCH});
-
-#    $area->toolboxversion($req->configversion());
-
-#    # Add ToolManager object to store all tool info:
-#    my $toolmanager = BuildSystem::ToolManager->new($area, $ENV{SCRAM_ARCH});
-
-#    # Tell the Requirements class that there's a ToolManager to use:
-#    $req->toolmanager($toolmanager);
-
-#    # download the tools:
-#    $req->download();
-
-#    # Need an autotoolssetup object:
-#    $ENV{'SCRAM_SITENAME'} = $area->sitename();
-#    $ENV{'SCRAM_PROJECTDIR'} = $area->location();
-#    $::lookupdb = SCRAM::AutoToolSetup->new($toolconf);   
-   
-#    # Now run the full setup for the area:
-#    print "\n","Using SCRAM toolbox version ",$area->toolboxversion(),"\n\n";
-   
 #    # Now set up selected tools:
 #    print "Setting up tools in project area","\n";
 #    print "------------------------------------------------","\n";
@@ -2839,8 +2904,8 @@ sub dbghook_()
 #    print ">> Installation Located at: ".$area->location()." <<\n\n";
 
    # Return nice value:
-   return 0;
-   }
+#   return 0;
+#   }
 
 =item   C<runtimebuildenv_()>
 
