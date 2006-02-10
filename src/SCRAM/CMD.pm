@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.48 2006/01/19 17:26:29 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.49 2006/02/07 15:06:02 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -2847,10 +2847,9 @@ sub dbghook_()
       use URL::URLcache;
       use Configuration::Project;
       use ActiveDoc::ActiveStore;
-      
       # Set up a cache (old-style, for URLs):
       my $globalcache = URL::URLcache->new($ENV{HOME}."/.scramrc/globalcache");
-      
+
       if ( ! -f $bootfile )
 	 {
 	 $self->scramfatal("Cannot read $bootfile!");
