@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.49 2006/02/07 15:06:02 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.50 2006/02/10 18:10:14 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -2846,7 +2846,7 @@ sub dbghook_()
       
       use URL::URLcache;
       use Configuration::Project;
-      use ActiveDoc::ActiveStore;
+
       # Set up a cache (old-style, for URLs):
       my $globalcache = URL::URLcache->new($ENV{HOME}."/.scramrc/globalcache");
 
@@ -2860,15 +2860,31 @@ sub dbghook_()
       
       # Set up the bootstrapper:
       my $pbs=Configuration::Project->new($globalcache, $installdir);
+      
       # Boot the project, with support for the option to
-      # give an area a different name (but the prooject internally is still
+      # give an area a different name (but the project internally is still
       # called NAME with version VERSION (from the XML tags)):
-      my $area=$pbs->boot($bootfile,$installname);
-      
+      my $area=$pbs->boot($bootfile,$installname);      
+
+      # Handle the configuration:
+      print "- Using configuration version ",$area->configuration()->version(),"\n";
+      print "- Taking configuration URL ",$area->configuration()->url(),"\n";
+      print "- Taking configuration filename as ",$area->configuration()->configfilename(),"\n";
+          
+      # Set the architecture:
       $area->archname($ENV{'SCRAM_ARCH'});
-      my $name=$area->location();
+
+      # Save the area info:
+      $area->save();
+
+      # Configure the externals required for the area:
+      $area->configure();
       
-      print $name,"\n";
+      print "\n";
+      print ">> Installation Located at: ".$area->location()." <<\n\n";
+      
+      # Return nice value:
+      return 0;
       
       
       }
