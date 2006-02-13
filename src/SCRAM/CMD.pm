@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.50 2006/02/10 18:10:14 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.51 2006/02/13 17:29:25 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -150,9 +150,10 @@ sub tbxcreate()
    my $self=shift;
    my (@ARGS) = @_;
    my %opts;
-   my ($tag, $path, $verbose, $interactive);
+   my ($tbbootfile, $tag, $path, $verbose, $interactive);
    my %options = ("help"    => sub { $self->{SCRAM_HELPER}->help('toolbox'); exit(0) },
-		  "tag=s"   => sub { $tag = $_[1]; });
+		  "tag=s"   => sub { $tag = $_[1]; },
+		  "boot=s"  => sub { $tbbootfile = "file:".$_[1] });
    
    local @ARGV = @ARGS;
    # Catch the no arguments scenario:
@@ -166,10 +167,26 @@ sub tbxcreate()
       }
    else
       {
+      # Default tag if none given:
+      $tag ||= 'HEAD';
       
       print "Creating new toolbox with tag ",$tag,"\n";
-      
-      
+      # So what is supposed to happen when we create a toolbox project?
+
+      my $tbxbasedir=$path||=$ENV{SCRAM_TOOLBOX_HOME};
+      print "Using $tbxbasedir as base toolbox installation path","\n";
+
+      # Presumably we need to have some kind of document to parse (class Configuration::Configuration)
+      use URL::URLcache;
+      # Set up a cache (old-style, for URLs):
+      my $globalcache = URL::URLcache->new($ENV{HOME}."/.scramrc/globalcache");
+
+      use Configuration::Configuration;
+
+      my $configuration = Configuration::Configuration->new($globalcache);
+      $configuration->create_toolbox($tbbootfile);
+
+
       
       }
    
@@ -2874,6 +2891,25 @@ sub dbghook_()
       # Set the architecture:
       $area->archname($ENV{'SCRAM_ARCH'});
 
+#
+#    $toolmanager->setupalltools($area->location(),1);
+#
+#    # Read the top-level BuildFile and create the required storage dirs. Do
+#    # this before setting up self:
+#    $self->create_productdirs($area->location());
+#      
+#    # Now setup SELF:
+#    $toolmanager->setupself($area->location());
+#
+#    # New tm's are not clones:
+#    $toolmanager->cloned_tm(0);
+#   
+#    # Write the cached info:
+#    $toolmanager->writecache();
+#    # Save the area info (toolbox version):
+#    $area->save();
+#
+
       # Save the area info:
       $area->save();
 
@@ -2892,35 +2928,6 @@ sub dbghook_()
    # Return nice value:
    return 0;
    }
-
-#    # Now set up selected tools:
-#    print "Setting up tools in project area","\n";
-#    print "------------------------------------------------","\n";
-#    print "\n";
-   
-#    $toolmanager->setupalltools($area->location(),1);
-
-#    # Read the top-level BuildFile and create the required storage dirs. Do
-#    # this before setting up self:
-#    $self->create_productdirs($area->location());
-      
-#    # Now setup SELF:
-#    $toolmanager->setupself($area->location());
-
-#    # New tm's are not clones:
-#    $toolmanager->cloned_tm(0);
-   
-#    # Write the cached info:
-#    $toolmanager->writecache();
-#    # Save the area info (toolbox version):
-#    $area->save();
-
-#    print "\n";
-#    print ">> Installation Located at: ".$area->location()." <<\n\n";
-
-   # Return nice value:
-#   return 0;
-#   }
 
 =item   C<runtimebuildenv_()>
 
