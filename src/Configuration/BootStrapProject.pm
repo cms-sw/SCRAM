@@ -215,7 +215,7 @@ sub ReqDoc_start {
 
 	my ($filename,$fullurl);
 	if ( exists $$hashref{'url'} ) {
-	  # -- download into our cache
+	# -- download into our cache
 	 ($fullurl,$filename)=$self->{switch}->urlget($$hashref{'url'});
 	}
 	else {
