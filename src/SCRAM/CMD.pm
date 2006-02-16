@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.51 2006/02/13 17:29:25 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.52 2006/02/13 22:43:37 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -145,17 +145,21 @@ Manage the tools in the current SCRAM project area. Supported
 sub-commands are list, info, tag, remove and template.
    
 =cut
+   
 sub tbxcreate()
    {
    my $self=shift;
    my (@ARGS) = @_;
    my %opts;
-   my ($tbbootfile, $tag, $path, $verbose, $interactive);
+   my ($tbbootfile, $tag, $installdir, $installname, $verbose, $interactive);
    my %options = ("help"    => sub { $self->{SCRAM_HELPER}->help('toolbox'); exit(0) },
 		  "tag=s"   => sub { $tag = $_[1]; },
+		  "dir=s"   => sub { $installdir = $_[1]; },
+		  "name=s"  => sub { $installname = $_[1]; },
 		  "boot=s"  => sub { $tbbootfile = "file:".$_[1] });
    
    local @ARGV = @ARGS;
+   
    # Catch the no arguments scenario:
    die "toolbox create: No arguments given.","\n", if ($#ARGV < 0);
 
@@ -168,31 +172,33 @@ sub tbxcreate()
    else
       {
       # Default tag if none given:
-      $tag ||= 'HEAD';
-      
-      print "Creating new toolbox with tag ",$tag,"\n";
-      # So what is supposed to happen when we create a toolbox project?
+      $tag ||= 'HEAD';     
+      my $tbxbasedir=$installdir||=$ENV{SCRAM_TOOLBOX_HOME};
 
-      my $tbxbasedir=$path||=$ENV{SCRAM_TOOLBOX_HOME};
-      print "Using $tbxbasedir as base toolbox installation path","\n";
-
-      # Presumably we need to have some kind of document to parse (class Configuration::Configuration)
       use URL::URLcache;
       # Set up a cache (old-style, for URLs):
       my $globalcache = URL::URLcache->new($ENV{HOME}."/.scramrc/globalcache");
 
       use Configuration::Configuration;
+      use Configuration::TBProject;
+      my $toolbox = Configuration::TBProject->new($globalcache, $tbxbasedir);
+      # Parse the boot file for the toolbox:
+      my $toolbox_area = $toolbox->boot($tbbootfile, $installname);
+      # Set the architecture:
+      $toolbox_area->archname($ENV{'SCRAM_ARCH'});
+      $toolbox_area->is_toolbox(1);
+      $toolbox_area->tbxconfigfile($toolbox->configfilename_());
+      # Save the area info:
+      $toolbox_area->save();
 
-      my $configuration = Configuration::Configuration->new($globalcache);
-      $configuration->create_toolbox($tbbootfile);
-
-
+      print "\n";
+      print ">> Toolbox version ".$toolbox->version(). " installed at: ".$toolbox_area->location()." <<\n\n";
       
+      # Return nice value:
+      return 0;      
       }
-   
-   return 0;
    }
-
+ 
 sub tool()
    {
    my $self=shift;
