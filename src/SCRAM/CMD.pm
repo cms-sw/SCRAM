@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.52 2006/02/13 22:43:37 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.53 2006/02/16 15:45:38 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1106,6 +1106,7 @@ sub project()
    my %opts = (
 	       SCRAM_INSTALL_DIR => 0,
 	       SCRAM_INSTALL_NAME => 0,
+	       SCRAM_BOOT_XML => 0,
 	       SCRAM_TOOLCONF_NAME => 0,
 	       SCRAM_UPDATE_AREA => 0,
 	       SCRAM_BOOTSTRAPFILE_NAME => 0
@@ -1121,6 +1122,7 @@ sub project()
    my %options =
       ("help"   => sub { $self->{SCRAM_HELPER}->help('project'); exit(0) },
        "dir=s"  => sub { $opts{SCRAM_INSTALL_DIR} = 1; $installdir = $_[1] },
+       "xml"    => sub { $opts{SCRAM_BOOT_XML} = 1},
        "name=s" => sub { $opts{SCRAM_INSTALL_NAME} = 1; $installname = $_[1] },
        "file=s" => sub { $opts{SCRAM_TOOLCONF_NAME} = 1; $toolconf = $_[1] },
        "template" => sub { $self->project_template_copy(); exit(0) },
@@ -1150,19 +1152,19 @@ sub project()
 	 $self->checklocal();
 	 $self->update_project_area($installdir, $projectversion);
 	 }
+      elsif ($opts{SCRAM_BOOT_XML} && $opts{SCRAM_BOOTSTRAPFILE_NAME})
+	 {
+	 # Use the XML based boot mechanism:
+	 $self->bootxml($bootstrapfile, $installdir, $installname);
+	 }
       elsif ($opts{SCRAM_BOOTSTRAPFILE_NAME})
 	 {
-	 print "Bootstrapping a new project from ",$bootfile,"\n",if ($ENV{SCRAM_DEBUG});
-	 print "NB: The -name option is not supported when booting a new project from scratch!","\n",
-	 if ($opts{SCRAM_INSTALL_NAME});	 
-	 print "\n";
 	 $self->bootnewproject($bootstrapfile,$installdir,$toolconf);
 	 }
       else
 	 {
 	 my $projectname = shift(@ARGV);
-	 my $projectversion = shift(@ARGV);
-	 
+	 my $projectversion = shift(@ARGV);	 
 	 $self->bootfromrelease($projectname,$projectversion,$installdir,$installname,$toolconf);
 	 }     
       }
@@ -1310,6 +1312,70 @@ sub bootnewproject()
    # Save the area info (toolbox version):
    $area->save();
 
+   print "\n";
+   print ">> Installation Located at: ".$area->location()." <<\n\n";
+
+   # Return nice value:
+   return 0;
+   }
+
+sub bootxml()
+   {
+   my $self=shift;
+   my ($bootfile,$installdir,$installname)=@_;
+   my $toolconf;
+   
+   use Cwd;
+   # Install in current dir unless a directory arg is given:
+   $installdir||=cwd();
+   
+   use URL::URLcache;
+   use Configuration::Project;
+   
+   # Set up a cache (old-style, for URLs):
+   my $globalcache = URL::URLcache->new($ENV{HOME}."/.scramrc/globalcache");
+      
+   # Set up the bootstrapper:
+   my $pbs=Configuration::Project->new($globalcache, $installdir);
+   
+   # Boot the project, with support for the option to
+   # give an area a different name (but the project internally is still
+   # called NAME with version VERSION (from the XML tags)):
+   my $area=$pbs->boot($bootfile,$installname);      
+   
+   # Handle the configuration:
+   print "- Using configuration version ",$area->configuration()->version(),"\n";
+   print "- Taking configuration URL ",$area->configuration()->url(),"\n";
+   print "- Taking configuration filename as ",$area->configuration()->configfilename(),"\n";
+   
+   # Set the architecture:
+   $area->archname($ENV{'SCRAM_ARCH'});
+   
+#
+#    $toolmanager->setupalltools($area->location(),1);
+#
+#    # Read the top-level BuildFile and create the required storage dirs. Do
+#    # this before setting up self:
+#    $self->create_productdirs($area->location());
+#      
+#    # Now setup SELF:
+#    $toolmanager->setupself($area->location());
+#
+#    # New tm's are not clones:
+#    $toolmanager->cloned_tm(0);
+#   
+#    # Write the cached info:
+#    $toolmanager->writecache();
+#    # Save the area info (toolbox version):
+#    $area->save();
+#
+   
+   # Save the area info:
+   $area->save();
+   
+   # Configure the externals required for the area:
+   $area->configure();
+   
    print "\n";
    print ">> Installation Located at: ".$area->location()." <<\n\n";
 
@@ -2848,10 +2914,7 @@ sub dbghook_()
    my (@ARGS) = @_;
    my ($bootfile,$installdir,$installname);
    my %opts;
-   my %options = ("boot=s"	=> sub { $bootfile=$_[1]; },
-		  "dir=s"       => sub { $installdir=$_[1]; },
-		  "name=s"      => sub { $installname=$_[1]; });
-   
+   my %options = ("file=s" => sub { $toolfile=$_[1]; });   
    local @ARGV = @ARGS;
    my $toolconf;
    
@@ -2868,67 +2931,34 @@ sub dbghook_()
       $installdir||=cwd();
       
       use URL::URLcache;
-      use Configuration::Project;
-
+      
       # Set up a cache (old-style, for URLs):
       my $globalcache = URL::URLcache->new($ENV{HOME}."/.scramrc/globalcache");
 
-      if ( ! -f $bootfile )
+      if ( ! -f $toolfile )
 	 {
-	 $self->scramfatal("Cannot read $bootfile!");
+	 $self->scramfatal("Cannot read $toolfile!");
 	 }
-      
+
+      print "Parsing ",$toolfile,"\n";
+
       # Bootfile has URL type "file:"
-      $bootfile="file:".$bootfile;
+#      $toolfile="file:".$toolfile;
+
+      use BuildSystem::External;
+
+      # The input args for the tool to set up (and its' version):
+      my ($wantedtool,$wantedversion)=@ARGV;
+      die "SCRAM: No tool name or version supplied.","\n", if (!$wantedtool || !$wantedversion);
       
-      # Set up the bootstrapper:
-      my $pbs=Configuration::Project->new($globalcache, $installdir);
+      my $xmltooldoc = BuildSystem::External->new();
+      $xmltooldoc->parse($toolfile);
       
-      # Boot the project, with support for the option to
-      # give an area a different name (but the project internally is still
-      # called NAME with version VERSION (from the XML tags)):
-      my $area=$pbs->boot($bootfile,$installname);      
-
-      # Handle the configuration:
-      print "- Using configuration version ",$area->configuration()->version(),"\n";
-      print "- Taking configuration URL ",$area->configuration()->url(),"\n";
-      print "- Taking configuration filename as ",$area->configuration()->configfilename(),"\n";
-          
-      # Set the architecture:
-      $area->archname($ENV{'SCRAM_ARCH'});
-
-#
-#    $toolmanager->setupalltools($area->location(),1);
-#
-#    # Read the top-level BuildFile and create the required storage dirs. Do
-#    # this before setting up self:
-#    $self->create_productdirs($area->location());
-#      
-#    # Now setup SELF:
-#    $toolmanager->setupself($area->location());
-#
-#    # New tm's are not clones:
-#    $toolmanager->cloned_tm(0);
-#   
-#    # Write the cached info:
-#    $toolmanager->writecache();
-#    # Save the area info (toolbox version):
-#    $area->save();
-#
-
-      # Save the area info:
-      $area->save();
-
-      # Configure the externals required for the area:
-      $area->configure();
-      
-      print "\n";
-      print ">> Installation Located at: ".$area->location()." <<\n\n";
+      use Data::Dumper;
+#      print Dumper($xmltooldoc->gettool($wantedtool, $wantedversion));
       
       # Return nice value:
-      return 0;
-      
-      
+      return 0;           
       }
    
    # Return nice value:
