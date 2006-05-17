@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.12 2005/07/20 13:33:48 sashby Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.13 2005/10/07 16:05:44 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -150,8 +150,18 @@ sub setupalltools()
 		     {
 		     use Cache::CacheUtilities;
 		     my $satoolmanager=&Cache::CacheUtilities::read($sa->toolcachename());
-		     # Copy needed content from toolmanager for scram-managed project:
-		     $self->inheritcontent($satoolmanager);
+		     # Copy needed content from toolmanager for scram-managed project only
+		     # if the projects have compatible configurations (compare first set of
+		     # digits):
+		     if ($self->check_compatibility($satoolmanager))
+			{
+			print "DEBUG: $pname and current project have compatible configurations.\n";
+			$self->inheritcontent($satoolmanager);
+			}
+		     else
+			{			
+			print "DEBUG: $pname and current project do NOT have compatible configurations. Skipping...\n";
+			}
 		     }
 		  }
 	       }
@@ -619,6 +629,33 @@ sub updatetool()
       {
       print "WARNING: No entry in cache for ".$name.". Not making any updates.\n";
       }
+   }
+
+sub check_compatibility()
+   {
+   my $self=shift;
+   my ($itoolmgr)=@_;
+   # Get the version of the toolmanager. If the project fails to return a version
+   # string we return 0 for no compatibility (in which case, all tools will be set
+   # up in the traditional way):
+   my $itm_configversion = $itoolmgr->configversion();
+   if ($itm_configversion)
+      {
+      # The configurations won't be identical. We must compare the digits:
+      my ($numeric_version) = ($itm_configversion =~ /[a-zA-Z]*\_([0-9a-z]*).*?/);
+      my $current_configversion = $self->configversion();
+      my ($current_numeric_version) = ($current_configversion =~ /[a-zA-Z]*\_([0-9a-z]*).*?/);
+      ($current_numeric_version == $numeric_version) && return 1; # OK, compatible;
+      }
+   # Project does not define configuration version so just return:
+   return 0;
+   }
+
+sub configversion()
+   {
+   my $self=shift;
+   @_ ? $self->{CONFIGVERSION} = shift
+      : $self->{CONFIGVERSION};
    }
 
 1;

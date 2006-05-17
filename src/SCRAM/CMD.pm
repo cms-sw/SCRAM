@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.54 2006/05/09 09:42:57 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.55 2006/05/17 09:53:07 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1279,6 +1279,9 @@ sub bootnewproject()
    # Tell the Requirements class that there's a ToolManager to use:
    $req->toolmanager($toolmanager);
 
+   # Add the configuration version to the tool manager:
+   $toolmanager->configversion($req->configversion());
+   
    # download the tools:
    $req->download();
 

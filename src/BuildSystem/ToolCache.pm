@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-28 10:14:08+0100
-# Revision: $Id: ToolCache.pm,v 1.1.2.6 2004/11/23 13:17:16 sashby Exp $ 
+# Revision: $Id: ToolCache.pm,v 1.2 2004/12/10 13:41:37 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -144,7 +144,7 @@ sub inheritcontent()
 
    my $tmpselected = $externaltm->selected();
    
-   # We add the downloaded SELECTED entries to our existsing SELECTED data
+   # We add the downloaded SELECTED entries to our existing SELECTED data
    # in the same order as they already appear:
    foreach my $entry ( sort { %{$tmpselected}->{$a}
 			      <=> %{$tmpselected}->{$b}}
