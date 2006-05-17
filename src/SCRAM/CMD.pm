@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.53 2006/02/16 15:45:38 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.54 2006/05/09 09:42:57 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1409,10 +1409,13 @@ sub update_project_area()
       if ($p->[0] eq $self->projectname() && $p->[1] ne $self->projectversion())
 	 {
 	 my $parea=$self->scramfunctions()->scramprojectdb()->getarea($p->[0], $p->[1]);
-	 if ($parea->toolboxversion() eq $self->configversion())
-	    {
-	    # Save the corresponding compatible area objects:
-	    $compatvers{$p->[1]} = $parea;
+	 if (defined($parea))
+	    {	    
+	    if ($parea->toolboxversion() eq $self->configversion())
+	       {
+	       # Save the corresponding compatible area objects:
+	       $compatvers{$p->[1]} = $parea;
+	       }
 	    }
 	 }
       }
@@ -1991,9 +1994,14 @@ sub save_environment()
 	 # LOCALTOP and RELEASETOP
 	 next if ($varname eq "_"); # Also, makes no sense to store "_", the last command run:
 	 next if ($varname eq "PWD"); # Also, don't want to override PWD!
+	 next if ($varname eq "PROMPT_COMMAND"); # A feature of bash.
 
 	 if ($varname !~ /^SCRAM_.*/ && $varname !~ /^SCRAM$/ && $varname !~ /^LOCALTOP$|^RELEASETOP$|^LOCALRT$|^BASE_PATH$/)
 	    {
+	    # Check to see if the value of the variable contains quotes. If so, handle them properly:
+	    $varvalue =~ s/\"/\\\"/g;
+	    # Also handle backticks:
+	    $varvalue =~ s/\`/\\\`/g;	    
 	    # Print out var:
 	    print RTFH $shelldata->{EXPORT}." ".'SCRAMRT_'.$varname.$shelldata->{EQUALS}.$shelldata->{QUOTE}($varvalue)."\n";
 	    }

@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.19 2005/11/07 10:02:57 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.20 2006/02/07 15:06:02 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -68,7 +68,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.19 2005/11/07 10:02:57 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.20 2006/02/07 15:06:02 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -796,13 +796,9 @@ sub checkareatype()
    {
    my $self=shift;
    my ($areapath, $message)=@_;
-
-   # Simple check: see if the file cache exists. Of course, this assumes that
-   # something has been built in the area (i.e. that there are some source files):
-   if (! -f $areapath."/.SCRAM/DirCache.db")
-      {
-      $self->scramfatal($message);
-      }
+   # Simple check: see if templates exist:
+   my (@templates)=glob($areapath."/config/*.tmpl");
+   $self->scramfatal($message), unless ($#templates > -1)
    }
 
 =item   C<missing_package($package)>
