@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.12 2005/08/25 17:27:18 sashby Exp $ 
+# Revision: $Id: Helper.pm,v 1.13.2.1 2006/08/31 12:30:04 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -339,10 +339,10 @@ sub project()
    $help.="** Examples **\n";
    $help.="\n";
    $help.="$::bold";
-   $help.="\tscram project XX XX_8_0$::normal\n";
+   $help.="\tscram project XX XX_9_0$::normal\n";
    $help.="\n";
    $help.="$::bold";
-   $help.="\tscram project -b ~/myprojects/projecta/config/BootStrapFile $::normal\n";
+   $help.="\tscram project -b ~/myprojects/projecta/config/boot $::normal\n";
    $help.="\n";
    $help.="\n";
    $help.="Use the \"-f\" flag followed by a valid filename (which MUST end in \".conf\") to\n";
@@ -379,7 +379,7 @@ sub setup()
    $help.="\tthe complete installation process is initiated.\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram setup [-i] [-f tools.conf] [toolname] [[version] [url]]$::normal\n";
+   $help.="\tscram setup [-i] [toolname] [[version] [url]] [-f tools.conf]$::normal\n";
    $help.="\n";			      
    $help.="<projecturl>:\n";
    $help.="\tThe URL of a SCRAM bootstrap file.\n";
@@ -558,14 +558,14 @@ sub xmlmigrate()
    $help.="\tlocation. The normal BuildFile will NOT be removed.\n\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram xmlmigrate$::normal\n";
+   $help.="\tscram xmlmigrate [--file=<path>/BuildFile]$::normal\n";
    $help.="\n";
-   $help.="Also see \"scram build\" command for how to build from XML BuildFiles.\n\n";
-
+   $help.="If the \"--file\" option is used, only the requested BuildFile will be migrated.\n";
+   $help.="\n";
+   $help.="See \"scram build\" command for how to build from XML BuildFiles.\n\n";
+   
    return $help;
    }
-
-
 
 #
 # A template routine for future help commands:

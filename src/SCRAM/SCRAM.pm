@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.20 2006/02/07 15:06:02 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.19.2.1 2006/05/17 09:47:34 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -68,7 +68,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.20 2006/02/07 15:06:02 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.19.2.1 2006/05/17 09:47:34 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -791,7 +791,7 @@ sub checklocal()
 Check that the current area is a SCRAM Version 1.0 series project area and continue or exit otherwise.
 
 =cut
-
+   
 sub checkareatype()
    {
    my $self=shift;

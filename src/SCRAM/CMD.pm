@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.55 2006/05/17 09:53:07 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.56 2006/05/17 12:21:57 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -907,7 +907,8 @@ sub build()
    my $makefilestatus=0;
    my ($packagebuilder,$dataposition,$buildstoreobject);
    my $verbose=0;
-
+   my $trap_flag=0;
+   
    # Getopt variables:
    my %opts = ( WRITE_GRAPHS => 0, # No graphs produced by default;
 		SCRAM_TEST => 0 ); # test mode: don't run make;
@@ -937,13 +938,13 @@ sub build()
       # runtime environment. The environments are set in %ENV:
       $self->checklocal();
       $self->runtimebuildenv_();
-      
+      $self->create_productstores($ENV{LOCALTOP});
       # Set location variables:
       use Cwd;
       my $current_dir = cwd();
       
       # Set THISDIR. If we have a full match on LOCALTOP, set THISDIR to src:
-      ($ENV{THISDIR}) = ($current_dir =~ m|^$ENV{LOCALTOP}/(.*)$|);
+      ($ENV{THISDIR}) = ($current_dir =~ m|^\Q$ENV{LOCALTOP}\E/(.*)$|);
       if ($ENV{THISDIR} eq '')
 	 {
 	 $ENV{THISDIR} = $ENV{SCRAM_SOURCEDIR};
@@ -985,7 +986,7 @@ sub build()
       if ($cacheobject->configstatus() ||    # config out of date; 
 	  $cacheobject->filestatus() ||      # BuildFile out of date
 	  $cacheobject->cachestatus())       # Files added/removed from src dir
-	 { 
+	 {
 	 my $buildfiles = $cacheobject->bf_for_scanning();
 	 my $filecache = $cacheobject->dircache();
 	 # Arrayref pointing to list of changed parent dirs:
@@ -998,17 +999,34 @@ sub build()
 	 use BuildSystem::BuildDataStorage;
 	 $buildstoreobject=BuildSystem::BuildDataStorage->new($configbuildfiledir);
 	 $buildstoreobject->name($builddatastore);
+	 # Install a handler for SIGINT. This is done here becuase this is the block in which
+	 # the cache will be modified and written back. Anywhere in this process, the cache can
+	 # be corrupted if a user hits ctrl-c. By trapping this, we at least force the block to
+	 # continue until the cache is written before exit:
+	 $SIG{INT}  = sub
+	    {
+	    ($trap_flag == 0) ? $trap_flag = 1 : $trap_flag;
+	    print $::bold."\nUser interrupt: Writing cache before exit.\n".$::normal;
+	    };
 	 
 	 if ( -r $builddatastore )
 	    {
-	    print "Reading cached build data","\n";
-	    
+	    print "Reading cached build data","\n";	    
 	    $buildstoreobject=&Cache::CacheUtilities::read($builddatastore);
 	    # Update- check for changed or removed files. Also need to account for removed directories:
-	    $buildstoreobject->init_engine(); # Restart the template engine
+	    if ($buildstoreobject)
+	       {
+	       $buildstoreobject->init_engine(); # Restart the template engine
+	       }
+	    else
+	       {
+	       # Report an error and exit (implies that cache has disappeared):
+	       $self->scramerror("SCRAM: .SCRAM/".$ENV{SCRAM_ARCH}."/ProjectCache.db missing. Use \"-r\".");
+	       exit(1);
+	       }
+
 	    # Set graph mode for the grapher:
 	    $buildstoreobject->grapher($graphmode,$opts{WRITE_GRAPHS});
-
 	    # Run in update mode:
 	    $buildstoreobject->update($changeddirs,
 				      $addeddirs,
@@ -1023,7 +1041,7 @@ sub build()
 	    # Set graph mode for the grapher:
 	    $buildstoreobject->grapher($graphmode,$opts{WRITE_GRAPHS});
 	    # We don't have any build data yet so we need to initialize the object:
-	    $buildstoreobject->populate($cacheobject->paths(), $filecache, $self->toolmanager());	    
+	    $buildstoreobject->populate($cacheobject->paths(), $filecache, $self->toolmanager());
 	    # Do stuff with build cache and data. Iterate over the entire directory structure,
 	    # doing whatever we need to do (collect metadata, for example). The raw data will
 	    # have already been extracted earlier, so the iteration over the directories
@@ -1054,7 +1072,13 @@ sub build()
 	 print "\nUpdating build cache","\n",if ($ENV{SCRAM_DEBUG});
 	 $buildstoreobject->cachestatus(0);
  	 &Cache::CacheUtilities::write($buildstoreobject,$builddatastore);
- 	 
+ 	 # Exit cleanly here if ctrl-c was given:
+	 if ($trap_flag == 1)
+	    {
+	    print $::bold."\nExitting on Ctrl-C.\n\n".$::normal,
+	    exit(0);
+	    }
+	 
 	 # At this point, all the data will have been processed and Makefiles generated.
 	 # So here's where we will run gmake (use -r to turn of implicit rules):
 	 my $returnval = $MAKER->exec($ENV{LOCALTOP}."/".$ENV{SCRAM_INTwork}."/Makefile"),
@@ -1199,6 +1223,10 @@ sub bootfromrelease()
       # Set RELEASETOP:
       $ENV{RELEASETOP} = $relarea->location();
 
+      # Set the var for project name and version:
+      $ENV{SCRAM_PROJECTNAME} = $projectname;
+      $ENV{SCRAM_PROJECTVERSION} = $projectversion;
+
       # Check that the areas are compatible:
       $self->checkareatype($ENV{RELEASETOP},"Project release area SCRAM version mismatch: current is V1, area is V0. Exitting.");      
       print "Checking SCRAM version....","\n";
@@ -1209,7 +1237,7 @@ sub bootfromrelease()
       
       # Read the top-level BuildFile and create the required storage dirs. Do
       # this before setting up self:
-      $self->create_productdirs($area->location());
+      $self->create_productstores($area->location());
       # The lookup db:
       use SCRAM::AutoToolSetup;
 
@@ -1276,6 +1304,9 @@ sub bootnewproject()
    # Add ToolManager object to store all tool info:
    my $toolmanager = BuildSystem::ToolManager->new($area, $ENV{SCRAM_ARCH});
 
+   # Add the configuration version to the tool manager:
+   $toolmanager->configversion($req->configversion());
+   
    # Tell the Requirements class that there's a ToolManager to use:
    $req->toolmanager($toolmanager);
 
@@ -1288,6 +1319,8 @@ sub bootnewproject()
    # Need an autotoolssetup object:
    $ENV{'SCRAM_SITENAME'} = $area->sitename();
    $ENV{'SCRAM_PROJECTDIR'} = $area->location();
+   $ENV{'SCRAM_PROJECTVERSION'} = $area->version();
+   
    $::lookupdb = SCRAM::AutoToolSetup->new($toolconf);   
    
    # Now run the full setup for the area:
@@ -1302,8 +1335,8 @@ sub bootnewproject()
 
    # Read the top-level BuildFile and create the required storage dirs. Do
    # this before setting up self:
-   $self->create_productdirs($area->location());
-      
+   $self->create_productstores($area->location());
+   
    # Now setup SELF:
    $toolmanager->setupself($area->location());
 
@@ -1412,8 +1445,9 @@ sub update_project_area()
       if ($p->[0] eq $self->projectname() && $p->[1] ne $self->projectversion())
 	 {
 	 my $parea=$self->scramfunctions()->scramprojectdb()->getarea($p->[0], $p->[1]);
+
 	 if (defined($parea))
-	    {	    
+	    {
 	    if ($parea->toolboxversion() eq $self->configversion())
 	       {
 	       # Save the corresponding compatible area objects:
@@ -1512,64 +1546,79 @@ sub update_project_area()
       }
    }
 
-=item   C<create_productdirs()>
+=item   C<create_productstores()>
 
 Create all product storage directories defined in the top-level project
 BuildFile (B<config/BuildFile>).
 
 =cut
 
-sub create_productdirs()
+sub create_productstores()
    {
    my $self=shift;
    my ($location) = @_;
    
    use BuildSystem::BuildFile;
-   use Utilities::AddDir;      
+   use File::Path;
+   my $perms=0755;
 
    my $toplevelconf = BuildSystem::BuildFile->new();
    my $tlbf = $location."/".$ENV{SCRAM_CONFIGDIR}."/BuildFile";
    $toplevelconf->parse($tlbf);
-   $ENV{LOCALTOP} = $location;
+   $ENV{LOCALTOP} ||= $location;
    my $stores = $toplevelconf->productstore();
-   
-   print "\nChecking/creating local storage directories","\n";
-   print "\n";
    
    # Iterate over the stores:
    foreach my $H (@$stores)  
       {
       my $storename="";
-      # Probably want the store value to be set to <name/<arch> or <arch>/<name> with
-      # <path> only prepending to this value rather than replacing <name>: FIXME...
       if ($$H{'type'} eq 'arch')
 	 {
 	 if ($$H{'swap'} eq 'true')
 	    {
-	    (exists $$H{'path'}) ? ($storename .= $$H{'path'}."/".$ENV{SCRAM_ARCH})
-	       : ($storename .= $$H{'name'}."/".$ENV{SCRAM_ARCH});
+	    if (exists $$H{'path'})
+	       {
+	       $storename .= $$H{'path'}."/".$$H{'name'}."/".$ENV{SCRAM_ARCH};
+	       mkpath($storename, 0, $perms);
+	       symlink $$H{'path'}."/".$$H{'name'},$$H{'name'};
+	       }
+	    else
+	       {
+	       $storename .= $$H{'name'}."/".$ENV{SCRAM_ARCH};
+	       mkpath($ENV{LOCALTOP}."/".$storename, 0, $perms);
+	       }
 	    }
 	 else
 	    {
-	    (exists $$H{'path'}) ? ($storename .= $ENV{SCRAM_ARCH}."/".$$H{'path'})
-	       : ($storename .= $ENV{SCRAM_ARCH}."/".$$H{'name'});
+	    if (exists $$H{'path'})
+	       {
+	       $storename .= $$H{'path'}."/".$ENV{SCRAM_ARCH}."/".$$H{'name'};
+	       }
+	    else
+	       {
+	       $storename .= $ENV{SCRAM_ARCH}."/".$$H{'name'};
+	       mkpath($ENV{LOCALTOP}."/".$storename, 0, $perms);
+	       }
 	    }
 	 }
       else
 	 {
-	 (exists $$H{'path'}) ? ($storename .= $$H{'path'})
-	    : ($storename .= $$H{'name'});
-	 }
-      
-      # Create the dir:
-      if (! -d "$ENV{LOCALTOP}/$storename")
-	 {
-	 print "Creating directory $ENV{LOCALTOP}/$storename","\n";	 
-	 AddDir::adddir($ENV{LOCALTOP}."/".$storename);
+	 if (exists $$H{'path'})
+	    {
+	    $storename .= $$H{'path'}."/".$$H{'name'};
+	    mkpath($ENV{LOCALTOP}."/".$storename, 0, $perms);
+	    symlink $$H{'path'}."/".$$H{'name'},$$H{'name'};
+	    }
+	 else
+	    {
+	    $storename .= $$H{'name'};
+	    mkpath($ENV{LOCALTOP}."/".$storename, 0, $perms);
+	    }
 	 }
       }
+   
    # Add the source dir:
-   AddDir::adddir($ENV{LOCALTOP}."/".$ENV{SCRAM_SOURCEDIR});
+   mkpath($ENV{LOCALTOP}."/".$ENV{SCRAM_SOURCEDIR},0,$perms);
    }
 
 =item   C<project_template_copy()>
@@ -1667,7 +1716,7 @@ sub setup()
 	 if ($toolname eq 'self')
 	    {
 	    # First, create the productstore directories if they do not already exist:
-	    $self->create_productdirs($self->localarea()->location());	    
+	    $self->create_productstores($self->localarea()->location());	    
 	    $toolmanager->setupself($self->localarea()->location());
 	    }
 	 else
@@ -1684,7 +1733,7 @@ sub setup()
 	 # we are setting up tools for the n'th platform:
 	 if (! -f $self->localarea()->toolcachename())
 	    {
-	    $self->create_productdirs($self->localarea()->location());	    
+	    $self->create_productstores($self->localarea()->location());	    
 	    $toolmanager->setupself($self->localarea()->location());
 	    }
 	 
@@ -2005,6 +2054,7 @@ sub save_environment()
 	    $varvalue =~ s/\"/\\\"/g;
 	    # Also handle backticks:
 	    $varvalue =~ s/\`/\\\`/g;	    
+
 	    # Print out var:
 	    print RTFH $shelldata->{EXPORT}." ".'SCRAMRT_'.$varname.$shelldata->{EQUALS}.$shelldata->{QUOTE}($varvalue)."\n";
 	    }
@@ -2249,16 +2299,20 @@ sub xmlmigrate()
    my $verbose=0;
    my $configbuildfiledir=$ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};
 
+   my $filetoprocess;
+
    # Getopt variables:
-   my %opts = ( WRITE_GRAPHS => 0, # No graphs produced by default;
+   my %opts = ( CONVERT_FILE => 0, # Expect to process all files in the tree by default;
+		WRITE_GRAPHS => 0, # No graphs produced by default;
 		SCRAM_TEST => 0 ); # test mode: don't run make;
    my %options =
-      ("help"     => sub { $self->{SCRAM_HELPER}->help('xmlmigrate'); exit(0) });
+      ("help"       => sub { $self->{SCRAM_HELPER}->help('xmlmigrate'); exit(0) },
+       "file=s" => sub { $filetoprocess=$_[1]; $opts{CONVERT_FILE}=1; });
 
    local (@ARGV) = @_;
    
    # Set the options:
-   Getopt::Long::config qw(default no_ignore_case require_order pass_through);
+   Getopt::Long::config qw(default no_ignore_case require_order);
    
    if (! Getopt::Long::GetOptions(\%opts, %options))
       {
@@ -2266,9 +2320,18 @@ sub xmlmigrate()
       }
    else
       {
+      if ($opts{CONVERT_FILE})
+	 {
+	 print "Going to migrate $filetoprocess to XML syntax","\n";
+	 use BuildSystem::BuildDataStorage;
+	 $buildstoreobject=BuildSystem::BuildDataStorage->new($configbuildfiledir);
+	 $buildstoreobject->scan2xml($filetoprocess);	 
+	 return 0;
+	 }
+      
       # Check to see if we are in a local project area:
       $self->checklocal();
-
+      
       # Set location variables:
       use Cwd;
       my $current_dir = cwd();
