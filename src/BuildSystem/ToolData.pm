@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-21 15:26:07+0100
-# Revision: $Id: ToolData.pm,v 1.6 2005/07/19 15:45:40 sashby Exp $ 
+# Revision: $Id: ToolData.pm,v 1.7.2.2 2006/09/01 10:59:20 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -324,8 +324,9 @@ sub addreleasetoself()
    
    foreach my $libdir (@locallibdirs)
       {
-      # Convert LOCAL to RELEASE top:
-      $libdir =~ s/$ENV{LOCALTOP}/$ENV{RELEASETOP}/g;
+      # Convert LOCAL to RELEASE top, quoting the LOCALTOP
+      # value in case funny characters have been used (e.g. ++):
+      $libdir =~ s/\Q$ENV{LOCALTOP}\E/$ENV{RELEASETOP}/g;
       push(@$relldir, $libdir);
       }
    
@@ -334,8 +335,9 @@ sub addreleasetoself()
    
    foreach my $incdir (@localincdirs)
       {
-      # Convert LOCAL to RELEASE top:
-      $incdir =~ s/$ENV{LOCALTOP}/$ENV{RELEASETOP}/g;
+      # Convert LOCAL to RELEASE top, quoting the LOCALTOP
+      # value in case funny characters have been used (e.g. ++):
+      $incdir =~ s/\Q$ENV{LOCALTOP}\E/$ENV{RELEASETOP}/g;
       push(@$relinc, $incdir);
       }
    
@@ -360,7 +362,7 @@ sub addreleasetoself()
 	    # Process the values for this path:
 	    foreach my $rtpath (@PATHS)
 	       {
-	       $rtpath =~ s/$ENV{LOCALTOP}/$ENV{RELEASETOP}/g;
+	       $rtpath =~ s/\Q$ENV{LOCALTOP}\E/$ENV{RELEASETOP}/g;
 	       push(@$RELPATHS,$rtpath);
 	       }
 	    

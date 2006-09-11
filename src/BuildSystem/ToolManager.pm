@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.13 2005/10/07 16:05:44 sashby Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.13.2.3 2006/09/04 15:17:51 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -155,12 +155,7 @@ sub setupalltools()
 		     # digits):
 		     if ($self->check_compatibility($satoolmanager))
 			{
-			print "DEBUG: $pname and current project have compatible configurations.\n";
 			$self->inheritcontent($satoolmanager);
-			}
-		     else
-			{			
-			print "DEBUG: $pname and current project do NOT have compatible configurations. Skipping...\n";
 			}
 		     }
 		  }
@@ -400,7 +395,7 @@ sub setupself()
    # Process the file "Self" in local config directory. This is used to
    # set all the paths/runtime settings for this project:
    my $filename=$location."/config/Self";
-
+   
    if ( -f $filename )
       {
       print "\n";

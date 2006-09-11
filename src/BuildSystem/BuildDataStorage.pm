@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.12 2005/07/26 15:14:00 sashby Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.13.2.2 2006/09/01 17:56:48 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -603,45 +603,6 @@ sub processbuildfile()
       }
    }
 
-sub create_productstores()
-   {
-   my $self=shift;
-   # This routine will only ever be run for top-level so
-   # datapath can be coded here:
-   my $datapath='src';
-   my $tldata=$self->buildtreeitem($datapath);
-   my $stores=$tldata->rawdata()->productstore();
-
-   # Iterate over the stores:
-   foreach my $H (@$stores)  
-      {
-      my $storename="";
-      # Probably want the store value to be set to <name/<arch> or <arch>/<name> with
-      # <path> only prepending to this value rather than replacing <name>: FIXME...
-      if ($$H{'type'} eq 'arch')
-	 {
-	 if ($$H{'swap'} eq 'true')
-	    {
-	    (exists $$H{'path'}) ? ($storename .= $$H{'path'}."/".$ENV{SCRAM_ARCH})
-	       : ($storename .= $$H{'name'}."/".$ENV{SCRAM_ARCH});
-	    }
-	 else
-	    {
-	    (exists $$H{'path'}) ? ($storename .= $ENV{SCRAM_ARCH}."/".$$H{'path'})
-	       : ($storename .= $ENV{SCRAM_ARCH}."/".$$H{'name'});
-	    }
-	 }
-      else
-	 {
-	 (exists $$H{'path'}) ? ($storename .= $$H{'path'})
-	    : ($storename .= $$H{'name'});
-	 }
-      
-      # Create the dir: FIXME: may need a more portable mkdir?
-      system("mkdir","-p",$ENV{LOCALTOP}."/".$storename);
-      }
-   }
-
 sub populate()
    {
    my $self=shift;
@@ -685,9 +646,6 @@ sub populate()
 	 # Parse the top-level BuildFile. We must do this here
 	 # because we need the ClassPaths. Store as RAWDATA:
 	 $self->scan($buildfile, $datapath);
-	 # At this point, we've scanned the top-level BuildFile so we can
-	 # create the store dirs and setup "self":
-	 $self->create_productstores();
 	 # We need scram project base vars at project-level:
 	 $treeitem->scramprojectbases($self->{SCRAM_PROJECT_BASES});
 	 }
