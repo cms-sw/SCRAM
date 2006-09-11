@@ -730,8 +730,36 @@ sub _SaveEnvFile
    
    undef $fh;
    
+   # Repeat the exercise to save as XML:
+   my $fh=FileHandle->new();
+   open ( $fh, ">".$self->location()."/".$self->{admindir}."/".
+	  "Environment.xml" ) or 
+	  $self->error("Cannot Open Environment.xml file to Save ("
+		       .$self->location().")\n $!"); 
+   print $fh "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n";
+   print $fh "<doc type=\"Configuration::ProjectEnvironment\" version=\"1.0\">\n";
+   print $fh " <environment SCRAM_PROJECTNAME=\"".$self->name()."\"/>\n";
+   print $fh " <environment SCRAM_PROJECTVERSION=\"".$self->version()."\"/>\n";
+   print $fh " <environment SCRAM_CONFIGDIR=\"".$self->configurationdir()."\"/>\n";
+   print $fh " <environment SCRAM_SOURCEDIR=\"".$self->sourcedir()."\"/>\n";
+   print $fh " <environment SCRAM_ProjReqsDoc=\"".$self->{reqdoc}."\"/>\n";
+   print $fh " <environment SCRAM_TOOLBOXVERSION=\"".$self->{toolboxversion}."\"/>\n";
+
+   if ( defined $self->linkarea() )
+      {
+      my $area=$self->linkarea()->location();
+      if ( $area ne "" )
+	 {
+	 print $fh " <environment RELEASETOP=\"".$area."\"/>\n";
+	 }
+      }
+   
+   print $fh "</doc>\n";
+   undef $fh;
+   
    # Set the default permissions (-rw-r--r--):
    chmod $filemode, $self->location()."/".$self->{admindir}."/Environment";
+   chmod $filemode, $self->location()."/".$self->{admindir}."/Environment.xml";
    }
 
 sub _LoadEnvFile
