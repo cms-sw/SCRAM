@@ -36,9 +36,6 @@ require 5.004;
 use ActiveDoc::Switcher;
 use ActiveDoc::TagContainer;
 use ActiveDoc::GroupChecker;
-use Utilities::Verbose;
-
-@ISA=qw(Utilities::Verbose);
 
 sub new
    {
@@ -136,16 +133,12 @@ sub includeparse
 sub addtag
    {
    my $self=shift;
-
    $self->{tags}->addtag(@_);
-   $self->verbose(">> Adding tag ".@_." ");
    }
 
 sub addgrouptags
    {
    my $self=shift;
-   
-   $self->verbose(">> Adding a group tag");
    $self->{tags}->addtag("Group", \&Group_Start,$self, 
 			 "", $self, \&Group_End, $self);
    $self->{tags}->setgrouptag("Group");
@@ -154,8 +147,6 @@ sub addgrouptags
 sub addignoretags
    {
    my $self=shift;
-
-   $self->verbose(">> Adding an IGNORE tag");
    $self->{gc}->exclude("ignore");
    $self->{tags}->addtag("Ignore", \&Ignore_Start, $self,
 			 "",$self, \&Ignore_End,$self);
@@ -166,8 +157,6 @@ sub contexttag
    {
    my $self=shift;
    my $name=shift;
-   
-   $self->verbose("-- contexttag: ".$name." ");
    $self->{tags}->setgrouptag($name);
    }
 
@@ -175,8 +164,6 @@ sub opencontext
    {
    my $self=shift;
    my $name=shift;
-
-   $self->verbose("-- opencontext: ".$name." ");
    $self->{gc}->opencontext($name);
    }
 
@@ -184,8 +171,6 @@ sub closecontext
    {
    my $self=shift;
    my $name=shift;
-
-   $self->verbose("-- closecontext: ".$name." ");
    $self->{gc}->closecontext($name);
    }
 
@@ -193,8 +178,6 @@ sub includecontext
    {
    my $self=shift;
    my $name=shift;
-
-   $self->verbose("-- includecontext : ".$name." ");
    $self->{gc}->unexclude($name);
    $self->{gc}->include($name);
    }
@@ -203,7 +186,6 @@ sub excludecontext
    {
    my $self=shift;
    my $name=shift;
-   $self->verbose("-- excludecontext: ".$name." ");
    $self->{gc}->exclude($name);
    $self->{gc}->uninclude($name);
    }
@@ -211,13 +193,11 @@ sub excludecontext
 sub cleartags
    {
    my $self=shift;
-   $self->verbose(">> Clearing TAGS");
    $self->{tags}->cleartags();
    }
 
 sub tags {
 	 my $self=shift;
-	 $self->verbose("-- tags");
 	 return $self->{tags}->tags();
 }
 
@@ -229,21 +209,15 @@ sub Group_Start
    my $name=shift;
    my $vars=shift;
    my $lastgp;
-
-   $self->verbose(">> Group_Start: ".$name." ");
    $lastgp="group::".$$vars{name};
    $self->{switch}->checkparam($name, 'name');
-   $self->{gc}->opencontext("group::".$$vars{name});
-   
+   $self->{gc}->opencontext("group::".$$vars{name});   
    }
 
 sub Group_End
    {
    my $self=shift;
    my $name=shift;
-   my $lastgp;
-   
-   $self->verbose(">> Group_End: ".$name." ");
    $self->{gc}->closelastcontext("group");
    }
 
@@ -251,16 +225,12 @@ sub Ignore_Start
    {
    my $self=shift;
    my $name=shift;
-   
-   $self->verbose(">> Ignore_Start: ".$name." ");
    $self->{gc}->opencontext("ignore");
    }
 
 sub Ignore_End
    {
    my $self=shift;
-
-   $self->verbose(">> Ignore_End: ".$name." ");
    $self->{gc}->closecontext("ignore");
    }
 
