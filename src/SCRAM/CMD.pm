@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.56 2006/05/17 12:21:57 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.57 2006/09/11 14:49:45 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -103,101 +103,101 @@ sub arch()
       }
    }
 
-=item   C<toolbox()>
+# =item   C<toolbox()>
 
-Create and manage toolbox projects.
-sub-commands are create, get and validate.
+# Create and manage toolbox projects.
+# sub-commands are create, get and validate.
    
-=cut
+# =cut
 
-sub toolbox()
-   {
-   my $self=shift;
-   my (@ARGS) = @_;
-   my %opts;
-   my %options = ("help"     => sub { $self->{SCRAM_HELPER}->help('toolbox'); exit(0) },
-		  "create"   => sub { $opts{TOOLBOX_CMD} = 'tbxcreate' },
-		  "get"      => sub { $opts{TOOLBOX_CMD} = 'tbxget' },
-		  "query"    => sub { $opts{TOOLBOX_CMD} = 'tbxquery' },
-		  "validate" => sub { $opts{TOOLBOX_CMD} = 'tbxvalidate' });
+# sub toolbox()
+#    {
+#    my $self=shift;
+#    my (@ARGS) = @_;
+#    my %opts;
+#    my %options = ("help"     => sub { $self->{SCRAM_HELPER}->help('toolbox'); exit(0) },
+# 		  "create"   => sub { $opts{TOOLBOX_CMD} = 'tbxcreate' },
+# 		  "get"      => sub { $opts{TOOLBOX_CMD} = 'tbxget' },
+# 		  "query"    => sub { $opts{TOOLBOX_CMD} = 'tbxquery' },
+# 		  "validate" => sub { $opts{TOOLBOX_CMD} = 'tbxvalidate' });
    
-   local @ARGV = @ARGS;
+#    local @ARGV = @ARGS;
 
-   Getopt::Long::config qw(default no_ignore_case require_order pass_through);
+#    Getopt::Long::config qw(default no_ignore_case require_order pass_through);
    
-   if (! Getopt::Long::GetOptions(\%opts, %options))
-      {
-      $self->scramfatal("Error parsing arguments. See \"scram toolbox -help\" for usage info.");
-      }
-   else
-      {
-      my $cmd=$opts{TOOLBOX_CMD};
-      return $self->$cmd(@ARGV);
-      }
+#    if (! Getopt::Long::GetOptions(\%opts, %options))
+#       {
+#       $self->scramfatal("Error parsing arguments. See \"scram toolbox -help\" for usage info.");
+#       }
+#    else
+#       {
+#       my $cmd=$opts{TOOLBOX_CMD};
+#       return $self->$cmd(@ARGV);
+#       }
    
-   # Return nice value:
-   return 0;
-   }
+#    # Return nice value:
+#    return 0;
+#    }
 
-=item   C<tool()>
+# =item   C<tool()>
 
-Manage the tools in the current SCRAM project area. Supported
-sub-commands are list, info, tag, remove and template.
+# Manage the tools in the current SCRAM project area. Supported
+# sub-commands are list, info, tag, remove and template.
    
-=cut
+# =cut
    
-sub tbxcreate()
-   {
-   my $self=shift;
-   my (@ARGS) = @_;
-   my %opts;
-   my ($tbbootfile, $tag, $installdir, $installname, $verbose, $interactive);
-   my %options = ("help"    => sub { $self->{SCRAM_HELPER}->help('toolbox'); exit(0) },
-		  "tag=s"   => sub { $tag = $_[1]; },
-		  "dir=s"   => sub { $installdir = $_[1]; },
-		  "name=s"  => sub { $installname = $_[1]; },
-		  "boot=s"  => sub { $tbbootfile = "file:".$_[1] });
+# sub tbxcreate()
+#    {
+#    my $self=shift;
+#    my (@ARGS) = @_;
+#    my %opts;
+#    my ($tbbootfile, $tag, $installdir, $installname, $verbose, $interactive);
+#    my %options = ("help"    => sub { $self->{SCRAM_HELPER}->help('toolbox'); exit(0) },
+# 		  "tag=s"   => sub { $tag = $_[1]; },
+# 		  "dir=s"   => sub { $installdir = $_[1]; },
+# 		  "name=s"  => sub { $installname = $_[1]; },
+# 		  "boot=s"  => sub { $tbbootfile = "file:".$_[1] });
    
-   local @ARGV = @ARGS;
+#    local @ARGV = @ARGS;
    
-   # Catch the no arguments scenario:
-   die "toolbox create: No arguments given.","\n", if ($#ARGV < 0);
+#    # Catch the no arguments scenario:
+#    die "toolbox create: No arguments given.","\n", if ($#ARGV < 0);
 
-   Getopt::Long::config qw(default no_ignore_case require_order);
+#    Getopt::Long::config qw(default no_ignore_case require_order);
    
-   if (! Getopt::Long::GetOptions(\%opts, %options))
-      {
-      $self->scramfatal("Error parsing arguments. See \"scram toolbox -help\" for usage info.");
-      }
-   else
-      {
-      # Default tag if none given:
-      $tag ||= 'HEAD';     
-      my $tbxbasedir=$installdir||=$ENV{SCRAM_TOOLBOX_HOME};
+#    if (! Getopt::Long::GetOptions(\%opts, %options))
+#       {
+#       $self->scramfatal("Error parsing arguments. See \"scram toolbox -help\" for usage info.");
+#       }
+#    else
+#       {
+#       # Default tag if none given:
+#       $tag ||= 'HEAD';     
+#       my $tbxbasedir=$installdir||=$ENV{SCRAM_TOOLBOX_HOME};
 
-      use URL::URLcache;
-      # Set up a cache (old-style, for URLs):
-      my $globalcache = URL::URLcache->new($ENV{HOME}."/.scramrc/globalcache");
+#       use URL::URLcache;
+#       # Set up a cache (old-style, for URLs):
+#       my $globalcache = URL::URLcache->new($ENV{HOME}."/.scramrc/globalcache");
 
-      use Configuration::Configuration;
-      use Configuration::TBProject;
-      my $toolbox = Configuration::TBProject->new($globalcache, $tbxbasedir);
-      # Parse the boot file for the toolbox:
-      my $toolbox_area = $toolbox->boot($tbbootfile, $installname);
-      # Set the architecture:
-      $toolbox_area->archname($ENV{'SCRAM_ARCH'});
-      $toolbox_area->is_toolbox(1);
-      $toolbox_area->tbxconfigfile($toolbox->configfilename_());
-      # Save the area info:
-      $toolbox_area->save();
+#       use Configuration::Configuration;
+#       use Configuration::TBProject;
+#       my $toolbox = Configuration::TBProject->new($globalcache, $tbxbasedir);
+#       # Parse the boot file for the toolbox:
+#       my $toolbox_area = $toolbox->boot($tbbootfile, $installname);
+#       # Set the architecture:
+#       $toolbox_area->archname($ENV{'SCRAM_ARCH'});
+#       $toolbox_area->is_toolbox(1);
+#       $toolbox_area->tbxconfigfile($toolbox->configfilename_());
+#       # Save the area info:
+#       $toolbox_area->save();
 
-      print "\n";
-      print ">> Toolbox version ".$toolbox->version(). " installed at: ".$toolbox_area->location()." <<\n\n";
+#       print "\n";
+#       print ">> Toolbox version ".$toolbox->version(). " installed at: ".$toolbox_area->location()." <<\n\n";
       
-      # Return nice value:
-      return 0;      
-      }
-   }
+#       # Return nice value:
+#       return 0;      
+#       }
+#    }
  
 sub tool()
    {
@@ -218,6 +218,12 @@ sub tool()
    else
       {
       my $cmd = shift(@ARGV);
+
+      if (!$cmd)
+	 {
+	 $self->scramfatal("Error parsing arguments. See \"scram tool -help\" for usage info.");
+	 }
+      
       $cmd =~ tr/A-Z/a-z/; # Make sure we have lower case
       my $status=1;
       
@@ -2986,55 +2992,7 @@ sub dbghook_()
    {
    my $self=shift;
    my (@ARGS) = @_;
-   my ($bootfile,$installdir,$installname);
-   my %opts;
-   my %options = ("file=s" => sub { $toolfile=$_[1]; });   
    local @ARGV = @ARGS;
-   my $toolconf;
-   
-   Getopt::Long::config qw(default no_ignore_case require_order);
-   
-   if (! Getopt::Long::GetOptions(\%opts, %options))
-      {
-      $self->scramfatal("Error parsing arguments.");
-      }
-   else
-      {
-      use Cwd;
-      # Install in current dir unless a directory arg is given:
-      $installdir||=cwd();
-      
-      use URL::URLcache;
-      
-      # Set up a cache (old-style, for URLs):
-      my $globalcache = URL::URLcache->new($ENV{HOME}."/.scramrc/globalcache");
-
-      if ( ! -f $toolfile )
-	 {
-	 $self->scramfatal("Cannot read $toolfile!");
-	 }
-
-      print "Parsing ",$toolfile,"\n";
-
-      # Bootfile has URL type "file:"
-#      $toolfile="file:".$toolfile;
-
-      use BuildSystem::External;
-
-      # The input args for the tool to set up (and its' version):
-      my ($wantedtool,$wantedversion)=@ARGV;
-      die "SCRAM: No tool name or version supplied.","\n", if (!$wantedtool || !$wantedversion);
-      
-      my $xmltooldoc = BuildSystem::External->new();
-      $xmltooldoc->parse($toolfile);
-      
-      use Data::Dumper;
-#      print Dumper($xmltooldoc->gettool($wantedtool, $wantedversion));
-      
-      # Return nice value:
-      return 0;           
-      }
-   
    # Return nice value:
    return 0;
    }

@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.22 2006/09/11 14:49:45 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.23 2006/09/11 15:29:17 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -68,7 +68,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.22 2006/09/11 14:49:45 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.23 2006/09/11 15:29:17 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -155,6 +155,7 @@ sub execcommand()
    my ($cmd,@ARGS) = @_;
    my $rval=0;
    my $status=1;
+   my $cmdrun=0;
    
    local @ARGV = @ARGS;
    # Add the "dbghook_" function here rather than via "showcommands"
@@ -166,7 +167,8 @@ sub execcommand()
       if ( $_ =~ /^$cmd/i)
 	 {
 	 $status=0; # Command found so OK;
-	 $rval = $self->$_(@ARGV);
+	 $rval = $self->$_(@ARGV), unless ($cmdrun == 1); # Only run the first matched command;
+	 $cmdrun=1;
 	 }
       } $self->showcommands(),"dbghook_";
    
