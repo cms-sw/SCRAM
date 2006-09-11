@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-30 11:51:58+0100
-# Revision: $Id: CacheUtilities.pm,v 1.5 2005/08/18 15:03:44 sashby Exp $ 
+# Revision: $Id: CacheUtilities.pm,v 1.6.2.3 2006/09/11 11:19:58 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -80,13 +80,13 @@ Dump the Perl object $cacheobject to a file $cachefilename.
 sub write()
    {
    my ($cacheobject,$cachefilename) = @_;
-
+   
    use Data::Dumper;
    use File::Copy;
 
-   print "[ CacheUtilities::write() ] Writing cache ",$cachefilename,"\n", if ($ENV{SCRAM_DEBUG});   
+   print "[ CacheUtilities::write() ] Writing cache ",$cachefilename,"\n", if ($ENV{SCRAM_DEBUG});
    
-   # Rename the cache file to make a backup copy:
+   # Move the cache file to make a backup:
    move($cachefilename,$cachefilename.".bak") if ( -r $cachefilename);   
    # Dump the cache to file:
    my $cachefh = IO::File->new($cachefilename, O_WRONLY|O_CREAT)

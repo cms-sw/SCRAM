@@ -5,7 +5,7 @@
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 #         (with contribution from Lassi.Tuura@cern.ch)
 # Update: 2003-11-27 16:45:18+0100
-# Revision: $Id: Cache.pm,v 1.5 2005/08/17 11:20:54 sashby Exp $ 
+# Revision: $Id: Cache.pm,v 1.6.2.1 2006/06/21 14:46:45 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -296,7 +296,7 @@ sub checkfiles()
    # Get list of files in config dir:
    my $configcache = {};
    my %configfiles = map { -f $_ && 
-			      $_ =~ m|$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}.*?$|
+			      $_ =~ m|\Q$ENV{LOCALTOP}\E/$ENV{SCRAM_CONFIGDIR}.*?$|
 			      ? ($_ => [ (stat(_))[9] ]) : () } keys %{$self->{DIRCACHE}};
 
    # Also add ToolCache.db to the cache: FIXME: should probably use aglob here so
@@ -562,7 +562,7 @@ sub paths()
    # storing those that are relevant to an array:
    foreach my $path (keys %{$self->{DIRCACHE}})
       {
-      if ( ! -d $path && $path != m|$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}.*?$|)
+      if ( ! -d $path && $path != m|\Q$ENV{LOCALTOP}\E/$ENV{SCRAM_CONFIGDIR}.*?$|)
 	 {	
 	 $self->logmsg("SCRAM: $path no longer exists. Clearing from cache.\n");
 	 $self->cachestatus(1);
