@@ -82,7 +82,7 @@ sub copydir
 	 else
 	    {
 	    copy($src."/".$file,$dest."/".$file);
-	    if ( -x $src."/".$file || -X $src."/".$file ) {chmod(0775,$dest."/".$file);}
+	    if ( -x $src."/".$file || -X $src."/".$file ) {chmod(0755,$dest."/".$file);}
 	    }
 	 }
       undef $dh;
@@ -137,7 +137,7 @@ sub copydirwithskip
 	 else
 	    {
 	    copy($src."/".$file,$dest."/".$file);
-	    if ( -x $src."/".$file || -X $src."/".$file ) {chmod(0775,$dest."/".$file);}
+	    if ( -x $src."/".$file || -X $src."/".$file ) {chmod(0755,$dest."/".$file);}
 	    }
 	 }
       undef $dh;
