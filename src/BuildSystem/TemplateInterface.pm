@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-07-01 14:03:46+0200
-# Revision: $Id: TemplateInterface.pm,v 1.1.2.4 2004/08/25 13:44:07 sashby Exp $ 
+# Revision: $Id: TemplateInterface.pm,v 1.2 2004/12/10 13:41:37 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -104,8 +104,12 @@ sub template_object()
 sub template_dir()
    {
    my $self=shift;
-   my ($templatedir)=@_;
-   $templatedir ||= $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};
+   # Default template dir:
+   my $templatedir = $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};
+   # Allow projects to override the template dir (subdir of config):
+   if (exists ($ENV{SCRAM_PROJECT_TEMPLATEDIR})) {
+       $templatedir.="/".$ENV{SCRAM_PROJECT_TEMPLATEDIR};
+   }
    $self->{TEMPLATE_DIR} = $templatedir;
    return $self;
    }
@@ -113,11 +117,10 @@ sub template_dir()
 sub template_config()
    {
    my $self=shift;
-   
    # Set up Template opts:
    $self->{TEMPLATE_CONFIG} =
       {
-      INCLUDE_PATH => $self->{TEMPLATE_DIR},
+      INCLUDE_PATH => [ "$self->{TEMPLATE_DIR}","$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}" ],
       PLUGIN_BASE  =>  [ qw(SCRAM::Plugins BuildSystem::Template::Plugins) ],
       EVAL_PERL    => 1
 	 };

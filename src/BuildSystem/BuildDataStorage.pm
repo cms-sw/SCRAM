@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.13.2.2 2006/09/01 17:56:48 sashby Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.14 2006/09/11 14:53:39 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -1033,6 +1033,7 @@ sub buildclass
    
    print "WARNING: No ClassPath definitions, nothing will be done!","\n",
    if (! scalar @$cache);
+
    # Now scan the class paths.  All the classpaths are given a rank
    # to mark how relevant they are, and then the best match is chosen.
    #
