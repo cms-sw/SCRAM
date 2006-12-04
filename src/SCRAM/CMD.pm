@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.57 2006/09/11 14:49:45 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.58 2006/09/11 17:18:20 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -972,6 +972,12 @@ sub build()
 	 print "Reading cached data","\n",if ($ENV{SCRAM_DEBUG});
 	 $cacheobject=&Cache::CacheUtilities::read($cachename);
 	 }
+      elsif (-x "$ENV{SCRAM_CONFIGDIR}/ProjectInit")
+         {
+	 print "Running $ENV{SCRAM_CONFIGDIR}/ProjectInit script","\n",if ($ENV{SCRAM_DEBUG});
+	 my $rv = system("$ENV{SCRAM_CONFIGDIR}/ProjectInit");
+	 print "Script exitted with status ",$rv,"\n",if ($ENV{SCRAM_DEBUG});
+         }
 
       # Set verbosity for cache object:
       $cacheobject->verbose($ENV{SCRAM_CACHEDEBUG});

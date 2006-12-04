@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-07-01 14:03:46+0200
-# Revision: $Id: TemplateInterface.pm,v 1.2 2004/12/10 13:41:37 sashby Exp $ 
+# Revision: $Id: TemplateInterface.pm,v 1.3 2006/11/14 17:43:14 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -104,12 +104,13 @@ sub template_object()
 sub template_dir()
    {
    my $self=shift;
-   # Default template dir:
-   my $templatedir = $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};
-   # Allow projects to override the template dir (subdir of config):
-   if (exists ($ENV{SCRAM_PROJECT_TEMPLATEDIR})) {
-       $templatedir.="/".$ENV{SCRAM_PROJECT_TEMPLATEDIR};
+   my ($templatedir)=@_;
+   my $dir = $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};
+   if ((exists $ENV{SCRAM_PROJECT_TEMPLATEDIR}) && 
+       ($ENV{SCRAM_PROJECT_TEMPLATEDIR} !~ /^\s*$/)) {
+       $dir = $ENV{SCRAM_PROJECT_TEMPLATEDIR};
    }
+   $templatedir ||= $dir;
    $self->{TEMPLATE_DIR} = $templatedir;
    return $self;
    }
@@ -121,9 +122,10 @@ sub template_config()
    $self->{TEMPLATE_CONFIG} =
       {
       INCLUDE_PATH => [ "$self->{TEMPLATE_DIR}","$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}" ],
-      PLUGIN_BASE  =>  [ qw(SCRAM::Plugins BuildSystem::Template::Plugins) ],
-      EVAL_PERL    => 1
-	 };
+      PLUGIN_BASE  => [ qw(SCRAM::Plugins BuildSystem::Template::Plugins) ],
+      EVAL_PERL    => 1,
+      ABSOLUTE     => 1
+      };
    
    return $self;
    }
