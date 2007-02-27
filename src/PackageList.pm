@@ -1,47 +1,56 @@
 @PackageList=qw(
-		Cache::Cache.pm
-		Cache::CacheUtilities.pm
-		ActiveDoc::Activate.pm
 		ActiveDoc::ActiveDoc.pm
 		ActiveDoc::ActiveStore.pm
-		ActiveDoc::GroupChecker.pm
 		ActiveDoc::IncFile.pm
 		ActiveDoc::Parse.pm
 		ActiveDoc::PreProcessedFile.pm
 		ActiveDoc::SimpleDoc.pm
 		ActiveDoc::SimpleURLDoc.pm
-		ActiveDoc::Switcher.pm
-		ActiveDoc::TagContainer.pm
-		BuildSystem::BuildDataUtils.pm
+		BuildSystem::Product.pm
+		BuildSystem::BuildDataStorage.pm
 		BuildSystem::BuildFile.pm
-		BuildSystem::BuildManager.pm
-		BuildSystem::Requirements.pm
-		BuildSystem::TagUtils.pm
+		BuildSystem::DataCollector.pm
+		BuildSystem::MakeInterface.pm
+		BuildSystem::SCRAMGrapher.pm
+		BuildSystem::TemplateInterface.pm
 		BuildSystem::ToolCache.pm
 		BuildSystem::ToolData.pm
 		BuildSystem::ToolManager.pm
 		BuildSystem::ToolParser.pm
-		BuildSystem::ToolTagUtils.pm
+		BuildSystem::ToolSettingValidator.pm
+		BuildSystem::TreeItem.pm
 		BuildSystem::Template::Plugins::PluginCore.pm
+		BuildSystem::Template::Plugins::TestingFramework.pm
+		Cache::Cache.pm
+		Cache::CacheUtilities.pm
 		Configuration::BootStrapProject.pm
 		Configuration::ConfigArea.pm
+		Configuration::Requirements.pm
+		Graph::Writer::SCRAMDot.pm
+		Graph::Base.pm
+		Graph::DFS.pm
+		Graph::Directed.pm
+		Graph::Graph.pm
+		Graph::Traversal.pm
+		Graph::Undirected.pm
 		ObjectUtilities::ObjectStore.pm
 		ObjectUtilities::StorableObject.pm
 		SCRAM::CMD.pm
-		SCRAM::Helper.pm
-		SCRAM::SCRAM.pm
 		SCRAM::AutoToolSetup.pm
-		SCRAM::ProjectSearcher.pm
+		SCRAM::Helper.pm
+		SCRAM::DepTracker.pm
+		SCRAM::SCRAM.pm
 		SCRAM::ScramFunctions.pm
 		SCRAM::ScramProjectDB.pm
-		SCRAM::SearchIterator.pm
+		Testing::TestSuite.pm
+		URL::URL_http.pm
 		URL::URL_base.pm
 		URL::URL_cvs.pm
 		URL::URL_file.pm
 		URL::URL_filed.pm
-		URL::URL_http.pm
 		URL::URL_interface.pm
 		URL::URL_label.pm
+		URL::URL_svn.pm
 		URL::URLcache.pm
 		URL::URLclass.pm
 		URL::URLhandler.pm
@@ -51,11 +60,10 @@
 		Utilities::DataItem.pm
 		Utilities::HashDB.pm
 		Utilities::IndexedFileStore.pm
-		Utilities::PathMod.pm
+		Utilities::Message.pm
 		Utilities::SCRAMUtils.pm
-		Utilities::TestClass.pm
+		Utilities::SVNmodule.pm
 		Utilities::Verbose.pm
-		Utilities::setarchitecture.pm
 		RuntimeFile.pm
 		);
 
