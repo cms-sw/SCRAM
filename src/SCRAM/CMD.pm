@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.58 2006/09/11 17:18:20 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.59 2006/12/04 14:21:23 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -580,10 +580,8 @@ sub version()
       }
    else
       {
-      ($thisversion=$ENV{SCRAM_HOME}) =~ s/(.*)\///;
-      my $scramtopdir=$1;
-      
-      # Was there a version arg?:
+      my $scramtopdir=$self->scramfunctions()->scram_topdir();      
+      # Was there a version arg? If so, switch to this version:
       my ($version) = shift(@ARGV);
       
       if (defined ($version))
@@ -627,7 +625,7 @@ sub version()
       else
 	 {
 	 # Deal with links:
-	 print "$thisversion";
+	 print $ENV{SCRAM_VERSION};
 	 $version=readlink $ENV{SCRAM_HOME};
 	 print " ---> $version", if (defined ($version) );
 	 print "\n";
@@ -1142,7 +1140,6 @@ sub project()
    my %opts = (
 	       SCRAM_INSTALL_DIR => 0,
 	       SCRAM_INSTALL_NAME => 0,
-	       SCRAM_BOOT_XML => 0,
 	       SCRAM_TOOLCONF_NAME => 0,
 	       SCRAM_UPDATE_AREA => 0,
 	       SCRAM_BOOTSTRAPFILE_NAME => 0
@@ -1158,7 +1155,6 @@ sub project()
    my %options =
       ("help"   => sub { $self->{SCRAM_HELPER}->help('project'); exit(0) },
        "dir=s"  => sub { $opts{SCRAM_INSTALL_DIR} = 1; $installdir = $_[1] },
-       "xml"    => sub { $opts{SCRAM_BOOT_XML} = 1},
        "name=s" => sub { $opts{SCRAM_INSTALL_NAME} = 1; $installname = $_[1] },
        "file=s" => sub { $opts{SCRAM_TOOLCONF_NAME} = 1; $toolconf = $_[1] },
        "template" => sub { $self->project_template_copy(); exit(0) },
@@ -1188,11 +1184,6 @@ sub project()
 	 $self->checklocal();
 	 $self->update_project_area($installdir, $projectversion);
 	 }
-      elsif ($opts{SCRAM_BOOT_XML} && $opts{SCRAM_BOOTSTRAPFILE_NAME})
-	 {
-	 # Use the XML based boot mechanism:
-	 $self->bootxml($bootstrapfile, $installdir, $installname);
-	 }
       elsif ($opts{SCRAM_BOOTSTRAPFILE_NAME})
 	 {
 	 $self->bootnewproject($bootstrapfile,$installdir,$toolconf);
@@ -1215,66 +1206,65 @@ Function to create a developer area from an existing release (only used locally)
    
 =cut
 
-sub bootfromrelease()
-   {
-   my $self=shift;
-   my ($projectname,$projectversion,$installdir,$installname,$toolconf) = @_;
-   
-   if ($projectname && $projectversion)
-      {
-      print "Creating a developer area based on project ",$projectname,", version ",$projectversion,"\n";
-      print "Getting project release area....","\n";
-      my $relarea=$self->scramfunctions()->scramprojectdb()->getarea($projectname,$projectversion);
+sub bootfromrelease() {
+    my $self=shift;
+    my ($projectname,$projectversion,$installdir,$installname,$toolconf) = @_;
+    
+    if ($projectname && $projectversion) {
+	my $relarea=$self->scramfunctions()->scramprojectdb()->getarea($projectname,$projectversion);
+	
+	if ( ! defined $relarea ) {
+	    print "Error...no release area!","\n";
+	    $self->scramfatal("No release area found.");
+	} else {
+	    # Here we check the scram version that was used for the remote project area (the one we're trying
+	    # to base a developer area on). We then invoke whichever version is required and pass all argumnents
+	    # on down:
+	    $self->remote_versioncheck($relarea,"project",$projectname,$projectversion,$installdir,$installname,$toolconf);	    
+	}	
 
-      if ( ! defined $relarea )
-	 {
-	 print "Error...no release area!","\n";
-	 $self->scramfatal("No release area found.");
-	 }
+	# From here, we're creating a new area which uses the same version of SCRAM as is accessed from the commandline (i.e.
+	# the current version):
+	print "Creating a developer area based on project ",$projectname,", version ",$projectversion,"\n";
 
-      # Set RELEASETOP:
-      $ENV{RELEASETOP} = $relarea->location();
-
-      # Set the var for project name and version:
-      $ENV{SCRAM_PROJECTNAME} = $projectname;
-      $ENV{SCRAM_PROJECTVERSION} = $projectversion;
-
-      # Check that the areas are compatible:
-      $self->checkareatype($ENV{RELEASETOP},"Project release area SCRAM version mismatch: current is V1, area is V0. Exitting.");      
-      print "Checking SCRAM version....","\n";
-      
-      $self->versioncheck($relarea->scramversion());
-      $area=$self->scramfunctions()->satellite($projectname,$projectversion,$installdir,$installname);
-      $ENV{SCRAM_CONFIGDIR} = $area->configurationdir();
-      
-      # Read the top-level BuildFile and create the required storage dirs. Do
-      # this before setting up self:
-      $self->create_productstores($area->location());
-      # The lookup db:
-      use SCRAM::AutoToolSetup;
-
-      # Default path to conf file:
-      $toolconf ||= $area->location()."/".$ENV{SCRAM_CONFIGDIR}."/site/tools-".$ENV{SCRAM_SITENAME}.".conf";
-      $::lookupdb = SCRAM::AutoToolSetup->new($toolconf);  
-      
-      # Need a toolmanager, then we can setup:
-      my $toolmanager = $self->toolmanager($area);
-      $toolmanager->setupself($area->location());
-
-      # Write the cached info:
-      $toolmanager->writecache();
-      
-      print "\n\nInstallation procedure complete.\n";
-      print "Developer area located at:\n\n\t\t".$area->location()."\n\n";
-      }
-   else
-      {
-      $self->scramfatal("Insufficient arguments: see \"scram project -help\" for usage info.");
-      }
-   
-   # Return nice value:
-   return 0;
-   }
+	# Set RELEASETOP:
+	$ENV{RELEASETOP} = $relarea->location();	
+	# Set the var for project name and version:
+	$ENV{SCRAM_PROJECTNAME} = $projectname;
+	$ENV{SCRAM_PROJECTVERSION} = $projectversion;
+	
+	# Check that the areas are compatible:
+	$self->checkareatype($ENV{RELEASETOP},"Project release area SCRAM version mismatch: current is V1, area is V0. Exitting.");
+	$area=$self->scramfunctions()->satellite($projectname,$projectversion,$installdir,$installname);
+	$ENV{SCRAM_CONFIGDIR} = $area->configurationdir();
+	
+	# Read the top-level BuildFile and create the required storage dirs. Do
+	# this before setting up self:
+	$self->create_productstores($area->location());
+	# The lookup db:
+	use SCRAM::AutoToolSetup;
+	
+	# Default path to conf file. Assume that the site name is STANDALONE if not already set:
+	$ENV{SCRAM_SITENAME} = 'STANDALONE', unless (exists($ENV{SCRAM_SITENAME}));
+	$toolconf ||= $area->location()."/".$ENV{SCRAM_CONFIGDIR}."/site/tools-".$ENV{SCRAM_SITENAME}.".conf";
+	$::lookupdb = SCRAM::AutoToolSetup->new($toolconf);  
+	
+	# Need a toolmanager, then we can setup:
+	my $toolmanager = $self->toolmanager($area);
+	$toolmanager->setupself($area->location());
+	
+	# Write the cached info:
+	$toolmanager->writecache();
+	
+	print "\n\nInstallation procedure complete.\n";
+	print "Developer area located at:\n\n\t\t".$area->location()."\n\n";
+    } else {
+	$self->scramfatal("Insufficient arguments: see \"scram project -help\" for usage info.");
+    }
+    
+    # Return nice value:
+    return 0;
+}
 
 =item   C<bootnewproject()>
 
@@ -1290,7 +1280,7 @@ sub bootnewproject()
 
    use SCRAM::AutoToolSetup;
    use BuildSystem::ToolManager;
-   use BuildSystem::Requirements;
+   use Configuration::Requirements;
    use Configuration::BootStrapProject;
    use ActiveDoc::ActiveStore;
 
@@ -1308,8 +1298,8 @@ sub bootnewproject()
    my $cache=$area->cache();
    my $db=$area->objectstore();
    my $astore=ActiveDoc::ActiveStore->new($db, $cache);
-   my $req = BuildSystem::Requirements->new($astore, "file:".$doc, 
-			$ENV{SCRAM_ARCH});
+   my $req = Configuration::Requirements->new($astore, "file:".$doc, 
+					      $ENV{SCRAM_ARCH});
 
    $area->toolboxversion($req->configversion());
 
@@ -1322,7 +1312,7 @@ sub bootnewproject()
    # Tell the Requirements class that there's a ToolManager to use:
    $req->toolmanager($toolmanager);
 
-   # Add the configuration version to the tool manager:
+   # FIXME: (duplication) Add the configuration version to the tool manager:
    $toolmanager->configversion($req->configversion());
    
    # download the tools:
@@ -1360,70 +1350,6 @@ sub bootnewproject()
    # Save the area info (toolbox version):
    $area->save();
 
-   print "\n";
-   print ">> Installation Located at: ".$area->location()." <<\n\n";
-
-   # Return nice value:
-   return 0;
-   }
-
-sub bootxml()
-   {
-   my $self=shift;
-   my ($bootfile,$installdir,$installname)=@_;
-   my $toolconf;
-   
-   use Cwd;
-   # Install in current dir unless a directory arg is given:
-   $installdir||=cwd();
-   
-   use URL::URLcache;
-   use Configuration::Project;
-   
-   # Set up a cache (old-style, for URLs):
-   my $globalcache = URL::URLcache->new($ENV{HOME}."/.scramrc/globalcache");
-      
-   # Set up the bootstrapper:
-   my $pbs=Configuration::Project->new($globalcache, $installdir);
-   
-   # Boot the project, with support for the option to
-   # give an area a different name (but the project internally is still
-   # called NAME with version VERSION (from the XML tags)):
-   my $area=$pbs->boot($bootfile,$installname);      
-   
-   # Handle the configuration:
-   print "- Using configuration version ",$area->configuration()->version(),"\n";
-   print "- Taking configuration URL ",$area->configuration()->url(),"\n";
-   print "- Taking configuration filename as ",$area->configuration()->configfilename(),"\n";
-   
-   # Set the architecture:
-   $area->archname($ENV{'SCRAM_ARCH'});
-   
-#
-#    $toolmanager->setupalltools($area->location(),1);
-#
-#    # Read the top-level BuildFile and create the required storage dirs. Do
-#    # this before setting up self:
-#    $self->create_productdirs($area->location());
-#      
-#    # Now setup SELF:
-#    $toolmanager->setupself($area->location());
-#
-#    # New tm's are not clones:
-#    $toolmanager->cloned_tm(0);
-#   
-#    # Write the cached info:
-#    $toolmanager->writecache();
-#    # Save the area info (toolbox version):
-#    $area->save();
-#
-   
-   # Save the area info:
-   $area->save();
-   
-   # Configure the externals required for the area:
-   $area->configure();
-   
    print "\n";
    print ">> Installation Located at: ".$area->location()." <<\n\n";
 
@@ -1575,7 +1501,7 @@ sub create_productstores()
    my $perms=0755;
 
    my $toplevelconf = BuildSystem::BuildFile->new();
-   my $tlbf = $location."/".$ENV{SCRAM_CONFIGDIR}."/BuildFile";
+   my $tlbf = $location."/".$ENV{SCRAM_CONFIGDIR}."/BuildFile.xml";
    $toplevelconf->parse($tlbf);
    $ENV{LOCALTOP} ||= $location;
    my $stores = $toplevelconf->productstore();
@@ -2154,14 +2080,13 @@ sub config()
 	 print "SCRAM_PROJECTNAME=",$localarea->name(),"\n";
 	 print "SCRAM_PROJECTVERSION=",$localarea->version(),"\n";      
 	 print "SCRAM_TOOLBOXVERSION=",$localarea->toolboxversion(),"\n";
-#	 print "SCRAM_CONFIGFILENAME=",$localarea->tbxconfigfile(),"\n";
 	 # Perhaps show creation time. Check the timestamp of config/requirements:
 	 print "SCRAM_PROJECT_TIMESTAMP=",$localarea->creationtime(),"\n";
 	 print "SCRAM_PROJECT_RELEASE_TIMESTAMP=",$localarea->creationtime($ENV{RELEASETOP}),"\n"
 	    ,if (exists($ENV{RELEASETOP}));
 	 print "LOCALTOP=",$ENV{LOCALTOP},"\n";
 	 print "RELEASETOP=",$ENV{RELEASETOP},"\n", if (exists($ENV{RELEASETOP}));	 
-      
+	 
 	 $self->dumpconfig();
 	 }
       elsif ($opts{SCRAM_DUMPCONFIG})
@@ -2174,7 +2099,6 @@ sub config()
 	 print "SCRAM_PROJECTNAME=",$localarea->name(),"\n";
 	 print "SCRAM_PROJECTVERSION=",$localarea->version(),"\n";      
 	 print "SCRAM_TOOLBOXVERSION=",$localarea->toolboxversion(),"\n";
-#	 print "SCRAM_CONFIGFILENAME=",$localarea->tbxconfigfile(),"\n";
 	 # Perhaps show creation time. Check the timestamp of config/requirements:
 	 print "SCRAM_PROJECT_TIMESTAMP=",$localarea->creationtime(),"\n";
 	 print "SCRAM_PROJECT_RELEASE_TIMESTAMP=",$localarea->creationtime($ENV{RELEASETOP}),"\n"
@@ -2286,114 +2210,6 @@ sub gui()
 	 $self->{SCRAM_HELPER}->help('gui'); exit(0);
 	 }
       }
-   }
-
-=item   C<xmlmigrate()>
-
-Function to migrate all BuildFiles in the current area to XML.
-   
-=cut
-
-sub xmlmigrate()
-   {
-   my $self=shift;
-   unshift @INC, $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};
-   # The cache files:
-   my $toolcache=$ENV{LOCALTOP}."/.SCRAM/".$ENV{SCRAM_ARCH}."/ToolCache.db";
-   my $dircache=$ENV{LOCALTOP}."/.SCRAM/DirCache.db";
-   my $builddatastore=$ENV{LOCALTOP}."/.SCRAM/".$ENV{SCRAM_ARCH}."/ProjectCache.db";
-   # Default mode for graphing is package-level:
-   my $graphmode||='PACKAGE';
-   my $fast=0;
-   my $workingdir=$ENV{LOCALTOP}."/".$ENV{SCRAM_INTwork};
-   my $makefilestatus=0;
-   my ($packagebuilder,$dataposition,$buildstoreobject);
-   my $verbose=0;
-   my $configbuildfiledir=$ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};
-
-   my $filetoprocess;
-
-   # Getopt variables:
-   my %opts = ( CONVERT_FILE => 0, # Expect to process all files in the tree by default;
-		WRITE_GRAPHS => 0, # No graphs produced by default;
-		SCRAM_TEST => 0 ); # test mode: don't run make;
-   my %options =
-      ("help"       => sub { $self->{SCRAM_HELPER}->help('xmlmigrate'); exit(0) },
-       "file=s" => sub { $filetoprocess=$_[1]; $opts{CONVERT_FILE}=1; });
-
-   local (@ARGV) = @_;
-   
-   # Set the options:
-   Getopt::Long::config qw(default no_ignore_case require_order);
-   
-   if (! Getopt::Long::GetOptions(\%opts, %options))
-      {
-      $self->scramfatal("Error parsing arguments. See \"scram xmlmigrate -help\" for usage info.");
-      }
-   else
-      {
-      if ($opts{CONVERT_FILE})
-	 {
-	 print "Going to migrate $filetoprocess to XML syntax","\n";
-	 use BuildSystem::BuildDataStorage;
-	 $buildstoreobject=BuildSystem::BuildDataStorage->new($configbuildfiledir);
-	 $buildstoreobject->scan2xml($filetoprocess);	 
-	 return 0;
-	 }
-      
-      # Check to see if we are in a local project area:
-      $self->checklocal();
-      
-      # Set location variables:
-      use Cwd;
-      my $current_dir = cwd();
-      
-      # Set THISDIR. If we have a full match on LOCALTOP, set THISDIR to src:
-      ($ENV{THISDIR}) = ($current_dir =~ m|^$ENV{LOCALTOP}/(.*)$|);
-      if ($ENV{THISDIR} eq '')
-	 {
-	 $ENV{THISDIR} = $ENV{SCRAM_SOURCEDIR};
-	 }
-      
-      # Set up file cache object:
-      use Cache::Cache;
-      use Cache::CacheUtilities;      
-      use Utilities::AddDir;
-
-      my $cacheobject=Cache::Cache->new();
-      my $cachename=$cacheobject->name($dircache);
-
-      # Where to search for BuildFiles (from src):
-      chdir($ENV{LOCALTOP});
-
-      if ( -r $cachename )
-	 {
-	 print "Reading cached data","\n",if ($ENV{SCRAM_DEBUG});
-	 $cacheobject=&Cache::CacheUtilities::read($cachename);
-	 }
-
-      # Set verbosity for cache object:
-      $cacheobject->verbose($ENV{SCRAM_CACHEDEBUG});
-      
-      use BuildSystem::BuildDataStorage;
-      $buildstoreobject=BuildSystem::BuildDataStorage->new($configbuildfiledir);
-      $buildstoreobject->name($builddatastore);
-	 
-      if ( -r $builddatastore )
-	 {
-	 print "Reading cached build data","\n";	 
-	 $buildstoreobject=&Cache::CacheUtilities::read($builddatastore);
-	 # We populate our build data cache:
-	 print "Migrating BuildFiles\n";
-	 $buildstoreobject->migrate2XML($cacheobject->paths());
-	 }
-      else
-	 {
-	 die "SCRAM: You must run \"scram b\" first to populate the cache.","\n";
-	 }
-      }
-   
-   return 0;
    }
 
 =item   C<show_compiler_gui()>

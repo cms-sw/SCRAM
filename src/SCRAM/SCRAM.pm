@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.23 2006/09/11 15:29:17 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.24.2.6 2007/02/27 11:46:21 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -39,6 +39,9 @@ use Utilities::Architecture;
 use Utilities::Verbose;
 use SCRAM::CMD;
 
+# Use CVS variables to get the latest tag (=> version):
+our ($SCRAM_VERSION) = ('$Name:  $' =~ /\$*: (.*?) \$/);
+
 @ISA=qw(Exporter Utilities::Verbose SCRAM::CMD);
 @EXPORT_OK=qw( );
 
@@ -67,15 +70,15 @@ sub new()
       SCRAM_VERBOSE => 0 || $ENV{SCRAM_VERBOSE},
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
-      SCRAM_VERSION => undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.23 2006/09/11 15:29:17 sashby Exp $',
+      SCRAM_VERSION => $SCRAM_VERSION || undef,
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.24.2.6 2007/02/27 11:46:21 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
       };
   
    bless $self,$class;
-
+   $ENV{SCRAM_VERSION} = $self->{SCRAM_VERSION};
    $self->_init();
    return $self;
    }
@@ -90,7 +93,6 @@ by new().
 sub _init()
    {
    my $self=shift;
-
    # Store available ommands:
    $self->commands();
    # Set up the environment:
@@ -102,8 +104,9 @@ sub _init()
    $self->prerequisites();
    # Create new interface object:
    $self->scramfunctions();
-   # See which version of SCRAM
-   # should be used:
+   # See which version of SCRAM should be used. This will
+   # only switch to another version if inside a project area
+   # where scram_version is set:
    $self->versioncheck();
    return $self;
    }
@@ -121,7 +124,7 @@ sub commands()
    my @env_commands = qw(version arch runtime config);
    my @info_commands = qw(list db urlget); 
    my @buildenv_commands = qw(project setup tool gui);
-   my @build_commands=qw(build xmlmigrate install remove);
+   my @build_commands=qw(build install remove);
    my @dev_cmds=qw();
 
    return ($self->{SCRAM_ALLOWEDCMDS} =
@@ -207,32 +210,60 @@ $self->{SCRAM_VERSION} is set to the required version.
 
 =cut
 
-sub versioncheck()
-   {
-   my $self=shift;
-   my $version;
+sub versioncheck() {
+    my $self=shift;
+    # This routine checks for consistency in SCRAM versions. Only
+    # applies in a project area since outside we'll be using the
+    # current release anyway. If we're in a project we use the "scram_version"
+    # file in config directory:
+    if ($self->islocal()) {
+	my $version;
+	my $versionfile=$ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR}."/scram_version";
+	if ( -f $versionfile ) {
+	    open (VERSION, "<".$versionfile);
+	    $version=<VERSION>;
+	    chomp $version;
+	}
+	# Spawn the required version:
+	$self->scramfunctions()->spawnversion($version,@ARGV), if (defined ($version));
+    }
+    $self->{SCRAM_VERSIONCHECK} = 1;
+    return $self;
+}
 
-   # This routine checks for consistency in SCRAM versions. Only
-   # applies in a project area since outside we'll be using the
-   # current release anyway. If we're in a project we use the "scram_version"
-   # file in config directory:
-   if ($self->islocal())
-      {
-      my $versionfile=$ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR}."/scram_version";
-      if ( -f $versionfile )
-	 {
-	 open (VERSION, "<".$versionfile);
-	 $version=<VERSION>;
-	 chomp $version;
-	 }
-      # Spawn the required version:
-      $self->scramfunctions()->spawnversion($version,@ARGV), if (defined ($version));
-      }
+=item   C<remote_versioncheck(@ARGS)>
 
-   $self->{SCRAM_VERSIONCHECK} = 1;
-   $self->{SCRAM_VERSION} = $version;
-   return $self;
-   }
+For instances where the version of SCRAM run at the commandline and the
+version used to configure an existing project are not compatible, check
+and invoke the remote SCRAM version as specified in scram_version file.
+Pass down all arguments to the new instance of $::scram.
+
+=cut
+
+sub remote_versioncheck() {
+    my $self=shift;
+    my $version;
+    my ($remote_area)=shift || die "No remote area specified. Exit.\n";
+    local (@ARGV)=@_;
+    # Get the version from the project area:
+    $version = $remote_area->scramversion();
+    
+    if (!defined($version)) {
+	# Try to get the version from the area config. dir:
+	my $versionfile=$remote_area->location()."/".$remote_area->configurationdir()."/scram_version";
+	
+	if ( -f $versionfile ) {
+	    open (VERSION, "<".$versionfile);
+	    $version=<VERSION>;
+	    chomp $version;
+	} else {
+	    $self->error("Unable to determine SCRAM version used to config. remote area.\n");
+	}
+    }
+    # Spawn the required version:
+    $self->scramfunctions()->spawnversion($version,@ARGV);    
+    return $self;
+}
 
 =item   C<_initenv()>
 
@@ -350,21 +381,22 @@ bootstrapping and listing.
 
 =cut
 
-sub scramfunctions()
-   {
-   my $self=shift;
-   
-   if ( ! defined $self->{functions} )
-      {
-      require SCRAM::ScramFunctions;
-      $self->{functions} = SCRAM::ScramFunctions->new();
-      $self->architecture($ENV{SCRAM_ARCH});
-      }
-   else
-      {
-      return $self->{functions};
-      }
-   }
+sub scramfunctions() {
+    my $self=shift;
+    
+    if ( ! defined $self->{functions} ) {
+	require SCRAM::ScramFunctions;
+	$self->{functions} = SCRAM::ScramFunctions->new();
+	$self->architecture($ENV{SCRAM_ARCH});
+	if ($ENV{SCRAM_VERSION} eq '') {
+	    # If SCRAM_VERSION isn't set, extract the version
+	    # from the source tree:
+	    $ENV{SCRAM_VERSION} = $self->{functions}->getversion();
+	}
+    } else {
+	return $self->{functions};
+    }
+}
 
 =item   C<_initlocalarea()>
 
@@ -376,56 +408,45 @@ calls to $self->localarea() can be used to access it.
    
 =cut
 
-sub _initlocalarea()
-   {
-   my $self=shift;
-   
-   if ( ! defined ($self->localarea()) )
-      {
-      require Configuration::ConfigArea;
-      $self->localarea(Configuration::ConfigArea->new());
-
-      # Set LOCALTOP if we're inside project area:
-      $ENV{LOCALTOP} = $self->localarea()->location();
-      
-      if ( ! defined ($ENV{LOCALTOP}) )
-	 {
-	 if ( $self->localarea()->bootstrapfromlocation() )
-	    {
-	    # We're not in a local area: 
-	    $self->localarea(undef);
+sub _initlocalarea() {
+    my $self=shift;
+    
+    if ( ! defined ($self->localarea()) ) {
+	require Configuration::ConfigArea;
+	$self->localarea(Configuration::ConfigArea->new());
+	
+	# Set LOCALTOP if we're inside project area:
+	$ENV{LOCALTOP} = $self->localarea()->location();
+	
+	if ( ! defined ($ENV{LOCALTOP}) ) {
+	    if ( $self->localarea()->bootstrapfromlocation() ) {
+		# We're not in a local area: 
+		$self->localarea(undef);
+	    } else {
+		$self->localarea()->archname($self->scramfunctions()->arch());
 	    }
-	 else
-	    {
-	    $self->localarea()->archname($self->scramfunctions()->arch());
-	    }
-	 }
-      else
-	 {
-	 $self->localarea()->bootstrapfromlocation($ENV{LOCALTOP});
-	 }
-      
-      # Now create some environment variables that need LOCALTOP:
-      if (defined ($ENV{LOCALTOP}))
-	 {
-	 ($ENV{THISDIR}=cwd) =~ s/^\Q$ENV{LOCALTOP}\L//;
-	 $ENV{THISDIR} =~ s/^\///;
-	 # Also set LOCALRT (soon obsolete) and BASE_PATH:
-	 $ENV{LOCALRT} = $ENV{LOCALTOP};
-	 $ENV{BASE_PATH} = $ENV{LOCALTOP};
-	 $self->projectname($self->localarea()->name());
-	 $self->projectversion($self->localarea()->version());
-	 $self->configversion($self->localarea()->toolboxversion());
-	 $self->islocal(1);
-	 }
-      else
-	 {
-	 # We're not in a project area. Some commands will not need to
-	 # be in an area to work so we just set a flag:
-	 $self->islocal(0);
-	 }
-      }
-   }
+	} else {
+	    $self->localarea()->bootstrapfromlocation($ENV{LOCALTOP});
+	}
+	
+	# Now create some environment variables that need LOCALTOP:
+	if (defined ($ENV{LOCALTOP})) {
+	    ($ENV{THISDIR}=cwd) =~ s/^\Q$ENV{LOCALTOP}\L//;
+	    $ENV{THISDIR} =~ s/^\///;
+	    # Also set LOCALRT (soon obsolete) and BASE_PATH:
+	    $ENV{LOCALRT} = $ENV{LOCALTOP};
+	    $ENV{BASE_PATH} = $ENV{LOCALTOP};
+	    $self->projectname($self->localarea()->name());
+	    $self->projectversion($self->localarea()->version());
+	    $self->configversion($self->localarea()->toolboxversion());
+	    $self->islocal(1);
+	} else {
+	    # We're not in a project area. Some commands will not need to
+	    # be in an area to work so we just set a flag:
+	    $self->islocal(0);
+	}
+    }
+}
 
 =item   C<align()>
 

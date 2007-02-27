@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.13.2.3 2006/09/04 15:17:51 sashby Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.15.2.3 2007/02/27 11:38:39 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -48,10 +48,20 @@ sub new
    $self->{toolfiledir}=$self->{topdir}."/.SCRAM/InstalledTools";
    $self->{datastore}=$self->{topdir}."/.SCRAM";
    $self->{archstore}=$self->{topdir}."/.SCRAM/".$ENV{SCRAM_ARCH};
+
+   if (exists $ENV{SCRAM_TOOL_TIMESTAMP_DIR})
+      {
+      $self->{tooltimestamp}=$ENV{SCRAM_TOOL_TIMESTAMP_DIR};
+      }
+   else
+      {
+      $self->{tooltimestamp}=$self->{archstore}."/timestamps";
+      }
    
    # Make sure our tool download dir exists:
    AddDir::adddir($self->{toolfiledir});
    AddDir::adddir($self->{archstore});
+   AddDir::adddir($self->{tooltimestamp});
    
    # Set the tool cache file to read/write:
    $self->name($projectarea->toolcachename());
@@ -245,7 +255,7 @@ sub coresetup()
       $self->scram_compiler($supported_language[0],$toolname,$compilername[0]);
       }
    
-   # Store the ToolData object in the cache:
+   # Store the ToolData object in the cache:   
    $self->storeincache($toolparser->toolname(),$store);
    return $self;
    }
@@ -394,8 +404,8 @@ sub setupself()
    my ($location)=@_;
    # Process the file "Self" in local config directory. This is used to
    # set all the paths/runtime settings for this project:
-   my $filename=$location."/config/Self";
-   
+   my $filename=$location."/config/Self.xml";
+
    if ( -f $filename )
       {
       print "\n";
@@ -421,7 +431,7 @@ sub setupself()
    else
       {
       print "\n";
-      print "SCRAM: No file config/Self...nothing to do.";
+      print "SCRAM: No file config/Self.xml...nothing to do.";
       print "\n";
       return;
       }
@@ -443,6 +453,7 @@ sub storeincache()
    # Store ToolData object (for a set-up tool) in cache:
    if (ref($dataobject) eq 'BuildSystem::ToolData')
       {
+      $self->updatetooltimestamp($dataobject, $toolname);
       $self->{SETUP}->{$toolname} = $dataobject;
       }
    else
@@ -556,7 +567,7 @@ sub remove_tool()
       }
    
    $self->{SETUP} = $newtlist;
-   
+   $self->updatetooltimestamp ("", $toolname);
    # Now remove from the RAW tool list:
    $self->cleanup_raw($toolname);
    print "ToolManager: Updating tool cache.","\n";
@@ -609,6 +620,7 @@ sub updatetool()
       # the desired name:
       if ($obj->toolname() eq $name)
 	 {
+	 $self->updatetooltimestamp ($obj, $name);
 	 print "ToolManager: Updating the cached copy of ".$name."\n";
 	 delete $self->{SETUP}->{$name};
 	 $self->{SETUP}->{$name} = $obj;
@@ -651,6 +663,95 @@ sub configversion()
    my $self=shift;
    @_ ? $self->{CONFIGVERSION} = shift
       : $self->{CONFIGVERSION};
+   }
+
+sub updatetooltimestamp ()
+   {
+   my $self=shift;
+   my $obj=shift;
+   my $toolname=shift;
+   my $samevalues=0;
+   if (exists $self->{SETUP}->{$toolname})
+      {
+      $samevalues=$self->comparetoolsdata($self->{SETUP}->{$toolname},$obj);
+      }
+   if (!$samevalues)
+      {
+      if (!-d $self->{tooltimestamp})
+	 {
+	 AddDir::adddir($self->{tooltimestamp});
+	 }
+      open(TIMESTAMPFILE,">".$self->{tooltimestamp}."/$toolname");
+      close(TIMESTAMPFILE);
+      }
+   }
+
+sub comparetoolsdata ()
+   {
+   my $self=shift;
+   my $data1=shift || ();
+   my $data2=shift || ();
+  
+   my $ref1=ref($data1);
+   my $ref2=ref($data2);
+  
+   if ($ref1 ne $ref2)
+      {
+      return 0;
+      }
+   elsif ($ref1 eq "CODE")
+      {
+      return 1;
+      }
+   elsif(($ref1 eq "SCALAR") || ($ref1 eq ""))
+      {
+      if ($data1 eq $data2)
+         {
+	 return 1;
+ 	 }
+      return 0;
+      }
+   elsif ($ref1 eq "ARRAY")
+      {
+      my $count = scalar(@$data1);
+      if ($count != scalar(@$data2))
+         {
+	 return 0;
+	 }
+      for (my $i=0; $i<$count; $i++)
+	  {
+	  if (! $self->comparetoolsdata($data1->[$i],$data2->[$i]))
+	     {
+	     return 0;
+	     }
+	  }
+      return 1;
+      }
+   else
+      {
+      foreach my $k (keys %{$data1})
+         {
+         if (! exists $data2->{$k})
+	    {
+	    return 0;
+	    }
+ 	 }
+      foreach my $k (keys %{$data2})
+         {
+	 if (! exists $data1->{$k})
+	    {
+	    return 0;
+	    }
+         }
+      foreach my $k (keys %{$data2})
+         {
+         if (! $self->comparetoolsdata($data1->{$k},$data2->{$k}))
+	    {
+	    return 0;
+	    }
+         }
+      return 1;
+      }
    }
 
 1;

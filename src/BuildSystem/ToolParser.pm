@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-02-09 20:14:55+0100
-# Revision: $Id: ToolParser.pm,v 1.4 2005/04/13 16:45:36 sashby Exp $ 
+# Revision: $Id: ToolParser.pm,v 1.5.4.4 2007/02/27 11:38:39 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -15,7 +15,6 @@ require 5.004;
 use Exporter;
 use ActiveDoc::SimpleDoc;
 use Utilities::Verbose;
-use BuildSystem::ToolTagUtils;
 
 @ISA=qw(Exporter Utilities::Verbose);
 @EXPORT=qw();
@@ -34,7 +33,7 @@ sub new
    {
    my $proto=shift;
    my $class=ref($proto) || $proto;
-   my $self={};
+   $self={};
    
    bless $self,$class;
    
@@ -44,83 +43,313 @@ sub new
    $self->{interactive} = 0;
    $self->{content} = {};
    $self->{nested} = 0;
-   
-   $self->_initparser();
-   
+   $self->{scramdoc}=ActiveDoc::SimpleDoc->new();
+   $self->{scramdoc}->newparse("setup", $self->{mydoctype},'Subs');
+
    return $self;
    }
 
-sub _initparser
+### Tag handler methods ###
+sub tool()
    {
-   my $self=shift;
+   my ($object,$name,%attributes)=@_;
+   my $hashref = \%attributes;   
+   # A way to distinguish the naming of different nested levels:
+   $self->{levels}=['','tag','nexttag'];
+   $$hashref{'name'} =~ tr[A-Z][a-z];
+
+   # Make sure we only pick up the tool requested:
+   if ( ($self->{tool} eq $$hashref{'name'}) && 
+	($self->{version} eq $$hashref{'version'} ))
+      {
+      # These variables will be used when expanding settings
+      # in tool variable defs:
+      $ENV{SCRAMToolname} = $$hashref{'name'};
+      $ENV{SCRAMToolversion} = $$hashref{'version'};
+      $self->{content}->{TOOLNAME}=$$hashref{'name'};
+      $self->{content}->{TOOLVERSION}=$$hashref{'version'};
+      }
+   else
+      {
+      print "\n";
+      $::scram->scramerror("Configuration problem! Wanted/actual ".$self->{tool}." tool versions differ (wanted = ".$self->{version}.", downloaded = ".$$hashref{'version'}.")\n");
+      }
    
-   $self->{simpledoc}=ActiveDoc::SimpleDoc->new();
-   $self->{simpledoc}->newparse("setup");
-   $self->{simpledoc}->addtag("setup","Tool",
-			      \&BuildSystem::ToolTagUtils::tooltagOpen, $self,	
-			      "", $self,
-			      \&BuildSystem::ToolTagUtils::tooltagClose, $self);
-   
-   $self->{simpledoc}->addtag("setup","Lib",
-			      \&BuildSystem::ToolTagUtils::libtagOpen, $self,	
-			      "", $self,
-			      "", $self);
-   
-   $self->{simpledoc}->addtag("setup","info",
-			      \&BuildSystem::ToolTagUtils::infotagOpen, $self,	
-			      "", $self,
-			      "", $self);
-   
-   $self->{simpledoc}->addtag("setup","Use",
-			      \&BuildSystem::ToolTagUtils::usetagOpen, $self,	
-			      "", $self,
-			      "", $self);
-   
-   $self->{simpledoc}->addtag("setup","Runtime",
-			      \&BuildSystem::ToolTagUtils::runtimetagOpen, $self,	
-			      "", $self,
-			      "", $self);
-   
-   $self->{simpledoc}->addtag("setup","Flags",
-			      \&BuildSystem::ToolTagUtils::flagstagOpen, $self,	
-			      "", $self,
-			      "", $self);
-   
-   $self->{simpledoc}->addtag("setup","Client",
-			      \&BuildSystem::ToolTagUtils::clienttagOpen, $self,	
-			      "", $self,
-			      \&BuildSystem::ToolTagUtils::clienttagClose, $self);
-   
-   $self->{simpledoc}->addtag("setup","Environment",
-			      \&BuildSystem::ToolTagUtils::environmenttagOpen, $self,	
-			      "", $self,
-			      "", $self);
-   
-   $self->{simpledoc}->addtag("setup","Makefile",
-			      \&BuildSystem::ToolTagUtils::makefiletagOpen, $self,
-			      \&BuildSystem::ToolTagUtils::makefiletagContent, $self,
-			      \&BuildSystem::ToolTagUtils::makefiletagClose, $self);
-   
-   $self->{simpledoc}->grouptag("Tool","setup");
-   $self->{simpledoc}->addtag("setup","Architecture",
-			      \&BuildSystem::ToolTagUtils::archtagOpen,$self,
-			      "", $self,
-			      \&BuildSystem::ToolTagUtils::archtagClose,$self);
-   
+   # Test to see if this doc defines a
+   # scram-managed project or a compiler:
+   if (exists ($$hashref{'type'}))
+      {
+      $$hashref{'type'} =~ tr[A-Z][a-z];
+      $self->{content}->{SCRAM_PROJECT} = 0;
+
+      if ($$hashref{'type'} eq 'scram')
+	 {
+	 $self->{content}->{SCRAM_PROJECT} = 1;
+	 }     
+      elsif ($$hashref{'type'} eq 'compiler')
+	 {
+	 # Is tool a compiler? Store this for retrieval from tool manager obj:
+	 $self->{content}->{SCRAM_COMPILER} = 1;
+	 }
+      else
+	 {
+	 $::scram->scramwarn("Unknown type \"".$$hashref{'type'}."\" in tool ".$$hashref{'name'}."\n");
+	 }
+      }
    }
 
+sub tool_()
+   {
+   delete $self->{levels};
+   delete $self->{id};
+   delete $self->{nested};
+   }
+
+sub lib()
+   {
+   my ($object,$name,%attributes)=@_;
+   push(@{$self->{"$self->{levels}->[$self->{nested}]".content}->{LIB}},$attributes{'name'});   
+   }
+
+sub info()
+   {
+   my ($object,$name,%attributes)=@_;
+   $self->{"$self->{levels}->[$self->{nested}]".content}->{INFO} = \%attributes;
+   }
+
+sub use()
+   {
+   my ($object,$name,%attributes)=@_;
+   push(@{$self->{"$self->{levels}->[$self->{nested}]".content}->{USE}},$attributes{'name'});
+   }
+
+sub runtime()
+   {
+   my ($object,$name,%attributes)=@_;
+   my $hashref = \%attributes;   
+   my $envname;
+   # Break the value/default value into its constituent parts:
+   foreach my $t (qw(value default))
+      {
+      if (exists ($$hashref{$t}))
+	 {
+	 $hashref->{ELEMENTS} = [];
+	 map
+	    {
+	    # In some cases, we might set a runtime path (e.g. LD_LIBRARY_PATH) to
+	    # a proper path value i.e. X:Y. In this case, don't bother adding the string
+	    # as a "variable" to ELEMENTS:
+	    if ($_ =~ m|\$(.*)?| && $_ !~ /:/) 
+	       {
+	       push(@{$hashref->{ELEMENTS}},$1);
+	       }
+	    } split("/",$hashref->{$t});
+	 }
+      }
+   
+   # Check to see if we have a "type" arg. If so, we use this to create the key:
+   if (exists ($hashref->{'type'}))
+      {
+      my $type=$hashref->{'type'};
+      # Make the type uppercase:
+      $type =~ tr/[a-z]/[A-Z]/;
+      # Rename the environment as "<type>:<env name>":
+      $envname = $type.":".$$hashref{'name'};
+      }
+   else
+      {
+      $envname = $$hashref{'name'};
+      }
+   
+   # Delete name entry so hash is more tidy
+   delete $$hashref{'name'};
+   
+   # Before we save $hashref we need to know if there are already
+   # any runtime tags with the same name. If there are, we must save all
+   # data to an aray of hashes:
+   if (exists ($self->{"$self->{levels}->[$self->{nested}]".content}->{RUNTIME}->{$envname}))
+      {
+      push(@{$self->{"$self->{levels}->[$self->{nested}]".content}->{RUNTIME}->{$envname}},$hashref);
+      }
+   else
+      {
+      # No entry yet so just store the hashref:
+      $self->{"$self->{levels}->[$self->{nested}]".content}->{RUNTIME}->{$envname} = [ $hashref ];
+      }   
+   }
+
+sub flags()
+   {
+   my ($object,$name,%attributes)=@_;
+   # Extract the flag name and its value:
+   my ($flagname,$flagvaluestring) = each %attributes;
+   $flagname =~ tr/[a-z]/[A-Z]/; # Keep flag name uppercase
+   chomp($flagvaluestring);
+   # Split the value on whitespace so we can push all
+   # individual flags into an array:
+   my @flagvalues = split(' ',$flagvaluestring);
+   
+   # Is current tag within another tag block?
+   if ($self->{nested} > 0)
+      {
+      # Check to see if the current flag name is already stored in the hash. If so,
+      # just add the new values to the array of flag values:
+      if (exists ($self->{"$self->{levels}->[$self->{nested}]".content}->{FLAGS}->{$flagname}))
+	 {
+	 push(@{$self->{"$self->{levels}->[$self->{nested}]".content}->{FLAGS}->{$flagname}},@flagvalues);
+	 }
+      else
+	 {
+	 $self->{"$self->{levels}->[$self->{nested}]".content}->{FLAGS}->{$flagname} = [ @flagvalues ];
+	 }
+      }
+   else
+      {
+      if (exists ($self->{content}->{FLAGS}->{$flagname}))
+	 {
+	 push(@{$self->{content}->{FLAGS}->{$flagname}},@flagvalues);
+	 }
+      else
+	 {
+	 $self->{content}->{FLAGS}->{$flagname} = [ @flagvalues ];
+	 }
+      }
+   }
+
+sub client()
+   {
+   $self->pushlevel();
+   }
+
+sub client_()
+   {
+   if ($self->{isarch} == 1)
+      {
+      # If we already have an architecture tag, we must write to tagcontent hash:
+      $self->{tagcontent}->{CLIENT}=$self->{nexttagcontent};
+      delete $self->{nexttagcontent};
+      }
+   else
+      {
+      $self->{content}->{CLIENT}=$self->{tagcontent};
+      }
+   
+   $self->poplevel();
+   }
+
+sub environment()
+   {
+   my ($object,$name,%attributes)=@_;
+   my $hashref = \%attributes;
+   # Save a copy of the name of this environment:
+   my $envname=$$hashref{'name'};
+   delete $$hashref{'name'}; # Delete name entry so hash is more tidy
+   # Break the value/default value into its constituent parts:
+   foreach my $t (qw(value default))
+      {
+      if (exists ($$hashref{$t}))
+	 {
+	 $hashref->{ELEMENTS} = [];
+	 map
+	    {
+	    if ($_ =~ m|\$(.*)?|)
+	       {
+	       push(@{$hashref->{ELEMENTS}},$1);
+	       }
+	    } split("/",$hashref->{$t});
+	 }
+      }
+   
+   # Before we save $hashref we need to know if there are already
+   # any env tags with the same name. If there are, we must save all
+   # data to an aray of hashes:
+   if (exists ($self->{"$self->{levels}->[$self->{nested}]".content}->{ENVIRONMENT}->{$envname}))
+      {
+      push(@{$self->{"$self->{levels}->[$self->{nested}]".content}->{ENVIRONMENT}->{$envname}},$hashref);
+      }
+   else
+      {
+      # No entry yet so just store the hashref:
+      $self->{"$self->{levels}->[$self->{nested}]".content}->{ENVIRONMENT}->{$envname} = [ $hashref ];
+      }
+   }
+
+sub makefile()
+   {
+   my ($object,$name,%attributes)=@_;
+   # Set our own Char handler so we can collect the content
+   # of the Makefile tag:
+   $object->setHandlers(Char => \&makefile_content);
+   $self->{makefilecontent} = [];
+   }
+
+sub makefile_content()
+   {
+   my ($object, @strings) = @_;
+   push(@{$self->{makefilecontent}},@strings);
+   }
+
+sub makefile_()
+   {
+   my ($object,$name)=@_;
+   push(@{$self->{"$self->{levels}->[$self->{nested}]".content}->{MAKEFILE}},
+	join('',@{$self->{makefilecontent}}));
+   delete $self->{makefilecontent};
+   # Unset the Char handler to revert to the default behaviour:
+   $object->setHandlers(Char => 0);
+   }
+
+sub architecture()
+   {
+   my ($object,$name,%attributes)=@_;
+   $self->pushlevel(\%attributes,1); # Set nested to 1;
+   }
+
+sub architecture_()
+   {
+   # Need to be able to cope with multiple arch blocks with same arch string:
+   if (exists ($self->{content}->{ARCH}->{$self->{id}->{'name'}}))
+      {
+      # Already have an architecture tag for this arch:
+      while (my ($k,$v) = each %{$self->{tagcontent}})
+	 {
+	 # If this tag (e.g. LIB, USE, MAKEFILE) already exists and (as we know
+	 # it should be) its data is an ARRAY, push it to the store:
+	 if (exists ($self->{content}->{ARCH}->{$self->{id}->{'name'}}->{$k}) && 
+	     ref($v) eq 'ARRAY')
+	    {
+	    push(@{$self->{content}->{ARCH}->{$self->{id}->{'name'}}->{$k}},@$v);
+	    }
+	 else
+	    {
+	    # Otherwise (for HASH data) we just store it. Note that, because we do
+	    # not loop over the HASH content and check for already existsing keys,
+	    # if two arch blocks with same arch name define the same tag (e.g, ENV),
+	    # the last occurrence will be kept (i.e. the two values won't be added
+	    # to one ENV hash: //FIXME for later....)
+	    $self->{content}->{ARCH}->{$self->{id}->{'name'}}->{$k} = $v;
+	    }
+	 }
+      }
+   else
+      {
+      $self->{content}->{ARCH}->{$self->{id}->{'name'}}=$self->{tagcontent};
+      }
+   
+   delete $self->{isarch};
+   $self->poplevel();
+   }
+	 
 sub parse
    {
    my $self=shift;
-   my ($tool,$toolver,$file)=@_;
-   
+   my ($tool,$toolver,$file)=@_;   
    $self->{tool}=$tool;
    $self->{version}=$toolver;
-   $self->{simpledoc}->filetoparse($file);   
+   $self->{scramdoc}->filetoparse($file);   
    $self->verbose("Setup Parse");
-   $self->{simpledoc}->parse("setup");
-    
-   delete $self->{simpledoc};
+   $self->{scramdoc}->parse("setup");
+   delete $self->{scramdoc};
    return $self;
    }
 
@@ -929,6 +1158,14 @@ sub _check_system_libs()
       }
    
    return $found;
+   }
+
+sub AUTOLOAD()
+   {
+   my ($xmlparser,$name,%attributes)=@_;
+   return if $AUTOLOAD =~ /::DESTROY$/;
+   my $name=$AUTOLOAD;
+   $name =~ s/.*://;
    }
 
 1;

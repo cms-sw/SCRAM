@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.13.2.1 2006/08/31 12:30:04 sashby Exp $ 
+# Revision: $Id: Helper.pm,v 1.14.2.2 2007/02/26 18:33:45 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -475,8 +475,6 @@ sub build()
    $help.="                     (where X is PS/JPEG/GIF), SCRAM will automatically create the graphs in format X.\n\n";
    $help.="                     Note that you must have AT&T's Dot program installed and in\n";
    $help.="                     your path to be able to use this feature.\n\n";
-   $help.="--xmlb               Read XML versions of BuildFiles. This assumes that \"scram xmlmigrate\" has\n";
-   $help.="                     already been run in the current project area.\n";
    $help.="\n";
    $help.="$::bold";
    $help.="Example:$::normal To refresh the current area cache, produce global dependency graphs but not run gmake\n";
@@ -542,28 +540,6 @@ sub gui()
    $help.="\tscram gui -show [meta type]$::normal\n";
    $help.="\n";
 
-   return $help;
-   }
-
-sub xmlmigrate()
-   {
-   my $self=shift;
-   my $help;
-
-   $help.="Description:\n";
-   $help.="\n";
-   $help.="\tAllow a user to migrate all BuildFiles in the current area\n";
-   $help.="\tto XML syntax. This command will convert every BuildFile to\n";
-   $help.="\tXML, storing it in a file called \"BuildFile.xml\" in the same\n";
-   $help.="\tlocation. The normal BuildFile will NOT be removed.\n\n";
-   $help.="Usage:\n";
-   $help.="$::bold";
-   $help.="\tscram xmlmigrate [--file=<path>/BuildFile]$::normal\n";
-   $help.="\n";
-   $help.="If the \"--file\" option is used, only the requested BuildFile will be migrated.\n";
-   $help.="\n";
-   $help.="See \"scram build\" command for how to build from XML BuildFiles.\n\n";
-   
    return $help;
    }
 

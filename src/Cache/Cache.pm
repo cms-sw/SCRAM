@@ -5,7 +5,7 @@
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 #         (with contribution from Lassi.Tuura@cern.ch)
 # Update: 2003-11-27 16:45:18+0100
-# Revision: $Id: Cache.pm,v 1.6.2.1 2006/06/21 14:46:45 sashby Exp $ 
+# Revision: $Id: Cache.pm,v 1.7.2.1 2006/09/12 13:58:36 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -290,7 +290,7 @@ sub checkfiles()
 
    # Remember which directories have buildfiles in them:
    my %files = map { -f $_ ? ($_ => [ (stat(_))[9] ]) : () }
-               map { "$_/BuildFile" }
+               map { "$_/BuildFile.xml" }
 	       keys %{$self->{DIRCACHE}};
 
    # Get list of files in config dir:

@@ -4,14 +4,16 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.14 2006/09/11 14:53:39 sashby Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.15 2006/11/14 17:43:14 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
 #--------------------------------------------------------------------
 package BuildSystem::BuildDataStorage;
 require 5.004;
+use BuildSystem::BuildFile;
 use Exporter;
+
 @ISA=qw(Exporter);
 @EXPORT_OK=qw( );
 
@@ -121,7 +123,7 @@ sub datapath()
    # if we received a BuildFile path that we need to determine the data path for,
    # check first to see if the path matches config/BuildFile. If it does, we have the top-level
    # datapath which should be src:
-   if ($path eq "$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/BuildFile" || $path eq $ENV{SCRAM_SOURCEDIR})
+   if ($path eq "$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/BuildFile.xml" || $path eq $ENV{SCRAM_SOURCEDIR})
       {
       return $ENV{SCRAM_SOURCEDIR};
       }
@@ -130,7 +132,7 @@ sub datapath()
    # get a data position to be used as a key:
    ($datapath = $path) =~ s|^\Q$ENV{SCRAM_SOURCEDIR}\L/||;
    
-   if ($datapath =~ m|(.*)/BuildFile$|)
+   if ($datapath =~ m|(.*)/BuildFile.xml$|)
       {
       return $1;
       }
@@ -141,7 +143,7 @@ sub datapath()
 sub check_global_config()
    {
    my $self=shift;
-   my $topbuildfile = $self->{CONFIGDIR}."/BuildFile";
+   my $topbuildfile = $self->{CONFIGDIR}."/BuildFile.xml";
    
    if ( ! -f $topbuildfile )
       {
@@ -189,26 +191,12 @@ sub scanbranch()
    # one should always do it via a <use name=x> to get the package deps. We don't care about
    # deps in subsystems (they're only used to define groups) and project-wide deps are added at
    # template level:
-   if (exists($ENV{SCRAM_XMLBUILDFILES}) && ($ENV{SCRAM_XMLBUILDFILES}))
-      {
-      print "Reading ".$files->[0].".xml","\n";
-      use BuildSystem::XMLBuildFile;
-      $bfbranch=BuildSystem::XMLBuildFile->new();   
-      $buildfiles = [ $files->[0].".xml" ];
-      }
-   else
-      {
-      use BuildSystem::BuildFile;
-      $bfbranch=BuildSystem::BuildFile->new();
-      $buildfiles=[ $files->[0] ];
-      }
-   
-   # Scan all buildfiles in a branch:
-   $bfbranch->parsebranchfiles($buildfiles);
-   
+   my $file = $files->[0];
+   return unless -f $file; # Just in case metabf() is empty...
+   $bfbranch=BuildSystem::BuildFile->new();
+   $bfbranch->parse($file);
    # Store:
    $self->storebranchmetadata($datapath,$bfbranch);
-   
    return $self;
    }
 
@@ -613,7 +601,6 @@ sub populate()
    
    # The tool manager:
    $self->{TOOLMANAGER} = $toolmanager;
-
    # If there are some paths to iterate over, get scram projects from
    # toolbox. Each project cache is loaded at this point too.
    # Note that this could be done later, when running processtree() which
@@ -629,29 +616,24 @@ sub populate()
       {
       # Ignore config content here:
       next if ($path !~ m|^\Q$ENV{SCRAM_SOURCEDIR}\L|);
-
       # Set the data path:
-      $datapath = $self->datapath($path);     
-      
+      $datapath = $self->datapath($path);
       # Create a TreeItem object:
       use BuildSystem::TreeItem;
       my $treeitem = BuildSystem::TreeItem->new();
       $self->{BUILDTREE}->{$datapath} = $treeitem;
+      $buildfile = $path."/BuildFile.xml";
 
       # If we have the project root (i.e. src), we want to process the
       # top-level (project config) BuildFile:
       if ($path eq $ENV{SCRAM_SOURCEDIR})
 	 {
-	 $buildfile = $ENV{SCRAM_CONFIGDIR}."/BuildFile";
+	 $buildfile = $ENV{SCRAM_CONFIGDIR}."/BuildFile.xml";
 	 # Parse the top-level BuildFile. We must do this here
 	 # because we need the ClassPaths. Store as RAWDATA:
 	 $self->scan($buildfile, $datapath);
 	 # We need scram project base vars at project-level:
 	 $treeitem->scramprojectbases($self->{SCRAM_PROJECT_BASES});
-	 }
-      else
-	 {
-	 $buildfile = $path."/BuildFile";
 	 }
       
       # If this BuildFile exists, store in METABF:
@@ -659,7 +641,7 @@ sub populate()
 	 {
 	 # This level has a buildfile so store this path:
 	 $treeitem->metabf($buildfile);
-	 # Scan to resolve groups. Store as RAWDATA:
+	 # Scan to get dependencies:
 	 $self->scan($buildfile, $datapath);
 	 ($ENV{SCRAM_DEBUG}) ? print "Scanning ",$buildfile,"\n" : print "." ;
 	 }
@@ -749,15 +731,15 @@ sub update_toplevel()
 
    print "Re-scanning at top-level..\n";
    
-   my $datapath = $self->datapath($ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR}."/BuildFile");
+   my $datapath = $self->datapath($ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR}."/BuildFile.xml");
    
    # This updates the raw data:
-   $self->scan($ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR}."/BuildFile", $datapath); 
+   $self->scan($ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR}."/BuildFile.xml", $datapath); 
 
    # Update everything else:
    foreach my $B (@buildfiles)
       {
-      next if ($B eq $ENV{LOCALTOP}."/config/BuildFile");
+      next if ($B eq $ENV{LOCALTOP}."/config/BuildFile.xml");
       $datapath = $self->datapath($B);
       # Check to see if we already have the raw data for this buildfile.
       # Note that we won't if this scan was run from update mode. In this
@@ -816,7 +798,7 @@ sub update()
    $self->removedata($removedpaths);
  
    # Now check to see if something changed at the top-level. If so we reparse everything:  
-   my $toplevel = $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR}."/BuildFile";
+   my $toplevel = $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR}."/BuildFile.xml";
    
    if (exists($buildfiles->{$toplevel}))
       {
@@ -889,7 +871,7 @@ sub updateadir()
    my $self=shift;
    my ($path) = @_;
    my $datapath = $self->datapath($path);
-   my $possiblebf = $path."/BuildFile";
+   my $possiblebf = $path."/BuildFile.xml";
    my $treeitem;
    
    if (! exists($self->{BUILDTREE}->{$datapath}))
@@ -926,7 +908,7 @@ sub updateadir()
       {
       # This level has a buildfile so store this path:
       $self->{BUILDTREE}->{$datapath}->metabf($possiblebf);
-      # Scan to resolve groups. Store as RAWDATA:
+      # Scan to get dependencies:
       print "Scanning ",$possiblebf,"\n";
       $self->scan($possiblebf, $datapath);
       # Check to see if this BuildFile is known to have needed scanning. If so,
@@ -944,31 +926,11 @@ sub updateadir()
 sub scan()
    {
    my $self=shift;
-   my ($inputbuildfile, $datapath) = @_;
+   my ($buildfile, $datapath) = @_;
    my $bfparse;
-   my $buildfile;
-   
-   if (exists($ENV{SCRAM_XMLBUILDFILES}) && ($ENV{SCRAM_XMLBUILDFILES}))
-      {
-      use BuildSystem::XMLBuildFile;
-      $bfparse=BuildSystem::XMLBuildFile->new();   
-      $buildfile=$inputbuildfile.".xml";
-      print "Reading ",$buildfile,"\n";
-      }
-   else
-      {
-      use BuildSystem::BuildFile;
-      $bfparse=BuildSystem::BuildFile->new();
-      $buildfile=$inputbuildfile;
-      }
-
+   $bfparse=BuildSystem::BuildFile->new();
    # Execute the parse:
    $bfparse->parse($buildfile);
-   
-   # Store group data:
-   $self->addgroup($bfparse->defined_group(), $datapath)
-      if ($bfparse->defined_group());
-
    # See if there were skipped dirs:
    my $skipped = $bfparse->skippeddirs($datapath);   
    # Check to see if there was an info array for this location.
@@ -981,7 +943,6 @@ sub scan()
       }
 
    $self->storedata($datapath, $bfparse);
-   
    # Add the dependency list to our store:
    $self->{DEPENDENCIES}->{$datapath} = $bfparse->dependencies();   
    return $self;
@@ -990,7 +951,6 @@ sub scan()
 sub init_engine()
    {
    my $self=shift;
-   
    # Create the interface to the template engine:
    use BuildSystem::TemplateInterface;
    # Pass in the config dir as the location where templates live:
@@ -1021,8 +981,11 @@ sub buildclass
    # Split every cache definition into an array of pairs, directory
    # name and class.  So ClassPath of type "+foo/+bar/src+library"
    # becomes [ [ "" "foo" ] [ "" "bar" ] [ "src" "library" ] ]
-   my @CLASSPATHS=@{$self->{BUILDTREE}->{$ENV{SCRAM_SOURCEDIR}}->rawdata()->classpath()};
-   
+   my @CLASSPATHS=@{$self->{BUILDTREE}->{$ENV{SCRAM_SOURCEDIR}}->rawdata()->{content}->{CLASSPATH}};
+   # This does not work, even though classpath() is a valid method and rawdata()
+   # returns an object blessed into the correct type:
+   # my @CLASSPATHS=@{$self->{BUILDTREE}->{$ENV{SCRAM_SOURCEDIR}}->rawdata()->classpath()};
+
    if (! scalar @$cache)
       {
       foreach my $classpath (@CLASSPATHS)
@@ -1102,7 +1065,6 @@ sub buildclass
    # those with equal first exact match, longest exact match).
    my $n = 0;
    my $class = $best[$n][scalar @{$best[$n]}-1];
-   
    # Return the class data:
    return [ $class->[1], join('/', @{$best[$n][0]}), join('/', @{$best[$n][1]}) ];
    }
@@ -1111,7 +1073,6 @@ sub storedata
    {
    my $self=shift;
    my ($datapath, $data)=@_;
-
    # Store the content of this BuildFile in cache:
    $self->{BUILDTREE}->{$datapath}->rawdata($data);
    return $self;
@@ -1200,41 +1161,6 @@ sub metaobject
    else
       {
       return undef;
-      }
-   }
-
-sub addgroup
-   {
-   my $self=shift;
-   my ($grouparray,$datapath)=@_;
-   my $project;
-   
-   foreach my $group (@{$grouparray})
-      {
-      # Report an error if the group is defined already in a BuildFile
-      # other than the one at $path (avoids errors because KNOWNGROUPS
-      # is not reset before re-parsing a BuildFile in which a group is defined):           
-      if (exists $self->{KNOWNGROUPS}->{$group}
-	  && $self->{KNOWNGROUPS}->{$group} ne $datapath)
-	 {
-	 # Group already exists locally so exit:
-	 print "\n\n";
-	 $::scram->scramerror("Group \"".$group."\", defined in ".$datapath."/BuildFile, is already defined in ".
-			      $self->{KNOWNGROUPS}->{$group}."/BuildFile.\n");
-	 print "\n";
-	 }
-      elsif ($self->searchprojects($group,\$project))
-	 {
-	 # Group already exists in a scram project so exit:
-	 print "\n\n";
-	 $::scram->scramerror("Group \"".$group."\", defined locally in ".$datapath."/BuildFile, is already defined in ".
-			      $project."\n");
-	 print "\n";	 
-	 }
-      else
-	 {
-	 $self->{KNOWNGROUPS}->{$group} = $datapath;
-	 }
       }
    }
 
@@ -1480,64 +1406,6 @@ sub save()
    delete $self->{SCRAM_PROJECTS};
    delete $self->{SCRAM_PROJECT_BASES};   
    return $self;
-   }
-
-
-
-
-
-
-
-#### Routines for migrating BuildFile syntax to XML ####
-sub scan2xml()
-   {
-   my $self=shift;
-   my ($buildfile) = @_;
-   print "Migrating $buildfile to XML","\n";
-   use BuildSystem::BuildFileXMLWriter;
-   my $bfparse=BuildSystem::BuildFileXMLWriter->new();
-   $bfparse->parse($buildfile);
-   return $self;
-   }
-
-sub migrate2XML()
-   {
-   my $self=shift;
-   my ($paths)=@_;
-   my $datapath;
-   my $buildfile;
-   $|=1; # Flush
-
-   # Loop over all paths. Apply a sort so that src (shortest path) is first (FIXME!):
-   foreach my $path (sort(@$paths))
-      {
-      # Ignore config content here:
-      next if ($path !~ m|^\Q$ENV{SCRAM_SOURCEDIR}\L|);
-      
-      # If we have the project root (i.e. src), we want to process the
-      # top-level (project config) BuildFile:
-      if ($path eq $ENV{SCRAM_SOURCEDIR})
-	 {
-	 $buildfile = $ENV{SCRAM_CONFIGDIR}."/BuildFile";
-	 # Parse the top-level BuildFile. We must do this here
-	 # because we need the ClassPaths. Store as RAWDATA:
-	 $self->scan2xml($buildfile);
-	 next;
-	 }
-      else
-	 {
-	 $buildfile = $path."/BuildFile";
-	 }
-      
-      # If this BuildFile exists, store in METABF:
-      if ( -f $buildfile )
-	 {
-	 # Scan to resolve groups. Store as RAWDATA:
-	 $self->scan2xml($buildfile);
-	 }
-      }
-   
-   print "\n";
    }
 
 1;

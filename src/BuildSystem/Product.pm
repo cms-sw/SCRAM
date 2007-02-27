@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-07-27 11:49:59+0200
-# Revision: $Id: Product.pm,v 1.1.2.2 2004/08/12 17:31:35 sashby Exp $ 
+# Revision: $Id: Product.pm,v 1.2.4.1 2007/01/24 14:40:17 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -12,8 +12,6 @@
 package BuildSystem::Product;
 require 5.004;
 use Exporter;
-use BuildSystem::BuildDataUtils;
-@ISA=qw(Exporter BuildSystem::BuildDataUtils);
 @EXPORT_OK=qw( );
 
 sub new()
@@ -145,6 +143,109 @@ sub files()
    {
    my $self=shift;
    return join(" ",@{$self->_files()});
+   }
+
+sub lib
+   {
+   my $self=shift;
+   # Return an array of required libs:
+   return $self->{content}->{LIB};
+   }
+
+sub include
+   {
+   my $self=shift;
+   # Return an array of required includes:
+   return $self->{content}->{INCLUDE};
+   }
+
+sub libtype
+   {
+   my $self=shift;
+   # Return an array of required lib types:
+   return $self->{content}->{LIBTYPE};
+   }
+
+sub flags
+   {
+   my $self=shift;
+   # Return hash data for flags:
+   return $self->{content}->{FLAGS};
+   }
+
+sub allflags
+   {
+   my $self=shift;
+   # Return hash data for flags:
+   return $self->{content}->{FLAGS};
+   }
+
+sub makefile
+   {
+   my $self=shift;
+   # Return an array of makefile stubs:
+   return $self->{content}->{MAKEFILE};
+   }
+
+sub archspecific
+   {
+   my $self=shift;
+   
+   # Check to see if there is arch-dependent data. If so, return it:
+   if ((my $nkeys=keys %{$self->{content}->{ARCH}}) > 0)
+      {
+      while (my ($k,$v) = each %{$self->{content}->{ARCH}})
+	 {
+	 if ( $ENV{SCRAM_ARCH} =~ /$k.*/ )
+	    {
+	    return $self->{content}->{ARCH}->{$k};
+	    }
+	 }
+      }
+   return "";
+   }
+
+sub use
+   {
+   my $self=shift;
+   # Add or return uses (package deps):
+   @_ ? push(@{$self->{content}->{USE}},@_)
+      : @{$self->{content}->{USE}};
+   }
+
+sub group
+   {
+   my $self=shift;
+   # Add or return groups:
+   @_ ? push(@{$self->{content}->{GROUP}},@_)
+      : @{$self->{content}->{GROUP}};
+   }
+
+sub basic_tags()
+   {
+   my $self=shift;
+   my $datatags=[];
+   my $buildtags=[ qw(BIN LIBRARY APPLICATION MODULE PLUGIN BUILDPRODUCTS) ];
+   my $skiptags=[ qw(DEFINED_GROUP ARCH EXPORT GROUP USE CLASSPATH) ];
+   my $otherskiptags=[ qw( SKIPPEDDIRS ) ];
+   my @all_skip_tags;
+   
+   push(@all_skip_tags,@$skiptags,@$buildtags,@$otherskiptags);
+
+   foreach my $t (keys %{$self->{content}})
+      {
+      push(@$datatags,$t),if (! grep($t eq $_, @all_skip_tags));
+      }
+   return @{$datatags};
+   }
+
+sub AUTOLOAD()
+   {
+   my ($xmlparser,$name,%attributes)=@_;
+   return if $AUTOLOAD =~ /::DESTROY$/;
+   my $name=$AUTOLOAD;
+   $name =~ s/.*://;
+   print __PACKAGE__."::AUTOLOAD: $name() called. This function should be defined.\n";
    }
 
 1;

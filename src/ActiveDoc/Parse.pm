@@ -30,90 +30,62 @@
 #			  if not registerd - the close tag will be ignored
 #			  too if outside of the specified context!
 
-
 package ActiveDoc::Parse;
 require 5.004;
-use ActiveDoc::Switcher;
-use ActiveDoc::TagContainer;
-use ActiveDoc::GroupChecker;
+use XML::Parser;
 
-sub new
+sub new()
    {
    my $class=shift;
    $self={};
    bless $self, $class;
-   $self->init();
+   my ($dataclass, $parse_style)=@_;
+
+   $self->{xmlparser} = new XML::Parser (
+					 Style => $parse_style,
+					 ParseParamEnt => 1,
+					 ErrorContext => 3,
+					 Pkg   => $dataclass);   
    return $self;
-   }
-
-sub init
-   {
-   my $self=shift;
-   $self->{gc}=GroupChecker->new();
-   $self->{gc}->include("all");
-   $self->{tags}=ActiveDoc::TagContainer->new();
-   }
-
-sub parse
-   {
-   my $self=shift;
-   my $file=shift;
-   
-   # basic setup of switcher
-   $self->{switch}=ActiveDoc::Switcher->new($file);
-   $self->{switch}->usegroupchecker($self->{gc});
-   $self->{switch}->usetags($self->{tags});
-
-   # do we need to switch on the streamer?
-   if ( @_ )
-      {
-      $fh=shift;
-      $self->{switch}->stream($fh);
-      foreach $tag ( @_ )
-	 {
-	 $self->{switch}->streamexclude($tag);
-	 }
-      }
-
-   # -- parse
-   $self->{switch}->parse();
-   undef $self->{switch};
    }
 
 sub parsefilelist()
    {
    my $self=shift;
    my ($files)=@_;
-   # basic setup of switcher
-   $self->{switch}=ActiveDoc::Switcher->new($files);   
-   $self->{switch}->usegroupchecker($self->{gc});
-   $self->{switch}->usetags($self->{tags});
-
-   # -- parse
-   $self->{switch}->parsefilelist();
-   undef $self->{switch};
+   print __PACKAGE__."::parsefilelist(): Not used?\n";
    }
 
-sub line
+sub parse()
    {
    my $self=shift;
-   
-   if ( defined $self->{switch} )
-      {
-      return $self->{switch}->line();
-      }
-   return undef;
+   my ($file)=@_;
+   $self->{data} = $self->{xmlparser}->parse($self->getfilestring_($file));
+   return $self;
    }
 
-sub tagstartline
+sub getfilestring_()
    {
    my $self=shift;
+   my ($file)=@_;
+   open (IN, "< $file") or die __PACKAGE__.": Cannot read file $file: $!\n";
+   my $filestring = join("", <IN>);
+   close (IN) or die __PACKAGE__.": Cannot read file $file: $!\n";
+   # Strip spaces at the beginning and end of the line:
+   $filestring =~ s/^\s+//g;
+   $filestring =~ s/\s+$//g;
+   # Finally strip the newlines:
+   $filestring =~ s/\n//g;
+   # Strip out spaces in between tags:
+   $filestring =~ s/>\s+</></g;
+   $self->{filestring}=$filestring;
+   return $filestring;
+   }
 
-   if ( defined $self->{switch} )
-      {
-      return $self->{switch}->tagstartline();
-      }
-   return undef;
+sub data()
+   {
+   my $self=shift;
+   return $self->{data}->[0];
    }
 
 sub includeparse
@@ -127,7 +99,6 @@ sub includeparse
       {
       $self->addtag($tag,$obj->{tags}->tagsettings($tag));
       }
-   # now the group settings
    }
 
 sub addtag
@@ -136,101 +107,4 @@ sub addtag
    $self->{tags}->addtag(@_);
    }
 
-sub addgrouptags
-   {
-   my $self=shift;
-   $self->{tags}->addtag("Group", \&Group_Start,$self, 
-			 "", $self, \&Group_End, $self);
-   $self->{tags}->setgrouptag("Group");
-   }
-
-sub addignoretags
-   {
-   my $self=shift;
-   $self->{gc}->exclude("ignore");
-   $self->{tags}->addtag("Ignore", \&Ignore_Start, $self,
-			 "",$self, \&Ignore_End,$self);
-   $self->{tags}->setgrouptag("Ignore");
-   }
-
-sub contexttag
-   {
-   my $self=shift;
-   my $name=shift;
-   $self->{tags}->setgrouptag($name);
-   }
-
-sub opencontext
-   {
-   my $self=shift;
-   my $name=shift;
-   $self->{gc}->opencontext($name);
-   }
-
-sub closecontext
-   {
-   my $self=shift;
-   my $name=shift;
-   $self->{gc}->closecontext($name);
-   }
-
-sub includecontext
-   {
-   my $self=shift;
-   my $name=shift;
-   $self->{gc}->unexclude($name);
-   $self->{gc}->include($name);
-   }
-
-sub excludecontext
-   {
-   my $self=shift;
-   my $name=shift;
-   $self->{gc}->exclude($name);
-   $self->{gc}->uninclude($name);
-   }
-
-sub cleartags
-   {
-   my $self=shift;
-   $self->{tags}->cleartags();
-   }
-
-sub tags {
-	 my $self=shift;
-	 return $self->{tags}->tags();
-}
-
-# ---------  Basic Group Related Tags ---------------------------------
-
-sub Group_Start
-   {
-   my $self=shift;
-   my $name=shift;
-   my $vars=shift;
-   my $lastgp;
-   $lastgp="group::".$$vars{name};
-   $self->{switch}->checkparam($name, 'name');
-   $self->{gc}->opencontext("group::".$$vars{name});   
-   }
-
-sub Group_End
-   {
-   my $self=shift;
-   my $name=shift;
-   $self->{gc}->closelastcontext("group");
-   }
-
-sub Ignore_Start
-   {
-   my $self=shift;
-   my $name=shift;
-   $self->{gc}->opencontext("ignore");
-   }
-
-sub Ignore_End
-   {
-   my $self=shift;
-   $self->{gc}->closecontext("ignore");
-   }
-
+1;
