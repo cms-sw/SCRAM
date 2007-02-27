@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-07-27 11:49:59+0200
-# Revision: $Id: Product.pm,v 1.2.4.1 2007/01/24 14:40:17 sashby Exp $ 
+# Revision: $Id: Product.pm,v 1.3 2007/02/27 11:59:44 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -225,7 +225,7 @@ sub basic_tags()
    {
    my $self=shift;
    my $datatags=[];
-   my $buildtags=[ qw(BIN LIBRARY APPLICATION MODULE PLUGIN BUILDPRODUCTS) ];
+   my $buildtags=[ qw(BIN LIBRARY APPLICATION MODULE PLUGIN UNITTEST BUILDPRODUCTS) ];
    my $skiptags=[ qw(DEFINED_GROUP ARCH EXPORT GROUP USE CLASSPATH) ];
    my $otherskiptags=[ qw( SKIPPEDDIRS ) ];
    my @all_skip_tags;
