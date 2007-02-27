@@ -53,7 +53,6 @@ sub parsefilelist()
    {
    my $self=shift;
    my ($files)=@_;
-   print __PACKAGE__."::parsefilelist(): Not used?\n";
    }
 
 sub parse()
