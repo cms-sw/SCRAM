@@ -136,36 +136,36 @@ use Cwd;
 @ISA=qw(Utilities::Verbose);
 
 sub new {
-	my $class=shift;
-	my $self={};
-	bless $self, $class;
-
-	# data init
-        $self->{admindir}=".SCRAM";
-        $self->{cachedir}="cache";
-        $self->{dbdir}="ObjectDB";
-	$self->{tbupdate}=0;
-	undef $self->{linkarea};
-
-	return $self;
+    my $class=shift;
+    my $self={};
+    bless $self, $class;
+    
+    # data init
+    $self->{admindir}=".SCRAM";
+    $self->{cachedir}="cache";
+    $self->{dbdir}="ObjectDB";
+    $self->{tbupdate}=0;
+    undef $self->{linkarea};
+    
+    return $self;
 }
 
 sub cache {
-	my $self=shift;
-
-	if ( @_ ) {
-	   $self->{cache}=shift;
-	}
-	if ( ! defined $self->{cache} ) {
-	  my $loc=$self->location()."/".$self->{admindir}."/".$self->{cachedir};
-	  if ( -e $loc  ) {
+    my $self=shift;
+    
+    if ( @_ ) {
+	$self->{cache}=shift;
+    }
+    if ( ! defined $self->{cache} ) {
+	my $loc=$self->location()."/".$self->{admindir}."/".$self->{cachedir};
+	if ( -e $loc  ) {
 	    $self->{cache}=URL::URLcache->new($loc);
-	  }
-	  else {
-	    $self->{cache}=undef;
-	  }
 	}
-	return $self->{cache};
+	else {
+	    $self->{cache}=undef;
+	}
+    }
+    return $self->{cache};
 }
 
 # Tool and project cache info:

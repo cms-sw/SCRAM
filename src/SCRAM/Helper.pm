@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.14.2.2 2007/02/26 18:33:45 sashby Exp $ 
+# Revision: $Id: Helper.pm,v 1.15 2007/02/27 11:59:49 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -333,16 +333,16 @@ sub project()
    $help.="a project version. This command is normally used to create cloned developer areas.\n";
    $help.="\n";
    $help.="$::bold";
-   $help.="-b <file>$::normal\tA bootstrap file on an accessible file system. This command would\n";
-   $help.="be used to create a project area from scratch on a laptop.\n";
+   $help.="-b <file>$::normal\tAn XML bootstrap file on an accessible file system. This command would\n";
+   $help.="be used to create a project area from scratch on a laptop or in a release area.\n";
    $help.="\n";
    $help.="** Examples **\n";
    $help.="\n";
    $help.="$::bold";
-   $help.="\tscram project XX XX_9_0$::normal\n";
+   $help.="\tscram project XX XX_0_0$::normal\n";
    $help.="\n";
    $help.="$::bold";
-   $help.="\tscram project -b ~/myprojects/projecta/config/boot $::normal\n";
+   $help.="\tscram project -b ~/myprojects/projecta/config/boot.xml $::normal\n";
    $help.="\n";
    $help.="\n";
    $help.="Use the \"-f\" flag followed by a valid filename (which MUST end in \".conf\") to\n";

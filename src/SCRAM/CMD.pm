@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.59 2006/12/04 14:21:23 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.60 2007/02/27 11:59:49 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -102,102 +102,6 @@ sub arch()
       return (0);
       }
    }
-
-# =item   C<toolbox()>
-
-# Create and manage toolbox projects.
-# sub-commands are create, get and validate.
-   
-# =cut
-
-# sub toolbox()
-#    {
-#    my $self=shift;
-#    my (@ARGS) = @_;
-#    my %opts;
-#    my %options = ("help"     => sub { $self->{SCRAM_HELPER}->help('toolbox'); exit(0) },
-# 		  "create"   => sub { $opts{TOOLBOX_CMD} = 'tbxcreate' },
-# 		  "get"      => sub { $opts{TOOLBOX_CMD} = 'tbxget' },
-# 		  "query"    => sub { $opts{TOOLBOX_CMD} = 'tbxquery' },
-# 		  "validate" => sub { $opts{TOOLBOX_CMD} = 'tbxvalidate' });
-   
-#    local @ARGV = @ARGS;
-
-#    Getopt::Long::config qw(default no_ignore_case require_order pass_through);
-   
-#    if (! Getopt::Long::GetOptions(\%opts, %options))
-#       {
-#       $self->scramfatal("Error parsing arguments. See \"scram toolbox -help\" for usage info.");
-#       }
-#    else
-#       {
-#       my $cmd=$opts{TOOLBOX_CMD};
-#       return $self->$cmd(@ARGV);
-#       }
-   
-#    # Return nice value:
-#    return 0;
-#    }
-
-# =item   C<tool()>
-
-# Manage the tools in the current SCRAM project area. Supported
-# sub-commands are list, info, tag, remove and template.
-   
-# =cut
-   
-# sub tbxcreate()
-#    {
-#    my $self=shift;
-#    my (@ARGS) = @_;
-#    my %opts;
-#    my ($tbbootfile, $tag, $installdir, $installname, $verbose, $interactive);
-#    my %options = ("help"    => sub { $self->{SCRAM_HELPER}->help('toolbox'); exit(0) },
-# 		  "tag=s"   => sub { $tag = $_[1]; },
-# 		  "dir=s"   => sub { $installdir = $_[1]; },
-# 		  "name=s"  => sub { $installname = $_[1]; },
-# 		  "boot=s"  => sub { $tbbootfile = "file:".$_[1] });
-   
-#    local @ARGV = @ARGS;
-   
-#    # Catch the no arguments scenario:
-#    die "toolbox create: No arguments given.","\n", if ($#ARGV < 0);
-
-#    Getopt::Long::config qw(default no_ignore_case require_order);
-   
-#    if (! Getopt::Long::GetOptions(\%opts, %options))
-#       {
-#       $self->scramfatal("Error parsing arguments. See \"scram toolbox -help\" for usage info.");
-#       }
-#    else
-#       {
-#       # Default tag if none given:
-#       $tag ||= 'HEAD';     
-#       my $tbxbasedir=$installdir||=$ENV{SCRAM_TOOLBOX_HOME};
-
-#       use URL::URLcache;
-#       # Set up a cache (old-style, for URLs):
-#       my $globalcache = URL::URLcache->new($ENV{HOME}."/.scramrc/globalcache");
-
-#       use Configuration::Configuration;
-#       use Configuration::TBProject;
-#       my $toolbox = Configuration::TBProject->new($globalcache, $tbxbasedir);
-#       # Parse the boot file for the toolbox:
-#       my $toolbox_area = $toolbox->boot($tbbootfile, $installname);
-#       # Set the architecture:
-#       $toolbox_area->archname($ENV{'SCRAM_ARCH'});
-#       $toolbox_area->is_toolbox(1);
-#       $toolbox_area->tbxconfigfile($toolbox->configfilename_());
-#       # Save the area info:
-#       $toolbox_area->save();
-
-#       print "\n";
-#       print ">> Toolbox version ".$toolbox->version(). " installed at: ".$toolbox_area->location()." <<\n\n";
-      
-#       # Return nice value:
-#       return 0;      
-#       }
-#    }
  
 sub tool()
    {
@@ -400,19 +304,15 @@ sub tooltemplate()
    # Check for a "compiler" or "basic" tag:
    if ($templatetype =~ /^comp/ )
       {
-      my $tdir=$templatedir."/CompilerTools/CXX";
       # Copy the template from the SCRAM template dir:
-      print "Installing compiler templates in current directory-\n";
-      print "destination directory will be CompilerTemplates: ","\n";
-      system("cp","-r",$tdir,"CompilerTemplates");
-      # Clean up the directory (remove CVS directory):
-      system("rm","-rf","CompilerTemplates/CVS");
+      print "Installing compiler tool template in current directory:\n";
+      system("cp",$templatedir."/compiler.xml",".");
       print "Done!","\n";
       }
    elsif ($templatetype =~ /^bas/ )
       {
       print "Installing basic tool template in current directory: ","\n";
-      system("cp",$templatedir."/basic_template",".");
+      system("cp",$templatedir."/basic_template.xml",".");
       print "Done!","\n";
       }
    else
@@ -1577,7 +1477,7 @@ sub project_template_copy()
       {
       print "\n";
       print "Warning: unable to install templates because you appear to have a config","\n";
-      print "         directory present already. Please delete it and re-run...","\n";
+      print "         directory present already. Please delete/rename it and re-run...","\n";
       return;
       }
    else

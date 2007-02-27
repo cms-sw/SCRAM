@@ -9,7 +9,8 @@ Configuration::BootStrapProject - File parsing utilities for boot files.
 =head1 DESCRIPTION
 
 Package containing functions for parsing bootstrap files (project initialisation documents).
-   
+These documents are written in XML.
+
 =head1 METHODS
 
 =over
