@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.24.2.6 2007/02/27 11:46:21 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.25 2007/02/27 11:59:49 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -71,7 +71,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => $SCRAM_VERSION || undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.24.2.6 2007/02/27 11:46:21 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.25 2007/02/27 11:59:49 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -956,7 +956,16 @@ Print a fatal error message string $message and exit.
 sub scramfatal()
    {
    my $self=shift;
-   print "SCRAM ",$self->fatal(@_),"\n";
+
+   # Send errors to STDERR when piping:
+   if ( -t STDERR )
+      {
+      print STDERR "SCRAM ",$self->fatal(@_),"\n";   
+      }
+   else
+      {
+      print "SCRAM ",$self->fatal(@_),"\n";  
+      }
    exit(1);
    }
 
