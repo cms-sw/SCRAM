@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.24.2.6 2007/02/27 11:46:21 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.27 2007/03/02 12:46:40 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -40,7 +40,7 @@ use Utilities::Verbose;
 use SCRAM::CMD;
 
 # Use CVS variables to get the latest tag (=> version):
-our ($SCRAM_VERSION) = ('$Name:  $' =~ /\$*: (.*?) \$/);
+our ($SCRAM_VERSION) = ('$Name: v200branch $' =~ /\$*: (.*?) \$/);
 
 @ISA=qw(Exporter Utilities::Verbose SCRAM::CMD);
 @EXPORT_OK=qw( );
@@ -71,7 +71,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => $SCRAM_VERSION || undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.24.2.6 2007/02/27 11:46:21 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.27 2007/03/02 12:46:40 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -300,11 +300,14 @@ sub _initenv()
    
    # Need a lookup database. Try the user's environment first to override
    # the value set at install time (in SCRAM_SITE.pm):
-   if (exists $ENV{SCRAM_USERLOOKUPDB} && -f "$ENV{SCRAM_USERLOOKUPDB}")
-      {
-      print "Using $ENV{SCRAM_USERLOOKUPDB} as the database.","\n", if ($ENV{SCRAM_DEBUG});
-      $ENV{SCRAM_LOOKUPDB}=$ENV{SCRAM_USERLOOKUPDB};
-      }
+   if (exists $ENV{SCRAM_USERLOOKUPDB}) {
+       if (-f "$ENV{SCRAM_USERLOOKUPDB}") {
+	   print "Using $ENV{SCRAM_USERLOOKUPDB} as the database.","\n", if ($ENV{SCRAM_DEBUG});
+	   $ENV{SCRAM_LOOKUPDB}=$ENV{SCRAM_USERLOOKUPDB};
+       } else {
+	   $self->scramerror("You've specified SCRAM_USERLOOKUPDB but no project/lookup exists. Please create it first.");
+       }
+   }
    
    # A fallback option:
    if ( ! ( exists $ENV{SCRAM_LOOKUPDB} ) )
@@ -956,7 +959,16 @@ Print a fatal error message string $message and exit.
 sub scramfatal()
    {
    my $self=shift;
-   print "SCRAM ",$self->fatal(@_),"\n";
+
+   # Send errors to STDERR when piping:
+   if ( -t STDERR )
+      {
+      print STDERR "SCRAM ",$self->fatal(@_),"\n";   
+      }
+   else
+      {
+      print "SCRAM ",$self->fatal(@_),"\n";  
+      }
    exit(1);
    }
 
