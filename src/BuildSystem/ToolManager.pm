@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.15.2.3 2007/02/27 11:38:39 sashby Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.16 2007/02/27 11:59:45 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -141,44 +141,39 @@ sub setupalltools()
       my $scramprojects = $::scram->_loadscramdb();
       
       # Look for a match in the scram db:
-      foreach my $S (@$selected)
-	 {
-	 if (exists ($scramprojects->{$S}))
-	    {
-	    # Now check the version required exists in
-	    # list of scram projects with this name:
-	    while (my ($pdata,$plocation) = each %{$scramprojects->{$S}})
-	       {
-	       # Split the $pdata string to get the real name and the version:
-	       my ($pname,$pversion) = split(":",$pdata);
-	       if ($pversion eq $self->defaultversion($S))
-		  {
-		  # Get the tool manager for the scram project:
-		  my $sa=$::scram->scramfunctions()->scramprojectdb()->getarea($pname,$pversion);
-		  # Load the tool cache:
-		  if ( -r $sa->toolcachename())
-		     {
-		     use Cache::CacheUtilities;
-		     my $satoolmanager=&Cache::CacheUtilities::read($sa->toolcachename());
-		     # Copy needed content from toolmanager for scram-managed project only
-		     # if the projects have compatible configurations (compare first set of
-		     # digits):
-		     if ($self->check_compatibility($satoolmanager))
-			{
-			$self->inheritcontent($satoolmanager);
-			}
-		     }
+      foreach my $S (@$selected) {
+	  if (exists ($scramprojects->{$S})) {
+	      # Check for environment SCRAM_INHERIT_COMPAT_CONFIG:
+	      if (exists($ENV{SCRAM_INHERIT_COMPAT_CONFIG})) {
+		  # Now check the version required exists in
+		  # list of scram projects with this name:
+		  while (my ($pdata,$plocation) = each %{$scramprojects->{$S}}) {
+		      # Split the $pdata string to get the real name and the version:
+		      my ($pname,$pversion) = split(":",$pdata);
+		      if ($pversion eq $self->defaultversion($S)) {
+			  # Get the tool manager for the scram project:
+			  my $sa=$::scram->scramfunctions()->scramprojectdb()->getarea($pname,$pversion);
+			  # Load the tool cache:
+			  if ( -r $sa->toolcachename()) {
+			      use Cache::CacheUtilities;
+			      my $satoolmanager=&Cache::CacheUtilities::read($sa->toolcachename());
+			      # Copy needed content from toolmanager for scram-managed project only
+			      # if the projects have compatible configurations (compare first set of
+			      # digits):
+			      if ($self->check_compatibility($satoolmanager)) {
+				  $self->inheritcontent($satoolmanager);
+			      }
+			  }
+		      }
 		  }
-	       }
-	    # Also add this scram-managed project to list of tools to set up:
-	    push(@localtools,$S);
-	    }
-	 else
-	    {
-	    # Store other tools in ReqDoc in separate array. We will set up these tools later:
-	    push(@localtools,$S);
-	    }
-	 }
+	      }
+	      # Also add this scram-managed project to list of tools to set up:
+	      push(@localtools,$S);
+	  } else {
+	      # Store other tools in ReqDoc in separate array. We will set up these tools later:
+	      push(@localtools,$S);
+	  }
+      }
       
       # Set up extra tools required in this project, in addition to
       # any scram-managed projects
