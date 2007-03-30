@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.60 2007/02/27 11:59:49 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.61 2007/02/27 12:46:01 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -582,9 +582,20 @@ sub list()
       
       # get all project data from  SCRAMDB:
       my @projects = $self->getprojectsfromDB();
+      print $self->getprojectsfromDB(),"\n";
+#      $self->scramfunctions()->scramprojectdb()->link_to_db("/a/path/to/dummydb.xml");      
+      # Do a test dump:
+#      print $self->scramfunctions()->scramprojectdb()->dump(),"\n";
+     
+      
+
+#      map { print $_->name,"\n"; } @projects;
+#      return;
+#      print join(" ",@projects),"\n";
+      
       # We say goodbye if there aren't any projects installed:
       $self->scramerror(">>>> No locally installed projects! <<<<"), if ( $#projects < 0);
-
+      return;
       # Otherwise, we continue. First, we see if the option SCRAM_OLDSTYLE is set. If so, we show all
       # projects (V0_x ones too) in the same manner as other SCRAM versions. If not, we use the new
       # mechanism which checks only for the .installed file.      
@@ -592,11 +603,11 @@ sub list()
       foreach my $pr (@projects)
 	 {
 	 my $url='NULL';	 
-	 if ( $project  eq "" || $project eq $$pr[0] )
+	 if ( $project  eq "" || $project eq $pr->name)
 	    {
 	    # Check that the area exists (i.e. check that a configarea object
 	    # is returned before attempting to test its' location):
-	    my $possiblearea=$self->scramfunctions()->scramprojectdb()->getarea($$pr[0],$$pr[1]);
+	    my $possiblearea=$self->scramfunctions()->scramprojectdb()->getarea($pr->name,$pr->version);
 	    $url=$possiblearea->location(), if (defined ($possiblearea));
 	    
 	    if ($opts{SCRAM_OLDSTYLE})

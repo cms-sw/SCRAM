@@ -19,7 +19,8 @@ Stores project area information.
 =item C<new($databasefile)>
 
 A new SCRAM::ScramProjectDB object. Receives a database file
-path $databasefile as argument.
+path $databasefile as argument and handles reading the XML
+database file.
 
 =item C<file()>
 
@@ -72,36 +73,113 @@ Shaun ASHBY
 
 package SCRAM::ScramProjectDB;
 use Utilities::Verbose;
+use Utilities::XMLParser qw(&xmlrdr);
+use SCRAM::ProjectDB;
+
 require 5.004;
 @ISA=qw(Utilities::Verbose);
 
 sub new {
-	my $class=shift;
-	my $self={};
-	bless $self, $class;
-	$self->{dbfile}=shift;
-	$self->_readdbfile($self->{dbfile});
-	$self->{projectobjects}={};
-	return $self;
+    my $class=shift;
+    my $self={};
+    bless $self, $class;
+    $self->{dbfile}=shift;
+    $self->_readdbfile($self->{dbfile});
+    return $self;
 }
 
 sub file {
-	my $self=shift;
-	return $self->{dbfile};
+    my $self=shift;
+    return $self->{dbfile};
 }
 
-sub getarea
-   {
-   require Configuration::ConfigArea;
-   my $self=shift;
-   my $name=shift;
-   my $version=shift;
-   my $area=undef;
-   my $index=$self->_findlocal($name,$version);
-   
-   if ( $index != -1 )
-      {	
-      my $location=$self->{projects}[$index][3];
+sub dbproxy() {
+    my $self=shift;
+    return $self->{dbproxy};
+}
+
+sub listlinks {
+    my $self=shift;    
+    my  @dbfile=();
+    foreach $db ( @{$self->{linkeddbs}} ) {
+	push @dbfile, $db->file();
+    }
+    return @dbfile;
+}
+
+sub list {
+    my $self=shift;
+    return @{$self->projects()};
+}
+
+sub listall {
+    my $self=shift;
+    my @list=$self->list();
+    foreach $db ( @{$self->{linkeddbs}} ) {
+	$self->verbose("Adding list from $db");
+	push @list, $db->listall();
+    }    
+    return @list;
+}
+
+sub link {
+    my $self=shift;
+    my $dbfile=shift;
+    $self->dbproxy()->link_db($dbfile);
+    $self->dbproxy()->save(); # //FIXME
+}
+
+sub unlink {
+    my $self=shift;
+    my $file=shift;
+    $self->dbproxy()->unlink_db($file); # //FIXME
+    $self->dbproxy()->save();
+}
+
+sub _readdbfile {
+    my $self=shift;
+    my $file=shift;
+    # First of all, read the XML db. This will return all
+    # content for the current architecture:
+    $self->verbose("Initialising db from $file");
+    # Load up the database from the XML file:
+    $self->{dbproxy}=&Utilities::XMLParser::xmlrdr($file,'SCRAM');
+    # Look for linked databases:
+    foreach my $l_db (@{$self->{dbproxy}->get_linked_dbs()}) {
+	if (-f $l_db) {
+	    $self->verbose("Getting Linked DB $l_db");
+	    my $newdb=SCRAM::ScramProjectDB->new($l_db);
+	    push(@{$self->{linkeddbs}},$newdb);
+	}
+    }
+}
+
+sub projects() {
+    my $self=shift;
+    my ($arch)=@_;
+    $self->{projects} = $self->dbproxy()->projects($arch);
+    print $self->{projects},"\n";
+    return $self->{projects};
+    }
+
+sub dump() {
+    my $self=shift;
+    my $fstring="<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n";
+    $fstring.=$self->dbproxy()->dump();
+    return $fstring;
+}
+
+sub getarea {
+    require Configuration::ConfigArea;
+    my $self=shift;
+    my $name=shift;
+    my $version=shift;
+    my $area=undef;
+    my $index=$self->_findlocal($name,$version);
+    
+    if ( $index != -1 )
+    {	
+	my $location=$self->{projects}[$index][3];
       if ( defined $self->{projectobjects}{$location} )
 	 {
 	 $area=$self->{projectobjects}{$location};
@@ -197,32 +275,7 @@ sub addarea
    return 0;
    }
 
-sub listlinks {
-	my $self=shift;
 
-	my  @dbfile=();
-	foreach $db ( @{$self->{linkeddbs}} ) {
-	  push @dbfile, $db->file();
-	}
-	return @dbfile;
-}
-
-sub list {
-	my $self=shift;
-	return @{$self->{projects}};
-}
-
-sub listall {
-	my $self=shift;
-	my @list=$self->list();
-	
-	foreach $db ( @{$self->{linkeddbs}} ) {
-	  $self->verbose("Adding list from $db");
-          push @list, $db->listall();
-        }
-
-	return @list;
-}
 
 sub removearea
    {
@@ -300,29 +353,6 @@ sub removearea
    return 0;
    }
 
-sub link {
-	my $self=shift;
-	my $dbfile=shift;
-
-	my $newdb=SCRAM::ScramProjectDB->new($dbfile);
-	push @{$self->{linkeddbs}},$newdb; 
-	$self->_save();
-}
-
-sub unlink {
-	my $self=shift;
-	my $file=shift;
-	my $db;
-	
-	for (my $i=0; $i<=$#{$self->{linkeddbs}}; $i++ ) {
-	   $db=${$self->{linkeddbs}}[$i];
-	   if  ( $db->file() eq $file ) {
-	     $self->verbose("Removing link $file");
-	     splice (@{$self->{linkeddbs}},$i,1);
-	     $self->_save();
-	   }
-	}
-}
 
 # -- Support Routines
 
@@ -344,51 +374,24 @@ sub _findlocal {
 	return $found;
 }
 
-sub _save {
-	my $self=shift;
+#sub _save {
+#    my $self=shift;  
+#    use FileHandle;
+#    my $fh=FileHandle->new();
+#    my $filename=$self->{dbfile}.".saved";
+#    open ( $fh, ">$filename" );
+#    print $fh $self->dump()."\n";
+##	# print current links 
+#	foreach $db ( @{$self->{linkeddbs}} ) {
+#	   print $fh "\!DB ".$db->file()."\n";
+#	}
+#	# save project info
+#	my $temp;
+#	foreach $elem ( @{$self->{projects}} ) {
+#	  $temp=join ":", @{$elem};
+	#  print $fh $temp."\n";
+    #}
+#    undef $fh;
+#}
 
-	use FileHandle;
-        my $fh=FileHandle->new();
-	my $filename=$self->{dbfile};
-        open ( $fh, ">$filename" );
-	# print current links 
-	foreach $db ( @{$self->{linkeddbs}} ) {
-	   print $fh "\!DB ".$db->file()."\n";
-	}
-	# save project info
-	my $temp;
-	foreach $elem ( @{$self->{projects}} ) {
-	  $temp=join ":", @{$elem};
-	  print $fh $temp."\n";
-	}
-	undef $fh;
-}
-
-sub _readdbfile {
-	my $self=shift;
-	my $file=shift;
-	
-	use FileHandle;
-        my $fh=FileHandle->new();
-	$self->verbose("Initialising db from $file");
-        open ( $fh, "<$file" );
-
-	my @vars;
-	my $newdb;
-	while ( $map=<$fh> ) {
-	  chomp $map;
-          if ( $map=~/^\!DB (.*)/ ) { # Check for other DB files
-                my $db=$1;
-                if ( -f $db ) {
-		  $self->verbose("Getting Linked DB $db");
-                  $newdb=SCRAM::ScramProjectDB->new($db);
-		  push @{$self->{linkeddbs}},$newdb; 
-                }
-                next;
-          }
-          @vars = split ":", $map;
-	  $self->verbose("registering project $map");
-	  push @{$self->{projects}}, [ @vars ];
-	}
-	undef $fh;
-}
+1;
