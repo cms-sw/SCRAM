@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.26 2007/03/01 22:50:52 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.27 2007/03/02 12:46:40 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -71,7 +71,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => $SCRAM_VERSION || undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.26 2007/03/01 22:50:52 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.27 2007/03/02 12:46:40 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -624,7 +624,6 @@ SCRAM was installed.)
 sub getprojectsfromDB()
    {
    my $self=shift;
-
    # Get list of projects from scram database and return them:
    return ($self->scramfunctions()->scramprojectdb()->listall());
    }

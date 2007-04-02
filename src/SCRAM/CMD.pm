@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.61 2007/02/27 12:46:01 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.62 2007/03/30 15:04:08 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -543,168 +543,186 @@ areas can be created from any of the projects listed by this command.
    
 =cut
 
-sub list()
-   {
-   my $self=shift;
-   my (@ARGS) = @_;
-   my %opts;
-   my %options =
-      ("help"	 => sub { $self->{SCRAM_HELPER}->help('list'); exit(0) },
-       "oldstyle" => sub { $opts{SCRAM_OLDSTYLE} = 1 },
-       "compact" => sub { $opts{SCRAM_LISTCOMPACT} = 1 } );
-   
-   local @ARGV = @ARGS;
-   
-   Getopt::Long::config qw(default no_ignore_case require_order);
-   
-   if (! Getopt::Long::GetOptions(\%opts, %options))
-      {
-      $self->scramfatal("Error parsing arguments. See \"scram list -help\" for usage info.");
-      exit(1);
-      }
-   else
-      {
-      my $pjname = "Project Name";
-      my $pjversion = "Project Version";
-      my $pjlocation = "Project Location";
-      my $headstring = sprintf("| %-12s  | %-24s | %-33s |",$pjname,$pjversion,$pjlocation);
-      my @missingareas;
-      my $projectexists=0;
-      my $linebold = "$::bold"."$::line"."$::normal";
-      
-      # First, test to see if there is a SCRAMDB:
-      $self->scramerror("No installation database available - perhaps no projects have been installed locally?"),
-      if ( ! -f $ENV{SCRAM_LOOKUPDB});
-      
-      # The project data:
-      my $project = shift(@ARGV);
-      my $projectversion = shift(@ARGV);
-      
-      # get all project data from  SCRAMDB:
-      my @projects = $self->getprojectsfromDB();
-      print $self->getprojectsfromDB(),"\n";
-#      $self->scramfunctions()->scramprojectdb()->link_to_db("/a/path/to/dummydb.xml");      
-      # Do a test dump:
-#      print $self->scramfunctions()->scramprojectdb()->dump(),"\n";
-     
-      
+sub list() {
+    my $self=shift;
+    my (@ARGS) = @_;
+    my %opts;
+    my %options =
+	("help"	 => sub { $self->{SCRAM_HELPER}->help('list'); exit(0) },
+	 "oldstyle" => sub { $opts{SCRAM_OLDSTYLE} = 1 },
+	 "compact" => sub { $opts{SCRAM_LISTCOMPACT} = 1 } );
+    
+    local @ARGV = @ARGS;
+    
+    Getopt::Long::config qw(default no_ignore_case require_order);
+    
+    if (! Getopt::Long::GetOptions(\%opts, %options)) {
+	$self->scramfatal("Error parsing arguments. See \"scram list -help\" for usage info.");
+	exit(1);
+    } else {
+	my $pjname = "Project Name";
+	my $pjversion = "Project Version";
+	my $pjlocation = "Project Location";
+	my $headstring = sprintf("| %-12s  | %-24s | %-33s |",$pjname,$pjversion,$pjlocation);
+	my @missingareas;
+	my $projectexists=0;
+	my $linebold = "$::bold"."$::line"."$::normal";
+	
+	# First, test to see if there is a SCRAMDB:
+	$self->scramerror("No installation database available - perhaps no projects have been installed locally?"),
+	if ( ! -f $ENV{SCRAM_LOOKUPDB});
+	
+	# The project data:
+	my $project = shift(@ARGV);
+	my $projectversion = shift(@ARGV);
+	
+	# Get all project data from SCRAMDB:
+	my @projects = $self->getprojectsfromDB();
+	# We say goodbye if there aren't any projects installed:
+	$self->scramerror(">>>> No locally installed projects! <<<<"), if ( $#projects < 0);
+	if (!$opts{SCRAM_LISTCOMPACT}) {
+	    print $linebold,"\n";
+	    print $headstring."\n";
+	    print $linebold,"\n\n";
+	}
+	
+	foreach my $proj (@projects) {
+	    if ($project) {	      
+		if ($project eq $proj->name) {
+		    if ($projectversion) {
+			# Get a specific version:
+			$proj->list_version($projectversion,$opts{SCRAM_LISTCOMPACT});
+		    } else {
+			# Get versions of a specific project:
+			$proj->list_versions($opts{SCRAM_LISTCOMPACT});		      
+		    }
+		} else {
+		    next;
+		}
+	    } else {
+		# Dump info for all versions:
+		$proj->list_versions($opts{SCRAM_LISTCOMPACT});
+	    }
+	}
+	
+	if (!$opts{SCRAM_LISTCOMPACT}) {	  
+	    print "\n\n","Projects available for platform >> ".$::bold."$ENV{SCRAM_ARCH}".$::normal." <<\n";
+	    print "\n";
+	}
+	
+	return 0;
+    }
+}
 
-#      map { print $_->name,"\n"; } @projects;
-#      return;
-#      print join(" ",@projects),"\n";
-      
-      # We say goodbye if there aren't any projects installed:
-      $self->scramerror(">>>> No locally installed projects! <<<<"), if ( $#projects < 0);
-      return;
-      # Otherwise, we continue. First, we see if the option SCRAM_OLDSTYLE is set. If so, we show all
-      # projects (V0_x ones too) in the same manner as other SCRAM versions. If not, we use the new
-      # mechanism which checks only for the .installed file.      
-      # Iterate over the list of projects:
-      foreach my $pr (@projects)
-	 {
-	 my $url='NULL';	 
-	 if ( $project  eq "" || $project eq $pr->name)
-	    {
-	    # Check that the area exists (i.e. check that a configarea object
-	    # is returned before attempting to test its' location):
-	    my $possiblearea=$self->scramfunctions()->scramprojectdb()->getarea($pr->name,$pr->version);
-	    $url=$possiblearea->location(), if (defined ($possiblearea));
+# Otherwise, we continue. First, we see if the option SCRAM_OLDSTYLE is set. If so, we show all
+# projects (V0_x ones too) in the same manner as other SCRAM versions. If not, we use the new
+# mechanism which checks only for the .installed file.      
+# Iterate over the list of projects:
+#       foreach my $pr (@projects)
+# 	 {
+# 	 my $url='NULL';	 
+# 	 if ( $project  eq "" || $project eq $pr->name)
+# 	    {
+# 	    # Check that the area exists (i.e. check that a configarea object
+# 	    # is returned before attempting to test its' location):
+# 	    my $possiblearea=$self->scramfunctions()->scramprojectdb()->getarea($pr->name,$pr->version);
+# 	    $url=$possiblearea->location(), if (defined ($possiblearea));
 	    
-	    if ($opts{SCRAM_OLDSTYLE})
-	       {
-	       # See if area is readable:
-	       if ( -d $url)
-		  {
-		  # Check path to project:
-		  if ( -d "$url/bin/$ENV{SCRAM_ARCH}" || 
-		       -d "$url/lib/$ENV{SCRAM_ARCH}" || -d "$url/$ENV{SCRAM_ARCH}/lib")
-		     {
-		     if ($project eq $$pr[0])
-			{
-			$projectexists=1;
-			} # We've found at least one project
-		     my $pstring = sprintf "  %-15s %-25s  \n%45s%-30s\n",$$pr[0],$$pr[1],"--> ",$::bold.$url.$::normal;
-		     $pstring = sprintf "%-15s %-25s %-50s\n",$$pr[0],$$pr[1],$url, if ($opts{SCRAM_LISTCOMPACT});
-		     push(@foundareas,$pstring);
-		     }
-		  }
-	       else
-		  {
-		  # Area is missing:
-		  if ($url ne 'NULL')
-		     {
-		     push(@missingareas,sprintf ">>  Project area MISSING:   %-10s %-20s  \n",$$pr[0],$$pr[1]);
-		     }
-		  }
-	       }
-	    else
-	       {
-	       # The new mechanism. We see if project was registered:
-	       # See if area is readable:
-	       if ( -d $url)
-		  {
-		  if ($self->isregistered($possiblearea))
-		     {
-		     if ($project eq $$pr[0])
-			{
-			$projectexists=1;
-			} # We've found at least one project
-		     my $pstring = sprintf "  %-15s %-25s  \n%45s%-30s\n",$$pr[0],$$pr[1],"--> ",$::bold.$url.$::normal;
-		     $pstring = sprintf "%-15s %-25s %-50s\n",$$pr[0],$$pr[1],$url, if ($opts{SCRAM_LISTCOMPACT});
-		     push(@foundareas,$pstring);
-		     }
-		  }
-	       else
-		  {
-		  # Area is missing:
-		  if ($url ne 'NULL')
-		     {		     
-		     push(@missingareas,sprintf ">>  Project area MISSING:   %-10s %-20s  \n",$$pr[0],$$pr[1]);
-		     }
-		  }
-	       }
-	    }
-	 }
+# 	    if ($opts{SCRAM_OLDSTYLE})
+# 	       {
+# 	       # See if area is readable:
+# 	       if ( -d $url)
+# 		  {
+# 		  # Check path to project:
+# 		  if ( -d "$url/bin/$ENV{SCRAM_ARCH}" || 
+# 		       -d "$url/lib/$ENV{SCRAM_ARCH}" || -d "$url/$ENV{SCRAM_ARCH}/lib")
+# 		     {
+# 		     if ($project eq $$pr[0])
+# 			{
+# 			$projectexists=1;
+# 			} # We've found at least one project
+# 		     my $pstring = sprintf "  %-15s %-25s  \n%45s%-30s\n",$$pr[0],$$pr[1],"--> ",$::bold.$url.$::normal;
+# 		     $pstring = sprintf "%-15s %-25s %-50s\n",$$pr[0],$$pr[1],$url, if ($opts{SCRAM_LISTCOMPACT});
+# 		     push(@foundareas,$pstring);
+# 		     }
+# 		  }
+# 	       else
+# 		  {
+# 		  # Area is missing:
+# 		  if ($url ne 'NULL')
+# 		     {
+# 		     push(@missingareas,sprintf ">>  Project area MISSING:   %-10s %-20s  \n",$$pr[0],$$pr[1]);
+# 		     }
+# 		  }
+# 	       }
+# 	    else
+# 	       {
+# 	       # The new mechanism. We see if project was registered:
+# 	       # See if area is readable:
+# 	       if ( -d $url)
+# 		  {
+# 		  if ($self->isregistered($possiblearea))
+# 		     {
+# 		     if ($project eq $$pr[0])
+# 			{
+# 			$projectexists=1;
+# 			} # We've found at least one project
+# 		     my $pstring = sprintf "  %-15s %-25s  \n%45s%-30s\n",$$pr[0],$$pr[1],"--> ",$::bold.$url.$::normal;
+# 		     $pstring = sprintf "%-15s %-25s %-50s\n",$$pr[0],$$pr[1],$url, if ($opts{SCRAM_LISTCOMPACT});
+# 		     push(@foundareas,$pstring);
+# 		     }
+# 		  }
+# 	       else
+# 		  {
+# 		  # Area is missing:
+# 		  if ($url ne 'NULL')
+# 		     {		     
+# 		     push(@missingareas,sprintf ">>  Project area MISSING:   %-10s %-20s  \n",$$pr[0],$$pr[1]);
+# 		     }
+# 		  }
+# 	       }
+# 	    }
+# 	 }
       
-      # Now dump out the info:
-      if ($opts{SCRAM_LISTCOMPACT})
-	 {
-	 $self->scramerror(">>>> No locally installed $project projects! <<<<"),
-	 if ( ! $projectexists && $project ne "");
+#       # Now dump out the info:
+#       if ($opts{SCRAM_LISTCOMPACT})
+# 	 {
+# 	 $self->scramerror(">>>> No locally installed $project projects! <<<<"),
+# 	 if ( ! $projectexists && $project ne "");
 	 
-	 foreach $p (@foundareas)
-	    {
-	    print $p;
-	    }
-	 }
-      else
-	 {
-	 # If there weren't any projects of the name given found:
-	 $self->scramerror(">>>> No locally installed $project projects! <<<<"),
-	 if ( ! $projectexists && $project ne "");
+# 	 foreach $p (@foundareas)
+# 	    {
+# 	    print $p;
+# 	    }
+# 	 }
+#       else
+# 	 {
+# 	 # If there weren't any projects of the name given found:
+# 	 $self->scramerror(">>>> No locally installed $project projects! <<<<"),
+# 	 if ( ! $projectexists && $project ne "");
 	 
-	 # Otherwise, dump the info:
-	 print "\n","Listing installed projects....","\n\n";
-	 print $linebold,"\n";
-	 print $headstring."\n";
-	 print $linebold,"\n\n";
+# 	 # Otherwise, dump the info:
+# 	 print "\n","Listing installed projects....","\n\n";
+# 	 print $linebold,"\n";
+# 	 print $headstring."\n";
+# 	 print $linebold,"\n\n";
 	 
-	 foreach $p (@foundareas)
-	    {
-	    print $p;
-	    }
+# 	 foreach $p (@foundareas)
+# 	    {
+# 	    print $p;
+# 	    }
 	 
-	 print "\n\n","Projects available for platform >> ".$::bold."$ENV{SCRAM_ARCH}".$::normal." <<\n";
-	 print "\n";
-	 }
+# 	 print "\n\n","Projects available for platform >> ".$::bold."$ENV{SCRAM_ARCH}".$::normal." <<\n";
+# 	 print "\n";
+# 	 }
       
-      # Error if there were missing areas:
-      $self->scramerror("\n",@missingareas), if ( $#missingareas > -1 );
-      }
+#       # Error if there were missing areas:
+#       $self->scramerror("\n",@missingareas), if ( $#missingareas > -1 );
+#      }
    
    # Otherwise return nicely:
-   return 0;
-   }
+#   return 0;
+#   }
 
 =item   C<db()>
 

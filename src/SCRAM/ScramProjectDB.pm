@@ -109,7 +109,7 @@ sub listlinks {
 
 sub list {
     my $self=shift;
-    return @{$self->projects()};
+    return $self->projects();
 }
 
 sub listall {
@@ -118,7 +118,7 @@ sub listall {
     foreach $db ( @{$self->{linkeddbs}} ) {
 	$self->verbose("Adding list from $db");
 	push @list, $db->listall();
-    }    
+    }
     return @list;
 }
 
@@ -158,9 +158,8 @@ sub projects() {
     my $self=shift;
     my ($arch)=@_;
     $self->{projects} = $self->dbproxy()->projects($arch);
-    print $self->{projects},"\n";
-    return $self->{projects};
-    }
+    return @{$self->{projects}};
+}
 
 sub dump() {
     my $self=shift;
@@ -177,46 +176,36 @@ sub getarea {
     my $area=undef;
     my $index=$self->_findlocal($name,$version);
     
-    if ( $index != -1 )
-    {	
+    if ( $index != -1 ) {	
 	my $location=$self->{projects}[$index][3];
-      if ( defined $self->{projectobjects}{$location} )
-	 {
-	 $area=$self->{projectobjects}{$location};
-	 }
-      else
-	 {
-	 $area=Configuration::ConfigArea->new();
-	 $self->verbose("Attempt to ressurect $name $version from $location");
-	 if ( $area->bootstrapfromlocation($location) == 1 )
-	    {
-	    undef $area;
-		 $self->verbose("attempt unsuccessful");
+	if ( defined $self->{projectobjects}{$location} ) {
+	    $area=$self->{projectobjects}{$location};
+	} else {
+	    $area=Configuration::ConfigArea->new();
+	    $self->verbose("Attempt to ressurect $name $version from $location");
+	    if ( $area->bootstrapfromlocation($location) == 1 ) {
+		undef $area;
+		$self->verbose("attempt unsuccessful");
+	    } else {
+		$self->verbose("area found");
+		$self->{projectobjects}{$location}=$area;
 	    }
-	 else
-	    {
-	    $self->verbose("area found");
-	    $self->{projectobjects}{$location}=$area;
-	    }
-	 }
-      }
-   else
-      {
-      # -- search in linked databases
-      foreach $db ( @{$self->{linkeddbs}} )
-	 {
-	 $self->verbose("Searching in $db->file() for $name $version");
-	 $area=$db->getarea($name,$version);
-	 last if (defined $area);
-	 }
-      }
-   if ( ! defined $area )
-      {
-      $self->verbose("Area $name $version not found");
-      }
+	}
+    } else {
+	# -- search in linked databases
+	foreach $db ( @{$self->{linkeddbs}} ) {
+	    $self->verbose("Searching in $db->file() for $name $version");
+	    $area=$db->getarea($name,$version);
+	    last if (defined $area);
+	}
+    }
 
-   return $area;
-   }
+    if ( ! defined $area ) {
+	$self->verbose("Area $name $version not found");
+    }
+    
+    return $area;
+}
 
 
 sub addarea
@@ -359,19 +348,22 @@ sub removearea
 #
 # Search through the project list until we get a match
 sub _findlocal {
-	my $self=shift;
-	my $name=shift;
-	my $version=shift;
+    my $self=shift;
+    my $name=shift;
+    my $version=shift;
 
-	my $found=-1;
-	for (my $i=0; $i<=$#{$self->{projects}}; $i++ ) {
-	  if  ( ( $self->{projects}[$i][0] eq $name) && 
-		( $self->{projects}[$i][1] eq $version) ) {
-	    $found=$i;
-	    last;
-	  }
-	}
-	return $found;
+    my $found = $self->dbproxy()->project($name)->version($version);
+    
+#     my $found=-1;
+#     for (my $i=0; $i<=$#{$self->{projects}}; $i++ ) {
+# 	if  ( ( $self->{projects}[$i][0] eq $name) && 
+# 	      ( $self->{projects}[$i][1] eq $version) ) {
+# 	    $found=$i;
+# 	    last;
+# 	}
+#     }
+#     return $found;
+
 }
 
 #sub _save {
