@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.62 2007/03/30 15:04:08 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.63 2007/04/02 15:19:57 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -2744,6 +2744,18 @@ sub dbghook_()
    my $self=shift;
    my (@ARGS) = @_;
    local @ARGV = @ARGS;
+
+   my ($projectname,$projectversion)=@ARGV;
+
+   # 20070404
+   my $relarea=$self->scramfunctions()->scramprojectdb()->getarea($projectname,$projectversion);
+
+   print $relarea,"\n";
+   print "release location: ",$relarea->location,"\n";
+   
+   
+
+
    # Return nice value:
    return 0;
    }

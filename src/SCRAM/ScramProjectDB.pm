@@ -174,13 +174,14 @@ sub getarea {
     my $name=shift;
     my $version=shift;
     my $area=undef;
-    my $index=$self->_findlocal($name,$version);
-    
-    if ( $index != -1 ) {	
-	my $location=$self->{projects}[$index][3];
+    # Look in local db first. This returns a version object:
+    my $alocal=$self->_findlocal($name,$version);
+    if ($alocal) {
+	my $location = $alocal->path;
+
 	if ( defined $self->{projectobjects}{$location} ) {
-	    $area=$self->{projectobjects}{$location};
-	} else {
+ 	    $area=$self->{projectobjects}{$location};
+ 	} else {
 	    $area=Configuration::ConfigArea->new();
 	    $self->verbose("Attempt to ressurect $name $version from $location");
 	    if ( $area->bootstrapfromlocation($location) == 1 ) {
@@ -190,15 +191,31 @@ sub getarea {
 		$self->verbose("area found");
 		$self->{projectobjects}{$location}=$area;
 	    }
+	    
+	    
 	}
+	
     } else {
-	# -- search in linked databases
+	# Look through the linked databases:
 	foreach $db ( @{$self->{linkeddbs}} ) {
-	    $self->verbose("Searching in $db->file() for $name $version");
-	    $area=$db->getarea($name,$version);
-	    last if (defined $area);
+#	    $self->verbose("Searching in $db->file() for $name $version");
+#	    $area=$db->getarea($name,$version);
+#	    last if (defined $area);
+	    
+	    
 	}
+	
     }
+    
+    
+#     } else {
+# 	# -- search in linked databases
+# 	foreach $db ( @{$self->{linkeddbs}} ) {
+# 	    $self->verbose("Searching in $db->file() for $name $version");
+# 	    $area=$db->getarea($name,$version);
+# 	    last if (defined $area);
+# 	}
+#     }
 
     if ( ! defined $area ) {
 	$self->verbose("Area $name $version not found");
@@ -351,19 +368,9 @@ sub _findlocal {
     my $self=shift;
     my $name=shift;
     my $version=shift;
-
-    my $found = $self->dbproxy()->project($name)->version($version);
-    
-#     my $found=-1;
-#     for (my $i=0; $i<=$#{$self->{projects}}; $i++ ) {
-# 	if  ( ( $self->{projects}[$i][0] eq $name) && 
-# 	      ( $self->{projects}[$i][1] eq $version) ) {
-# 	    $found=$i;
-# 	    last;
-# 	}
-#     }
-#     return $found;
-
+    # Look in the local stash of projects found in the db:
+    my $obj = $self->dbproxy()->get_projects_with_name($name)->version($version);	
+    ($obj) ? return $obj : return undef;
 }
 
 #sub _save {
