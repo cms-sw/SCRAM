@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.63 2007/04/02 15:19:57 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.64 2007/04/05 16:11:18 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -549,11 +549,10 @@ sub list() {
     my %opts;
     my %options =
 	("help"	 => sub { $self->{SCRAM_HELPER}->help('list'); exit(0) },
-	 "oldstyle" => sub { $opts{SCRAM_OLDSTYLE} = 1 },
 	 "compact" => sub { $opts{SCRAM_LISTCOMPACT} = 1 } );
     
     local @ARGV = @ARGS;
-    
+
     Getopt::Long::config qw(default no_ignore_case require_order);
     
     if (! Getopt::Long::GetOptions(\%opts, %options)) {
@@ -564,7 +563,6 @@ sub list() {
 	my $pjversion = "Project Version";
 	my $pjlocation = "Project Location";
 	my $headstring = sprintf("| %-12s  | %-24s | %-33s |",$pjname,$pjversion,$pjlocation);
-	my @missingareas;
 	my $projectexists=0;
 	my $linebold = "$::bold"."$::line"."$::normal";
 	
@@ -589,6 +587,7 @@ sub list() {
 	foreach my $proj (@projects) {
 	    if ($project) {	      
 		if ($project eq $proj->name) {
+		    $projectexists=1;
 		    if ($projectversion) {
 			# Get a specific version:
 			$proj->list_version($projectversion,$opts{SCRAM_LISTCOMPACT});
@@ -602,9 +601,10 @@ sub list() {
 	    } else {
 		# Dump info for all versions:
 		$proj->list_versions($opts{SCRAM_LISTCOMPACT});
+		$projectexists=1;
 	    }
 	}
-	
+	$self->scramerror(">>>> No locally installed $project projects! <<<<"), unless ($projectexists);
 	if (!$opts{SCRAM_LISTCOMPACT}) {	  
 	    print "\n\n","Projects available for platform >> ".$::bold."$ENV{SCRAM_ARCH}".$::normal." <<\n";
 	    print "\n";
@@ -613,116 +613,6 @@ sub list() {
 	return 0;
     }
 }
-
-# Otherwise, we continue. First, we see if the option SCRAM_OLDSTYLE is set. If so, we show all
-# projects (V0_x ones too) in the same manner as other SCRAM versions. If not, we use the new
-# mechanism which checks only for the .installed file.      
-# Iterate over the list of projects:
-#       foreach my $pr (@projects)
-# 	 {
-# 	 my $url='NULL';	 
-# 	 if ( $project  eq "" || $project eq $pr->name)
-# 	    {
-# 	    # Check that the area exists (i.e. check that a configarea object
-# 	    # is returned before attempting to test its' location):
-# 	    my $possiblearea=$self->scramfunctions()->scramprojectdb()->getarea($pr->name,$pr->version);
-# 	    $url=$possiblearea->location(), if (defined ($possiblearea));
-	    
-# 	    if ($opts{SCRAM_OLDSTYLE})
-# 	       {
-# 	       # See if area is readable:
-# 	       if ( -d $url)
-# 		  {
-# 		  # Check path to project:
-# 		  if ( -d "$url/bin/$ENV{SCRAM_ARCH}" || 
-# 		       -d "$url/lib/$ENV{SCRAM_ARCH}" || -d "$url/$ENV{SCRAM_ARCH}/lib")
-# 		     {
-# 		     if ($project eq $$pr[0])
-# 			{
-# 			$projectexists=1;
-# 			} # We've found at least one project
-# 		     my $pstring = sprintf "  %-15s %-25s  \n%45s%-30s\n",$$pr[0],$$pr[1],"--> ",$::bold.$url.$::normal;
-# 		     $pstring = sprintf "%-15s %-25s %-50s\n",$$pr[0],$$pr[1],$url, if ($opts{SCRAM_LISTCOMPACT});
-# 		     push(@foundareas,$pstring);
-# 		     }
-# 		  }
-# 	       else
-# 		  {
-# 		  # Area is missing:
-# 		  if ($url ne 'NULL')
-# 		     {
-# 		     push(@missingareas,sprintf ">>  Project area MISSING:   %-10s %-20s  \n",$$pr[0],$$pr[1]);
-# 		     }
-# 		  }
-# 	       }
-# 	    else
-# 	       {
-# 	       # The new mechanism. We see if project was registered:
-# 	       # See if area is readable:
-# 	       if ( -d $url)
-# 		  {
-# 		  if ($self->isregistered($possiblearea))
-# 		     {
-# 		     if ($project eq $$pr[0])
-# 			{
-# 			$projectexists=1;
-# 			} # We've found at least one project
-# 		     my $pstring = sprintf "  %-15s %-25s  \n%45s%-30s\n",$$pr[0],$$pr[1],"--> ",$::bold.$url.$::normal;
-# 		     $pstring = sprintf "%-15s %-25s %-50s\n",$$pr[0],$$pr[1],$url, if ($opts{SCRAM_LISTCOMPACT});
-# 		     push(@foundareas,$pstring);
-# 		     }
-# 		  }
-# 	       else
-# 		  {
-# 		  # Area is missing:
-# 		  if ($url ne 'NULL')
-# 		     {		     
-# 		     push(@missingareas,sprintf ">>  Project area MISSING:   %-10s %-20s  \n",$$pr[0],$$pr[1]);
-# 		     }
-# 		  }
-# 	       }
-# 	    }
-# 	 }
-      
-#       # Now dump out the info:
-#       if ($opts{SCRAM_LISTCOMPACT})
-# 	 {
-# 	 $self->scramerror(">>>> No locally installed $project projects! <<<<"),
-# 	 if ( ! $projectexists && $project ne "");
-	 
-# 	 foreach $p (@foundareas)
-# 	    {
-# 	    print $p;
-# 	    }
-# 	 }
-#       else
-# 	 {
-# 	 # If there weren't any projects of the name given found:
-# 	 $self->scramerror(">>>> No locally installed $project projects! <<<<"),
-# 	 if ( ! $projectexists && $project ne "");
-	 
-# 	 # Otherwise, dump the info:
-# 	 print "\n","Listing installed projects....","\n\n";
-# 	 print $linebold,"\n";
-# 	 print $headstring."\n";
-# 	 print $linebold,"\n\n";
-	 
-# 	 foreach $p (@foundareas)
-# 	    {
-# 	    print $p;
-# 	    }
-	 
-# 	 print "\n\n","Projects available for platform >> ".$::bold."$ENV{SCRAM_ARCH}".$::normal." <<\n";
-# 	 print "\n";
-# 	 }
-      
-#       # Error if there were missing areas:
-#       $self->scramerror("\n",@missingareas), if ( $#missingareas > -1 );
-#      }
-   
-   # Otherwise return nicely:
-#   return 0;
-#   }
 
 =item   C<db()>
 
@@ -788,7 +678,7 @@ sub db()
 	 {
 	 print "Current SCRAM database: ",$::bold.$ENV{SCRAM_LOOKUPDB}.$::normal,"\n";
 	 my @links=$self->scramfunctions()->scramprojectdb()->listlinks();
-	 if (defined (@links))
+	 if (@links)
 	    {
 	    print "\n","The following SCRAM databases are linked to the current database: ","\n\n";
 	    foreach my $extdb (@links)
@@ -853,8 +743,7 @@ sub build()
 			      if (-f $builddatastore) ;
 			   $now = time; utime $now, $now, $toolcache },
        "fast"     => sub { print "Skipping cache scan...","\n"; $fast=1 },
-       "writegraphs=s"  => sub { $opts{WRITE_GRAPHS} = 1; $graphmode=$_[1] },
-       "xmlb"     => sub {$ENV{SCRAM_XMLBUILDFILES} = 1; print "SCRAM: Will read XML versions of your BuildFiles.","\n" } );
+       "writegraphs=s"  => sub { $opts{WRITE_GRAPHS} = 1; $graphmode=$_[1] } );
    
    local (@ARGV) = @_;
 
@@ -944,7 +833,7 @@ sub build()
 	 # continue until the cache is written before exit:
 	 $SIG{INT}  = sub
 	    {
-	    ($trap_flag == 0) ? $trap_flag = 1 : $trap_flag;
+	    my $dummy = ($trap_flag == 0) ? $trap_flag = 1 : $trap_flag;
 	    print $::bold."\nUser interrupt: Writing cache before exit.\n".$::normal;
 	    };
 	 
@@ -1808,9 +1697,9 @@ sub runtime()
       # ":${VAR}" or suchlike. We start with the tools.
       # Sort according to the order in which the tools were selected (i.e., the order in which
       # they appear in RequirementsDoc):
-      foreach $tool ( sort { %{$rawselected}->{$a}
-			     <=> %{$rawselected}->{$b}}
-		      keys %{$rawselected} )
+      foreach $tool ( sort { $rawselected->{$a}
+			     <=> $rawselected->{$b}}
+		      keys %$rawselected )
 	 {
 	 # Extract the runtime content for this tool:
 	 my $toolrt = $tools->{$tool}->runtime(), if (exists $tools->{$tool});
@@ -2831,9 +2720,9 @@ sub runtimebuildenv_()
    # ":${VAR}" or suchlike. We start with the tools.
    # Sort according to the order in which the tools were selected (i.e., the order in which
    # they appear in RequirementsDoc):
-   foreach $tool ( sort { %{$rawselected}->{$a}
-			  <=> %{$rawselected}->{$b}}
-		   keys %{$rawselected} )
+   foreach $tool ( sort { $rawselected->{$a}
+			  <=> $rawselected->{$b}}
+		   keys %$rawselected )
       {
       # Extract the runtime content for this tool:
       my $toolrt = $tools->{$tool}->runtime(), if (exists $tools->{$tool});

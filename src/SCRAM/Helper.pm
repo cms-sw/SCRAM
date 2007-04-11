@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.15 2007/02/27 11:59:49 sashby Exp $ 
+# Revision: $Id: Helper.pm,v 1.16 2007/02/27 12:46:01 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -177,14 +177,15 @@ sub list()
    $help.="\tlocal SCRAM database (see \"scram install help\").\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram list [-c] [-h] [--oldstyle] [<projectname>]$::normal\n";
+   $help.="\tscram list [-c] [-h] [<projectname>]$::normal\n";
+#    $help.="\tscram list [-c] [-h] [--oldstyle] [<projectname>]$::normal\n";
    $help.="\n";
    $help.="Use the -c option to list the available projects and versions installed in the local\n";
    $help.="SCRAM database without fancy formatting or header strings.\n";
    $help.="The project name, version and installation directory are printed on STDOUT, separated\n";
    $help.="by spaces for use in scripts.\n\n";
-   $help.="Use the --oldstyle option to show all projects from all versions (i.e. pre-V1) of SCRAM\n";
-   $help.="(by default, only projects built and installed with V1x will be listed).\n";
+#    $help.="Use the --oldstyle option to show all projects from all versions (i.e. pre-V1) of SCRAM\n";
+#    $help.="(by default, only projects built and installed with V1x will be listed).\n";
    $help.="\n";
    
    return $help;
