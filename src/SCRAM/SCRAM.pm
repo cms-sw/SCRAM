@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.27 2007/03/02 12:46:40 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.28 2007/04/02 15:19:57 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -71,7 +71,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => $SCRAM_VERSION || undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.27 2007/03/02 12:46:40 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.28 2007/04/02 15:19:57 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -247,7 +247,7 @@ sub remote_versioncheck() {
     local (@ARGV)=@_;
     # Get the version from the project area:
     $version = $remote_area->scramversion();
-    
+
     if (!defined($version)) {
 	# Try to get the version from the area config. dir:
 	my $versionfile=$remote_area->location()."/".$remote_area->configurationdir()."/scram_version";
@@ -334,29 +334,27 @@ dir to find these caches.
 
 =cut
 
-sub _loadscramdb()
-   {
-   my $self=shift;
-   # Read the scram database to keep track of which
-   # projects are scram-managed:
-   my @scramprojects = $self->getprojectsfromDB();
-   $self->{SCRAM_PDB}={};
-   
-   foreach my $project (@scramprojects)
-      {
-      my $parea=$self->scramfunctions()->scramprojectdb()->getarea($project->[0], $project->[1]);
-      if (defined ($parea) && $parea->location() ne '')
-	 {
-	 # Store the name of the project as lowercase to make lookups easier
-	 # during setup. When storing the individual project name/version entries, mangle the
-	 # version with the real name, separated by a :  for access to this data needed
-	 # when getting the area:
-	 $self->{SCRAM_PDB}->{lc($project->[0])}->{$project->[0].":".$project->[1]} = $parea->location(); 
-	 }
-      }
-   
-   return $self->{SCRAM_PDB};
-   }
+sub _loadscramdb() {
+    my $self=shift;
+    # Read the scram database to keep track of which
+    # projects are scram-managed:
+    my @scramprojects = $self->getprojectsfromDB();
+    $self->{SCRAM_PDB}={};
+    
+    foreach my $project (@scramprojects) {
+	foreach my $pversion (@{ $project->versions() })  {
+	    my $parea=$self->scramfunctions()->scramprojectdb()->getarea($project->name, $pversion->ident);
+	    if (defined ($parea) && $parea->location() ne '') {
+		# Store the name of the project as lowercase to make lookups easier
+		# during setup. When storing the individual project name/version entries, mangle the
+		# version with the real name, separated by a :  for access to this data needed
+		# when getting the area:
+		$self->{SCRAM_PDB}->{lc($project->name)}->{$project->name.":".$pversion->ident} = $parea->location(); 
+	    }
+	}
+    }
+    return $self->{SCRAM_PDB};
+}
 
 =item   C<islocal()>
 

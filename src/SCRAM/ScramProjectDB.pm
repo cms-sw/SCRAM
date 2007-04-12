@@ -126,14 +126,14 @@ sub link {
     my $self=shift;
     my $dbfile=shift;
     $self->dbproxy()->link_db($dbfile);
-    $self->dbproxy()->save(); # //FIXME
+    $self->_save();
 }
 
 sub unlink {
     my $self=shift;
     my $file=shift;
-    $self->dbproxy()->unlink_db($file); # //FIXME
-    $self->dbproxy()->save();
+    $self->dbproxy()->unlink_db($file);
+    $self->_save();
 }
 
 sub _readdbfile {
@@ -161,11 +161,17 @@ sub projects() {
     return @{$self->{projects}};
 }
 
-sub dump() {
+sub write() {
     my $self=shift;
     my $fstring="<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n";
-    $fstring.=$self->dbproxy()->dump();
+    $fstring.=$self->dbproxy()->write();
     return $fstring;
+}
+
+sub validate() {
+    my $self=shift;   
+    $self->dbproxy()->validate(),"\n";
+    print "\n";
 }
 
 sub getarea {
@@ -178,7 +184,6 @@ sub getarea {
     my $alocal=$self->_findlocal($name,$version);
     if ($alocal) {
 	my $location = $alocal->path;
-
 	if ( defined $self->{projectobjects}{$location} ) {
  	    $area=$self->{projectobjects}{$location};
  	} else {
@@ -190,40 +195,23 @@ sub getarea {
 	    } else {
 		$self->verbose("area found");
 		$self->{projectobjects}{$location}=$area;
-	    }
-	    
-	    
+	    }   
 	}
-	
     } else {
 	# Look through the linked databases:
 	foreach $db ( @{$self->{linkeddbs}} ) {
-#	    $self->verbose("Searching in $db->file() for $name $version");
-#	    $area=$db->getarea($name,$version);
-#	    last if (defined $area);
-	    
-	    
+	    $self->verbose("Searching in $db->file() for $name $version");
+	    $area=$db->getarea($name,$version);
+	    last if (defined $area);	    
 	}
-	
     }
     
-    
-#     } else {
-# 	# -- search in linked databases
-# 	foreach $db ( @{$self->{linkeddbs}} ) {
-# 	    $self->verbose("Searching in $db->file() for $name $version");
-# 	    $area=$db->getarea($name,$version);
-# 	    last if (defined $area);
-# 	}
-#     }
-
     if ( ! defined $area ) {
 	$self->verbose("Area $name $version not found");
     }
     
     return $area;
 }
-
 
 sub addarea
    {
@@ -233,51 +221,54 @@ sub addarea
    my $version=shift;
    my $area=shift;
 
-   my $rv=1;
-   my $type="file";
-   my $url=$area->location();
+#   my $rv=1;
+#   my $type="file";
+#   my $url=$area->location();
 
-   # -- check for duplicates
-   for ( my $index=0; $index<=$#{$self->{projects}}; $index++ )
-      {
-      if  ( $self->{projects}[$index][0] eq $name )
-	 {
-	 if ( $self->{projects}[$index][1] eq $version )
-	    {
-	    if ($flag == 1)
-	       {
-	       $rv=0;
-	       $self->{projects}[$index]=[ ($name,$version,$type,$url) ];
-	       }
-	    else
-	       {
-	       print "$name $version already exists. Overwrite? (y/n) : ";
-	       if ( ! (<STDIN>=~/y/i ) )
-		  {
-		  print "Aborting install ...\n";
-		  return 1;
-		  }
-	       else
-		  {
-		  $rv=0;
-		  $self->{projects}[$index]=[ ($name,$version,$type,$url) ];
-		  }
-	       }
-	    }
-	 else
-	    {
-	    print "Related Project : $name ".$self->{projects}[$index][1]."\n";
-	    }
-	 }
-      }
+
+   $self->dbproxy()->install_project($area);
    
-   if ( $rv )
-      {
-      # -- add to our list and save
-      push @{$self->{projects}}, [ ($name,$version,$type,$url) ];
-      }
+#    # -- check for duplicates
+#    for ( my $index=0; $index<=$#{$self->{projects}}; $index++ )
+#       {
+#       if  ( $self->{projects}[$index][0] eq $name )
+# 	 {
+# 	 if ( $self->{projects}[$index][1] eq $version )
+# 	    {
+# 	    if ($flag == 1)
+# 	       {
+# 	       $rv=0;
+# 	       $self->{projects}[$index]=[ ($name,$version,$type,$url) ];
+# 	       }
+# 	    else
+# 	       {
+# 	       print "$name $version already exists. Overwrite? (y/n) : ";
+# 	       if ( ! (<STDIN>=~/y/i ) )
+# 		  {
+# 		  print "Aborting install ...\n";
+# 		  return 1;
+# 		  }
+# 	       else
+# 		  {
+# 		  $rv=0;
+# 		  $self->{projects}[$index]=[ ($name,$version,$type,$url) ];
+# 		  }
+# 	       }
+# 	    }
+# 	 else
+# 	    {
+# 	    print "Related Project : $name ".$self->{projects}[$index][1]."\n";
+# 	    }
+# 	 }
+#       }
    
-   $self->_save();
+#    if ( $rv )
+#       {
+#       # -- add to our list and save
+#       push @{$self->{projects}}, [ ($name,$version,$type,$url) ];
+#       }
+   
+#    $self->_save();
    return 0;
    }
 
@@ -366,31 +357,24 @@ sub removearea
 # Search through the project list until we get a match
 sub _findlocal {
     my $self=shift;
-    my $name=shift;
-    my $version=shift;
+    my ($name,$version)=@_;
     # Look in the local stash of projects found in the db:
-    my $obj = $self->dbproxy()->get_projects_with_name($name)->version($version);	
+    my $pobj = $self->dbproxy()->get_projects_with_name($name);
+    my $obj;
+    if ($pobj) {
+	$obj = $pobj->version($version);
+    }
     ($obj) ? return $obj : return undef;
 }
 
-#sub _save {
-#    my $self=shift;  
-#    use FileHandle;
-#    my $fh=FileHandle->new();
-#    my $filename=$self->{dbfile}.".saved";
-#    open ( $fh, ">$filename" );
-#    print $fh $self->dump()."\n";
-##	# print current links 
-#	foreach $db ( @{$self->{linkeddbs}} ) {
-#	   print $fh "\!DB ".$db->file()."\n";
-#	}
-#	# save project info
-#	my $temp;
-#	foreach $elem ( @{$self->{projects}} ) {
-#	  $temp=join ":", @{$elem};
-	#  print $fh $temp."\n";
-    #}
-#    undef $fh;
-#}
+sub _save() {
+    my $self=shift;
+    use FileHandle;
+    my $fh=FileHandle->new();
+    my $filename=$self->{dbfile};
+    open($fh, ">$filename") || die "Can't write to ".$self->{dbfile}.":".$!."\n";
+    print $fh $self->write()."\n";
+    undef $fh;
+}
 
 1;

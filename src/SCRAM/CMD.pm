@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.64 2007/04/05 16:11:18 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.65 2007/04/11 16:25:11 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -620,88 +620,74 @@ Show the location of the local SCRAM project database and any other databases th
    
 =cut
 
-sub db()
-   {
-   my $self=shift;
-   my (@ARGS) = @_;
-   my %opts = ( SCRAM_DB_SHOW => 0, SCRAM_DB_LINK => 0, SCRAM_DB_UNLINK => 0 );
-   my %options =
-      ("help"	=> sub { $self->{SCRAM_HELPER}->help('db'); exit(0) },
-       "show"   => sub { $opts{SCRAM_DB_SHOW} = 1 },
-       "link"   => sub { $opts{SCRAM_DB_LINK} = 1 },
-       "unlink" => sub { $opts{SCRAM_DB_UNLINK} = 1 } );
-   
-   local @ARGV = @ARGS;
-   
-   Getopt::Long::config qw(default no_ignore_case require_order);
-   
-   if (! Getopt::Long::GetOptions(\%opts, %options))
-      {
-      $self->scramfatal("Error parsing arguments. See \"scram db -help\" for usage info.");
-      }
-   else
-      {
-      # First, test to see if there is a SCRAMDB:
-      $self->scramerror("No installation database available - perhaps no projects have been installed locally?"),
-      if ( ! -f $ENV{SCRAM_LOOKUPDB});
-
-      my $db=shift(@ARGV);
-      
-      # Check the options and do something useful:   
-      if ($opts{SCRAM_DB_LINK})
-	 {
-	 if ( -f $db )
-	    {
+sub db() {
+    my $self=shift;
+    my (@ARGS) = @_;
+    my %opts = ( SCRAM_DB_SHOW => 0, SCRAM_DB_LINK => 0, SCRAM_DB_UNLINK => 0, SCRAM_DB_VALIDATE => 0 );
+    my %options =
+	("help"	=> sub { $self->{SCRAM_HELPER}->help('db'); exit(0) },
+	 "show"   => sub { $opts{SCRAM_DB_SHOW} = 1 },
+	 "link"   => sub { $opts{SCRAM_DB_LINK} = 1 },
+	 "unlink" => sub { $opts{SCRAM_DB_UNLINK} = 1 },
+	 "validate" => sub { $opts{SCRAM_DB_VALIDATE} = 1 });
+    
+    local @ARGV = @ARGS;
+    
+    Getopt::Long::config qw(default no_ignore_case require_order);
+    
+    if (! Getopt::Long::GetOptions(\%opts, %options)) {
+	$self->scramfatal("Error parsing arguments. See \"scram db -help\" for usage info.");
+    } else {
+	# First, test to see if there is a SCRAMDB:
+	$self->scramerror("No installation database available - perhaps no projects have been installed locally?"),
+	if ( ! -f $ENV{SCRAM_LOOKUPDB});
+	
+	my $db=shift(@ARGV);
+	
+	# Check the options and do something useful:   
+	if ($opts{SCRAM_DB_LINK}) {
+	    if ( -f $db ) {
+		$self->scramerror("Can't link to an old format (i.e. non-XML) SCRAM database!"),unless($db =~ /xml$/);		
+		print "Current SCRAM database: ",$::bold.$ENV{SCRAM_LOOKUPDB}.$::normal,"\n";
+		$self->scramfunctions()->scramprojectdb()->link($db); 
+		print "\n","Linked ",$db," to current SCRAM database.","\n\n";
+	    } else {
+		$self->scramerror("No valid DB file given as argument. See \"scram db -help\" for usage info.");
+	    }
+	} elsif ($opts{SCRAM_DB_UNLINK}) {
+	    if ( -f $db ) {
+		$self->scramerror("Can't unlink an old format (i.e. non-XML) SCRAM database!"),unless($db =~ /xml$/);		
+		print "Current SCRAM database: ",$::bold.$ENV{SCRAM_LOOKUPDB}.$::normal,"\n";
+		$self->scramfunctions()->scramprojectdb()->unlink($db); 
+		print "\n","Unlinked ",$db," from current SCRAM database.","\n\n";
+	    } else {
+		$self->scramerror("No valid DB file given as argument. See \"scram db -help\" for usage info.");
+	    }
+	} elsif ($opts{SCRAM_DB_SHOW}) {
 	    print "Current SCRAM database: ",$::bold.$ENV{SCRAM_LOOKUPDB}.$::normal,"\n";
-	    $self->scramfunctions()->scramprojectdb()->link($db); 
-	    print "\n","Linked ",$db," to current SCRAM database.","\n\n";
+	    my @links=$self->scramfunctions()->scramprojectdb()->listlinks();
+	    if (@links) {
+		print "\n","The following SCRAM databases are linked to the current database: ","\n\n";
+		foreach my $extdb (@links) {
+		    print "\t".$extdb."\n";
+		}
+		print "\n";
+	    } else {
+		print "There are no SCRAM databases linked.","\n";
 	    }
-	 else
-	    {
-	    $self->scramerror("No valid DB file given as argument. See \"scram db -help\" for usage info.");
-	    }
-	 }
-      elsif ($opts{SCRAM_DB_UNLINK})
-	 {
-	 if ( -f $db )
-	    {
-	    print "Current SCRAM database: ",$::bold.$ENV{SCRAM_LOOKUPDB}.$::normal,"\n";
-	    $self->scramfunctions()->scramprojectdb()->unlink($db); 
-	    print "\n","Unlinked ",$db," from current SCRAM database.","\n\n";
-	    }
-	 else
-	    {
-	    $self->scramerror("No valid DB file given as argument. See \"scram db -help\" for usage info.");
-	    }
-	 }
-      elsif ($opts{SCRAM_DB_SHOW})
-	 {
-	 print "Current SCRAM database: ",$::bold.$ENV{SCRAM_LOOKUPDB}.$::normal,"\n";
-	 my @links=$self->scramfunctions()->scramprojectdb()->listlinks();
-	 if (@links)
-	    {
-	    print "\n","The following SCRAM databases are linked to the current database: ","\n\n";
-	    foreach my $extdb (@links)
-	       {
-	       print "\t".$extdb."\n";
-	       }
-	    print "\n";
-	    }
-	 else
-	    {
-	    print "There are no SCRAM databases linked.","\n";
-	    }
-	 }
-      else
-	 {
-	 # Didn't get a sensible sub-command:
-	 $self->scramfatal("Unknown option: see \"scram db -help\" for usage info.");
-	 }
-      }
-   
-   # Return nice value:
-   return 0;
-   }
+	} elsif ($opts{SCRAM_DB_VALIDATE}) {
+	    print "\nValidating current local SCRAM database.\nAny projects listed below are MISSING ";
+	    print "but are still installed in the SCRAM database.\n";
+	    $self->scramfunctions()->scramprojectdb()->validate();	    	    
+	} else {
+	    # Didn't get a sensible sub-command:
+	    $self->scramfatal("Unknown option: see \"scram db -help\" for usage info.");
+	}
+    }
+    
+    # Return nice value:
+    return 0;
+}
 
 =item   C<build()>
 
