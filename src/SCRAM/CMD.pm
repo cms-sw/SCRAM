@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.66 2007/04/12 16:26:39 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.67 2007/04/13 17:31:26 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -580,19 +580,21 @@ sub list() {
 	}
 	
 	foreach my $proj (@projects) {
+	    next unless $proj->nversions(); # Continue if at least one version of a project is installed.
 	    if ($project) {	      
 		if ($project eq $proj->name) {
-		    $projectexists=1;
 		    if ($projectversion) {
 			# Get a specific version:
 			if (!$proj->list_version($projectversion,$opts{SCRAM_LISTCOMPACT})) {
 			    $self->scramerror(">>>> No version $projectversion of $project installed! <<<<"),
 			}
+			$projectexists=1;
 		    } else {
 			# Get versions of a specific project:
 			if (!$proj->list_versions($opts{SCRAM_LISTCOMPACT})) {
 			    $self->scramerror(">>>> No locally installed $project projects! <<<<"),
 			}
+			$projectexists=1;
 		    }
 		} else {
 		    next;

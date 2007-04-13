@@ -130,8 +130,13 @@ sub listall {
 sub link {
     my $self=shift;
     my $dbfile=shift;
-    $self->dbproxy()->link_db($dbfile);
-    $self->_save();
+    if ($dbfile ne $self->file()) {
+	$self->dbproxy()->link_db($dbfile);
+	$self->_save();
+    } else {
+	print STDERR "ERROR: Database to link to and local database are the same file!\n";
+	exit(1);
+    }
 }
 
 sub unlink {
