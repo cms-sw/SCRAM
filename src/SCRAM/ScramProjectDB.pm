@@ -20,7 +20,8 @@ Stores project area information.
 
 A new SCRAM::ScramProjectDB object. Receives a database file
 path $databasefile as argument and handles reading the XML
-database file.
+database file. Note that an empty file is initialised the
+first time a SCRAM::ScramProjectDB object is created.
 
 =item C<file()>
 
@@ -84,6 +85,10 @@ sub new {
     my $self={};
     bless $self, $class;
     $self->{dbfile}=shift;
+    # Initialise a new XML db file if
+    # it doesn't exist already or if
+    # a zero-length file exists:
+    $self->_initdb(), if (! -f $self->{dbfile} || -z $self->{dbfile});
     $self->_readdbfile($self->{dbfile});
     return $self;
 }
@@ -163,8 +168,7 @@ sub projects() {
 
 sub write() {
     my $self=shift;
-    my $fstring="<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n";
-    $fstring.=$self->dbproxy()->write();
+    my $fstring=$self->dbproxy()->write();
     return $fstring;
 }
 
@@ -213,66 +217,13 @@ sub getarea {
     return $area;
 }
 
-sub addarea
-   {
-   my $self=shift;
-   my $flag=shift;
-   my $name=shift;
-   my $version=shift;
-   my $area=shift;
-
-#   my $rv=1;
-#   my $type="file";
-#   my $url=$area->location();
-
-
-   $self->dbproxy()->install_project($area);
-   
-#    # -- check for duplicates
-#    for ( my $index=0; $index<=$#{$self->{projects}}; $index++ )
-#       {
-#       if  ( $self->{projects}[$index][0] eq $name )
-# 	 {
-# 	 if ( $self->{projects}[$index][1] eq $version )
-# 	    {
-# 	    if ($flag == 1)
-# 	       {
-# 	       $rv=0;
-# 	       $self->{projects}[$index]=[ ($name,$version,$type,$url) ];
-# 	       }
-# 	    else
-# 	       {
-# 	       print "$name $version already exists. Overwrite? (y/n) : ";
-# 	       if ( ! (<STDIN>=~/y/i ) )
-# 		  {
-# 		  print "Aborting install ...\n";
-# 		  return 1;
-# 		  }
-# 	       else
-# 		  {
-# 		  $rv=0;
-# 		  $self->{projects}[$index]=[ ($name,$version,$type,$url) ];
-# 		  }
-# 	       }
-# 	    }
-# 	 else
-# 	    {
-# 	    print "Related Project : $name ".$self->{projects}[$index][1]."\n";
-# 	    }
-# 	 }
-#       }
-   
-#    if ( $rv )
-#       {
-#       # -- add to our list and save
-#       push @{$self->{projects}}, [ ($name,$version,$type,$url) ];
-#       }
-   
-#    $self->_save();
+sub addarea {
+    my $self=shift;
+    my ($flag,$name,$version,$area)=@_;
+    $self->dbproxy()->install_project($flag,$name,$version,$area);
+    $self->_save();
    return 0;
-   }
-
-
+}
 
 sub removearea
    {
@@ -289,63 +240,10 @@ sub removearea
    #          :                                                  #
    ###############################################################
    my $self=shift;
-   my $flag=shift;
-   my $name=shift;
-   my $version=shift;
-   my $vfound=0;
-   my $nfound=0;
-   
+   my ($flag,$name,$version)=@_;
    print "\n","Going to remove $name $version from the current scram database.....","\n"; 
    print "\n";
-
-   for ( my $index=0; $index<=$#{$self->{projects}}; $index++ )
-      {
-      # Look for a project with name $name:
-      if  ( $self->{projects}[$index][0] eq $name )
-	 {
-	 $nfound=1; 
-	 # Check the version:
-	 if ( $self->{projects}[$index][1] eq $version )
-	    {
-	    # We have a match for project name and version:
-	    $vfound=1;
-	    if ($flag == 1)
-	       {
-	       # Remove the project:
-	       print "\n";
-	       print "Removing project:\t$name\t$version","\n\n";
-	       splice(@{$self->{projects}},$index,1);
-	       }
-	    else
-	       {
-	       print "Project $name Version $version exists. Remove it? (y/n): ";
-	       if ( ! (<STDIN>=~/y/i ) )
-		  {
-		  print "\n","Aborting project removal...bye.\n\n";
-		  return 1;
-		  }
-	       else
-		  {
-		  # Remove the project:
-		  print "\n";
-		  print "Removing project:\t$name\t$version","\n\n";
-		  splice(@{$self->{projects}},$index,1);
-		  }
-	       }
-	    }
-	 } 
-      }
-   
-   if ( ! $nfound || ! $vfound )
-      {
-      # There was a problem finding either the
-      # named project or the desired version:
-      print "ERROR: Unable to find project $name with version $version in the database.","\n\n";
-      return 1;
-      }
-   
-   print "\n";   
-   # Save our new array:
+   $self->dbproxy()->delete_project($flag,$name,$version);
    $self->_save();
    return 0;
    }
@@ -365,6 +263,21 @@ sub _findlocal {
 	$obj = $pobj->version($version);
     }
     ($obj) ? return $obj : return undef;
+}
+
+sub _initdb() {
+    my $self=shift;
+    my $fstring="<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n";
+    $fstring.="<ProjectDB>\n";
+    $fstring.=" <architecture name=\"".$ENV{SCRAM_ARCH}."\">\n";
+    $fstring.=" </architecture>\n";
+    $fstring.="</ProjectDB>\n";
+    use FileHandle;
+    my $fh=FileHandle->new();
+    my $filename=$self->{dbfile};
+    open($fh, ">$filename") || die "Can't write to ".$self->{dbfile}.":".$!."\n";
+    print $fh $fstring."\n";
+    undef $fh;
 }
 
 sub _save() {

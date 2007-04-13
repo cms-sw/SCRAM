@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.28 2007/04/02 15:19:57 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.29 2007/04/12 16:26:40 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -71,7 +71,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => $SCRAM_VERSION || undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.28 2007/04/02 15:19:57 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.29 2007/04/12 16:26:40 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -681,22 +681,21 @@ Remove a project from the SCRAM database. Reverse the process of register_instal
 
 =cut
 
-sub unregister_install()
-   {
-   my $self=shift;
-   my $area = $self->{localarea};
-   my $archdir = $area->location()."/".$area->admindir()."/".$self->architecture();
-   my $registerfile = $archdir."/.installed";
-   my $retval = 0;
-   
-   # Remove the register file:
-   if ( -f $registerfile)
-      {
-      $retval = system("rm","-f",$registerfile);
-      }
-   
-   return $retval;
-   }
+sub unregister_install() {
+    my $self=shift;
+    my $area = $self->{localarea};
+    if ($area) { # Only remove .installed if we're in the area.
+	my $archdir = $area->location()."/".$area->admindir()."/".$self->architecture();
+	my $registerfile = $archdir."/.installed";
+	my $retval = 0;
+	
+	# Remove the register file:
+	if ( -f $registerfile) {
+	    $retval = system("rm","-f",$registerfile);
+	}
+    }
+    return $retval;
+}
 
 =item   C<toolmanager($location)>
 

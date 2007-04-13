@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.65 2007/04/11 16:25:11 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.66 2007/04/12 16:26:39 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -397,10 +397,9 @@ sub install()
       # Install the project:
       my $project = shift(@ARGV);
       my $projectversion = shift(@ARGV);
-      $self->scramfunctions()->addareatoDB($opts{SCRAM_FORCE},$self->localarea(),$project,$projectversion);
-
       # Also touch a register file called .installed in .SCRAM/<arch>:
       $self->register_install();
+      $self->scramfunctions()->addareatoDB($opts{SCRAM_FORCE},$self->localarea(),$project,$projectversion);
       # Return nice value:
       return 0;
       }
@@ -566,10 +565,6 @@ sub list() {
 	my $projectexists=0;
 	my $linebold = "$::bold"."$::line"."$::normal";
 	
-	# First, test to see if there is a SCRAMDB:
-	$self->scramerror("No installation database available - perhaps no projects have been installed locally?"),
-	if ( ! -f $ENV{SCRAM_LOOKUPDB});
-	
 	# The project data:
 	my $project = shift(@ARGV);
 	my $projectversion = shift(@ARGV);
@@ -590,17 +585,23 @@ sub list() {
 		    $projectexists=1;
 		    if ($projectversion) {
 			# Get a specific version:
-			$proj->list_version($projectversion,$opts{SCRAM_LISTCOMPACT});
+			if (!$proj->list_version($projectversion,$opts{SCRAM_LISTCOMPACT})) {
+			    $self->scramerror(">>>> No version $projectversion of $project installed! <<<<"),
+			}
 		    } else {
 			# Get versions of a specific project:
-			$proj->list_versions($opts{SCRAM_LISTCOMPACT});		      
+			if (!$proj->list_versions($opts{SCRAM_LISTCOMPACT})) {
+			    $self->scramerror(">>>> No locally installed $project projects! <<<<"),
+			}
 		    }
 		} else {
 		    next;
 		}
 	    } else {
 		# Dump info for all versions:
-		$proj->list_versions($opts{SCRAM_LISTCOMPACT});
+		if (!$proj->list_versions($opts{SCRAM_LISTCOMPACT})) {
+		    $self->scramerror(">>>> No locally installed projects! <<<<");
+		}
 		$projectexists=1;
 	    }
 	}
