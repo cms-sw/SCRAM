@@ -62,6 +62,13 @@ Remove link with a specified location $dblocation (i.e. path).
 
 =back
 
+=item C<migrate($olddbfile)>
+
+Migrate the specified project.lookup to XML format. Write all
+project entries to the current project database.
+
+=back
+
 =head1 AUTHOR
 
 Originally written by Christopher Williams.
@@ -253,6 +260,45 @@ sub removearea
    return 0;
    }
 
+sub migrate() {
+    my $self=shift;
+    my ($dbfile)=@_;
+    my $projects={};
+
+    use SCRAM::ProjectDB;
+    
+    # Read the database file. The contents will be for just
+    # one architecture (the current one):
+    use FileHandle;
+    my $fh=FileHandle->new();
+    open($fh, "< $dbfile") || die "Can't read ".$dbfile.":".$!."\n";
+    while(<$fh>) {
+	chomp;
+	# Get the name, version and path:
+	my ($name, $version, $junk, $path)=split(":");
+	# Check to see if the path to the area still exists. If not,
+	# skip it:
+	if (-d $path) {	    
+	    my $pobj=$self->dbproxy()->get_projects_with_name($name);	    
+	    if ($pobj) {
+		# Create new version:
+		my $pver = new SCRAM::version($version,$path);
+		$pobj->add_version($flag,$pver);
+	    } else {
+		my $pblock = new SCRAM::project($name);
+		# Create new version:
+		my $pver = new SCRAM::version($version,$path);
+		# Add new version:
+		$pblock->add_version($flag,$pver);
+		# Add the new project block to the arch block:
+		$self->dbproxy()->add_project($pblock);
+	    }    
+	    
+	    
+	}
+    }
+    undef $fh;
+}
 
 # -- Support Routines
 

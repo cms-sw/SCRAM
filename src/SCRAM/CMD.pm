@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.67 2007/04/13 17:31:26 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.68 2007/04/13 18:21:33 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -626,12 +626,16 @@ Show the location of the local SCRAM project database and any other databases th
 sub db() {
     my $self=shift;
     my (@ARGS) = @_;
-    my %opts = ( SCRAM_DB_SHOW => 0, SCRAM_DB_LINK => 0, SCRAM_DB_UNLINK => 0, SCRAM_DB_VALIDATE => 0 );
+    my %opts = ( SCRAM_DB_SHOW => 0, SCRAM_DB_LINK => 0,
+		 SCRAM_DB_UNLINK => 0, SCRAM_DB_MIGRATE => 0,
+		 SCRAM_DB_VALIDATE => 0 );
+    my $oldprojectdbfile;
     my %options =
 	("help"	=> sub { $self->{SCRAM_HELPER}->help('db'); exit(0) },
 	 "show"   => sub { $opts{SCRAM_DB_SHOW} = 1 },
 	 "link"   => sub { $opts{SCRAM_DB_LINK} = 1 },
 	 "unlink" => sub { $opts{SCRAM_DB_UNLINK} = 1 },
+	 "migrate=s" => sub { $opts{SCRAM_DB_MIGRATE} = 1; $oldprojectdbfile=$_[1]; },
 	 "validate" => sub { $opts{SCRAM_DB_VALIDATE} = 1 });
     
     local @ARGV = @ARGS;
@@ -682,6 +686,14 @@ sub db() {
 	    print "\nValidating current local SCRAM database.\nAny projects listed below are MISSING ";
 	    print "but are still installed in the SCRAM database.\n";
 	    $self->scramfunctions()->scramprojectdb()->validate();	    	    
+	} elsif ($opts{SCRAM_DB_MIGRATE}) {
+	    print "\nMigrating local SCRAM database (project.lookup) to XML.\n";
+	    if (-f $oldprojectdbfile) {
+		print "Reading old-style db \"".$oldprojectdbfile."\"\n";		
+		$self->scramfunctions()->scramprojectdb()->migrate($oldprojectdbfile);
+	    } else {
+		$self->scramerror("No valid old-style DB file given as argument. See \"scram db -help\" for usage info.");
+	    }
 	} else {
 	    # Didn't get a sensible sub-command:
 	    $self->scramfatal("Unknown option: see \"scram db -help\" for usage info.");

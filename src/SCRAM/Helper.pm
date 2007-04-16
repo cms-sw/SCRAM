@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.16 2007/02/27 12:46:01 sashby Exp $ 
+# Revision: $Id: Helper.pm,v 1.17 2007/04/11 16:25:11 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -211,17 +211,28 @@ sub db()
    $help.="\tlist operations, e.g.\n";
    $help.="\n";
    $help.="$::bold";
-   $help.="\tscram db link $::normal /a/directory/path/project.lookup\n";
+   $help.="\tscram db -link $::normal /a/directory/path/projectdb.xml\n";
    $help.="\n";
    $help.="-unlink\n"; 
    $help.="\tRemove a database from the link list. Note this does\n";
    $help.="\tnot remove the database, just the link to it in SCRAM.\n";
    $help.="\n";
    $help.="$::bold";
-   $help.="\tscram db unlink $::normal /a/directory/path/project.lookup\n";
+   $help.="\tscram db -unlink $::normal /a/directory/path/projectdb.xml\n";
    $help.="\n";
    $help.="-show\n"; 
    $help.="\tList the databases that are linked in.\n";
+   $help.="\n";
+   $help.="-validate\n"; 
+   $help.="\tCheck the database: report which project areas are missing\n";
+   $help.="\tbut still have entries in the db.\n";
+   $help.="\n";
+   $help.="-migrate\n";
+   $help.="\tMigrate an old-style project.lookup to XML format. All entries will\n";
+   $help.="\tbe written to the current local database.\n";
+   $help.="\n";
+   $help.="$::bold";
+   $help.="\tscram db -migrate $::normal /a/directory/path/project.lookup\n";   
    $help.="\n";
 
    return $help;
