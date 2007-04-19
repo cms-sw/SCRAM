@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.68 2007/04/13 18:21:33 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.69 2007/04/16 15:41:23 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -644,11 +644,7 @@ sub db() {
     
     if (! Getopt::Long::GetOptions(\%opts, %options)) {
 	$self->scramfatal("Error parsing arguments. See \"scram db -help\" for usage info.");
-    } else {
-	# First, test to see if there is a SCRAMDB:
-	$self->scramerror("No installation database available - perhaps no projects have been installed locally?"),
-	if ( ! -f $ENV{SCRAM_LOOKUPDB});
-	
+    } else {	
 	my $db=shift(@ARGV);
 	
 	# Check the options and do something useful:   
@@ -683,14 +679,16 @@ sub db() {
 		print "There are no SCRAM databases linked.","\n";
 	    }
 	} elsif ($opts{SCRAM_DB_VALIDATE}) {
-	    print "\nValidating current local SCRAM database.\nAny projects listed below are MISSING ";
-	    print "but are still installed in the SCRAM database.\n";
+	    print "\nValidating current local SCRAM database.\n\nAny project version listed in the project checks below is MISSING but still\n";
+	    print "has an entry (i.e. is installed) in the SCRAM database.\n";
 	    $self->scramfunctions()->scramprojectdb()->validate();	    	    
 	} elsif ($opts{SCRAM_DB_MIGRATE}) {
 	    print "\nMigrating local SCRAM database (project.lookup) to XML.\n";
 	    if (-f $oldprojectdbfile) {
-		print "Reading old-style db \"".$oldprojectdbfile."\"\n";		
+		print "Reading old-style db \"".$oldprojectdbfile."\"\n";
+		print "\n";
 		$self->scramfunctions()->scramprojectdb()->migrate($oldprojectdbfile);
+		print "\n";
 	    } else {
 		$self->scramerror("No valid old-style DB file given as argument. See \"scram db -help\" for usage info.");
 	    }

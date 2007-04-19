@@ -264,9 +264,7 @@ sub migrate() {
     my $self=shift;
     my ($dbfile)=@_;
     my $projects={};
-
     use SCRAM::ProjectDB;
-    
     # Read the database file. The contents will be for just
     # one architecture (the current one):
     use FileHandle;
@@ -274,6 +272,8 @@ sub migrate() {
     open($fh, "< $dbfile") || die "Can't read ".$dbfile.":".$!."\n";
     while(<$fh>) {
 	chomp;
+	# Skip all linked databases:
+	next if ($_ =~ /project.lookup/);
 	# Get the name, version and path:
 	my ($name, $version, $junk, $path)=split(":");
 	# Check to see if the path to the area still exists. If not,
@@ -283,7 +283,7 @@ sub migrate() {
 	    if ($pobj) {
 		# Create new version:
 		my $pver = new SCRAM::version($version,$path);
-		$pobj->add_version($flag,$pver);
+		$pobj->import_version($pver);
 	    } else {
 		my $pblock = new SCRAM::project($name);
 		# Create new version:
@@ -292,12 +292,15 @@ sub migrate() {
 		$pblock->add_version($flag,$pver);
 		# Add the new project block to the arch block:
 		$self->dbproxy()->add_project($pblock);
-	    }    
-	    
-	    
+	    }	    	    
+	} else {
+	    print STDERR "migrate(): Skipping project ".$name." ".$version.": area non-existent.\n";
 	}
     }
     undef $fh;
+    # Save and return:
+    $self->_save();
+    return 0;
 }
 
 # -- Support Routines
@@ -318,11 +321,14 @@ sub _findlocal {
 
 sub _initdb() {
     my $self=shift;
-    my $fstring="<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n";
+    my $fstring;
+
+    $fstring.="<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n";
     $fstring.="<ProjectDB>\n";
     $fstring.=" <architecture name=\"".$ENV{SCRAM_ARCH}."\">\n";
     $fstring.=" </architecture>\n";
     $fstring.="</ProjectDB>\n";
+
     use FileHandle;
     my $fh=FileHandle->new();
     my $filename=$self->{dbfile};
