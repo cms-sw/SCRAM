@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.69 2007/04/16 15:41:23 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.70 2007/04/19 16:01:15 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -683,14 +683,14 @@ sub db() {
 	    print "has an entry (i.e. is installed) in the SCRAM database.\n";
 	    $self->scramfunctions()->scramprojectdb()->validate();	    	    
 	} elsif ($opts{SCRAM_DB_MIGRATE}) {
-	    print "\nMigrating local SCRAM database (project.lookup) to XML.\n";
+	    print "\nMigrating old-format SCRAM database (project.lookup) to XML.\n";
 	    if (-f $oldprojectdbfile) {
-		print "Reading old-style db \"".$oldprojectdbfile."\"\n";
+		print "Reading old-format db \"".$oldprojectdbfile."\"\n";
 		print "\n";
 		$self->scramfunctions()->scramprojectdb()->migrate($oldprojectdbfile);
 		print "\n";
 	    } else {
-		$self->scramerror("No valid old-style DB file given as argument. See \"scram db -help\" for usage info.");
+		$self->scramerror("No valid old-format DB file given as argument. See \"scram db -help\" for usage info.");
 	    }
 	} else {
 	    # Didn't get a sensible sub-command:

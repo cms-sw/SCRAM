@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.29 2007/04/12 16:26:40 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.30 2007/04/13 17:31:26 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -71,7 +71,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => $SCRAM_VERSION || undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.29 2007/04/12 16:26:40 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.30 2007/04/13 17:31:26 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -257,7 +257,7 @@ sub remote_versioncheck() {
 	    $version=<VERSION>;
 	    chomp $version;
 	} else {
-	    $self->error("Unable to determine SCRAM version used to config. remote area.\n");
+	    $self->error("Unable to determine SCRAM version used to configure remote area.\n");
 	}
     }
     # Spawn the required version:
@@ -305,7 +305,7 @@ sub _initenv()
 	   print "Using $ENV{SCRAM_USERLOOKUPDB} as the database.","\n", if ($ENV{SCRAM_DEBUG});
 	   $ENV{SCRAM_LOOKUPDB}=$ENV{SCRAM_USERLOOKUPDB};
        } else {
-	   $self->scramerror("You've specified SCRAM_USERLOOKUPDB but no project/lookup exists. Please create it first.");
+	   $self->scramerror("You've specified SCRAM_USERLOOKUPDB but no projectdb.xml exists.");
        }
    }
    
