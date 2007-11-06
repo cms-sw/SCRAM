@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.70 2007/04/19 16:01:15 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.58.2.4 2007/02/26 18:33:45 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -102,6 +102,102 @@ sub arch()
       return (0);
       }
    }
+
+# =item   C<toolbox()>
+
+# Create and manage toolbox projects.
+# sub-commands are create, get and validate.
+   
+# =cut
+
+# sub toolbox()
+#    {
+#    my $self=shift;
+#    my (@ARGS) = @_;
+#    my %opts;
+#    my %options = ("help"     => sub { $self->{SCRAM_HELPER}->help('toolbox'); exit(0) },
+# 		  "create"   => sub { $opts{TOOLBOX_CMD} = 'tbxcreate' },
+# 		  "get"      => sub { $opts{TOOLBOX_CMD} = 'tbxget' },
+# 		  "query"    => sub { $opts{TOOLBOX_CMD} = 'tbxquery' },
+# 		  "validate" => sub { $opts{TOOLBOX_CMD} = 'tbxvalidate' });
+   
+#    local @ARGV = @ARGS;
+
+#    Getopt::Long::config qw(default no_ignore_case require_order pass_through);
+   
+#    if (! Getopt::Long::GetOptions(\%opts, %options))
+#       {
+#       $self->scramfatal("Error parsing arguments. See \"scram toolbox -help\" for usage info.");
+#       }
+#    else
+#       {
+#       my $cmd=$opts{TOOLBOX_CMD};
+#       return $self->$cmd(@ARGV);
+#       }
+   
+#    # Return nice value:
+#    return 0;
+#    }
+
+# =item   C<tool()>
+
+# Manage the tools in the current SCRAM project area. Supported
+# sub-commands are list, info, tag, remove and template.
+   
+# =cut
+   
+# sub tbxcreate()
+#    {
+#    my $self=shift;
+#    my (@ARGS) = @_;
+#    my %opts;
+#    my ($tbbootfile, $tag, $installdir, $installname, $verbose, $interactive);
+#    my %options = ("help"    => sub { $self->{SCRAM_HELPER}->help('toolbox'); exit(0) },
+# 		  "tag=s"   => sub { $tag = $_[1]; },
+# 		  "dir=s"   => sub { $installdir = $_[1]; },
+# 		  "name=s"  => sub { $installname = $_[1]; },
+# 		  "boot=s"  => sub { $tbbootfile = "file:".$_[1] });
+   
+#    local @ARGV = @ARGS;
+   
+#    # Catch the no arguments scenario:
+#    die "toolbox create: No arguments given.","\n", if ($#ARGV < 0);
+
+#    Getopt::Long::config qw(default no_ignore_case require_order);
+   
+#    if (! Getopt::Long::GetOptions(\%opts, %options))
+#       {
+#       $self->scramfatal("Error parsing arguments. See \"scram toolbox -help\" for usage info.");
+#       }
+#    else
+#       {
+#       # Default tag if none given:
+#       $tag ||= 'HEAD';     
+#       my $tbxbasedir=$installdir||=$ENV{SCRAM_TOOLBOX_HOME};
+
+#       use URL::URLcache;
+#       # Set up a cache (old-style, for URLs):
+#       my $globalcache = URL::URLcache->new($ENV{HOME}."/.scramrc/globalcache");
+
+#       use Configuration::Configuration;
+#       use Configuration::TBProject;
+#       my $toolbox = Configuration::TBProject->new($globalcache, $tbxbasedir);
+#       # Parse the boot file for the toolbox:
+#       my $toolbox_area = $toolbox->boot($tbbootfile, $installname);
+#       # Set the architecture:
+#       $toolbox_area->archname($ENV{'SCRAM_ARCH'});
+#       $toolbox_area->is_toolbox(1);
+#       $toolbox_area->tbxconfigfile($toolbox->configfilename_());
+#       # Save the area info:
+#       $toolbox_area->save();
+
+#       print "\n";
+#       print ">> Toolbox version ".$toolbox->version(). " installed at: ".$toolbox_area->location()." <<\n\n";
+      
+#       # Return nice value:
+#       return 0;      
+#       }
+#    }
  
 sub tool()
    {
@@ -304,15 +400,19 @@ sub tooltemplate()
    # Check for a "compiler" or "basic" tag:
    if ($templatetype =~ /^comp/ )
       {
+      my $tdir=$templatedir."/CompilerTools/CXX";
       # Copy the template from the SCRAM template dir:
-      print "Installing compiler tool template in current directory:\n";
-      system("cp",$templatedir."/compiler.xml",".");
+      print "Installing compiler templates in current directory-\n";
+      print "destination directory will be CompilerTemplates: ","\n";
+      system("cp","-r",$tdir,"CompilerTemplates");
+      # Clean up the directory (remove CVS directory):
+      system("rm","-rf","CompilerTemplates/CVS");
       print "Done!","\n";
       }
    elsif ($templatetype =~ /^bas/ )
       {
       print "Installing basic tool template in current directory: ","\n";
-      system("cp",$templatedir."/basic_template.xml",".");
+      system("cp",$templatedir."/basic_template",".");
       print "Done!","\n";
       }
    else
@@ -397,9 +497,10 @@ sub install()
       # Install the project:
       my $project = shift(@ARGV);
       my $projectversion = shift(@ARGV);
+      $self->scramfunctions()->addareatoDB($opts{SCRAM_FORCE},$self->localarea(),$project,$projectversion);
+
       # Also touch a register file called .installed in .SCRAM/<arch>:
       $self->register_install();
-      $self->scramfunctions()->addareatoDB($opts{SCRAM_FORCE},$self->localarea(),$project,$projectversion);
       # Return nice value:
       return 0;
       }
@@ -542,80 +643,157 @@ areas can be created from any of the projects listed by this command.
    
 =cut
 
-sub list() {
-    my $self=shift;
-    my (@ARGS) = @_;
-    my %opts;
-    my %options =
-	("help"	 => sub { $self->{SCRAM_HELPER}->help('list'); exit(0) },
-	 "compact" => sub { $opts{SCRAM_LISTCOMPACT} = 1 } );
-    
-    local @ARGV = @ARGS;
+sub list()
+   {
+   my $self=shift;
+   my (@ARGS) = @_;
+   my %opts;
+   my %options =
+      ("help"	 => sub { $self->{SCRAM_HELPER}->help('list'); exit(0) },
+       "oldstyle" => sub { $opts{SCRAM_OLDSTYLE} = 1 },
+       "compact" => sub { $opts{SCRAM_LISTCOMPACT} = 1 } );
+   
+   local @ARGV = @ARGS;
+   
+   Getopt::Long::config qw(default no_ignore_case require_order);
+   
+   if (! Getopt::Long::GetOptions(\%opts, %options))
+      {
+      $self->scramfatal("Error parsing arguments. See \"scram list -help\" for usage info.");
+      exit(1);
+      }
+   else
+      {
+      my $pjname = "Project Name";
+      my $pjversion = "Project Version";
+      my $pjlocation = "Project Location";
+      my $headstring = sprintf("| %-12s  | %-24s | %-33s |",$pjname,$pjversion,$pjlocation);
+      my @missingareas;
+      my $projectexists=0;
+      my $linebold = "$::bold"."$::line"."$::normal";
+      
+      # First, test to see if there is a SCRAMDB:
+      $self->scramerror("No installation database available - perhaps no projects have been installed locally?"),
+      if ( ! -f $ENV{SCRAM_LOOKUPDB});
+      
+      # The project data:
+      my $project = shift(@ARGV);
+      my $projectversion = shift(@ARGV);
+      
+      # get all project data from  SCRAMDB:
+      my @projects = $self->getprojectsfromDB();
+      # We say goodbye if there aren't any projects installed:
+      $self->scramerror(">>>> No locally installed projects! <<<<"), if ( $#projects < 0);
 
-    Getopt::Long::config qw(default no_ignore_case require_order);
-    
-    if (! Getopt::Long::GetOptions(\%opts, %options)) {
-	$self->scramfatal("Error parsing arguments. See \"scram list -help\" for usage info.");
-	exit(1);
-    } else {
-	my $pjname = "Project Name";
-	my $pjversion = "Project Version";
-	my $pjlocation = "Project Location";
-	my $headstring = sprintf("| %-12s  | %-24s | %-33s |",$pjname,$pjversion,$pjlocation);
-	my $projectexists=0;
-	my $linebold = "$::bold"."$::line"."$::normal";
-	
-	# The project data:
-	my $project = shift(@ARGV);
-	my $projectversion = shift(@ARGV);
-	
-	# Get all project data from SCRAMDB:
-	my @projects = $self->getprojectsfromDB();
-	# We say goodbye if there aren't any projects installed:
-	$self->scramerror(">>>> No locally installed projects! <<<<"), if ( $#projects < 0);
-	if (!$opts{SCRAM_LISTCOMPACT}) {
-	    print $linebold,"\n";
-	    print $headstring."\n";
-	    print $linebold,"\n\n";
-	}
-	
-	foreach my $proj (@projects) {
-	    next unless $proj->nversions(); # Continue if at least one version of a project is installed.
-	    if ($project) {	      
-		if ($project eq $proj->name) {
-		    if ($projectversion) {
-			# Get a specific version:
-			if (!$proj->list_version($projectversion,$opts{SCRAM_LISTCOMPACT})) {
-			    $self->scramerror(">>>> No version $projectversion of $project installed! <<<<"),
-			}
+      # Otherwise, we continue. First, we see if the option SCRAM_OLDSTYLE is set. If so, we show all
+      # projects (V0_x ones too) in the same manner as other SCRAM versions. If not, we use the new
+      # mechanism which checks only for the .installed file.      
+      # Iterate over the list of projects:
+      foreach my $pr (@projects)
+	 {
+	 my $url='NULL';	 
+	 if ( $project  eq "" || $project eq $$pr[0] )
+	    {
+	    # Check that the area exists (i.e. check that a configarea object
+	    # is returned before attempting to test its' location):
+	    my $possiblearea=$self->scramfunctions()->scramprojectdb()->getarea($$pr[0],$$pr[1]);
+	    $url=$possiblearea->location(), if (defined ($possiblearea));
+	    
+	    if ($opts{SCRAM_OLDSTYLE})
+	       {
+	       # See if area is readable:
+	       if ( -d $url)
+		  {
+		  # Check path to project:
+		  if ( -d "$url/bin/$ENV{SCRAM_ARCH}" || 
+		       -d "$url/lib/$ENV{SCRAM_ARCH}" || -d "$url/$ENV{SCRAM_ARCH}/lib")
+		     {
+		     if ($project eq $$pr[0])
+			{
 			$projectexists=1;
-		    } else {
-			# Get versions of a specific project:
-			if (!$proj->list_versions($opts{SCRAM_LISTCOMPACT})) {
-			    $self->scramerror(">>>> No locally installed $project projects! <<<<"),
-			}
+			} # We've found at least one project
+		     my $pstring = sprintf "  %-15s %-25s  \n%45s%-30s\n",$$pr[0],$$pr[1],"--> ",$::bold.$url.$::normal;
+		     $pstring = sprintf "%-15s %-25s %-50s\n",$$pr[0],$$pr[1],$url, if ($opts{SCRAM_LISTCOMPACT});
+		     push(@foundareas,$pstring);
+		     }
+		  }
+	       else
+		  {
+		  # Area is missing:
+		  if ($url ne 'NULL')
+		     {
+		     push(@missingareas,sprintf ">>  Project area MISSING:   %-10s %-20s  \n",$$pr[0],$$pr[1]);
+		     }
+		  }
+	       }
+	    else
+	       {
+	       # The new mechanism. We see if project was registered:
+	       # See if area is readable:
+	       if ( -d $url)
+		  {
+		  if ($self->isregistered($possiblearea))
+		     {
+		     if ($project eq $$pr[0])
+			{
 			$projectexists=1;
-		    }
-		} else {
-		    next;
-		}
-	    } else {
-		# Dump info for all versions:
-		if (!$proj->list_versions($opts{SCRAM_LISTCOMPACT})) {
-		    $self->scramerror(">>>> No locally installed projects! <<<<");
-		}
-		$projectexists=1;
+			} # We've found at least one project
+		     my $pstring = sprintf "  %-15s %-25s  \n%45s%-30s\n",$$pr[0],$$pr[1],"--> ",$::bold.$url.$::normal;
+		     $pstring = sprintf "%-15s %-25s %-50s\n",$$pr[0],$$pr[1],$url, if ($opts{SCRAM_LISTCOMPACT});
+		     push(@foundareas,$pstring);
+		     }
+		  }
+	       else
+		  {
+		  # Area is missing:
+		  if ($url ne 'NULL')
+		     {		     
+		     push(@missingareas,sprintf ">>  Project area MISSING:   %-10s %-20s  \n",$$pr[0],$$pr[1]);
+		     }
+		  }
+	       }
 	    }
-	}
-	$self->scramerror(">>>> No locally installed $project projects! <<<<"), unless ($projectexists);
-	if (!$opts{SCRAM_LISTCOMPACT}) {	  
-	    print "\n\n","Projects available for platform >> ".$::bold."$ENV{SCRAM_ARCH}".$::normal." <<\n";
-	    print "\n";
-	}
-	
-	return 0;
-    }
-}
+	 }
+      
+      # Now dump out the info:
+      if ($opts{SCRAM_LISTCOMPACT})
+	 {
+	 $self->scramerror(">>>> No locally installed $project projects! <<<<"),
+	 if ( ! $projectexists && $project ne "");
+	 
+	 foreach $p (@foundareas)
+	    {
+	    print $p;
+	    }
+	 }
+      else
+	 {
+	 # If there weren't any projects of the name given found:
+	 $self->scramerror(">>>> No locally installed $project projects! <<<<"),
+	 if ( ! $projectexists && $project ne "");
+	 
+	 # Otherwise, dump the info:
+	 print "\n","Listing installed projects....","\n\n";
+	 print $linebold,"\n";
+	 print $headstring."\n";
+	 print $linebold,"\n\n";
+	 
+	 foreach $p (@foundareas)
+	    {
+	    print $p;
+	    }
+	 
+	 print "\n\n","Projects available for platform >> ".$::bold."$ENV{SCRAM_ARCH}".$::normal." <<\n";
+	 print "\n";
+	 }
+      
+      # Error if there were missing areas:
+      $self->scramerror("\n",@missingareas), if ( $#missingareas > -1 );
+      }
+   
+   # Otherwise return nicely:
+   return 0;
+   }
 
 =item   C<db()>
 
@@ -623,84 +801,88 @@ Show the location of the local SCRAM project database and any other databases th
    
 =cut
 
-sub db() {
-    my $self=shift;
-    my (@ARGS) = @_;
-    my %opts = ( SCRAM_DB_SHOW => 0, SCRAM_DB_LINK => 0,
-		 SCRAM_DB_UNLINK => 0, SCRAM_DB_MIGRATE => 0,
-		 SCRAM_DB_VALIDATE => 0 );
-    my $oldprojectdbfile;
-    my %options =
-	("help"	=> sub { $self->{SCRAM_HELPER}->help('db'); exit(0) },
-	 "show"   => sub { $opts{SCRAM_DB_SHOW} = 1 },
-	 "link"   => sub { $opts{SCRAM_DB_LINK} = 1 },
-	 "unlink" => sub { $opts{SCRAM_DB_UNLINK} = 1 },
-	 "migrate=s" => sub { $opts{SCRAM_DB_MIGRATE} = 1; $oldprojectdbfile=$_[1]; },
-	 "validate" => sub { $opts{SCRAM_DB_VALIDATE} = 1 });
-    
-    local @ARGV = @ARGS;
-    
-    Getopt::Long::config qw(default no_ignore_case require_order);
-    
-    if (! Getopt::Long::GetOptions(\%opts, %options)) {
-	$self->scramfatal("Error parsing arguments. See \"scram db -help\" for usage info.");
-    } else {	
-	my $db=shift(@ARGV);
-	
-	# Check the options and do something useful:   
-	if ($opts{SCRAM_DB_LINK}) {
-	    if ( -f $db ) {
-		$self->scramerror("Can't link to an old format (i.e. non-XML) SCRAM database!"),unless($db =~ /xml$/);		
-		print "Current SCRAM database: ",$::bold.$ENV{SCRAM_LOOKUPDB}.$::normal,"\n";
-		$self->scramfunctions()->scramprojectdb()->link($db); 
-		print "\n","Linked ",$db," to current SCRAM database.","\n\n";
-	    } else {
-		$self->scramerror("No valid DB file given as argument. See \"scram db -help\" for usage info.");
-	    }
-	} elsif ($opts{SCRAM_DB_UNLINK}) {
-	    if ( -f $db ) {
-		$self->scramerror("Can't unlink an old format (i.e. non-XML) SCRAM database!"),unless($db =~ /xml$/);		
-		print "Current SCRAM database: ",$::bold.$ENV{SCRAM_LOOKUPDB}.$::normal,"\n";
-		$self->scramfunctions()->scramprojectdb()->unlink($db); 
-		print "\n","Unlinked ",$db," from current SCRAM database.","\n\n";
-	    } else {
-		$self->scramerror("No valid DB file given as argument. See \"scram db -help\" for usage info.");
-	    }
-	} elsif ($opts{SCRAM_DB_SHOW}) {
+sub db()
+   {
+   my $self=shift;
+   my (@ARGS) = @_;
+   my %opts = ( SCRAM_DB_SHOW => 0, SCRAM_DB_LINK => 0, SCRAM_DB_UNLINK => 0 );
+   my %options =
+      ("help"	=> sub { $self->{SCRAM_HELPER}->help('db'); exit(0) },
+       "show"   => sub { $opts{SCRAM_DB_SHOW} = 1 },
+       "link"   => sub { $opts{SCRAM_DB_LINK} = 1 },
+       "unlink" => sub { $opts{SCRAM_DB_UNLINK} = 1 } );
+   
+   local @ARGV = @ARGS;
+   
+   Getopt::Long::config qw(default no_ignore_case require_order);
+   
+   if (! Getopt::Long::GetOptions(\%opts, %options))
+      {
+      $self->scramfatal("Error parsing arguments. See \"scram db -help\" for usage info.");
+      }
+   else
+      {
+      # First, test to see if there is a SCRAMDB:
+      $self->scramerror("No installation database available - perhaps no projects have been installed locally?"),
+      if ( ! -f $ENV{SCRAM_LOOKUPDB});
+
+      my $db=shift(@ARGV);
+      
+      # Check the options and do something useful:   
+      if ($opts{SCRAM_DB_LINK})
+	 {
+	 if ( -f $db )
+	    {
 	    print "Current SCRAM database: ",$::bold.$ENV{SCRAM_LOOKUPDB}.$::normal,"\n";
-	    my @links=$self->scramfunctions()->scramprojectdb()->listlinks();
-	    if (@links) {
-		print "\n","The following SCRAM databases are linked to the current database: ","\n\n";
-		foreach my $extdb (@links) {
-		    print "\t".$extdb."\n";
-		}
-		print "\n";
-	    } else {
-		print "There are no SCRAM databases linked.","\n";
+	    $self->scramfunctions()->scramprojectdb()->link($db); 
+	    print "\n","Linked ",$db," to current SCRAM database.","\n\n";
 	    }
-	} elsif ($opts{SCRAM_DB_VALIDATE}) {
-	    print "\nValidating current local SCRAM database.\n\nAny project version listed in the project checks below is MISSING but still\n";
-	    print "has an entry (i.e. is installed) in the SCRAM database.\n";
-	    $self->scramfunctions()->scramprojectdb()->validate();	    	    
-	} elsif ($opts{SCRAM_DB_MIGRATE}) {
-	    print "\nMigrating old-format SCRAM database (project.lookup) to XML.\n";
-	    if (-f $oldprojectdbfile) {
-		print "Reading old-format db \"".$oldprojectdbfile."\"\n";
-		print "\n";
-		$self->scramfunctions()->scramprojectdb()->migrate($oldprojectdbfile);
-		print "\n";
-	    } else {
-		$self->scramerror("No valid old-format DB file given as argument. See \"scram db -help\" for usage info.");
+	 else
+	    {
+	    $self->scramerror("No valid DB file given as argument. See \"scram db -help\" for usage info.");
 	    }
-	} else {
-	    # Didn't get a sensible sub-command:
-	    $self->scramfatal("Unknown option: see \"scram db -help\" for usage info.");
-	}
-    }
-    
-    # Return nice value:
-    return 0;
-}
+	 }
+      elsif ($opts{SCRAM_DB_UNLINK})
+	 {
+	 if ( -f $db )
+	    {
+	    print "Current SCRAM database: ",$::bold.$ENV{SCRAM_LOOKUPDB}.$::normal,"\n";
+	    $self->scramfunctions()->scramprojectdb()->unlink($db); 
+	    print "\n","Unlinked ",$db," from current SCRAM database.","\n\n";
+	    }
+	 else
+	    {
+	    $self->scramerror("No valid DB file given as argument. See \"scram db -help\" for usage info.");
+	    }
+	 }
+      elsif ($opts{SCRAM_DB_SHOW})
+	 {
+	 print "Current SCRAM database: ",$::bold.$ENV{SCRAM_LOOKUPDB}.$::normal,"\n";
+	 my @links=$self->scramfunctions()->scramprojectdb()->listlinks();
+	 if (defined (@links))
+	    {
+	    print "\n","The following SCRAM databases are linked to the current database: ","\n\n";
+	    foreach my $extdb (@links)
+	       {
+	       print "\t".$extdb."\n";
+	       }
+	    print "\n";
+	    }
+	 else
+	    {
+	    print "There are no SCRAM databases linked.","\n";
+	    }
+	 }
+      else
+	 {
+	 # Didn't get a sensible sub-command:
+	 $self->scramfatal("Unknown option: see \"scram db -help\" for usage info.");
+	 }
+      }
+   
+   # Return nice value:
+   return 0;
+   }
 
 =item   C<build()>
 
@@ -715,10 +897,11 @@ sub build()
    unshift @INC, $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};
    
    # The cache files:
-   my $toolcache=$ENV{LOCALTOP}."/.SCRAM/".$ENV{SCRAM_ARCH}."/ToolCache.db";
-   my $dircache=$ENV{LOCALTOP}."/.SCRAM/DirCache.db";
-   my $builddatastore=$ENV{LOCALTOP}."/.SCRAM/".$ENV{SCRAM_ARCH}."/ProjectCache.db";
-
+   my $wrkdir = $ENV{LOCALTOP}."/.SCRAM/".$ENV{SCRAM_ARCH};
+   my $toolcache="${wrkdir}/ToolCache.db";
+   my $dircache="${wrkdir}/DirCache.db";
+   my $builddatastore="${wrkdir}/ProjectCache.db";
+   
    # The directories:
    my $workingdir=$ENV{LOCALTOP}."/".$ENV{SCRAM_INTwork};
    my $configbuildfiledir=$ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};
@@ -734,15 +917,17 @@ sub build()
    # Getopt variables:
    my %opts = ( WRITE_GRAPHS => 0, # No graphs produced by default;
 		SCRAM_TEST => 0 ); # test mode: don't run make;
+   my $cachereset = 0;
+   my $convertxml = 0;
    my %options =
       ("help"     => sub { $self->{SCRAM_HELPER}->help('build'); exit(0) },
        "verbose"  => sub { $ENV{SCRAM_BUILDVERBOSE} = 1 },
        "testrun"  => sub { $opts{SCRAM_TEST} = 1 },
-       "reset"    => sub { print "Resetting caches","\n"; system("rm","-f",$builddatastore,$dircache)
-			      if (-f $builddatastore) ;
-			   $now = time; utime $now, $now, $toolcache },
+       "reset"    => sub { $cachereset=1; print "Resetting caches","\n"; system("rm","-rf",$builddatastore,"${workingdir}/MakeData/DirCache*")},
        "fast"     => sub { print "Skipping cache scan...","\n"; $fast=1 },
-       "writegraphs=s"  => sub { $opts{WRITE_GRAPHS} = 1; $graphmode=$_[1] } );
+       "writegraphs=s"  => sub { $opts{WRITE_GRAPHS} = 1; $graphmode=$_[1] },
+       "convertxml"  => sub { $convertxml =1 },
+       "xmlb"     => sub {$ENV{SCRAM_XMLBUILDFILES} = 1; print "SCRAM: Will read XML versions of your BuildFiles.","\n" } );
    
    local (@ARGV) = @_;
 
@@ -755,6 +940,7 @@ sub build()
       }
    else
       {
+      if ($convertxml){$fast=0;}
       # Check to see if we are in a local project area, then set the
       # runtime environment. The environments are set in %ENV:
       $self->checklocal();
@@ -781,6 +967,8 @@ sub build()
 
       # Where to search for BuildFiles (from src):
       chdir($ENV{LOCALTOP});
+      # Create the working dir if it doesn't exist
+      AddDir::adddir($workingdir), if (! -d $workingdir);
 
       if ( -r $cachename )
 	 {
@@ -798,11 +986,23 @@ sub build()
       $cacheobject->verbose($ENV{SCRAM_CACHEDEBUG});
       # Check for BuildFiles (config dir and src) and track timestamps of contents
       # of config dir (templates, for example):
-      $cacheobject->checkfiles() unless $fast;
-
-      # Create the working dir if it doesn't exist
-      AddDir::adddir($workingdir), if (! -d $workingdir);
-
+      $cacheobject->checkfiles($cachereset,$convertxml) unless $fast;
+      
+      #if asked for xml based file creation then no need to run make
+      if ($convertxml)
+         {
+	 my $nonxml=$cacheobject->get_nonxml();
+	 if ($nonxml == 0)
+	    {
+	    print "There are no Non-XML based BuildFiles.\n";
+	    }
+         else
+	    {
+	    print "$nonxml Non-XML based BuildFile(s) processed.\n";
+	    }
+	 return 0;
+	 }
+      
       # BuildSystem::Make object created here to handle args passed to gmake:
       use BuildSystem::MakeInterface;
       my $MAKER = BuildSystem::MakeInterface->new(@ARGV);
@@ -810,11 +1010,9 @@ sub build()
       # Now check the file status (BuildFiles in src tree) and config
       # file status (contents of config dir). We only reparse everything
       # and rebuild the makefiles if something changed:
-      if ($cacheobject->configstatus() ||    # config out of date; 
-	  $cacheobject->filestatus() ||      # BuildFile out of date
-	  $cacheobject->cachestatus())       # Files added/removed from src dir
+      if ($cacheobject->cachestatus())
 	 {
-	 my $buildfiles = $cacheobject->bf_for_scanning();
+	 my $buildfiles = $cacheobject->get_data("ADDEDBF");
 	 my $filecache = $cacheobject->dircache();
 	 # Arrayref pointing to list of changed parent dirs:
 	 my $changeddirs = $cacheobject->modified_parentdirs();
@@ -832,56 +1030,30 @@ sub build()
 	 # continue until the cache is written before exit:
 	 $SIG{INT}  = sub
 	    {
-	    my $dummy = ($trap_flag == 0) ? $trap_flag = 1 : $trap_flag;
+	    ($trap_flag == 0) ? $trap_flag = 1 : $trap_flag;
 	    print $::bold."\nUser interrupt: Writing cache before exit.\n".$::normal;
 	    };
 	 
-	 if ( -r $builddatastore )
+	 
+	 if ( -r $builddatastore)    
 	    {
-	    print "Reading cached build data","\n";	    
+	    print "Reading cached build data","\n";
 	    $buildstoreobject=&Cache::CacheUtilities::read($builddatastore);
+	    }
 	    # Update- check for changed or removed files. Also need to account for removed directories:
-	    if ($buildstoreobject)
-	       {
-	       $buildstoreobject->init_engine(); # Restart the template engine
-	       }
-	    else
-	       {
-	       # Report an error and exit (implies that cache has disappeared):
-	       $self->scramerror("SCRAM: .SCRAM/".$ENV{SCRAM_ARCH}."/ProjectCache.db missing. Use \"-r\".");
-	       exit(1);
-	       }
-
-	    # Set graph mode for the grapher:
-	    $buildstoreobject->grapher($graphmode,$opts{WRITE_GRAPHS});
-	    # Run in update mode:
-	    $buildstoreobject->update($changeddirs,
-				      $addeddirs,
-				      $buildfiles,
-				      $removedfiles,
-				      $self->toolmanager(), $filecache);
-	    }
-	 else
+	 if (!$buildstoreobject)
 	    {
-	    # We populate our build data cache:
-	    print "Parsing BuildFiles\n";
-	    # Set graph mode for the grapher:
-	    $buildstoreobject->grapher($graphmode,$opts{WRITE_GRAPHS});
-	    # We don't have any build data yet so we need to initialize the object:
-	    $buildstoreobject->populate($cacheobject->paths(), $filecache, $self->toolmanager());
-	    # Do stuff with build cache and data. Iterate over the entire directory structure,
-	    # doing whatever we need to do (collect metadata, for example). The raw data will
-	    # have already been extracted earlier, so the iteration over the directories
-	    # serves to resolve the build data and make it persistent. The final element
-	    # of any branch (e.g. bin, test, module, python), which will correspond to
-	    # the template class to be applied, is the final resting place of the parsed data.
-	    # Once this data is in place, the corresponding template can be processed and Makefile text
-	    # written out to the main Makefile...note that this means that the project template is
-	    # processed first, followed by all subsystems, then packages, then real build products.
-	    # THUS, we ensure that all build metadata is available once we arrive at the level of the
-	    # build product. So, we iterate:
-	    $buildstoreobject->processtree();
+	    # Report an error and exit (implies that cache has disappeared):
+	    $self->scramerror("SCRAM: .SCRAM/".$ENV{SCRAM_ARCH}."/ProjectCache.db missing. Use \"-r\".");
+	    exit(1);
 	    }
+	    
+	 $buildstoreobject->init_engine(); # Restart the template engine
+
+	 # Set graph mode for the grapher:
+	 $buildstoreobject->grapher($graphmode,$opts{WRITE_GRAPHS});
+	 # Run in update mode:
+	 $buildstoreobject->update($cacheobject,$self->toolmanager(), $filecache);
 	 
 	 # Now write to the file cache. From here on, we're done with it:
 	 print "\nUpdating cache","\n",if ($ENV{SCRAM_DEBUG});
@@ -908,7 +1080,7 @@ sub build()
 	 
 	 # At this point, all the data will have been processed and Makefiles generated.
 	 # So here's where we will run gmake (use -r to turn of implicit rules):
-	 my $returnval = $MAKER->exec($ENV{LOCALTOP}."/".$ENV{SCRAM_INTwork}."/Makefile"),
+	 my $returnval = $MAKER->exec($ENV{SCRAM_INTwork}."/Makefile"),
 	 if (! $opts{SCRAM_TEST});
 	 print "MAKE not actually run: test build mode!","\n",if ($opts{SCRAM_TEST});
 
@@ -920,9 +1092,9 @@ sub build()
 	 print "No changes to the cache....","\n",if ($ENV{SCRAM_DEBUG});
 	 # Everything is already up-to-date so we just build. Check to make sure we really
 	 # have a Makefile (it might've been cleaned away somehow):
-	 if ( -f $ENV{LOCALTOP}."/".$ENV{SCRAM_INTwork}."/Makefile")
+	 if ( -f $ENV{SCRAM_INTwork}."/Makefile")
 	    {
-	    my $returnval = $MAKER->exec($ENV{LOCALTOP}."/".$ENV{SCRAM_INTwork}."/Makefile"),
+	    my $returnval = $MAKER->exec($ENV{SCRAM_INTwork}."/Makefile"),
 	    if (! $opts{SCRAM_TEST});
 	    print "MAKE not actually run: test build mode!","\n",if ($opts{SCRAM_TEST});
 
@@ -1065,13 +1237,28 @@ sub bootfromrelease() {
 	$ENV{SCRAM_SITENAME} = 'STANDALONE', unless (exists($ENV{SCRAM_SITENAME}));
 	$toolconf ||= $area->location()."/".$ENV{SCRAM_CONFIGDIR}."/site/tools-".$ENV{SCRAM_SITENAME}.".conf";
 	$::lookupdb = SCRAM::AutoToolSetup->new($toolconf);  
-	
 	# Need a toolmanager, then we can setup:
+
 	my $toolmanager = $self->toolmanager($area);
 	$toolmanager->setupself($area->location());
-	
+
 	# Write the cached info:
 	$toolmanager->writecache();
+	
+        my $temp=$area->location()."/".$area->{admindir}."/".$area->arch();
+        if (-f "${temp}/MakeData/Tools.mk")
+           {
+           my $t1=(stat("${temp}/MakeData/Tools.mk"))[9];
+           if (-e "${temp}/timestamps")
+              {
+              my $t2=(stat("${temp}/MakeData/Tools.mk"))[9];
+              utime $t2+1,$t2+1,"${temp}/MakeData/Tools.mk";
+              if (-f "${temp}/timestamps/self")
+                 {
+                 utime $t2+2,$t2+2,"${temp}/timestamps/self";
+                 }
+              }
+           }
 	
 	print "\n\nInstallation procedure complete.\n";
 	print "Developer area located at:\n\n\t\t".$area->location()."\n\n";
@@ -1258,7 +1445,7 @@ sub update_project_area()
 	    $self->versioncheck($relarea->scramversion());
 
 	    # Copy the admin dir (and with it, the ToolCache):   
-	    $relarea->copywithskip($ENV{LOCALTOP},'ProjectCache.db');
+	    $relarea->copywithskip($ENV{LOCALTOP},['ProjectCache.db','DirCache.db','MakeData/DirCache','MakeData/DirCache.mk','MakeData/src.mk']);
 	    # Also, we need to copy .SCRAM/cache from the release area. This eliminates the need
 	    # to download tools again from CVS:
 	    $relarea->copyurlcache($ENV{LOCALTOP});
@@ -1318,7 +1505,8 @@ sub create_productstores()
    my $perms=0755;
 
    my $toplevelconf = BuildSystem::BuildFile->new();
-   my $tlbf = $location."/".$ENV{SCRAM_CONFIGDIR}."/BuildFile.xml";
+   my $tlbf = $location."/".$ENV{SCRAM_CONFIGDIR}."/".$ENV{SCRAM_BUILDFILE}.".xml";
+   if (!-f $tlbf) { $tlbf = $location."/".$ENV{SCRAM_CONFIGDIR}."/".$ENV{SCRAM_BUILDFILE};}
    $toplevelconf->parse($tlbf);
    $ENV{LOCALTOP} ||= $location;
    my $stores = $toplevelconf->productstore();
@@ -1394,7 +1582,7 @@ sub project_template_copy()
       {
       print "\n";
       print "Warning: unable to install templates because you appear to have a config","\n";
-      print "         directory present already. Please delete/rename it and re-run...","\n";
+      print "         directory present already. Please delete it and re-run...","\n";
       return;
       }
    else
@@ -1696,9 +1884,9 @@ sub runtime()
       # ":${VAR}" or suchlike. We start with the tools.
       # Sort according to the order in which the tools were selected (i.e., the order in which
       # they appear in RequirementsDoc):
-      foreach $tool ( sort { $rawselected->{$a}
-			     <=> $rawselected->{$b}}
-		      keys %$rawselected )
+      foreach $tool ( sort { %{$rawselected}->{$a}
+			     <=> %{$rawselected}->{$b}}
+		      keys %{$rawselected} )
 	 {
 	 # Extract the runtime content for this tool:
 	 my $toolrt = $tools->{$tool}->runtime(), if (exists $tools->{$tool});
@@ -2632,18 +2820,6 @@ sub dbghook_()
    my $self=shift;
    my (@ARGS) = @_;
    local @ARGV = @ARGS;
-
-   my ($projectname,$projectversion)=@ARGV;
-
-   # 20070404
-   my $relarea=$self->scramfunctions()->scramprojectdb()->getarea($projectname,$projectversion);
-
-   print $relarea,"\n";
-   print "release location: ",$relarea->location,"\n";
-   
-   
-
-
    # Return nice value:
    return 0;
    }
@@ -2719,9 +2895,9 @@ sub runtimebuildenv_()
    # ":${VAR}" or suchlike. We start with the tools.
    # Sort according to the order in which the tools were selected (i.e., the order in which
    # they appear in RequirementsDoc):
-   foreach $tool ( sort { $rawselected->{$a}
-			  <=> $rawselected->{$b}}
-		   keys %$rawselected )
+   foreach $tool ( sort { %{$rawselected}->{$a}
+			  <=> %{$rawselected}->{$b}}
+		   keys %{$rawselected} )
       {
       # Extract the runtime content for this tool:
       my $toolrt = $tools->{$tool}->runtime(), if (exists $tools->{$tool});

@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.16 2007/02/27 11:59:45 sashby Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.15.2.3 2007/02/27 11:38:39 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -48,20 +48,11 @@ sub new
    $self->{toolfiledir}=$self->{topdir}."/.SCRAM/InstalledTools";
    $self->{datastore}=$self->{topdir}."/.SCRAM";
    $self->{archstore}=$self->{topdir}."/.SCRAM/".$ENV{SCRAM_ARCH};
-
-   if (exists $ENV{SCRAM_TOOL_TIMESTAMP_DIR})
-      {
-      $self->{tooltimestamp}=$ENV{SCRAM_TOOL_TIMESTAMP_DIR};
-      }
-   else
-      {
-      $self->{tooltimestamp}=$self->{archstore}."/timestamps";
-      }
+   $self->{tooltimestamp}="timestamps";
    
    # Make sure our tool download dir exists:
    AddDir::adddir($self->{toolfiledir});
    AddDir::adddir($self->{archstore});
-   AddDir::adddir($self->{tooltimestamp});
    
    # Set the tool cache file to read/write:
    $self->name($projectarea->toolcachename());
@@ -137,43 +128,12 @@ sub setupalltools()
    # want to pick up everything from any scram-managed projects):
    if ($setupopt == 1) # We're booting from scratch
       {
-      # Check to see if there are any SCRAM-managed projects in our local requirements:
-      my $scramprojects = $::scram->_loadscramdb();
-      
       # Look for a match in the scram db:
-      foreach my $S (@$selected) {
-	  if (exists ($scramprojects->{$S})) {
-	      # Check for environment SCRAM_INHERIT_COMPAT_CONFIG:
-	      if (exists($ENV{SCRAM_INHERIT_COMPAT_CONFIG})) {
-		  # Now check the version required exists in
-		  # list of scram projects with this name:
-		  while (my ($pdata,$plocation) = each %{$scramprojects->{$S}}) {
-		      # Split the $pdata string to get the real name and the version:
-		      my ($pname,$pversion) = split(":",$pdata);
-		      if ($pversion eq $self->defaultversion($S)) {
-			  # Get the tool manager for the scram project:
-			  my $sa=$::scram->scramfunctions()->scramprojectdb()->getarea($pname,$pversion);
-			  # Load the tool cache:
-			  if ( -r $sa->toolcachename()) {
-			      use Cache::CacheUtilities;
-			      my $satoolmanager=&Cache::CacheUtilities::read($sa->toolcachename());
-			      # Copy needed content from toolmanager for scram-managed project only
-			      # if the projects have compatible configurations (compare first set of
-			      # digits):
-			      if ($self->check_compatibility($satoolmanager)) {
-				  $self->inheritcontent($satoolmanager);
-			      }
-			  }
-		      }
-		  }
-	      }
-	      # Also add this scram-managed project to list of tools to set up:
-	      push(@localtools,$S);
-	  } else {
-	      # Store other tools in ReqDoc in separate array. We will set up these tools later:
-	      push(@localtools,$S);
-	  }
-      }
+      foreach my $S (@$selected)
+	 {
+	    # Store other tools in ReqDoc in separate array. We will set up these tools later:
+	    push(@localtools,$S);
+	 }
       
       # Set up extra tools required in this project, in addition to
       # any scram-managed projects
@@ -226,6 +186,8 @@ sub coresetup()
    if ($toolcheck != 1 || $force == 1)
       {
       $toolparser = BuildSystem::ToolParser->new();
+      $toolparser->filehead('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><doc type="BuildSystem::ToolDoc" version="1.0">');
+      $toolparser->filetail('</doc>');
       # We only want to store the stuff relevant for one particular version:
       $toolparser->parse($toolname, $toolversion, $toolfile);
       # Store the ToolParser object in the cache:
@@ -407,6 +369,8 @@ sub setupself()
       print $::bold."Setting up SELF:".$::normal,"\n";
       # Self file exists so process it:
       $selfparser = BuildSystem::ToolParser->new();
+      $selfparser->filehead ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><doc type="BuildSystem::ToolDoc" version="1.0">');
+      $selfparser->filehead ('</doc>');
       $selfparser->parse('self','SELF',$filename);
 
       # Next, set up the tool:
@@ -666,17 +630,19 @@ sub updatetooltimestamp ()
    my $obj=shift;
    my $toolname=shift;
    my $samevalues=0;
+   my $stampdir = $self->{archstore}."/timestamps";
+   my $stampfile="${stampdir}/${toolname}";
    if (exists $self->{SETUP}->{$toolname})
       {
       $samevalues=$self->comparetoolsdata($self->{SETUP}->{$toolname},$obj);
       }
-   if (!$samevalues)
+   if ((!$samevalues) || (!-f $stampfile))
       {
-      if (!-d $self->{tooltimestamp})
+      if (!-d $stampdir)
 	 {
-	 AddDir::adddir($self->{tooltimestamp});
+	 AddDir::adddir($stampdir);
 	 }
-      open(TIMESTAMPFILE,">".$self->{tooltimestamp}."/$toolname");
+      open(TIMESTAMPFILE,">$stampfile");
       close(TIMESTAMPFILE);
       }
    }

@@ -104,7 +104,7 @@ sub copydirwithskip
    {
    my $src=shift;
    my $dest=shift;
-   my ($filetoskip)=@_;
+   my $filetoskip=shift || [];
    
    use DirHandle;
    use File::Copy;
@@ -122,17 +122,27 @@ sub copydirwithskip
 	 {
 	 next if $file=~/^\.\.?/;
 	 # Skip backup files and x~ files:
-	 next if $file =~ /.*bak$/;
+	 next if $file =~ /.*\.bak$/;
 	 next if $file =~ /.*~$/;
 
-	 if ($file eq $filetoskip)
+	 my $skip=0;
+	 foreach my $fskip (@$filetoskip)
+	    {
+            my $fullfile = "${src}/${file}";
+	    if ($fullfile eq $fskip)
+	       {
+	       $skip = 1;
+	       last;
+	       }
+	    }
+	 if ($skip)
 	    {
 	    next;
 	    }
 	 
 	 if ( -d $src."/".$file )
 	    {
-	    copydir($src."/".$file,$dest."/".$file);
+	    copydirwithskip($src."/".$file,$dest."/".$file,$filetoskip);
 	    }
 	 else
 	    {

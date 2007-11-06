@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-07-01 14:03:46+0200
-# Revision: $Id: TemplateInterface.pm,v 1.3 2006/11/14 17:43:14 sashby Exp $ 
+# Revision: $Id: TemplateInterface.pm,v 1.2.4.2 2006/12/04 14:26:35 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -50,9 +50,16 @@ sub new()
    # The filehandle for the generated Makefile:
    my $makefile="$ENV{LOCALTOP}/$ENV{SCRAM_INTwork}/Makefile";
 
-   use FileHandle;
-   $self->{MAKEFILEFH} = FileHandle->new();
-   $self->{MAKEFILEFH}->open("> $makefile");
+   if (!-f $makefile)
+      {
+      if (!-f "$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/Makefile.head")
+         {
+	 die "Missing $ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/Makefile.head file.";
+	 }
+      use File::Copy;
+      copy("$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/Makefile.head",$makefile) or die "Copy failed: $!";
+      utime 0,0,$makefile;
+      }
 
    # Init and pass in the template location:
    $self->_init(@_);
@@ -145,13 +152,36 @@ sub template_data()
 
 sub run()
    {
+   use FileHandle;
    my $self=shift;
+   
+   my $item = $self->{TEMPLATE_DATA}->{branch};
+   my $file = $item->safepath().".mk";
+   if ($item->class() eq "PROJECT")
+      {
+      $file = "$ENV{LOCALTOP}/.SCRAM/$ENV{SCRAM_ARCH}/MakeData/${file}";
+      }
+   elsif ($item->publictype())
+      {
+      $file = "$ENV{LOCALTOP}/.SCRAM/$ENV{SCRAM_ARCH}/MakeData/DirCache/${file}";
+      $item->{MKDIR}{"$ENV{LOCALTOP}/.SCRAM/$ENV{SCRAM_ARCH}/MakeData/DirCache"}=1;
+      }
+   else
+      {
+      $file = "$ENV{LOCALTOP}/$ENV{SCRAM_INTwork}/MakeData/DirCache/${file}";
+      $item->{MKDIR}{"$ENV{LOCALTOP}/$ENV{SCRAM_INTwork}/MakeData/DirCache"}=1;
+      }
+
+   $self->{MAKEFILEFH} = FileHandle->new();
+   $self->{MAKEFILEFH}->open(">$file");
    local *FH = $self->{MAKEFILEFH};
    
    $self->{TEMPLATE_OBJECT}->process($self->{TEMPLATE},
 				     $self->{TEMPLATE_DATA},
 				     $self->{MAKEFILEFH} )
       || die "SCRAM: Template error --> ",$self->{TEMPLATE_OBJECT}->error;
+   
+   $self->{MAKEFILEFH}->close();
    }
 
 1;

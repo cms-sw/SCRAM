@@ -136,36 +136,36 @@ use Cwd;
 @ISA=qw(Utilities::Verbose);
 
 sub new {
-    my $class=shift;
-    my $self={};
-    bless $self, $class;
-    
-    # data init
-    $self->{admindir}=".SCRAM";
-    $self->{cachedir}="cache";
-    $self->{dbdir}="ObjectDB";
-    $self->{tbupdate}=0;
-    undef $self->{linkarea};
-    
-    return $self;
+	my $class=shift;
+	my $self={};
+	bless $self, $class;
+
+	# data init
+        $self->{admindir}=".SCRAM";
+        $self->{cachedir}="cache";
+        $self->{dbdir}="ObjectDB";
+	$self->{tbupdate}=0;
+	undef $self->{linkarea};
+
+	return $self;
 }
 
 sub cache {
-    my $self=shift;
-    
-    if ( @_ ) {
-	$self->{cache}=shift;
-    }
-    if ( ! defined $self->{cache} ) {
-	my $loc=$self->location()."/".$self->{admindir}."/".$self->{cachedir};
-	if ( -e $loc  ) {
+	my $self=shift;
+
+	if ( @_ ) {
+	   $self->{cache}=shift;
+	}
+	if ( ! defined $self->{cache} ) {
+	  my $loc=$self->location()."/".$self->{admindir}."/".$self->{cachedir};
+	  if ( -e $loc  ) {
 	    $self->{cache}=URL::URLcache->new($loc);
-	}
-	else {
+	  }
+	  else {
 	    $self->{cache}=undef;
+	  }
 	}
-    }
-    return $self->{cache};
+	return $self->{cache};
 }
 
 # Tool and project cache info:
@@ -598,14 +598,16 @@ sub copyurlcache {
 sub copywithskip {
 	my $self=shift;
 	my $dest=shift;
-	my ($filetoskip)=@_;       	
+	my $filetoskip=shift || [];       	
 	my $rv=1;
 	# copy across the admin dir
         my $temp=$self->location()."/".$self->{admindir}."/".$self->arch();
 	my $temp2=$dest."/".$self->{admindir}."/".$self->arch();
 	if ( $temp ne $temp2 ) {
 	 if ( -d $temp ) {
-          AddDir::copydirwithskip($temp,$temp2,$filetoskip);
+          my $fs=[];
+          foreach my $f (@$filetoskip) {push @$fs,"${temp}/${f}";}
+          AddDir::copydirwithskip($temp,$temp2,$fs);
 	  $rv=0;
 	 }
 	}

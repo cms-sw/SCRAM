@@ -71,6 +71,8 @@ sub parse()
    {
    my $self=shift;
    $parselabel=shift;
+   my $fhead=shift || "";
+   my $ftail=shift || "";
    my $file=$self->filetoparse();
 
    if ( -f $file )
@@ -81,6 +83,8 @@ sub parse()
 	 $self->{currentparsename}=$parselabel;
 	 $self->{currentparser}=$self->{parsers}{$parselabel};
 	 # Parse and store the returned data in content (only for Streams style):
+         $self->{parsers}{$parselabel}->filehead($fhead);
+         $self->{parsers}{$parselabel}->filetail($ftail);
 	 $self->{content} = $self->{parsers}{$parselabel}->parse($file,@_)->data();
 	 delete $self->{currentparser};
 	 $self->{currentparsename}="";

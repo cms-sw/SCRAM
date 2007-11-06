@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.15 2006/11/14 17:43:14 sashby Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.14.2.1 2006/09/12 13:58:36 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -13,6 +13,7 @@ package BuildSystem::BuildDataStorage;
 require 5.004;
 use BuildSystem::BuildFile;
 use Exporter;
+use File::Basename;
 
 @ISA=qw(Exporter);
 @EXPORT_OK=qw( );
@@ -123,16 +124,17 @@ sub datapath()
    # if we received a BuildFile path that we need to determine the data path for,
    # check first to see if the path matches config/BuildFile. If it does, we have the top-level
    # datapath which should be src:
-   if ($path eq "$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/BuildFile.xml" || $path eq $ENV{SCRAM_SOURCEDIR})
+   my $conf="$ENV{SCRAM_CONFIGDIR}"; my $src=$ENV{SCRAM_SOURCEDIR};
+   my $bf=$ENV{SCRAM_BUILDFILE};
+   if ($path=~/^(${conf}\/${bf}(.xml|)|$src)$/)
       {
-      return $ENV{SCRAM_SOURCEDIR};
+      return $src;
       }
    
    # For other paths, strip off the src dir (part of LOCALTOP) and the final BuildFile to
    # get a data position to be used as a key:
-   ($datapath = $path) =~ s|^\Q$ENV{SCRAM_SOURCEDIR}\L/||;
-   
-   if ($datapath =~ m|(.*)/BuildFile.xml$|)
+   ($datapath = $path) =~ s|^\Q$src\L/||;
+   if ($datapath =~ m/(.*)\/$bf(.xml|)$/)
       {
       return $1;
       }
@@ -143,40 +145,21 @@ sub datapath()
 sub check_global_config()
    {
    my $self=shift;
-   my $topbuildfile = $self->{CONFIGDIR}."/BuildFile.xml";
-   
-   if ( ! -f $topbuildfile )
+   my $found=0;
+   foreach my $bf ("$ENV{SCRAM_BUILDFILE}.xml","$ENV{SCRAM_BUILDFILE}")
       {
-      print "SCRAM error: no BuildFile at top-level (config)! Invalid area!","\n";
+      if (-f $self->{CONFIGDIR}."/${bf}")
+         {
+	 $found=1;
+	 last;
+	 }
+      }
+   if (! $found)
+      {
+      print "SCRAM error: no $ENV{SCRAM_BUILDFILE} at top-level (config)! Invalid area!","\n";
       exit(1);
       }
    
-   return $self;
-   }
-
-sub processtree()
-   {
-   my $self=shift;
-   my $parent = $ENV{SCRAM_SOURCEDIR};
-   $self->procrecursive($parent);
-   return $self;
-   }
-
-sub updatetree()
-   {
-   my $self=shift;
-   my ($startdir) = @_;
-   print "Updating metadata from $startdir","\n",if ($ENV{SCRAM_DEBUG});   
-   $self->updaterecursive($startdir);
-   return $self;
-   }
-
-sub updatemkfrommeta()
-   {
-   my $self=shift;
-   my ($startdir)=$ENV{SCRAM_SOURCEDIR};
-   print "Updating Makefile from $startdir","\n",if ($ENV{SCRAM_DEBUG});
-   $self->updatefrommeta($startdir);
    return $self;
    }
 
@@ -200,182 +183,6 @@ sub scanbranch()
    return $self;
    }
 
-sub procrecursive()
-   {
-   my $self=shift;
-   my ($dir)=@_;
-   my $datacollector;
-
-   # Check to see if the dir was skipped. If so, don't push anything to
-   # the Makefile:
-   if ($self->skipdir($dir))
-      {
-      print "procrecursive -> $dir skipped.","\n",if ($ENV{SCRAM_DEBUG});
-      return $self;
-      }
-   
-   # Data for current dir:
-   my $treedata = $self->buildtreeitem($dir);
-   # Data for the parent:
-   my $parent = $treedata->parent();
-   my $parenttree = $self->buildtreeitem($parent);
-   # Base classes. These are structural template classes which are fixed in SCRAM:
-   my $baseclasses = [ qw( DOMAIN SUBSYSTEM PACKAGE ) ];   
-   
-   # If we have a parent dir, collect METABF. Skip inheriting from config/BuildFile:
-   if (defined ($parenttree) && $parenttree->metabf() && $parent ne 'src')
-      {
-      # Add the meta (BuildFile) location to the current locations meta:
-      $treedata->metabf(@{$parenttree->metabf()});
-      }
-   
-   # Perfect match to class:
-   if ($treedata->suffix() eq '')
-      {
-      # For directories where there's a full match to the classpath, check the class.
-      # Only process Buildfiles if the match occurs for a build product class. In either case,
-      # run the template engine.
-      # Don't process BuildFiles unless we happen to be in a product branch (i.e.,
-      # not a baseclass as defined above) except for Project which we do want:
-      if (! grep($treedata->class() eq $_, @$baseclasses))
-	 {
-	 # Scan all BuildFiles in this branch:
-	 $self->scanbranch($treedata->metabf(),$self->datapath($dir));
-	 # Process the build data:
-	 $datacollector = $self->processbuildfile($dir, $treedata->path());
-	 $treedata->clean(); # Get rid of BRANCHMETA
-	 $treedata->branchdata($datacollector);
-	 }
-      
-      # And run the engine:
-      $self->run_engine($treedata);
-      
-      foreach my $c ($treedata->children())
-	 {
-	 if ($c ne '')
-	    {
-	    $self->procrecursive($c);
-	    }
-	 }
-      }
-   else
-      {
-      # For directories where there isn't a full match, just run the template engine:
-      $self->run_engine($treedata);
-      
-      foreach my $c ($treedata->children())
-	 {
-	 if ($c ne '')
-	    {
-	    $self->procrecursive($c);
-	    }
-	 }
-      }
-   
-   return $self;
-   }
-
-sub updaterecursive()
-   {
-   my $self=shift;
-   my ($dir)=@_;
-   my $datacollector;
-
-   # Check to see if the dir was skipped. If so, don't push anything to
-   # the Makefile:
-   if ($self->skipdir($dir))
-      {
-      print "updaterecursive -> $dir: skipped.","\n",if ($ENV{SCRAM_DEBUG});
-      return;
-      }
-
-   # updaterecursive() only SCANS and UPDATES METADATA. The Makefile is rebuilt in
-   # its entirety using updatefrommeta(), called after metadata is updated and stored:
-   # Data for current dir:
-   my $treedata = $self->buildtreeitem($dir);
-   # Data for the parent:
-   my $parent = $treedata->parent();
-   my $parenttree = $self->buildtreeitem($parent);
-   # Base classes. These are structural template classes which are fixed in SCRAM:
-   my $baseclasses = [ qw( DOMAIN SUBSYSTEM PACKAGE ) ];   
-   
-   # If we have a parent dir, collect METABF. Skip inheriting from config/BuildFile:
-   if (defined ($parenttree) && $parenttree->metabf() && $parent ne 'src')
-      {
-      # Add the meta (BuildFile) location to the current locations meta:
-      $treedata->metabf(@{$parenttree->metabf()});
-      }
-
-   # Perfect match to class:
-   if ($treedata->suffix() eq '')
-      {
-      # For directories where there's a full match to the classpath, check the class.
-      # Only process Buildfiles if the match occurs for a build product class. In either case,
-      # run the template engine.
-      # Don't process BuildFiles unless we happen to be in a product branch (i.e.,
-      # not a baseclass as defined above):
-      if (! grep($treedata->class() eq $_, @$baseclasses))
-	 {
-	 # Scan all BuildFiles in this branch:
-	 $self->scanbranch($treedata->metabf(),$self->datapath($dir));
-	 # Process the build data:
-	 $datacollector = $self->processbuildfile($dir, $treedata->path());
-	 $treedata->clean();
-	 $treedata->branchdata($datacollector);
-	 }
-
-      foreach my $c ($treedata->children())
-	 {
-	 if ($c ne '')
-	    {
-	    $self->updaterecursive($c);
-	    }
-	 }
-      }
-   else
-      {
-      foreach my $c ($treedata->children())
-	 {
-	 if ($c ne '')
-	    {
-	    $self->updaterecursive($c);
-	    }
-	 }
-      }
-   
-   return $self;
-   }
-
-sub updatefrommeta()
-   {
-   my $self=shift;
-   my $datacollector;
-   my ($startdir)=@_;
-   
-   # Check to see if the dir was skipped. If so, don't push anything to
-   # the Makefile:
-   if ($self->skipdir($startdir))
-      {
-      print "updatefrommeta -> $startdir: skipped.","\n",if ($ENV{SCRAM_DEBUG});
-      return;
-      }
-   
-   # Data for current dir:
-   my $treedata = $self->buildtreeitem($startdir);
-   # Run the engine:
-   $self->run_engine($treedata);
-
-   foreach my $c ($treedata->children())
-      {
-      if ($c ne '')
-	 {
-	 $self->updatefrommeta($c);
-	 }
-      }
-   
-   return $self;
-   }
-
 sub buildtreeitem()
    {
    my $self=shift;
@@ -385,542 +192,192 @@ sub buildtreeitem()
    return $self->{BUILDTREE}->{$datapath};
    }
 
-sub bproductparse()
+sub updatedirbf ()
    {
-   my $self=shift;
-   my ($dataposition, $path, $bcollector, $product, $localg)=@_;
-   my $packdir;
-   
-   if ($dataposition =~ m|(.*)/src|)
+   my ($self,$dircache,$path,$bf,$buildclass)=@_;
+   use BuildSystem::TreeItem;
+   my $treeitem = BuildSystem::TreeItem->new();
+   my $datapath = $self->datapath($path); 
+   $self->{BUILDTREE}->{$datapath} = $treeitem;
+   if ($bf)
       {
-      $packdir=$1;
+      $treeitem->metabf($bf);
+      $self->scan($bf, $datapath);
       }
-   elsif ($dataposition =~ m|(.*)/|)
-      {
-      $packdir=$dataposition;
-      }
-   
-   # Probably better to use the bin name/safename:
-   $packdir = $product->safename();
-   my $label = $product->name();
-   
-   # Look for architecture-specific tags:
-   if (my $archdata=$product->archspecific())
-      {
-      $bcollector->resolve_arch($archdata,$packdir);
-      }
-   
-   # Groups:
-   if (my @groups=$product->group())
-      {
-      $bcollector->resolve_groups(\@groups,$packdir);
-      }
-   
-   # Check for packages and external tools:
-   if (my @otheruses=$product->use())
-      {
-      $bcollector->localgraph()->vertex($packdir);
-
-      # Add vertex and edges for current package and its dependencies:
-      foreach my $OU (@otheruses)     
-	 {
-	 $bcollector->localgraph()->edge($packdir, $OU);
-	 }
-      
-      $bcollector->resolve_use(\@otheruses);
-      }
-   
-   # For each tag type that has associated data in this buildfile
-   # data object, get the data and store it:
-   map { my $subname = lc($_); $bcollector->storedata($_, $product->$subname(),$packdir); }
-   $product->basic_tags();
-   
-   # Prepare the metadata for this location:
-   my $graphexists = $bcollector->prepare_meta($packdir);
-
-   # Write out the graph if required:
-   if ($localg && $self->{GRAPH_WRITE} && $graphexists) 
-      {
-      $bcollector->localgraph()->graph_write($bcollector->attribute_data(), $packdir);
-      }
-   
-   # Clean up:
-   $bcollector->clean4storage();
-   return $bcollector;
+   if (!$buildclass) {$buildclass=$self->buildclass($path);}
+   my ($class, $classdir, $suffix) = @{$buildclass};
+   $treeitem->class($class);
+   $treeitem->classdir($classdir);
+   $treeitem->suffix($suffix);
+   $treeitem->path($path);
+   $treeitem->safepath($path);
+   $treeitem->parent($datapath);
+   $treeitem->children($dircache->dircache());
+   $treeitem->name();
+   return $treeitem;
    }
 
-sub processbuildfile()
+sub updateproductstore()
    {
    my $self=shift;
-   my ($dataposition, $path)=@_;
-   my $collector;
-   my $packdir;
-   my $CURRENTBF = $self->metaobject($dataposition);
-   my $localgrapher=0;
-   my $scramgrapher;
-
-   if (defined($CURRENTBF))
-      {    
-      use BuildSystem::DataCollector;	 
-      
-      # Graphing:
-      if (! defined($self->{SCRAMGRAPHER}))
-	 {
-	 # We don't have a grapher object so we must we working at package level.
-	 $localgrapher=1;
-	 # Create the object here:
-	 use BuildSystem::SCRAMGrapher;
-	 $scramgrapher = BuildSystem::SCRAMGrapher->new();
-	 }
+   my $item = shift;
+   if (exists $item->{RAWDATA} && exists $item->{RAWDATA}{content} && exists $item->{RAWDATA}{content}{PRODUCTSTORE})
+   {
+   my $store = {};
+   foreach my $H (@{$item->{RAWDATA}{content}{PRODUCTSTORE}})
+      {
+      my $storename="";
+      if ($H->{'type'} eq 'arch')
+         {
+	 if ($H->{'swap'} eq 'true')
+	    {
+	    $storename .= $H->{'name'}."/".$ENV{SCRAM_ARCH};
+	    }
+	 else
+	    {
+	    $storename .= $ENV{SCRAM_ARCH}."/".$H->{'name'};
+	    }
+      }
       else
 	 {
-	 $scramgrapher = $self->{SCRAMGRAPHER};
+	 $storename .= $H->{'name'};
 	 }
-      
-      my %projects = %{$self->{SCRAM_PROJECTS}};
-      my %projectbases = %{$self->{SCRAM_PROJECT_BASES}};
-      
-      # Set up the collector object:
-      $collector = BuildSystem::DataCollector->new($self, $self->{TOOLMANAGER},
-						   $path, \%projects, \%projectbases,
-						   $scramgrapher);
-      
-      # Need the package name for our dep tracking:
-      if ($dataposition =~ m|(.*)/src|)
-	 {
-	 $packdir=$1;
-	 }
-      elsif ($dataposition =~ m|(.*)/|)
-	 {
-	 $packdir=$dataposition;
-	 }
-      elsif ($dataposition eq $ENV{SCRAM_SOURCEDIR})
-	 {
-	 $packdir = $ENV{SCRAM_SOURCEDIR};
-	 }
-      
-      # Look for architecture-specific tags:
-      if (my $archdata=$CURRENTBF->archspecific())
-	 {
-	 $collector->resolve_arch($archdata,$packdir);
-	 }
-      
-      # Groups:
-      if (my @groups=$CURRENTBF->group())
-	 {
-	 $collector->resolve_groups(\@groups,$packdir);
-	 }
-      
-      # Check for packages and external tools:
-      if (my @otheruses=$CURRENTBF->use())
-	 {
-	 $scramgrapher->vertex($packdir);
-	 
-	 # Add vertex and edges for current package and its dependencies:
-	 foreach my $OU (@otheruses)
-	    {
-	    $scramgrapher->edge($packdir, $OU);
-	    }
-	 
-	 $collector->resolve_use(\@otheruses);
-	 }
-      
-      # If we are at project-level, also resolve the 'self' tool. We ONLY do this
-      # at project-level:
-      if ($dataposition eq $ENV{SCRAM_SOURCEDIR})
-	 {
-	 $collector->resolve_use(['self']);	 
-	 }
-      
-      # For each tag type that has associated data in this buildfile
-      # data object, get the data and store it:
-      map { my $subname = lc($_); $collector->storedata($_, $CURRENTBF->$subname(),$packdir); }
-      $CURRENTBF->basic_tags();
-            
-      # Check for build products and process them here:
-      my $buildproducts=$CURRENTBF->buildproducts();
-
-      my $BUILDP = {};
-      
-      # If we have build products:
-      if ($buildproducts)
- 	 {
- 	 # Build a list of target types that should built at this location in
- 	 # addition to normal libraries:
-	 foreach my $type (keys %$buildproducts)
-	    {
-	    my $typedata=$CURRENTBF->values($type);           
- 	    while (my ($name,$product) = each %$typedata)
- 	       {
-	       # We make a copy from existing collector object. This is basically a "new()"
-	       # followed by some copying of relevant data elements:
-	       $bcollector = $collector->copy($localgrapher);
-	       # The Product object inherits from same core utility packages
-	       # as BuildFile so all BuildFile methods can be used on the Product object:
-	       $self->bproductparse($dataposition,$path,$bcollector,$product,$localgrapher);
-	       $product->data($bcollector);
- 	       $BUILDP->{$product->safename()} = $product;
-	       }
-	    }
-	 
-	 # Return the hash of products (safe_name/Product object pairs):
-	 return $BUILDP;	 
-	 }
-      else
-	 {	 
-	 # Prepare the metadata for this location. Also needed for each build product:
-	 my $graphexists = $collector->prepare_meta($packdir);
-
-	 # Write out the graph if required (also to be done for each product):
-	 if ($localgrapher && $self->{GRAPH_WRITE} && $graphexists)
-	    {
-	    $scramgrapher->graph_write($collector->attribute_data(), $packdir);
-	    }
-
-	 # At this point I think we can clean away the graph object:
-	 $collector->clean4storage();
-
-	 # No products: return main collector:
-	 return $collector;
-	 }     
+	 my $key ="SCRAMSTORENAME_".uc($H->{'name'});
+	 $key=~s/\//_/g;
+	 $store->{$key}=$storename;
       }
-   else
-      {
-      # No build data, just return:
-      return $collector;
-      }
+      $item->productstore($store);
    }
-
-sub populate()
-   {
-   my $self=shift;
-   my ($paths,$filecache,$toolmanager)=@_;
-   my $datapath;
-   my $buildfile;
-   $|=1; # Flush
-   
-   # The tool manager:
-   $self->{TOOLMANAGER} = $toolmanager;
-   # If there are some paths to iterate over, get scram projects from
-   # toolbox. Each project cache is loaded at this point too.
-   # Note that this could be done later, when running processtree() which
-   # is when access to the project caches is really needed (actually when
-   # running datacollector::processbuildfile):
-   $self->scramprojects();
-
-   # Check that there's a global config. Exit if not:
-   $self->check_global_config();
-   
-   # Loop over all paths. Apply a sort so that src (shortest path) is first (FIXME!):
-   foreach my $path (sort(@$paths))
-      {
-      # Ignore config content here:
-      next if ($path !~ m|^\Q$ENV{SCRAM_SOURCEDIR}\L|);
-      # Set the data path:
-      $datapath = $self->datapath($path);
-      # Create a TreeItem object:
-      use BuildSystem::TreeItem;
-      my $treeitem = BuildSystem::TreeItem->new();
-      $self->{BUILDTREE}->{$datapath} = $treeitem;
-      $buildfile = $path."/BuildFile.xml";
-
-      # If we have the project root (i.e. src), we want to process the
-      # top-level (project config) BuildFile:
-      if ($path eq $ENV{SCRAM_SOURCEDIR})
-	 {
-	 $buildfile = $ENV{SCRAM_CONFIGDIR}."/BuildFile.xml";
-	 # Parse the top-level BuildFile. We must do this here
-	 # because we need the ClassPaths. Store as RAWDATA:
-	 $self->scan($buildfile, $datapath);
-	 # We need scram project base vars at project-level:
-	 $treeitem->scramprojectbases($self->{SCRAM_PROJECT_BASES});
-	 }
-      
-      # If this BuildFile exists, store in METABF:
-      if ( -f $buildfile )
-	 {
-	 # This level has a buildfile so store this path:
-	 $treeitem->metabf($buildfile);
-	 # Scan to get dependencies:
-	 $self->scan($buildfile, $datapath);
-	 ($ENV{SCRAM_DEBUG}) ? print "Scanning ",$buildfile,"\n" : print "." ;
-	 }
-      
-      if ($self->skipdir($datapath))
-	 {
-	 $treeitem->skip(1);
-	 print $datapath," building skipped.\n", if ($ENV{SCRAM_DEBUG});
-	 }
-
-      # Now add the class and path info to the TreeItem:
-      my ($class, $classdir, $suffix) = @{$self->buildclass($path)};
-      
-      $treeitem->class($class);
-      $treeitem->classdir($classdir);
-      $treeitem->suffix($suffix);
-      $treeitem->path($path);
-      $treeitem->safepath($path);
-      $treeitem->parent($datapath);
-      $treeitem->children($filecache);
-      $treeitem->name();
-      }
-
-   print "\n";
-
-   # Check dependencies- look for cycles in the global dependency data:
-   $self->check_dependencies();
-   $self->skipdir() if ($ENV{SCRAM_DEBUG});
-   }
-
-sub check_dependencies()
-   {
-   my $self=shift;
-   # Use the SCRAMGrapher to process the deps and return a
-   # Graph object:
-   use BuildSystem::SCRAMGrapher;   
-   
-   my $SG = BuildSystem::SCRAMGrapher->new($self->{DEPENDENCIES}); # GLOBAL dependencies
-   my $G = $SG->_graph_init();
-   my @classification = $G->edge_classify();
-   my @cycles;
-   my $status=0;
-
-   # Dump the vertex classification if required:
-   if ($ENV{SCRAM_DEBUG})
-      {
-      print "\n";
-      print "Dumping vertex/path classifications:","\n";
-      print "\n";
-      printf("%-40s %-40s %-15s\n",'Vertex_i','Vertex_j','CLASS');
-      printf("%-95s\n",'-'x95);
-      }
-   
-   foreach my $element (@classification)
-      {
-      printf("%-40s %-40s %-15s\n",$element->[0],$element->[1],$element->[2]), if ($ENV{SCRAM_DEBUG});
-      # Save our cycles to list separately:
-      if ($element->[2] eq 'back')
-	 {
-	 push(@cycles,$element);
-	 $status++;
-	 }
-      }
-   
-   print "\n";   
-   if ($status)
-      {
-      map
-	 {
-	 print $::fail."SCRAM buildsystem ERROR:   Cyclic dependency ",$_->[0]," <--------> ",$_->[1].$::normal."\n";
-	 } @cycles;
-      print "\n";
-      
-      # Exit:
-      exit(1);
-      }
-   
-   # Otherwise return:
-   return;
-   }
-
-sub update_toplevel()
-   {
-   my $self=shift;
-   my (@buildfiles) = @_;
-   my $treeitem;
-
-   print "Re-scanning at top-level..\n";
-   
-   my $datapath = $self->datapath($ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR}."/BuildFile.xml");
-   
-   # This updates the raw data:
-   $self->scan($ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR}."/BuildFile.xml", $datapath); 
-
-   # Update everything else:
-   foreach my $B (@buildfiles)
-      {
-      next if ($B eq $ENV{LOCALTOP}."/config/BuildFile.xml");
-      $datapath = $self->datapath($B);
-      # Check to see if we already have the raw data for this buildfile.
-      # Note that we won't if this scan was run from update mode. In this
-      # case, we set up the TreeItem object:
-      if (! exists($self->{BUILDTREE}->{$datapath}))
-	 {	    
-	 use BuildSystem::TreeItem;
-	 $treeitem = BuildSystem::TreeItem->new();	 
-	 my $path=$ENV{SCRAM_SOURCEDIR}."/".$datapath;
-	 my ($class, $classdir, $suffix) = @{$self->buildclass($path)};
-
-	 $treeitem->class($class);
-	 $treeitem->classdir($classdir);
-	 $treeitem->suffix($suffix);
-	 $treeitem->path($path);
-	 $treeitem->safepath($path);
-	 $treeitem->parent($datapath);
-	 $treeitem->children($filecache);
-	 $treeitem->name();
-
-	 $self->{BUILDTREE}->{$datapath} = $treeitem;
-
-	 print "Scanning ",$B,"\n";
-	 $self->scan($B,$datapath); # This updates the raw data
-	 }
-      else
-	 {
-	 print "Scanning ",$B,"\n";
-	 $self->scan($B,$datapath); # This updates the raw data
-	 }
-      
-      # Recursively update the tree from this data path:
-      $self->updatetree($datapath);	 
-      }   
-   }
+}
 
 sub update()
    {
    my $self=shift;
-   my ($changeddirs, $addeddirs, $bf, $removedpaths, $toolmanager, $filecache) = @_;
-   my $buildfiles = {};
-   # Copy the contents of the array of BuildFiles to a hash so that
-   # we can track which ones have been parsed:
-   map
-      {
-      $buildfiles->{$_} = 0;
-      } @$bf;
-   
-   # Tool manager:
+   my ($dircache, $toolmanager) = @_;
    $self->{TOOLMANAGER} = $toolmanager;
-   # Get scram projects from toolbox. Each project cache is
-   # loaded at this point too:
-   $self->scramprojects();
    
-   # Remove build data for removed directories:
-   $self->removedata($removedpaths);
- 
-   # Now check to see if something changed at the top-level. If so we reparse everything:  
-   my $toplevel = $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR}."/BuildFile.xml";
-   
-   if (exists($buildfiles->{$toplevel}))
+   my $newbf  = $dircache->get_data("ADDEDBF");
+   my $newdir = $dircache->get_data("ADDEDDIR");
+   use File::Path;
+   my $mkpath = $ENV{LOCALTOP}."/".$ENV{SCRAM_INTwork}."/MakeData";
+   my $mkpubpath = $ENV{LOCALTOP}."/.SCRAM/".$ENV{SCRAM_ARCH}."/MakeData";
+   mkpath("${mkpath}/DirCache",0,0755);
+   mkpath("${mkpath}/RmvDirCache",0,0755);
+   mkpath("$mkpubpath/DirCache",0,0755);
+   my %runeng = ();
+   my $projinfo=undef;
+   eval ("use SCRAM::ProjectInfo");
+   if(!$@) {$projinfo = SCRAM::ProjectInfo->new();}
+   if ($newbf)
       {
-      $buildfiles->{$toplevel} = 1; # Parsed
-      $self->update_toplevel(@$bf);
-      }
-   else
-      {
-      # Process all new directories first then changed ones. This means that everything will be in
-      # place once we start parsing any modified BuildFiles and once we run updatetree():
-
-      $self->update_newdirs($addeddirs);
-
-      $self->update_existingdirs($changeddirs);
-            
-      # Now check for any modified BuildFiles that have not yet been rescanned:
-      foreach my $bftoscan (keys %$buildfiles)
-	 {
-	 if ($buildfiles->{$bftoscan} == 0)
+      foreach my $bf ("$ENV{SCRAM_BUILDFILE}.xml","$ENV{SCRAM_BUILDFILE}")
+         {
+         if (exists $newbf->{$ENV{SCRAM_CONFIGDIR}."/${bf}"})
 	    {
-	    my $datapath = $self->datapath($bftoscan);
-	    $self->scan($bftoscan,$datapath); # This updates the raw data
-	    }     
+            my $treeitem = $self->updatedirbf($dircache,$ENV{SCRAM_SOURCEDIR},$ENV{SCRAM_CONFIGDIR}."/${bf}");
+            $self->updateproductstore($treeitem);
+            $runeng{$ENV{SCRAM_SOURCEDIR}}=$treeitem;
+            delete $newbf->{$ENV{SCRAM_CONFIGDIR}."/${bf}"};
+	    last;
+	    }
 	 }
       }
-
-   # Also rebuild the project Makefile from scratch:
-   $self->updatemkfrommeta();
-   print "\n";
-   }
-
-sub update_newdirs()
-   {
-   my $self=shift;
-   my ($newdirs) = @_;
-   foreach my $path (@$newdirs)
+   if ($newdir)
       {
-      print "Processing new directory \"",$path,"\"\n",if ($ENV{SCRAM_DEBUG});
-      $self->updateadir($path);
-      # Now check to see if the current (newly-added) package is needed by some
-      # packages that have already built their metadata. If so, force an update
-      # of those packages:
-      my $locations = $self->unresolved_locations($self->datapath($path));
-      if ($#$locations >= 0)
-	 {
-	 # Also need to check to see if a location is updated more than once. 
-	 foreach my $notified_dir (@$locations)
+      foreach my $path (keys %{$newdir})
+         {
+	 if (!exists $newdir->{$path}) {next;}
+	 if ($path!~/^$ENV{SCRAM_SOURCEDIR}\/(.+)/){delete $newdir->{$path};next;}
+	 my $cinfo = $self->buildclass($path);
+	 if ($cinfo && $cinfo->[2] ne ""){$dircache->prune($path,0,$cinfo->[2]);}
+	 else
 	    {
-	    print "Going to notify $notified_dir of update","\n", if ($ENV{SCRAM_DEBUG});
-	    $self->updateadir($notified_dir);
-	    $self->remove_unresolved($self->datapath($path),$notified_dir);
-	    }	 
+            my $item = $self->updatedirbf($dircache,$path,"",$cinfo);
+	    $runeng{$path}=$item;
+            my $flag=0;
+            if (!defined $projinfo)
+               {
+	       if ($cinfo->[0] eq "library"){$flag=1;}
+               }
+            else
+               {
+               $flag=$projinfo->ispublic($item);
+               }
+            if ($flag)
+               {
+               my $dpath = $self->datapath($path);
+               my $treeitem = $self->{BUILDTREE}->{$dpath};
+               $dircache->{PACKMAP}{$treeitem->parent()}=$dpath;
+               $item->publictype (1);
+               }
+	    }
 	 }
       }
-   }
-
-sub update_existingdirs()
-   {
-   my $self=shift;
-   my ($changeddirs) = @_;
-   foreach my $path (@$changeddirs)
-      {
-      print "Processing modified directory \"",$path,"\"\n",if ($ENV{SCRAM_DEBUG});
-      $self->updateadir($path);
-      }
-   }
-
-sub updateadir()
-   {
-   my $self=shift;
-   my ($path) = @_;
-   my $datapath = $self->datapath($path);
-   my $possiblebf = $path."/BuildFile.xml";
-   my $treeitem;
-   
-   if (! exists($self->{BUILDTREE}->{$datapath}))
-      {
-      use BuildSystem::TreeItem;
-      $treeitem = BuildSystem::TreeItem->new();
-
-      # Get the class info:
-      my ($class, $classdir, $suffix) = @{$self->buildclass($path)};
       
-      $treeitem->class($class);
-      $treeitem->classdir($classdir);
-      $treeitem->suffix($suffix);
-      $treeitem->path($path);
-      $treeitem->safepath($path);
-      $treeitem->parent($datapath);
-      $treeitem->children($filecache);
-      $treeitem->name();
-      # Store the TreeItem object:
-      $self->{BUILDTREE}->{$datapath} = $treeitem;	   
-      }
-
-   # Update the status of the parent. Add the child and update
-   # the safe subdirs:
-   my $parent = $self->{BUILDTREE}->{$datapath}->parent();
-
-   if (defined($self->{BUILDTREE}->{$parent}))
+   my %mkrebuild=();
+   $mkrebuild{"${mkpath}/RmvDirCache"}=1;
+   my $remdir = $dircache->get_data("REMOVEDDIR");
+   if ($remdir)
       {
-      $self->{BUILDTREE}->{$parent}->updateparentstatus($datapath);
-      }
-   
-   # Now check to see if there is a BuildFile here. If there is, parse it:
-   if ( -f $possiblebf)
-      {
-      # This level has a buildfile so store this path:
-      $self->{BUILDTREE}->{$datapath}->metabf($possiblebf);
-      # Scan to get dependencies:
-      print "Scanning ",$possiblebf,"\n";
-      $self->scan($possiblebf, $datapath);
-      # Check to see if this BuildFile is known to have needed scanning. If so,
-      # mark it as read:
-      if (exists($buildfiles->{$possiblebf}))
-	 {
-	 $buildfiles->{$possiblebf} = 1;
+      foreach  my $path (keys %{$remdir})
+         {
+	 delete $remdir->{$path};
+	 my $spath = $path; $spath =~ s|/|_|g;
+	 open(OFILE,">${mkpath}/RmvDirCache/${spath}.mk");
+	 print OFILE "REMOVED_DIRS += $path\n";
+	 close(OFILE);
+	 my $mpath = "${mkpath}/DirCache/${spath}.mk";
+	 if (!-f $mpath)
+	    {
+	    $mpath = "${mkpubpath}/DirCache/${spath}.mk";
+	    }
+	 if (-f $mpath)
+	    {
+	    unlink $mpath;
+	    $mkrebuild{dirname($mpath)}=1;
+	    }
 	 }
       }
-   
-   # Recursively update the tree from this data path:
-   $self->updatetree($datapath);   
+      
+   if ($newbf)
+      {
+      foreach my $bf (keys %{$newbf})
+         {
+         my $dpath = $self->datapath($bf);
+	 if (exists $dircache->{PACKMAP}{$dpath})
+	    {
+	    $dpath = $dircache->{PACKMAP}{$dpath};
+	    }
+	 $self->scan($bf,$dpath);
+	 $self->{BUILDTREE}->{$dpath}->metabf($bf);
+	 $runeng{"$ENV{SCRAM_SOURCEDIR}/${dpath}"} = $self->{BUILDTREE}->{$dpath};
+	 delete $newbf->{$bf};
+         }
+      }
+   foreach my $path (sort {$a cmp $b} keys %runeng)
+      {
+      my $treeitem = $runeng{$path};
+      delete $newdir->{$path};
+      $self->run_engine($treeitem);
+      if (exists $treeitem->{MKDIR})
+         {
+         foreach my $d (keys %{$treeitem->{MKDIR}})
+            {
+            $d=~s/\/\//\//;
+            $mkrebuild{$d}=1;
+            }
+	 delete $treeitem->{MKDIR};
+	 }
+      }
+    foreach my $dir (keys %mkrebuild)
+       {
+       open(MKFILE,">${dir}.mk") || die "Can not open file for writing: ${dir}.mk";
+       close(MKFILE);
+       if (-d $dir)
+          {
+          system("cd $dir; find . -name \"*\" -type f | xargs -n 2000 -i cat {} >> ${dir}.mk");
+	  }
+       }
    }
 
 sub scan()
@@ -943,8 +400,7 @@ sub scan()
       }
 
    $self->storedata($datapath, $bfparse);
-   # Add the dependency list to our store:
-   $self->{DEPENDENCIES}->{$datapath} = $bfparse->dependencies();   
+
    return $self;
    }
 
@@ -996,7 +452,6 @@ sub buildclass
    
    print "WARNING: No ClassPath definitions, nothing will be done!","\n",
    if (! scalar @$cache);
-
    # Now scan the class paths.  All the classpaths are given a rank
    # to mark how relevant they are, and then the best match is chosen.
    #
@@ -1177,7 +632,7 @@ sub searchprojects()
       if (exists $self->{SCRAM_PROJECTS}->{$pjt}->{KNOWNGROUPS}->{$group})
 	 {
 	 # Store the project name and data path:
-	 $$projectref="project ".uc($pjt)." (".$self->{SCRAM_PROJECTS}->{$pjt}->{KNOWNGROUPS}->{$group}."/BuildFile)";
+	 $$projectref="project ".uc($pjt)." (".$self->{SCRAM_PROJECTS}->{$pjt}->{KNOWNGROUPS}->{$group}."/".$ENV{SCRAM_BUILDFILE}.")";
 	 return(1);
 	 }
       }
@@ -1208,54 +663,6 @@ sub knowngroups
    my $self=shift;
    @_ ? $self->{KNOWNGROUPS}=shift
       : $self->{KNOWNGROUPS}
-   }
-
-sub scramprojects()
-   {
-   my $self=shift;
-   # Need this to be able to read our project cache:
-   use Cache::CacheUtilities;
-
-   $self->{SCRAM_PROJECTS} = $self->{TOOLMANAGER}->scram_projects();
-
-   # Also store the BASE of each project:
-   $self->{SCRAM_PROJECT_BASES}={};
-   
-   # Load the project cache for every scram-managed project in our toolbox:
-   while (my ($project, $info) = each %{$self->{SCRAM_PROJECTS}})
-      {
-      if ( -f $info."/.SCRAM/".$ENV{SCRAM_ARCH}."/ProjectCache.db")
-	 {
-	 print "Reading cache for ",uc($project),"\n", if ($ENV{SCRAM_DEBUG});
-	 $self->{SCRAM_PROJECTS}->{$project} =
-	    &Cache::CacheUtilities::read($info."/.SCRAM/".$ENV{SCRAM_ARCH}."/ProjectCache.db");
-	 $self->{SCRAM_PROJECT_BASES}->{uc($project)."_BASE"} = $info;
-	 }
-      else
-	 {
-	 print "WARNING: Unable to read project cache for ",uc($project)," tool.\n", if ($ENV{SCRAM_DEBUG});
-	 print "         It could be that the project has not been built for your current architecture.","\n",
-	 if ($ENV{SCRAM_DEBUG});
-	 delete $self->{SCRAM_PROJECTS}->{$project};
-	 }
-      }
-   
-   # Also check to see if we're based on a release area. If so, store the cache as above. Don't store
-   # the project name but instead just use 'RELEASE':
-   if (my $releasearea=$::scram->releasearea() && exists $ENV{RELEASETOP})
-      {
-      if ( -f $ENV{RELEASETOP}."/.SCRAM/".$ENV{SCRAM_ARCH}."/ProjectCache.db")
-	 {
-	 # OK, so we found the cache. Now read it and store in the projects list:
-	 $self->{SCRAM_PROJECTS}->{RELEASE} =
-	    &Cache::CacheUtilities::read($ENV{RELEASETOP}."/.SCRAM/".$ENV{SCRAM_ARCH}."/ProjectCache.db");
-	 print "OK found release cache ",$self->{SCRAM_PROJECTS}->{RELEASE},"\n", if ($ENV{SCRAM_DEBUG});
-	 }
-      else
-	 {
-	 print "WARNING: Current area is based on a release area but the project cache does not exist!","\n";
-	 }
-      }   
    }
 
 sub scramprojectbases()
@@ -1322,47 +729,6 @@ sub unresolved()
    # reverse-lookup "<missing package> -> [ LOCATIONS (where update required) ]"   
    $self->{UNRESOLVED_DEPS_BY_LOC}->{$location}->{$pneeded} = 1;
    $self->{UNRESOLVED_DEPS_BY_PKG}->{$pneeded}->{$location} = 1;
-   }
-
-sub remove_unresolved()
-   {
-   my $self=shift;
-   my ($package, $dir) = @_;
-   if (exists($self->{UNRESOLVED_DEPS_BY_PKG}->{$package}->{$dir}))
-      {
-      delete $self->{UNRESOLVED_DEPS_BY_PKG}->{$package}->{$dir};
-      # Check to see if there are any keys left. If not, remove the
-      # package entry:
-      my $nkeys = scalar(keys %{$self->{UNRESOLVED_DEPS_BY_PKG}->{$package}});
-      if ($nkeys == 0)
-	 {
-	 delete $self->{UNRESOLVED_DEPS_BY_PKG}->{$package};
-	 }
-      }
-   }
-
-sub unresolved_locations()
-   {
-   my $self=shift;
-   my ($package)=@_;
-   
-   if (exists ($self->{UNRESOLVED_DEPS_BY_PKG}->{$package}))
-      {      
-      # Return locations which miss the metadata of $package:
-      return [ keys %{$self->{UNRESOLVED_DEPS_BY_PKG}->{$package}} ];
-      }
-   }
-
-sub unresolved_packages()
-   {
-   my $self=shift;
-   my ($location)=@_;
-   
-   if (exists ($self->{UNRESOLVED_DEPS_BY_LOC}->{$location}))
-      {
-      # Return packages which are needed by $location:
-      return [ keys %{$self->{UNRESOLVED_DEPS_BY_LOC}->{$location}} ];
-      }
    }
 
 sub verbose

@@ -9,8 +9,7 @@ Configuration::BootStrapProject - File parsing utilities for boot files.
 =head1 DESCRIPTION
 
 Package containing functions for parsing bootstrap files (project initialisation documents).
-These documents are written in XML.
-
+   
 =head1 METHODS
 
 =over
@@ -95,7 +94,9 @@ sub boot()
    my ($fullurl,$filename)=$self->{scramdoc}->urldownload($url);
    chmod $filemode,$filename;
    $self->{scramdoc}->filetoparse($filename);
-   $self->{scramdoc}->parse("bootstrap");
+   my $fhead='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><doc type="Configuration::BootStrapProject" version="1.0">';
+   my $ftail='</doc>';
+   $self->{scramdoc}->parse("bootstrap",$fhead,$ftail);
    return $self->{area};
    }
 

@@ -53,13 +53,44 @@ sub parsefilelist()
    {
    my $self=shift;
    my ($files)=@_;
+   print __PACKAGE__."::parsefilelist(): Not used?\n";
+   }
+
+sub filehead ()
+   {
+   my $self=shift;
+   my $data=@_;
+   if (@_)
+     {
+     $self->{filehead}=shift;
+     return;
+     }
+   return $self->{filehead} || "";
+   }
+
+sub filetail ()
+   {
+   my $self=shift;
+   if (@_)
+     {
+     $self->{filetail}=shift;
+     return;
+     }
+   return $self->{filetail} || "";
    }
 
 sub parse()
    {
    my $self=shift;
    my ($file)=@_;
-   $self->{data} = $self->{xmlparser}->parse($self->getfilestring_($file));
+   eval 
+   {
+     $self->{data} = $self->{xmlparser}->parse($self->getfilestring_($file));
+   };
+   if ($@)
+      {
+      print STDERR "**** ERROR: Failed parsing file: $file\n$@\n";
+      }
    return $self;
    }
 
@@ -67,16 +98,34 @@ sub getfilestring_()
    {
    my $self=shift;
    my ($file)=@_;
-   open (IN, "< $file") or die __PACKAGE__.": Cannot read file $file: $!\n";
-   my $filestring = join("", <IN>);
-   close (IN) or die __PACKAGE__.": Cannot read file $file: $!\n";
+   my $filestring="";
+   my $read=0;
+   if (($file!~/\.xml$/) && ($file!~/\/\.SCRAM\/InstalledTools\/[^\/]+$/))
+      {
+      eval("use SCRAM::Doc2XML");
+      if (!$@)
+         {
+         my $xmlconvertor = SCRAM::Doc2XML->new();
+         my $xml=$xmlconvertor->convert($file);
+         $filestring = join("",@$xml);
+         $xmlconvertor->clean();
+         $read=1;
+         }
+      }
+   if (!$read)
+   {
+     open (IN, "< $file") or die __PACKAGE__.": Cannot read file $file: $!\n";
+     $filestring = join("", <IN>);
+     close (IN) or die __PACKAGE__.": Cannot read file $file: $!\n";
+   }
+   $filestring = $self->filehead().$filestring.$self->filetail();
    # Strip spaces at the beginning and end of the line:
    $filestring =~ s/^\s+//g;
    $filestring =~ s/\s+$//g;
    # Finally strip the newlines:
-   $filestring =~ s/\n//g;
+   #$filestring =~ s/\n//g;
    # Strip out spaces in between tags:
-   $filestring =~ s/>\s+</></g;
+   #$filestring =~ s/>\s+</></g;
    $self->{filestring}=$filestring;
    return $filestring;
    }

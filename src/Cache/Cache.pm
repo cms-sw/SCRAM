@@ -35,6 +35,7 @@ package Cache::Cache;
 require 5.004;
 
 use Exporter;
+use Utilities::AddDir;
 @ISA=qw(Exporter);
 #
 
@@ -62,6 +63,7 @@ sub new()
       CACHENAME => "DirCache.db",     # Name of global file/dir cache;
       BFCACHE => {},                  # BuildFile cache;
       DIRCACHE => {},                 # Source code cache;
+      EXTRASUFFIX => {},              # path with extra suffix;
       STATUS => 0,                    # Status of cache: 1 => something changed. If so, force save;
       VERBOSE => 0                    # Verbose mode (0/1);
       };
@@ -79,15 +81,12 @@ Return a list of directories starting from $path.
 sub getdir()
    {
    my $self=shift;
-   my ($path) = @_;
+   my $path=shift;
+
    opendir (DIR, $path) || die "$path: cannot read: $!\n";
    # Skip .admin and CVS subdirectories too.
    # Also skip files that look like backup files or files being modified with emacs:
-   my @items = map { "$path/$_" } grep (
-					$_ ne "." && $_ ne ".." && $_ ne "CVS" && 
-					$_ ne ".admin" && $_ !~ m|\.#*|,
-					readdir(DIR)
-					);   
+   my @items = map { "$path/$_" } grep ((-d "$path/$_") && ($_!~/^(CVS|\..*)$/),readdir(DIR));
    closedir (DIR);
    return @items;
    }
@@ -101,14 +100,41 @@ Recursively remove directories from the cache starting at $path.
 sub prune()
    {
    my $self=shift;
-   my ($path) = @_;
+   my $path = shift;
+   my $skipparent = shift || 0;
+   my $suffix = shift || "";
+   $self->extra_suffix($path,$suffix) if ($suffix);
+   if (!$skipparent)
+      {
+      my $parent = $path;
+      $parent =~ s|(.*)/[^/]+$|$1|;
+      if ($parent ne $path && exists $self->{DIRCACHE}{$parent})
+         {
+         my ($time, @subs) = @{$self->{DIRCACHE}{$parent}};
+         $self->{DIRCACHE}{$parent} = [ $time, grep ($_ ne $path, @subs) ];
+	 $self->{ADDEDDIR}{$parent}=1;
+         $self->cachestatus(1);
+         }
+      }
+   if (exists $self->{ADDEDDIR}{$path}){delete $self->{ADDEDDIR}{$path};}
+   return if ! exists $self->{DIRCACHE}{$path};
    $self->cachestatus(1);
-   return if ! exists $self->{DIRCACHE}->{$path};
-   my (undef, undef, @subs) = @{$self->{DIRCACHE}->{$path}};
-   delete $self->{DIRCACHE}->{$path};
+   foreach my $bf ("$ENV{SCRAM_BUILDFILE}.xml","$ENV{SCRAM_BUILDFILE}")
+      {
+      if (exists $self->{BFCACHE}{"${path}/${bf}"})
+         {
+	 if (!-f "${path}/${bf}") {$self->{REMOVEDBF}{"${path}/${bf}"}=1;}
+	 delete $self->{BFCACHE}{"${path}/${bf}"};
+	 if (exists $self->{ADDEDBF}{"${path}/${bf}"}){delete $self->{ADDEDBF}{"${path}/${bf}"};}
+	 last;
+         }
+      }
+   if (!-d $path) {$self->{REMOVEDDIR}{$path}=1;}
+   my (undef, @subs) = @{$self->{DIRCACHE}{$path}};
+   delete $self->{DIRCACHE}{$path};
    foreach my $sub (@subs)
       {
-      $self->prune($sub);
+      $self->prune($sub,1);
       }
    }
 
@@ -121,104 +147,157 @@ directories and their files. Skip all files unless $dofiles is 1.
 
 sub checktree()
    {
-   my ($self, $path, $required, $dofiles) = @_;
+   my ($self, $path, $required) = @_;
    # Check if this path needs to be checked.  If it exists, has the same mode
    # and the same time stamp, it's up to date and doesn't need to be checked.
    # Otherwise if it is a directory whose time-stamp has changed, rescan it.
    # If the path has be removed, prune it from the cache.  Note that we skip 
    # non-directories unless $dofiles is set.  Considering only directories is
    # dramatically faster.
-   next if ($path =~ /\.admin/); # skip .admin dirs
-   next if ($path =~ /.*CVS/);
 
    # NB: We stat each path only once ever.  The special "_" file handle uses
    # the results from the last stat we've made.  See man perlfunc/stat.
    if (! stat($path))
       {
       die "$path: $!\n" if $required;
-      $self->logmsg("SCRAM: $path: missing: removing from cache\n");
       $self->prune($path);
-      # Something changed so force write of cache:
-      $self->cachestatus(1);
       return;
       }
 
    # If the entry in the cache is not the same mode or time, force an update.
    # Otherwise use the cache as the list of items we need to change.
-   my $cached = $self->{DIRCACHE}->{$path};   
+   my $cached = $self->{DIRCACHE}{$path};   
    my @items = ();
 
    if (! -d _)
       {
-      if ($dofiles)
-	 {
-	 $self->logmsg("SCRAM: $path: updating cache\n");
-	 $self->{DIRCACHE}->{$path} = [ (stat(_))[2, 9] ];
-	 }
-      else
-	 {
-	 $self->logmsg("SCRAM: $path: not a directory: removing from parent's list\n");
-	 my $parent = $path;
-	 $parent =~ s|(.*)/[^/]+$|$1|;
-	 if ($parent ne $path && exists $self->{DIRCACHE}->{$parent})
-	    {
-	    my ($mode, $time, @subs) = @{$self->{DIRCACHE}->{$parent}};
-	    $self->{DIRCACHE}->{$parent} = [ $mode, $time, grep ($_ ne $path, @subs) ];
-	    }
-	 $self->cachestatus(1);
-	 }
+      $self->prune($path);
+      return;
       }
-   elsif (! $cached || $cached->[0] != (stat(_))[2])
+   elsif (! $cached)
       {
       # When a directory is added, this block is activated
-      $self->added_dirs($path); # Store the newly-added dir
-      $self->logmsg("SCRAM: $path: new or changed: pruning and recreating cache\n");
-      $self->prune($path);
-      $self->{DIRCACHE}->{$path} = [ (stat(_))[2, 9], @items = $self->getdir($path) ];
+      $self->{ADDEDDIR}{$path}=1;
+      $self->{DIRCACHE}{$path} = [ (stat(_))[9], @items = $self->getdir($path) ];
       $required = 1;
       $self->cachestatus(1);
       }
-   elsif ($cached->[1] != (stat(_))[9])
+   elsif ($cached->[0] != (stat(_))[9])
       {
+      my $ntime = (stat(_))[9];
       # When a subdirectory is removed, this block is activated
       #
       # This is a parent directory. We store this as any
       # update can be taken recursively from this dir:
-      $self->modified_parentdirs($path);
-      
-      $self->logmsg("SCRAM: $path: modified: updating cache\n");
+      #$self->modified_parentdirs($path);
       # Current subdirs:
-      @items = $self->getdir($path);
-      
-      # Start checking from element number 2:
-      for (my $i = 2; $i <= $#$cached; $i++)
+      my %curdirs = map { $_ => 1 } $self->getdir($path);
+      my %olddirs = ();
+      for (my $i = 1; $i <= $#$cached; $i++)
 	 {
-	 if (! grep($cached->[$i] eq $_, @items))
+	 my $d = $cached->[$i];
+	 $olddirs{$d}=1;
+	 if (!exists $curdirs{$d})
 	    {
-	    # Add the removed path to a store for later access
-	    # from the project cache. This info is needed to update
-	    # the cached data:
-	    $self->schedremoval($cached->[$i]);
-	    # Remove all child data:
-	    $self->clean_cache_recursive($cached->[$i]);
+	    $self->prune($d,1);
 	    }
-	 }      
+	 }
       
-      $self->{DIRCACHE}->{$path} = [ (stat(_))[2, 9], @items ];
-      $required = 1;
+      foreach my $d (keys %curdirs)
+         {
+	 if (!exists $olddirs{$d})
+	    {
+	    if ($self->extra_suffix($d))
+	       {
+	       delete $curdirs{$d};
+	       }
+	    }
+	 }
+
+      $self->{ADDEDDIR}{$path}=1;
       $self->cachestatus(1);
+      @items = keys %curdirs;
+      $required = 0;
+      $self->{DIRCACHE}{$path} = [ $ntime, @items ];
       }
    else
       {
-      $self->logmsg("SCRAM: $path: valid: using cached directory list\n");
-      (undef, undef, @items) = @{$self->{DIRCACHE}->{$path}};
+      (undef, @items) = @{$self->{DIRCACHE}{$path}};
       $required = 0;
       }
+   if (($self->{cachereset}) && (!exists $self->{ADDEDDIR}{$path}))
+      {
+      $self->{ADDEDDIR}{$path}=1;
+      $self->cachestatus(1);
+      }
    
+   my $bfcachedir=$ENV{LOCALTOP}."/".$ENV{SCRAM_TMP}."/".$ENV{SCRAM_ARCH}."/cache/bf/${path}";
+   my $bftime=0;
+   my $bf="${path}/$ENV{SCRAM_BUILDFILE}";
+   if (($self->{convertxml}) && (!-f "${bf}.xml") && (-f "$bf"))
+       {
+       my $fref;
+       $self->{nonxml} = $self->{nonxml}+1;
+       if (open($fref,">${bf}.xml"))
+          {
+	  print ">> Converting $bf => ${bf}.xml\n";
+	  $self->{convertxml}->clean();
+          my $xml=$self->{convertxml}->convert($bf);
+	  foreach my $line (@$xml){print $fref "$line\n";}
+	  close($fref);
+	  $self->{convertxml}->clean();
+	  }
+       else
+          {
+	  print STDERR "**** WARNING: Can not open file for writing: ${bf}.xml\n";
+	  }
+       }
+   foreach my $ext (".xml","")
+      {
+      my $bfn="$bf$ext";
+      if (! stat ($bfn))
+         {
+         if (exists $self->{BFCACHE}{$bfn})
+	    {
+            $self->{REMOVEDBF}{$bfn}=1;
+	    delete $self->{BFCACHE}{$bfn};
+            AddDir::adddir($bfcachedir);
+            open(BF,">${bfcachedir}/$ENV{SCRAM_BUILDFILE}");close(BF);
+	    $self->cachestatus(1);
+	    }
+         }
+      else
+         {
+         $bftime = (stat(_))[9];
+         if ((! exists $self->{BFCACHE}{$bfn}) ||
+             ($bftime != $self->{BFCACHE}{$bfn}))
+            {
+            AddDir::adddir($bfcachedir);
+            open(BF,">${bfcachedir}/$ENV{SCRAM_BUILDFILE}");close(BF);
+            $self->{ADDEDBF}{$bfn}=1;
+	    delete $self->{BFCACHE}{"${path}/$ENV{SCRAM_BUILDFILE}"};
+            $self->{BFCACHE}{$bfn}=$bftime;
+	    if ($ext eq ""){$self->{nonxml}+=1;}
+            $self->cachestatus(1);
+            }
+         elsif($self->{cachereset})
+            {
+	    $self->{ADDEDBF}{$bfn}=1;
+	    if ($ext eq ""){$self->{nonxml}+=1;}
+	    if (!-f "${bfcachedir}/$ENV{SCRAM_BUILDFILE}")
+	       {
+	       AddDir::adddir($bfcachedir);
+	       open(BF,">${bfcachedir}/$ENV{SCRAM_BUILDFILE}");close(BF);
+	       }
+	    $self->cachestatus(1);
+	    }
+         last;
+	 }
+      }
    # Process sub-directories
    foreach my $item (@items)
       {
-      $self->checktree($item, $required, $dofiles);
+      $self->checktree($item, $required);
       }
    }
 
@@ -255,10 +334,10 @@ function just calls checktree().
 sub dirtree()
    {
    my $self=shift;
-   my ($dir,$dofiles) = @_;
+   my ($dir) = @_;
 
    # Get the directory tree:
-   $self->checktree($dir, 1, $dofiles);
+   $self->checktree($dir, 1);
    return $self;
    }
 
@@ -272,93 +351,45 @@ SCRAM::CMD::build().
 sub checkfiles()
    {
    my $self=shift;
+   $self->{cachereset}=shift || 0;
+   $self->{convertxml}=shift || 0;
    # Scan config dir for top-level data, then start from src:
-   my @scandirs=($ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR}, $ENV{SCRAM_SOURCEDIR});
-   my $dofiles=1;
+   my @scandirs=($ENV{SCRAM_CONFIGDIR}, $ENV{SCRAM_SOURCEDIR});
    # Loop over all directories that need scanning (normally just src and config):
+   if ($self->{convertxml})
+      {
+      eval ("use SCRAM::Doc2XML");
+      if (!$@)
+         {
+	 $self->{convertxml} = SCRAM::Doc2XML->new();
+	 }
+      else
+         {
+	 print STDERR "**** WARNING: Can not convert $ENV{SCRAM_BUILDFILE} in to XML format. Missing SCRAM::Doc2XML perl module.\n";
+	 }
+      }
+   $self->{nonxml}=0;
    foreach my $scand (@scandirs)
       {
       $self->logmsg("SCRAM: Scanning $scand [dofiles set to ".$dofiles."]\n");
       # Check the directory tree:
-      $self->dirtree($scand, $dofiles);
-      $dofiles=0;
+      $self->dirtree($scand);
       }
-   
-   # Mark everything in the cache old:
-   map { $_->[0] = 0 } values %{$self->{BFCACHE}};
-   map { $_->[0] = 0 } values %{$self->{CONFIGCACHE}};
-
-   # Remember which directories have buildfiles in them:
-   my %files = map { -f $_ ? ($_ => [ (stat(_))[9] ]) : () }
-               map { "$_/BuildFile.xml" }
-	       keys %{$self->{DIRCACHE}};
-
-   # Get list of files in config dir:
-   my $configcache = {};
-   my %configfiles = map { -f $_ && 
-			      $_ =~ m|\Q$ENV{LOCALTOP}\E/$ENV{SCRAM_CONFIGDIR}.*?$|
-			      ? ($_ => [ (stat(_))[9] ]) : () } keys %{$self->{DIRCACHE}};
-
-   # Also add ToolCache.db to the cache: FIXME: should probably use aglob here so
-   #                                     that all SCRAM_ARCHs are taken into account.
-   $configfiles{$ENV{LOCALTOP}."/.SCRAM/".$ENV{SCRAM_ARCH}."/ToolCache.db"} =
-      [ (stat($ENV{LOCALTOP}."/.SCRAM/".$ENV{SCRAM_ARCH}."/ToolCache.db"))[9] ];
-   
-   # Compare or add to config file cache. We need this to be separate so we can tell if a
-   # file affecting our build has been changed:
-   while (my ($path, $vals) = each %configfiles)
+   if ($self->cachestatus())
       {
-      if ($self->{CONFIGCACHE}->{$path} && $self->{CONFIGCACHE}->{$path}[1] == $vals->[0])
-	 {
-	 $configcache->{$path} = $self->{CONFIGCACHE}->{$path};
-	 delete $self->{CONFIGCACHE}->{$path};
-	 }
-      else
-	 {
-	 $self->{STATUSCONFIG}=1;
-	 $self->logmsg("SCRAM: $path: changed\n");
-	 $configcache->{$path} = [ 1, @$vals ];
-	 delete $self->{CONFIGCACHE}->{$path};
+      foreach my $bf ("$ENV{SCRAM_BUILDFILE}.xml","$ENV{SCRAM_BUILDFILE}")
+         {
+         if (exists $self->{BFCACHE}{"$ENV{SCRAM_CONFIGDIR}/${bf}"})
+            {
+	    $self->{ADDEDBF}{"$ENV{SCRAM_CONFIGDIR}/${bf}"}=1;
+	    last;
+	    }
 	 }
       }
-   
-   # Compare with existing cache: remove from cache what no longer
-   # exists, then check which build files are newer than the cache.
-   my $newcache = {};
-
-   while (my ($path, $vals) = each %files)
+   if ($self->{nonxml} > 0)
       {
-      if ($self->{BFCACHE}->{$path} && $self->{BFCACHE}->{$path}[1] == $vals->[0])
-	 {
-	 $newcache->{$path} = $self->{BFCACHE}->{$path};
-	 delete $self->{BFCACHE}->{$path};
-	 }
-      else
-	 {
-	 $self->{STATUSSRC}=1;
-	 $self->logmsg("SCRAM: $path: changed\n");
-	 $newcache->{$path} = [ 1, @$vals ];
-	 delete $self->{BFCACHE}->{$path};
-	 }
+      print STDERR "**** WARNING: ",$self->{nonxml}," non-xml based $ENV{SCRAM_BUILDFILE} were read.\n";
       }
-
-   # If there were BuildFiles that were removed, force update of cache
-   # and remove the BUILDFILEDATA entries:
-   foreach my $path (keys %{$self->{BFCACHE}})
-      {
-      $self->logmsg("SCRAM: $path: removed. Build data will be removed from build cache.\n");
-      $self->cachestatus(1);      
-      # Store this so that later, we can tell the BuildDataStore to remove it:
-      $self->schedremoval($path);
-      }
-   
-   # Save the BuildFile cache:
-   delete $self->{BFCACHE};
-   $self->{BFCACHE} = $newcache;
-
-   # Save the config cache:
-   delete $self->{CONFIGCACHE};
-   $self->{CONFIGCACHE} = $configcache;
    return $self;
    }
 
@@ -522,26 +553,7 @@ sub bf_for_scanning()
    {
    my $self=shift;
    my $MODIFIED = [];
-   
-   $self->{STATUSSRC} = 0;
-
-   # Return a list of buildfiles to be reread. Note that we only do this
-   # if the status was changed (i.e. don't have to read through the list of BFs to know
-   # whether something changed as the flags STATUSSRC is set as the src tree is checked).
-   # Also we check to see if STATUSCONFIG is true. If so all BuildFiles are marked to be read:
-   if ($self->{STATUSCONFIG})
-      {
-      $self->{STATUSCONFIG} = 0;
-      # Return all the buildfiles since they'll all to be read:
-      return [ keys %{$self->{BFCACHE}} ];
-      }
-   else
-      {
-      # Only return the files that changed:
-      map { ( $self->{BFCACHE}{$_}->[0] == 1 ) && push(@$MODIFIED, $_) } keys %{$self->{BFCACHE}};
-      # Reset the flag:
-      $self->{STATUSCONFIG} = 0;
-      }
+   map { push(@$MODIFIED, $_) } @{$self->{ADDEDBF}};
    return $MODIFIED;
    }
 
@@ -556,29 +568,9 @@ sub paths()
    my $self=shift;
    my $paths = {};
    
-   $self->{ALLDIRS} = [];
-   
-   # Pass over each dir, skipping those that are not wanted and
-   # storing those that are relevant to an array:
-   foreach my $path (keys %{$self->{DIRCACHE}})
-      {
-      if ( ! -d $path && $path != m|\Q$ENV{LOCALTOP}\E/$ENV{SCRAM_CONFIGDIR}.*?$|)
-	 {	
-	 $self->logmsg("SCRAM: $path no longer exists. Clearing from cache.\n");
-	 $self->cachestatus(1);
-	 delete $self->{DIRCACHE}->{$path};
-	 }
-      else
-	 {
-	 next if $path =~ m|/CVS$|;     # Ignore CVS directories.
-	 next if $path =~ m|/\.admin$|; # Ignore .admin directories.
-	 next if $path =~ m|\Q$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}\L|;
-	 push(@{$self->{ALLDIRS}},$path);
-	 }
-      }
-   
-   # Return the array:
-   return $self->{ALLDIRS};
+   my $ALLDIRS = [];
+   map { push(@$ALLDIRS, $_) } keys %{$self->{DIRCACHE}};
+   return $ALLDIRS;
    }
 
 =item   C<verbose()>
@@ -637,6 +629,28 @@ sub name()
    # Set/return the name of the cache to use:
    @_ ? $self->{CACHENAME} = shift
       : $self->{CACHENAME}
+   }
+
+sub get_data()
+   {
+     my $self=shift;
+     my $type=shift;
+     @_ ? $self->{$type} = shift
+        : $self->{$type};
+   }
+
+sub extra_suffix()
+   {
+     my $self=shift;
+     my $path=shift;
+     @_ ? $self->{EXTRASUFFIX}{$path}=shift
+        : exists $self->{EXTRASUFFIX}{$path};
+   }
+   
+sub get_nonxml()
+   {
+   my $self=shift;
+   return $self->{nonxml};
    }
 
 1;

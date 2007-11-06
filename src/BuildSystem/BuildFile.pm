@@ -43,8 +43,10 @@ sub parse()
    {
    my $self=shift;
    my ($filename)=@_;
+   my $fhead='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><doc type="BuildSystem::BuildFile" version="1.0">';
+   my $ftail='</doc>';
    $self->{scramdoc}->filetoparse($filename);
-   $self->{scramdoc}->parse("builder");
+   $self->{scramdoc}->parse("builder",$fhead,$ftail);
    # We're done with the SimpleDoc object so delete it:
    delete $self->{scramdoc};
    }
@@ -221,14 +223,17 @@ sub makefile()
 sub makefile_content()
    {
    my ($object, @strings) = @_;
-   push(@{$self->{makefilecontent}},@strings);
+   foreach my $str (@strings)
+      {
+      push(@{$self->{makefilecontent}},$str);
+      }
    }
 
 sub makefile_()
    {
    my ($object,$name)=@_;
-   $self->{nested} == 1 ? push(@{$self->{tagcontent}->{MAKEFILE}}, join('',@{$self->{makefilecontent}}))
-      : push(@{$self->{content}->{MAKEFILE}}, join('',@{$self->{makefilecontent}}));
+   $self->{nested} == 1 ? push(@{$self->{tagcontent}->{MAKEFILE}}, join("\n",@{$self->{makefilecontent}}))
+      : push(@{$self->{content}->{MAKEFILE}}, join("\n",@{$self->{makefilecontent}}));
    delete $self->{makefilecontent};
    # Unset the Char handler to revert to the default behaviour:
    $object->setHandlers(Char => 0);
@@ -278,9 +283,7 @@ sub flags()
    my ($flagname,$flagvaluestring) = each %attributes;
    $flagname =~ tr/[a-z]/[A-Z]/; # Keep flag name uppercase
    chomp($flagvaluestring);
-   # Split the value on whitespace so we can push all
-   # individual flags into an array:
-   my @flagvalues = split(' ',$flagvaluestring);
+   my @flagvalues = ( $flagvaluestring );
    # Is current tag within another tag block?
    if ($self->{nested} == 1)
       {

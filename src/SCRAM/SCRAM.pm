@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.30 2007/04/13 17:31:26 sashby Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.24.2.6 2007/02/27 11:46:21 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -39,8 +39,7 @@ use Utilities::Architecture;
 use Utilities::Verbose;
 use SCRAM::CMD;
 
-# Use CVS variables to get the latest tag (=> version):
-our ($SCRAM_VERSION) = ('$Name:  $' =~ /\$*: (.*?) \$/);
+our ($SCRAM_VERSION) = "@SCRAM_VERSION@";
 
 @ISA=qw(Exporter Utilities::Verbose SCRAM::CMD);
 @EXPORT_OK=qw( );
@@ -71,7 +70,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => $SCRAM_VERSION || undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.30 2007/04/13 17:31:26 sashby Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.24.2.6 2007/02/27 11:46:21 sashby Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -79,6 +78,7 @@ sub new()
   
    bless $self,$class;
    $ENV{SCRAM_VERSION} = $self->{SCRAM_VERSION};
+   $ENV{SCRAM_BUILDFILE} = "BuildFile";
    $self->_init();
    return $self;
    }
@@ -216,7 +216,7 @@ sub versioncheck() {
     # applies in a project area since outside we'll be using the
     # current release anyway. If we're in a project we use the "scram_version"
     # file in config directory:
-    if ($self->islocal()) {
+    if ((!defined $self->{SCRAM_VERSIONCHECK}) && ($self->islocal())) {
 	my $version;
 	my $versionfile=$ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR}."/scram_version";
 	if ( -f $versionfile ) {
@@ -247,7 +247,7 @@ sub remote_versioncheck() {
     local (@ARGV)=@_;
     # Get the version from the project area:
     $version = $remote_area->scramversion();
-
+    
     if (!defined($version)) {
 	# Try to get the version from the area config. dir:
 	my $versionfile=$remote_area->location()."/".$remote_area->configurationdir()."/scram_version";
@@ -257,7 +257,7 @@ sub remote_versioncheck() {
 	    $version=<VERSION>;
 	    chomp $version;
 	} else {
-	    $self->error("Unable to determine SCRAM version used to configure remote area.\n");
+	    $self->error("Unable to determine SCRAM version used to config. remote area.\n");
 	}
     }
     # Spawn the required version:
@@ -300,14 +300,11 @@ sub _initenv()
    
    # Need a lookup database. Try the user's environment first to override
    # the value set at install time (in SCRAM_SITE.pm):
-   if (exists $ENV{SCRAM_USERLOOKUPDB}) {
-       if (-f "$ENV{SCRAM_USERLOOKUPDB}") {
-	   print "Using $ENV{SCRAM_USERLOOKUPDB} as the database.","\n", if ($ENV{SCRAM_DEBUG});
-	   $ENV{SCRAM_LOOKUPDB}=$ENV{SCRAM_USERLOOKUPDB};
-       } else {
-	   $self->scramerror("You've specified SCRAM_USERLOOKUPDB but no projectdb.xml exists.");
-       }
-   }
+   if (exists $ENV{SCRAM_USERLOOKUPDB} && -f "$ENV{SCRAM_USERLOOKUPDB}")
+      {
+      print "Using $ENV{SCRAM_USERLOOKUPDB} as the database.","\n", if ($ENV{SCRAM_DEBUG});
+      $ENV{SCRAM_LOOKUPDB}=$ENV{SCRAM_USERLOOKUPDB};
+      }
    
    # A fallback option:
    if ( ! ( exists $ENV{SCRAM_LOOKUPDB} ) )
@@ -334,27 +331,29 @@ dir to find these caches.
 
 =cut
 
-sub _loadscramdb() {
-    my $self=shift;
-    # Read the scram database to keep track of which
-    # projects are scram-managed:
-    my @scramprojects = $self->getprojectsfromDB();
-    $self->{SCRAM_PDB}={};
-    
-    foreach my $project (@scramprojects) {
-	foreach my $pversion (@{ $project->versions() })  {
-	    my $parea=$self->scramfunctions()->scramprojectdb()->getarea($project->name, $pversion->ident);
-	    if (defined ($parea) && $parea->location() ne '') {
-		# Store the name of the project as lowercase to make lookups easier
-		# during setup. When storing the individual project name/version entries, mangle the
-		# version with the real name, separated by a :  for access to this data needed
-		# when getting the area:
-		$self->{SCRAM_PDB}->{lc($project->name)}->{$project->name.":".$pversion->ident} = $parea->location(); 
-	    }
-	}
-    }
-    return $self->{SCRAM_PDB};
-}
+sub _loadscramdb()
+   {
+   my $self=shift;
+   # Read the scram database to keep track of which
+   # projects are scram-managed:
+   my @scramprojects = $self->getprojectsfromDB();
+   $self->{SCRAM_PDB}={};
+   
+   foreach my $project (@scramprojects)
+      {
+      my $parea=$self->scramfunctions()->scramprojectdb()->getarea($project->[0], $project->[1]);
+      if (defined ($parea) && $parea->location() ne '')
+	 {
+	 # Store the name of the project as lowercase to make lookups easier
+	 # during setup. When storing the individual project name/version entries, mangle the
+	 # version with the real name, separated by a :  for access to this data needed
+	 # when getting the area:
+	 $self->{SCRAM_PDB}->{lc($project->[0])}->{$project->[0].":".$project->[1]} = $parea->location(); 
+	 }
+      }
+   
+   return $self->{SCRAM_PDB};
+   }
 
 =item   C<islocal()>
 
@@ -622,6 +621,7 @@ SCRAM was installed.)
 sub getprojectsfromDB()
    {
    my $self=shift;
+
    # Get list of projects from scram database and return them:
    return ($self->scramfunctions()->scramprojectdb()->listall());
    }
@@ -681,21 +681,22 @@ Remove a project from the SCRAM database. Reverse the process of register_instal
 
 =cut
 
-sub unregister_install() {
-    my $self=shift;
-    my $area = $self->{localarea};
-    if ($area) { # Only remove .installed if we're in the area.
-	my $archdir = $area->location()."/".$area->admindir()."/".$self->architecture();
-	my $registerfile = $archdir."/.installed";
-	my $retval = 0;
-	
-	# Remove the register file:
-	if ( -f $registerfile) {
-	    $retval = system("rm","-f",$registerfile);
-	}
-    }
-    return $retval;
-}
+sub unregister_install()
+   {
+   my $self=shift;
+   my $area = $self->{localarea};
+   my $archdir = $area->location()."/".$area->admindir()."/".$self->architecture();
+   my $registerfile = $archdir."/.installed";
+   my $retval = 0;
+   
+   # Remove the register file:
+   if ( -f $registerfile)
+      {
+      $retval = system("rm","-f",$registerfile);
+      }
+   
+   return $retval;
+   }
 
 =item   C<toolmanager($location)>
 
@@ -955,16 +956,7 @@ Print a fatal error message string $message and exit.
 sub scramfatal()
    {
    my $self=shift;
-
-   # Send errors to STDERR when piping:
-   if ( -t STDERR )
-      {
-      print STDERR "SCRAM ",$self->fatal(@_),"\n";   
-      }
-   else
-      {
-      print "SCRAM ",$self->fatal(@_),"\n";  
-      }
+   print "SCRAM ",$self->fatal(@_),"\n";
    exit(1);
    }
 

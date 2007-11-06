@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.17 2007/04/11 16:25:11 sashby Exp $ 
+# Revision: $Id: Helper.pm,v 1.14.2.2 2007/02/26 18:33:45 sashby Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -177,15 +177,14 @@ sub list()
    $help.="\tlocal SCRAM database (see \"scram install help\").\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram list [-c] [-h] [<projectname>]$::normal\n";
-#    $help.="\tscram list [-c] [-h] [--oldstyle] [<projectname>]$::normal\n";
+   $help.="\tscram list [-c] [-h] [--oldstyle] [<projectname>]$::normal\n";
    $help.="\n";
    $help.="Use the -c option to list the available projects and versions installed in the local\n";
    $help.="SCRAM database without fancy formatting or header strings.\n";
    $help.="The project name, version and installation directory are printed on STDOUT, separated\n";
    $help.="by spaces for use in scripts.\n\n";
-#    $help.="Use the --oldstyle option to show all projects from all versions (i.e. pre-V1) of SCRAM\n";
-#    $help.="(by default, only projects built and installed with V1x will be listed).\n";
+   $help.="Use the --oldstyle option to show all projects from all versions (i.e. pre-V1) of SCRAM\n";
+   $help.="(by default, only projects built and installed with V1x will be listed).\n";
    $help.="\n";
    
    return $help;
@@ -211,28 +210,17 @@ sub db()
    $help.="\tlist operations, e.g.\n";
    $help.="\n";
    $help.="$::bold";
-   $help.="\tscram db -link $::normal /a/directory/path/projectdb.xml\n";
+   $help.="\tscram db link $::normal /a/directory/path/project.lookup\n";
    $help.="\n";
    $help.="-unlink\n"; 
    $help.="\tRemove a database from the link list. Note this does\n";
    $help.="\tnot remove the database, just the link to it in SCRAM.\n";
    $help.="\n";
    $help.="$::bold";
-   $help.="\tscram db -unlink $::normal /a/directory/path/projectdb.xml\n";
+   $help.="\tscram db unlink $::normal /a/directory/path/project.lookup\n";
    $help.="\n";
    $help.="-show\n"; 
    $help.="\tList the databases that are linked in.\n";
-   $help.="\n";
-   $help.="-validate\n"; 
-   $help.="\tCheck the database: report which project areas are missing\n";
-   $help.="\tbut still have entries in the db.\n";
-   $help.="\n";
-   $help.="-migrate\n";
-   $help.="\tMigrate an old-style project.lookup to XML format. All entries will\n";
-   $help.="\tbe written to the current local database.\n";
-   $help.="\n";
-   $help.="$::bold";
-   $help.="\tscram db -migrate $::normal /a/directory/path/project.lookup\n";   
    $help.="\n";
 
    return $help;
@@ -345,16 +333,16 @@ sub project()
    $help.="a project version. This command is normally used to create cloned developer areas.\n";
    $help.="\n";
    $help.="$::bold";
-   $help.="-b <file>$::normal\tAn XML bootstrap file on an accessible file system. This command would\n";
-   $help.="be used to create a project area from scratch on a laptop or in a release area.\n";
+   $help.="-b <file>$::normal\tA bootstrap file on an accessible file system. This command would\n";
+   $help.="be used to create a project area from scratch on a laptop.\n";
    $help.="\n";
    $help.="** Examples **\n";
    $help.="\n";
    $help.="$::bold";
-   $help.="\tscram project XX XX_0_0$::normal\n";
+   $help.="\tscram project XX XX_9_0$::normal\n";
    $help.="\n";
    $help.="$::bold";
-   $help.="\tscram project -b ~/myprojects/projecta/config/boot.xml $::normal\n";
+   $help.="\tscram project -b ~/myprojects/projecta/config/boot $::normal\n";
    $help.="\n";
    $help.="\n";
    $help.="Use the \"-f\" flag followed by a valid filename (which MUST end in \".conf\") to\n";
@@ -480,6 +468,7 @@ sub build()
    $help.="--testrun            do everything except run gmake.\n";
    $help.="--reset              reset the project caches and rescan/rebuild.\n";
    $help.="--fast               skip checking the cache and go straight to building.\n";
+   $help.="--convertxml         convert any non-xml BuildFile in to BuildFile.xml.\n";
    $help.="--writegraphs=<g|p>  enable creation of dependency graphs. Set this to 'global' (g) if you\n";
    $help.="                     want to create project-wide dependency graphs or 'package' (p) for\n";
    $help.="                     package-level graphs. The graphs will be stored in the project working\n";

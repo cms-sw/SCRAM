@@ -348,7 +348,9 @@ sub parse
    $self->{version}=$toolver;
    $self->{scramdoc}->filetoparse($file);   
    $self->verbose("Setup Parse");
-   $self->{scramdoc}->parse("setup");
+   my $fhead='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><doc type="BuildSystem/ToolParser" version="1.0">';
+   my $ftail='</doc>';
+   $self->{scramdoc}->parse("setup",$fhead,$ftail);
    delete $self->{scramdoc};
    return $self;
    }

@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-24 12:24:57+0200
-# Revision: $Id: TreeItem.pm,v 1.3 2005/03/09 19:28:20 sashby Exp $ 
+# Revision: $Id: TreeItem.pm,v 1.4 2005/05/24 09:09:42 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -107,9 +107,18 @@ sub skip()
       : $self->{SKIP};
    }
 
+sub productstore()
+   {
+   my $self=shift;
+   @_ ? $self->{PRODUCTSTORES} = shift
+      : $self->{PRODUCTSTORES};
+   }
+   
 sub name()
    {
    my $self=shift;
+   my $n=shift;
+   if(defined $n){$self->{NAME}=$n; return;}
 
    # Don't bother doing any work if the NAME exists already - just return it:
    if (! exists($self->{NAME}))
@@ -131,7 +140,17 @@ sub name()
 	 # We want the name of the domain:
 	 ($self->{NAME}) = ($classdir =~ m|^.*/(.*)?$|);
 	 }
-      else
+      elsif ($self->{CLASS} eq 'LIBRARY')
+         {
+	 #use SCRAM::ProductName;
+	 #my $n = &SCRAM::ProductName::get_safename($classdir);
+	 my $n="";
+	 if ($n ne "")
+	    {
+	    $self->{NAME} = $n;
+	    }
+	 }
+      if (! exists($self->{NAME}))
 	 {
 	 # Here we have a path that ends in src/bin/test/doc etc. (for real
 	 # build products). We still want to return the package name:
@@ -271,26 +290,26 @@ sub branchmetadata()
    if ($meta)
       {
       # Delete unneeded entries:
-      $meta->clean(qw( EXPORT DEFINED_GROUP CLASSPATH SKIPPEDDIRS ));
-      $self->{BRANCHMETA} = $meta;
+      #$meta->clean(qw( EXPORT DEFINED_GROUP CLASSPATH SKIPPEDDIRS ));
+      $self->{RAWDATA} = $meta;
       }
    else
       {
-      return $self->{BRANCHMETA};
+      return $self->{RAWDATA};
       }
    }
 
 sub branchdata()
    {
    my $self=shift;
-   @_ ? $self->{BRANCHDATA} = shift
-      : $self->{BRANCHDATA};
+   @_ ? $self->{RAWDATA} = shift
+      : $self->{RAWDATA};
    }
 
 sub clearmeta()
    {
    my $self=shift;
-   delete $self->{BRANCHDATA}, if (exists $self->{BRANCHDATA});
+   delete $self->{RAWDATA};
    }
 
 sub updatechildlist()
@@ -403,10 +422,19 @@ sub scramprojectbases()
       : $self->{SCRAM_PROJECT_BASES};
    }
 
+sub publictype()
+   {
+   my $self=shift;
+   my $type=shift;
+   if (defined $type) {$self->{PUBLIC} = $type; return;}
+   if(exists $self->{PUBLIC}){return $self->{PUBLIC};}
+   return 0;
+   }
+
 sub clean()
    {
    my $self=shift;
-   delete $self->{BRANCHMETA};
+   delete $self->{RAWDATA};
    }
 
 1;

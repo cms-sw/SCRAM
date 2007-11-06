@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 14:49:43+0200
-# Revision: $Id: MakeInterface.pm,v 1.2 2004/12/10 13:41:37 sashby Exp $ 
+# Revision: $Id: MakeInterface.pm,v 1.3 2005/05/13 15:48:29 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -74,8 +74,7 @@ sub exec()
    my $PID;
    my $makecmd=$self->{GMAKECMD}.$self->{CMDOPTS}." -f ".$makefile." ".join(" ",@ARGV);
    
-   print "SCRAM MakeInterface::exec(): going to exec \"",$makecmd,"\"\n",if ($ENV{SCRAM_DEBUG});
-
+   print "SCRAM: Starting ",$self->{GMAKECMD}," ....\n";
    # Try without forking:
    exec "$makecmd" || die "SCRAM MakeInterface::exec(): Unable to exec()...$!","\n";
    }

@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-04-29 16:07:07+0200
-# Revision: $Id: PluginCore.pm,v 1.1.2.7 2004/11/18 13:01:25 sashby Exp $ 
+# Revision: $Id: PluginCore.pm,v 1.2 2004/12/10 13:41:39 sashby Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -55,19 +55,7 @@ sub new()
    # Store data:
    $self->{_BRANCH} = $self->{_CONTEXT}->stash()->get('branch');
    
-   my $META = $self->{_BRANCH}->branchdata();
-   
-   # If there are build products, set them here:
-   if (ref($META) ne 'BuildSystem::DataCollector')
-      {
-      # We have build products in a hash:
-      $self->{_BUILDPRODUCTS} = $META;
-      }
-   else
-      {
-      # OK, normal DataCollector object:
-      $self->{_META} = $META;
-      }
+   $self->{_META} = $self->{_BRANCH}->branchdata();
    
    # Set the most commonly-used features:
    $self->{_CONTEXT}->stash()->set('safepath', $self->{_BRANCH}->safepath());
@@ -75,21 +63,33 @@ sub new()
    $self->{_CONTEXT}->stash()->set('suffix', $self->{_BRANCH}->suffix());
    $self->{_CONTEXT}->stash()->set('class', $self->{_BRANCH}->class());
    $self->{_CONTEXT}->stash()->set('classdir', $self->{_BRANCH}->classdir());
-   
+   $self->{_CONTEXT}->stash()->set('parent', $self->{_BRANCH}->parent());
+
    return $self;
    }
 
 sub variables()
    {
    my $self=shift;
-   (defined $self->{_META}) ? return $self->{_META}->variables()
-      : return "";
+   return "";
+   }
+
+sub branchdata()
+   {
+   my $self=shift;
+   return $self->{_BRANCH};
    }
 
 sub name()
    {
    my $self=shift;
    return $self->{_BRANCH}->name();
+   }
+
+sub publictype()
+   {
+   my $self=shift;
+   return $self->{_BRANCH}->publictype(@_);
    }
 
 sub productname()
@@ -102,47 +102,132 @@ sub productname()
 sub productfiles()
    {
    my $self=shift;
-   (defined $self->{_THISCOREPRODUCT}) ? return $self->{_THISCOREPRODUCT}->files()
+   (defined $self->{_THISCOREPRODUCT}) ? return join(" ",@{$self->{_THISCOREPRODUCT}{FILES}})
       : return "";
    }
 
 sub producttype()
    {
    my $self=shift;
-   (defined $self->{_THISCOREPRODUCT}) ? return $self->{_THISCOREPRODUCT}->type()
+   (defined $self->{_THISCOREPRODUCT}) ? return $self->{_THISCOREPRODUCT}{TYPE}
       : return "";
    }
 
+sub flagsdata ()
+   {
+   my $self=shift;
+   my $flag=shift;
+   my $allflags = $self->allflags();
+   if (exists $allflags->{$flag}){return $allflags->{$flag};}
+   return [];
+   }
+   
 sub flags()
    {
    my $self=shift;
    my ($flag)=@_;
-   my $localflags=$self->{_META}->allflags() if (defined $self->{_META});
-
-   if (exists $localflags->{$flag})
+   my $allflags = $self->allflags();
+   if (exists $allflags->{$flag})
       {
-      return join(" ",$localflags->{$flag});  
+      return join(" ",@{$allflags->{$flag}});
       }
    return "";
-   }  
+   }
 
 sub allflags()
    {
    my $self=shift;
-   return $self->{_META}->allflags(), if (defined($self->{_META}));
+   if (exists $self->{FLAG_CACHE})
+      {
+      return $self->{FLAG_CACHE};
+      }
+   $self->{FLAG_CACHE}={};
+   foreach my $t ($self->{_META},$self->{_THISCOREPRODUCT})
+      {
+      if (defined $t && exists $t->{content}{FLAGS})
+         {
+	 foreach my $f (keys %{$t->{content}{FLAGS}})
+	    {
+	    if (!exists $self->{FLAG_CACHE}{$f})
+	       {
+	       $self->{FLAG_CACHE}{$f}=[];
+	       }
+	    foreach my $fv (@{$t->{content}{FLAGS}{$f}})
+	       {
+	       push @{$self->{FLAG_CACHE}{$f}},($f eq "CPPDEFINES") ? "-D$fv":$fv;
+	       }
+	    }
+	 if ((exists $t->{content}{ARCH}) &&
+	     (exists $t->{content}{ARCH}{$ENV{SCRAM_ARCH}}) &&
+	     (exists $t->{content}{ARCH}{$ENV{SCRAM_ARCH}}{FLAGS}))
+	    {
+	    foreach my $f (keys %{$t->{content}{ARCH}{$ENV{SCRAM_ARCH}}{FLAGS}})
+	       {
+	       if (!exists $self->{FLAG_CACHE}{$f})
+	          {
+	          $self->{FLAG_CACHE}{$f}=[];
+	          }
+	       foreach my $fv (@{$t->{content}{ARCH}{$ENV{SCRAM_ARCH}}{FLAGS}{$f}})
+	          {
+	          push @{$self->{FLAG_CACHE}{$f}},($f eq "CPPDEFINES") ? "-D$fv":$fv;
+	          }
+	       }
+	    }
+	 }
+      }
+      return $self->{FLAG_CACHE};
    }
 
 sub allscramstores()
    {
    my $self=shift;
-   return $self->{_META}->allscramstores(), if (defined($self->{_META}));
+   return $self->{_BRANCH}->productstore();
    }
 
+sub value ()
+   {
+   my $self=shift;
+   my $tag=shift;
+   my $data=shift;
+   my @dlist=();
+   if(defined $data){push @dlist,$data;}
+   else
+      {
+      if ((defined $self->{_META}) && (exists $self->{_META}{content}))
+         {push @dlist,$self->{_META}{content};}
+      if ((defined $self->{_THISCOREPRODUCT}) && (exists $self->{_THISCOREPRODUCT}{content}))
+         {push @dlist,$self->{_THISCOREPRODUCT}{content};}
+      }
+   my $ret=[];
+   foreach my $t (@dlist)
+      {
+      if (defined $t)
+         {
+         if (exists $t->{$tag})
+            {
+            foreach my $d (@{$t->{$tag}})
+               {
+	       push @$ret,$d;
+	       }
+            }
+         if ((exists  $t->{$ENV{SCRAM_ARCH}}) && (exists $t->{$ENV{SCRAM_ARCH}}{$tag}))
+            {
+            foreach my $d (@{$t->{$ENV{SCRAM_ARCH}}{$tag}})
+               {
+	       push @$ret,$d;
+	       }
+	    }
+         }
+      }
+   if(scalar(@$ret)){return $ret;}
+   return "";
+   }
+   
 sub data()
    {
    my $self=shift;
    my ($tag)=@_;   
-   return $self->{_META}->data($tag), if (defined($self->{_META}));
+   return $self->{_META}->{content}{$tag}, if (defined($self->{_META}->{content}));
    }
 
 sub safesubdirs()
@@ -154,8 +239,9 @@ sub safesubdirs()
 sub scramprojectbases()
    {
    my $self=shift;
+   return "";
    # This is needed at project level only:
-   return $self->{_BRANCH}->scramprojectbases(), if (defined($self->{_BRANCH}));
+   #return $self->{_BRANCH}->scramprojectbases(), if (defined($self->{_BRANCH}));
    }
 
 sub bfdeps()
@@ -203,19 +289,19 @@ sub pkdeps()
 sub buildproducts()
    {
    my $self=shift;
-   return $self->{_BUILDPRODUCTS};
+   return $self->{_META}->{content}{BUILDPRODUCTS};
    }
 
 # Set the data for current product object:
 sub thisproductdata()
    {
    my $self=shift;
-   my ($safename)=@_;
+   my ($safename,$type)=@_;
    # The name arg is used to switch to the correct data object
    # _THISCOREPRODUCT points to the Product object:
-   $self->{_THISCOREPRODUCT} = $self->{_BUILDPRODUCTS}->{$safename};
-   # We obtain the data using the Product::data() method:
-   $self->{_META} = $self->{_THISCOREPRODUCT}->data(); # 
+   $self->{_THISCOREPRODUCT} = $self->{_META}->{content}{BUILDPRODUCTS}{$type}{$safename};
+   delete $self->{FLAG_CACHE};
+   $self->allflags();
    }
 
 1;
