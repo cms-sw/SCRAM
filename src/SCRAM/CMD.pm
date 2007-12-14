@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.58.2.7 2007/12/14 08:18:06 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.73 2007/12/14 09:03:55 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -914,17 +914,18 @@ sub build()
    my ($packagebuilder,$dataposition,$buildstoreobject);
    my $verbose=0;
    my $trap_flag=0;
+   my $cachereset = 0;
+   if (!-e $ENV{SCRAM_INTwork}){$cachereset=1; print "Resetting caches","\n"; system("rm","-f",$builddatastore);} 
    
    # Getopt variables:
    my %opts = ( WRITE_GRAPHS => 0, # No graphs produced by default;
 		SCRAM_TEST => 0 ); # test mode: don't run make;
-   my $cachereset = 0;
    my $convertxml = 0;
    my %options =
       ("help"     => sub { $self->{SCRAM_HELPER}->help('build'); exit(0) },
        "verbose"  => sub { $ENV{SCRAM_BUILDVERBOSE} = 1 },
        "testrun"  => sub { $opts{SCRAM_TEST} = 1 },
-       "reset"    => sub { $cachereset=1; print "Resetting caches","\n"; system("rm","-rf",$builddatastore,"${workingdir}/MakeData/DirCache*")},
+       "reset"    => sub { if ($cachereset==0){ $cachereset=1; print "Resetting caches","\n"; system("rm","-rf",$builddatastore,"${workingdir}/MakeData/DirCache*")}},
        "fast"     => sub { print "Skipping cache scan...","\n"; $fast=1 },
        "writegraphs=s"  => sub { $opts{WRITE_GRAPHS} = 1; $graphmode=$_[1] },
        "convertxml"  => sub { $convertxml =1 },
@@ -1574,6 +1575,8 @@ sub create_productstores()
       }
    
    # Add the source dir:
+   if (!$sym){mkpath($ENV{LOCALTOP}."/".$ENV{SCRAM_INTwork}, 0, $perms);}
+   else{$sym->mklink($ENV{SCRAM_INTwork});}
    mkpath($ENV{LOCALTOP}."/".$ENV{SCRAM_SOURCEDIR},0,$perms);
    }
 
