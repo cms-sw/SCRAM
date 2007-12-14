@@ -4,14 +4,14 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-10-14 10:16:21+0200
-# Revision: $Id: ToolSettingValidator.pm,v 1.3 2004/12/10 15:29:50 sashby Exp $ 
+# Revision: $Id: ToolSettingValidator.pm,v 1.4.4.1 2007/12/13 14:35:44 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
 #--------------------------------------------------------------------
 package BuildSystem::ToolSettingValidator;
 require 5.004;
-
+use SCRAM::MsgLog;
 use Exporter;
 @ISA=qw(Exporter);
 @EXPORT_OK=qw( );
@@ -186,23 +186,23 @@ sub validatepath()
       $path = $self->{PATHFROMDB};
       }
    
-   print "\tChecks ", if ($path);
+   scramlogmsg("\tChecks "), if ($path);
 
    if ( -f $path)
       {
       # File exists:
-      print $self->{STATUS}->{0}." for $path","\n";
+      scramlogmsg($self->{STATUS}->{0}." for $path","\n");
       return 1;
       }
    # This is done so that some paths can be added which include ".":
    elsif ($path =~ /^\.:.*/ || $path =~ /^\.$/)
       {
-      print $self->{STATUS}->{0}." for $path","\n";
+      scramlogmsg($self->{STATUS}->{0}." for $path","\n");
       return 1;
       }
    elsif ($handlertype =~ /^[Ww].*$/)
       {
-      print $self->{STATUS}->{2}." for $path","\n";
+      scramlogmsg($self->{STATUS}->{2}." for $path","\n");
       return 1;
       }
    else
@@ -213,12 +213,12 @@ sub validatepath()
       opendir $dh, $path or do
 	 {
 	 # No path:
-	 print $self->{STATUS}->{1}." for $path","\n", unless ($path eq '');
+	 scramlogmsg($self->{STATUS}->{1}." for $path","\n"), unless ($path eq '');
 	 return 0;
 	 };
       
       # Dir found:
-      print $self->{STATUS}->{0}." for $path","\n";
+      scramlogmsg($self->{STATUS}->{0}." for $path","\n");
       return 1;
       }
    }
@@ -350,6 +350,8 @@ sub promptuser()
    my $novalid = 1;
    my $dummy = '';
    my $ORKEEP = '';
+   scramlogdump();
+   scramloginteractive(1);
    print "\n";
 
    while ($novalid)

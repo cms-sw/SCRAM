@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-07-27 11:49:59+0200
-# Revision: $Id: Product.pm,v 1.2.4.1 2007/01/24 14:40:17 sashby Exp $ 
+# Revision: $Id: Product.pm,v 1.2.4.2 2007/11/08 15:25:27 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #

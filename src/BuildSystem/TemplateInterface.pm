@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-07-01 14:03:46+0200
-# Revision: $Id: TemplateInterface.pm,v 1.2.4.2 2006/12/04 14:26:35 sashby Exp $ 
+# Revision: $Id: TemplateInterface.pm,v 1.2.4.3 2007/11/08 15:25:27 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -52,12 +52,12 @@ sub new()
 
    if (!-f $makefile)
       {
-      if (!-f "$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/Makefile.head")
+      if (!-f "$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/Makefile")
          {
-	 die "Missing $ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/Makefile.head file.";
+	 die "Missing $ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/Makefile file.";
 	 }
       use File::Copy;
-      copy("$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/Makefile.head",$makefile) or die "Copy failed: $!";
+      copy("$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/Makefile",$makefile) or die "Copy failed: $!";
       utime 0,0,$makefile;
       }
 

@@ -228,6 +228,12 @@ sub objectstore {
 	return $self->{dbstore}
 }
 
+sub symlinks {
+	my $self=shift;
+	if (@_) {$self->{symlinks}=shift;}
+	return $self->{symlinks};
+}
+
 sub name {
 	my $self=shift;
 	@_?$self->{name}=shift
@@ -244,6 +250,7 @@ sub setup {
 	my $self=shift;
 	my $location=shift;
 	my $areaname;
+	my $symlinks=0;
 
 	# -- check we have a project name and version
 	my $name=$self->name();
@@ -260,6 +267,9 @@ sub setup {
 	if ( @_ ) {
 	  $areaname=shift;
 	}
+	if ( @_ ) {
+	  $symlinks=shift || 0;
+	}
 	if ( (! defined $areaname) || ( $areaname eq "" ) ) {
 	  # -- make up a name from the project name and version
           $vers=~s/^$name\_//;
@@ -269,6 +279,7 @@ sub setup {
 	my $workloc=$arealoc."/".$self->{admindir};
 	$self->verbose("Building at $arealoc");
 	$self->location($arealoc);
+	$self->symlinks($symlinks);
 
 	# -- create top level structure and work area
 	AddDir::adddir($workloc);
@@ -720,6 +731,7 @@ sub _SaveEnvFile
    print $fh "SCRAM_SOURCEDIR=".$self->sourcedir()."\n";
    print $fh "SCRAM_ProjReqsDoc=".$self->{reqdoc}."\n";
    print $fh "SCRAM_TOOLBOXVERSION=".$self->{toolboxversion}."\n";
+   print $fh "SCRAM_SYMLINKS=",$self->{symlinks},"\n";
 
    if ( defined $self->linkarea() )
       {
@@ -746,6 +758,7 @@ sub _SaveEnvFile
    print $fh " <environment SCRAM_SOURCEDIR=\"".$self->sourcedir()."\"/>\n";
    print $fh " <environment SCRAM_ProjReqsDoc=\"".$self->{reqdoc}."\"/>\n";
    print $fh " <environment SCRAM_TOOLBOXVERSION=\"".$self->{toolboxversion}."\"/>\n";
+   print $fh "<environment SCRAM_SYMLINKS=\"",$self->{symlinks},"\"/>\n";
 
    if ( defined $self->linkarea() )
       {

@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.15.2.3 2007/02/27 11:38:39 sashby Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.15.2.5 2007/12/13 14:35:44 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -18,6 +18,7 @@ use BuildSystem::ToolParser;
 use Utilities::AddDir;
 use URL::URLhandler;
 use Utilities::Verbose;
+use SCRAM::MsgLog;
 
 @ISA=qw(BuildSystem::ToolCache Utilities::Verbose);
 @EXPORT_OK=qw( );
@@ -148,7 +149,7 @@ sub setupalltools()
 	    }
 	 else
 	    {
-	    print $localtool," already set up.","\n",if ($ENV{SCRAM_DEBUG});
+	    scramlogmsg($localtool," already set up.","\n"),if ($ENV{SCRAM_DEBUG});
 	    }
 	 }
       }
@@ -161,7 +162,7 @@ sub setupalltools()
 	 }
       }
    
-   print "\n";
+   scramlogmsg("\n");
    }
 
 sub coresetup()
@@ -170,8 +171,7 @@ sub coresetup()
    my ($toolname, $toolversion, $toolfile, $force) = @_;
    my ($toolcheck, $toolparser);
    
-   print "\n";
-   print $::bold."Setting up ",$toolname," version ",$toolversion,":  ".$::normal,"\n";
+   scramlogmsg("\n",$::bold."Setting up ",$toolname," version ",$toolversion,":  ".$::normal,"\n");
    
    # New ToolParser object for this tool if there isn't one already.
    # Look in array of raw tools to see if this tool has a ToolParser object:
@@ -365,8 +365,7 @@ sub setupself()
 
    if ( -f $filename )
       {
-      print "\n";
-      print $::bold."Setting up SELF:".$::normal,"\n";
+      scramlogmsg("\n",$::bold."Setting up SELF:".$::normal,"\n");
       # Self file exists so process it:
       $selfparser = BuildSystem::ToolParser->new();
       $selfparser->filehead ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><doc type="BuildSystem::ToolDoc" version="1.0">');
@@ -375,7 +374,7 @@ sub setupself()
 
       # Next, set up the tool:
       $store = $selfparser->processrawtool($self->interactive());
-      
+
       # If we are in a developer area, also add RELEASETOP paths:
       if (exists($ENV{RELEASETOP}))
 	 {
@@ -385,10 +384,11 @@ sub setupself()
       
       # Store the ToolData object in the cache:
       $self->storeincache($selfparser->toolname(),$store);
-      print "\n";
+      scramlogmsg("\n");
       }
    else
       {
+      scramlogdump();
       print "\n";
       print "SCRAM: No file config/Self.xml...nothing to do.";
       print "\n";

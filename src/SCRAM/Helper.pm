@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.14.2.2 2007/02/26 18:33:45 sashby Exp $ 
+# Revision: $Id: Helper.pm,v 1.14.2.4 2007/12/13 14:35:45 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -302,7 +302,7 @@ sub project()
    $help.="\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram project [-t] [-d <area>] [-n <dir>] [-f <tools.conf>] <projecturl> [<projectversion>]$::normal\n";
+   $help.="\tscram project [-t] [-l] [-d <area>] [-n <dir>] [-f <tools.conf>] <projecturl> [<projectversion>]$::normal\n";
    $help.="\n";
    $help.="$::bold";
    $help.="\tscram project -update [<projectversion>]$::normal\n";
@@ -348,6 +348,8 @@ sub project()
    $help.="Use the \"-f\" flag followed by a valid filename (which MUST end in \".conf\") to\n";
    $help.="allow auto setup to proceed without reading files from a repository (STANDALONE mode).\n"; 
    $help.="\n";			      
+   $help.="Use \"-l\" to see the detail log message when creating a dev area.\n";
+   $help.="\n";
    $help.="Some project template files can be obtained using the command:\n";
    $help.="\n";
    $help.="$::bold";

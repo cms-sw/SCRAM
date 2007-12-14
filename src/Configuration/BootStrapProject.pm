@@ -40,6 +40,7 @@ package Configuration::BootStrapProject;
 use ActiveDoc::SimpleURLDoc;
 use URL::URLhandler;
 use Utilities::Verbose;
+use SCRAM::MsgLog;
 require 5.004;
 
 @ISA=qw(Utilities::Verbose);
@@ -107,9 +108,7 @@ sub project()
    my $name = $attributes{'name'};
    my $version = $attributes{'version'};
    
-   print "Creating New Project ".$name.
-      " Version ".$version."\n";
-   print "\n";
+   scramlogmsg("Creating New Project ".$name." Version ".$version."\n\n");
    
    use Configuration::ConfigArea;
    $self->{area}=Configuration::ConfigArea->new();

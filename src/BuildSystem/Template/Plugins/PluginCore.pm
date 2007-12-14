@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-04-29 16:07:07+0200
-# Revision: $Id: PluginCore.pm,v 1.2 2004/12/10 13:41:39 sashby Exp $ 
+# Revision: $Id: PluginCore.pm,v 1.2.4.1 2007/11/08 15:25:27 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #

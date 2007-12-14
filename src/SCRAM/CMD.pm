@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.58.2.4 2007/02/26 18:33:45 sashby Exp $ 
+# Revision: $Id: CMD.pm,v 1.58.2.7 2007/12/14 08:18:06 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -24,6 +24,7 @@ package SCRAM::CMD;
 require 5.004;
 use Exporter;
 use Utilities::Verbose;
+use SCRAM::MsgLog;
 use Getopt::Long ();
 
 @ISA=qw(Exporter Utilities::Verbose);
@@ -1126,6 +1127,7 @@ sub project()
    my (@ARGS) = @_;
    my ($installdir, $installname);
    my ($toolconf,$bootfile,$bootstrapfile);
+   my $symlinks=0;
    my %opts = (
 	       SCRAM_INSTALL_DIR => 0,
 	       SCRAM_INSTALL_NAME => 0,
@@ -1141,6 +1143,7 @@ sub project()
    # to be bootstrapping a new project and then wanting to change its name (after all, one could
    # just do this in the bootfile!):
    #
+   scramloginteractive(0);
    my %options =
       ("help"   => sub { $self->{SCRAM_HELPER}->help('project'); exit(0) },
        "dir=s"  => sub { $opts{SCRAM_INSTALL_DIR} = 1; $installdir = $_[1] },
@@ -1148,6 +1151,8 @@ sub project()
        "file=s" => sub { $opts{SCRAM_TOOLCONF_NAME} = 1; $toolconf = $_[1] },
        "template" => sub { $self->project_template_copy(); exit(0) },
        "update" => sub { $opts{SCRAM_UPDATE_AREA} = 1 },
+       "log"    => sub { scramloginteractive(1); },
+       "symlinks"=> sub { $symlinks=1; },
        "boot=s" => sub { $opts{SCRAM_BOOTSTRAPFILE_NAME} = 1; $bootstrapfile = 'file:'.$_[1]; $bootfile = $_[1] }
        );
 
@@ -1181,7 +1186,7 @@ sub project()
 	 {
 	 my $projectname = shift(@ARGV);
 	 my $projectversion = shift(@ARGV);	 
-	 $self->bootfromrelease($projectname,$projectversion,$installdir,$installname,$toolconf);
+	 $self->bootfromrelease($projectname,$projectversion,$installdir,$installname,$toolconf,$symlinks);
 	 }     
       }
    
@@ -1197,7 +1202,7 @@ Function to create a developer area from an existing release (only used locally)
 
 sub bootfromrelease() {
     my $self=shift;
-    my ($projectname,$projectversion,$installdir,$installname,$toolconf) = @_;
+    my ($projectname,$projectversion,$installdir,$installname,$toolconf,$symlinks) = @_;
     
     if ($projectname && $projectversion) {
 	my $relarea=$self->scramfunctions()->scramprojectdb()->getarea($projectname,$projectversion);
@@ -1214,7 +1219,8 @@ sub bootfromrelease() {
 
 	# From here, we're creating a new area which uses the same version of SCRAM as is accessed from the commandline (i.e.
 	# the current version):
-	print "Creating a developer area based on project ",$projectname,", version ",$projectversion,"\n";
+	scramlogclean();
+	scramlogmsg("Creating a developer area based on project ",$projectname,", version ",$projectversion,"\n");
 
 	# Set RELEASETOP:
 	$ENV{RELEASETOP} = $relarea->location();	
@@ -1224,12 +1230,12 @@ sub bootfromrelease() {
 	
 	# Check that the areas are compatible:
 	$self->checkareatype($ENV{RELEASETOP},"Project release area SCRAM version mismatch: current is V1, area is V0. Exitting.");
-	$area=$self->scramfunctions()->satellite($projectname,$projectversion,$installdir,$installname);
+	$area=$self->scramfunctions()->satellite($projectname,$projectversion,$installdir,$installname,$symlinks);
 	$ENV{SCRAM_CONFIGDIR} = $area->configurationdir();
 	
 	# Read the top-level BuildFile and create the required storage dirs. Do
 	# this before setting up self:
-	$self->create_productstores($area->location());
+	$self->create_productstores($area->location(),$symlinks);
 	# The lookup db:
 	use SCRAM::AutoToolSetup;
 	
@@ -1260,8 +1266,9 @@ sub bootfromrelease() {
               }
            }
 	
-	print "\n\nInstallation procedure complete.\n";
-	print "Developer area located at:\n\n\t\t".$area->location()."\n\n";
+	scramlogmsg("\n\nInstallation procedure complete.\n");
+	scramlogmsg("Developer area located at:\n\n\t\t".$area->location()."\n\n");
+	#scramlogdump();
     } else {
 	$self->scramfatal("Insufficient arguments: see \"scram project -help\" for usage info.");
     }
@@ -1287,7 +1294,6 @@ sub bootnewproject()
    use Configuration::Requirements;
    use Configuration::BootStrapProject;
    use ActiveDoc::ActiveStore;
-
    # Set up a cache (old-style, for URLs):
    my $globalcache = URL::URLcache->new($ENV{HOME}."/.scramrc/globalcache");
    
@@ -1321,7 +1327,6 @@ sub bootnewproject()
    
    # download the tools:
    $req->download();
-
    # Need an autotoolssetup object:
    $ENV{'SCRAM_SITENAME'} = $area->sitename();
    $ENV{'SCRAM_PROJECTDIR'} = $area->location();
@@ -1330,32 +1335,28 @@ sub bootnewproject()
    $::lookupdb = SCRAM::AutoToolSetup->new($toolconf);   
    
    # Now run the full setup for the area:
-   print "\n","Using SCRAM toolbox version ",$area->toolboxversion(),"\n\n";
+   scramlogmsg("\n","Using SCRAM toolbox version ",$area->toolboxversion(),"\n\n");
    
    # Now set up selected tools:
-   print "Setting up tools in project area","\n";
-   print "------------------------------------------------","\n";
-   print "\n";
-   
+   scramlogmsg("Setting up tools in project area","\n");
+   scramlogmsg("------------------------------------------------\n\n");
+
    $toolmanager->setupalltools($area->location(),1);
 
    # Read the top-level BuildFile and create the required storage dirs. Do
    # this before setting up self:
-   $self->create_productstores($area->location());
-   
+   $self->create_productstores($area->location(),0);
    # Now setup SELF:
    $toolmanager->setupself($area->location());
 
    # New tm's are not clones:
    $toolmanager->cloned_tm(0);
-   
    # Write the cached info:
    $toolmanager->writecache();
    # Save the area info (toolbox version):
    $area->save();
 
-   print "\n";
-   print ">> Installation Located at: ".$area->location()." <<\n\n";
+   scramlogmsg("\n>> Installation Located at: ".$area->location()." <<\n\n");
 
    # Return nice value:
    return 0;
@@ -1498,7 +1499,16 @@ BuildFile (B<config/BuildFile>).
 sub create_productstores()
    {
    my $self=shift;
-   my ($location) = @_;
+   my $location = shift;
+   my $symlinks=shift;
+   
+   if ((!defined $symlinks) && (exists $ENV{SCRAM_SYMLINKS})){$symlinks=$ENV{SCRAM_SYMLINKS} || 0;}
+   my $sym=0;
+   if ($symlinks)
+   {
+     use SCRAM::ProdSymLinks;
+     $sym=new SCRAM::ProdSymLinks();
+   }
    
    use BuildSystem::BuildFile;
    use File::Path;
@@ -1528,7 +1538,8 @@ sub create_productstores()
 	    else
 	       {
 	       $storename .= $$H{'name'}."/".$ENV{SCRAM_ARCH};
-	       mkpath($ENV{LOCALTOP}."/".$storename, 0, $perms);
+	       if (!$sym){mkpath($ENV{LOCALTOP}."/".$storename, 0, $perms);}
+	       else{$sym->mklink($storename);}
 	       }
 	    }
 	 else
@@ -1540,7 +1551,8 @@ sub create_productstores()
 	    else
 	       {
 	       $storename .= $ENV{SCRAM_ARCH}."/".$$H{'name'};
-	       mkpath($ENV{LOCALTOP}."/".$storename, 0, $perms);
+	       if (!$sym){mkpath($ENV{LOCALTOP}."/".$storename, 0, $perms);}
+	       else{$sym->mklink($storename);}
 	       }
 	    }
 	 }
@@ -1555,7 +1567,8 @@ sub create_productstores()
 	 else
 	    {
 	    $storename .= $$H{'name'};
-	    mkpath($ENV{LOCALTOP}."/".$storename, 0, $perms);
+	    if (!$sym){mkpath($ENV{LOCALTOP}."/".$storename, 0, $perms);}
+	    else{$sym->mklink($storename);}
 	    }
 	 }
       }
@@ -1619,6 +1632,7 @@ sub setup()
    
    local @ARGV = @ARGS;
    
+   scramloginteractive(1);
    Getopt::Long::config qw(default no_ignore_case require_order);
    
    if (! Getopt::Long::GetOptions(\%opts, %options))

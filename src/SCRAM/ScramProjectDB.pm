@@ -19,9 +19,7 @@ Stores project area information.
 =item C<new($databasefile)>
 
 A new SCRAM::ScramProjectDB object. Receives a database file
-path $databasefile as argument and handles reading the XML
-database file. Note that an empty file is initialised the
-first time a SCRAM::ScramProjectDB object is created.
+path $databasefile as argument.
 
 =item C<file()>
 
@@ -62,13 +60,6 @@ Remove link with a specified location $dblocation (i.e. path).
 
 =back
 
-=item C<migrate($olddbfile)>
-
-Migrate the specified project.lookup to XML format. Write all
-project entries to the current project database.
-
-=back
-
 =head1 AUTHOR
 
 Originally written by Christopher Williams.
@@ -81,160 +72,156 @@ Shaun ASHBY
 
 package SCRAM::ScramProjectDB;
 use Utilities::Verbose;
-use Utilities::XMLParser qw(&xmlrdr);
-use SCRAM::ProjectDB;
-
 require 5.004;
 @ISA=qw(Utilities::Verbose);
 
 sub new {
-    my $class=shift;
-    my $self={};
-    bless $self, $class;
-    $self->{dbfile}=shift;
-    # Initialise a new XML db file if
-    # it doesn't exist already or if
-    # a zero-length file exists:
-    $self->_initdb(), if (! -f $self->{dbfile} || -z $self->{dbfile});
-    $self->_readdbfile($self->{dbfile});
-    return $self;
+	my $class=shift;
+	my $self={};
+	bless $self, $class;
+	$self->{dbfile}=shift;
+	$self->_readdbfile($self->{dbfile});
+	$self->{projectobjects}={};
+	return $self;
 }
 
 sub file {
-    my $self=shift;
-    return $self->{dbfile};
+	my $self=shift;
+	return $self->{dbfile};
 }
 
-sub dbproxy() {
-    my $self=shift;
-    return $self->{dbproxy};
-}
+sub getarea
+   {
+   require Configuration::ConfigArea;
+   my $self=shift;
+   my $name=shift;
+   my $version=shift;
+   my $area=undef;
+   my $index=$self->_findlocal($name,$version);
+   
+   if ( $index != -1 )
+      {	
+      my $location=$self->{projects}[$index][3];
+      if ( defined $self->{projectobjects}{$location} )
+	 {
+	 $area=$self->{projectobjects}{$location};
+	 }
+      else
+	 {
+	 $area=Configuration::ConfigArea->new();
+	 $self->verbose("Attempt to ressurect $name $version from $location");
+	 if ( $area->bootstrapfromlocation($location) == 1 )
+	    {
+	    undef $area;
+		 $self->verbose("attempt unsuccessful");
+	    }
+	 else
+	    {
+	    $self->verbose("area found");
+	    $self->{projectobjects}{$location}=$area;
+	    }
+	 }
+      }
+   else
+      {
+      # -- search in linked databases
+      foreach $db ( @{$self->{linkeddbs}} )
+	 {
+	 $self->verbose("Searching in $db->file() for $name $version");
+	 $area=$db->getarea($name,$version);
+	 last if (defined $area);
+	 }
+      }
+   if ( ! defined $area )
+      {
+      $self->verbose("Area $name $version not found");
+      }
+
+   return $area;
+   }
+
+
+sub addarea
+   {
+   my $self=shift;
+   my $flag=shift;
+   my $name=shift;
+   my $version=shift;
+   my $area=shift;
+
+   my $rv=1;
+   my $type="file";
+   my $url=$area->location();
+
+   # -- check for duplicates
+   for ( my $index=0; $index<=$#{$self->{projects}}; $index++ )
+      {
+      if  ( $self->{projects}[$index][0] eq $name )
+	 {
+	 if ( $self->{projects}[$index][1] eq $version )
+	    {
+	    if ($flag == 1)
+	       {
+	       $rv=0;
+	       $self->{projects}[$index]=[ ($name,$version,$type,$url) ];
+	       }
+	    else
+	       {
+	       print "$name $version already exists. Overwrite? (y/n) : ";
+	       if ( ! (<STDIN>=~/y/i ) )
+		  {
+		  print "Aborting install ...\n";
+		  return 1;
+		  }
+	       else
+		  {
+		  $rv=0;
+		  $self->{projects}[$index]=[ ($name,$version,$type,$url) ];
+		  }
+	       }
+	    }
+	 else
+	    {
+	    print "Related Project : $name ".$self->{projects}[$index][1]."\n";
+	    }
+	 }
+      }
+   
+   if ( $rv )
+      {
+      # -- add to our list and save
+      push @{$self->{projects}}, [ ($name,$version,$type,$url) ];
+      }
+   
+   $self->_save();
+   return 0;
+   }
 
 sub listlinks {
-    my $self=shift;    
-    my  @dbfile=();
-    foreach $db ( @{$self->{linkeddbs}} ) {
-	push @dbfile, $db->file();
-    }
-    return @dbfile;
+	my $self=shift;
+
+	my  @dbfile=();
+	foreach $db ( @{$self->{linkeddbs}} ) {
+	  push @dbfile, $db->file();
+	}
+	return @dbfile;
 }
 
 sub list {
-    my $self=shift;
-    return $self->projects();
+	my $self=shift;
+	return @{$self->{projects}};
 }
 
 sub listall {
-    my $self=shift;
-    my @list=$self->list();
-    foreach $db ( @{$self->{linkeddbs}} ) {
-	$self->verbose("Adding list from $db");
-	push @list, $db->listall();
-    }
-    return @list;
-}
-
-sub link {
-    my $self=shift;
-    my $dbfile=shift;
-    if ($dbfile ne $self->file()) {
-	$self->dbproxy()->link_db($dbfile);
-	$self->_save();
-    } else {
-	print STDERR "ERROR: Database to link to and local database are the same file!\n";
-	exit(1);
-    }
-}
-
-sub unlink {
-    my $self=shift;
-    my $file=shift;
-    $self->dbproxy()->unlink_db($file);
-    $self->_save();
-}
-
-sub _readdbfile {
-    my $self=shift;
-    my $file=shift;
-    # First of all, read the XML db. This will return all
-    # content for the current architecture:
-    $self->verbose("Initialising db from $file");
-    # Load up the database from the XML file:
-    $self->{dbproxy}=&Utilities::XMLParser::xmlrdr($file,'SCRAM');
-    # Look for linked databases:
-    foreach my $l_db (@{$self->{dbproxy}->get_linked_dbs()}) {
-	if (-f $l_db) {
-	    $self->verbose("Getting Linked DB $l_db");
-	    my $newdb=SCRAM::ScramProjectDB->new($l_db);
-	    push(@{$self->{linkeddbs}},$newdb);
-	}
-    }
-}
-
-sub projects() {
-    my $self=shift;
-    my ($arch)=@_;
-    $self->{projects} = $self->dbproxy()->projects($arch);
-    return @{$self->{projects}};
-}
-
-sub write() {
-    my $self=shift;
-    my $fstring=$self->dbproxy()->write();
-    return $fstring;
-}
-
-sub validate() {
-    my $self=shift;   
-    $self->dbproxy()->validate(),"\n";
-    print "\n";
-}
-
-sub getarea {
-    require Configuration::ConfigArea;
-    my $self=shift;
-    my $name=shift;
-    my $version=shift;
-    my $area=undef;
-    # Look in local db first. This returns a version object:
-    my $alocal=$self->_findlocal($name,$version);
-    if ($alocal) {
-	my $location = $alocal->path;
-	if ( defined $self->{projectobjects}{$location} ) {
- 	    $area=$self->{projectobjects}{$location};
- 	} else {
-	    $area=Configuration::ConfigArea->new();
-	    $self->verbose("Attempt to ressurect $name $version from $location");
-	    if ( $area->bootstrapfromlocation($location) == 1 ) {
-		undef $area;
-		$self->verbose("attempt unsuccessful");
-	    } else {
-		$self->verbose("area found");
-		$self->{projectobjects}{$location}=$area;
-	    }   
-	}
-    } else {
-	# Look through the linked databases:
+	my $self=shift;
+	my @list=$self->list();
+	
 	foreach $db ( @{$self->{linkeddbs}} ) {
-	    $self->verbose("Searching in $db->file() for $name $version");
-	    $area=$db->getarea($name,$version);
-	    last if (defined $area);	    
-	}
-    }
-    
-    if ( ! defined $area ) {
-	$self->verbose("Area $name $version not found");
-    }
-    
-    return $area;
-}
+	  $self->verbose("Adding list from $db");
+          push @list, $db->listall();
+        }
 
-sub addarea {
-    my $self=shift;
-    my ($flag,$name,$version,$area)=@_;
-    $self->dbproxy()->install_project($flag,$name,$version,$area);
-    $self->_save();
-   return 0;
+	return @list;
 }
 
 sub removearea
@@ -252,55 +239,89 @@ sub removearea
    #          :                                                  #
    ###############################################################
    my $self=shift;
-   my ($flag,$name,$version)=@_;
+   my $flag=shift;
+   my $name=shift;
+   my $version=shift;
+   my $vfound=0;
+   my $nfound=0;
+   
    print "\n","Going to remove $name $version from the current scram database.....","\n"; 
    print "\n";
-   $self->dbproxy()->delete_project($flag,$name,$version);
+
+   for ( my $index=0; $index<=$#{$self->{projects}}; $index++ )
+      {
+      # Look for a project with name $name:
+      if  ( $self->{projects}[$index][0] eq $name )
+	 {
+	 $nfound=1; 
+	 # Check the version:
+	 if ( $self->{projects}[$index][1] eq $version )
+	    {
+	    # We have a match for project name and version:
+	    $vfound=1;
+	    if ($flag == 1)
+	       {
+	       # Remove the project:
+	       print "\n";
+	       print "Removing project:\t$name\t$version","\n\n";
+	       splice(@{$self->{projects}},$index,1);
+	       }
+	    else
+	       {
+	       print "Project $name Version $version exists. Remove it? (y/n): ";
+	       if ( ! (<STDIN>=~/y/i ) )
+		  {
+		  print "\n","Aborting project removal...bye.\n\n";
+		  return 1;
+		  }
+	       else
+		  {
+		  # Remove the project:
+		  print "\n";
+		  print "Removing project:\t$name\t$version","\n\n";
+		  splice(@{$self->{projects}},$index,1);
+		  }
+	       }
+	    }
+	 } 
+      }
+   
+   if ( ! $nfound || ! $vfound )
+      {
+      # There was a problem finding either the
+      # named project or the desired version:
+      print "ERROR: Unable to find project $name with version $version in the database.","\n\n";
+      return 1;
+      }
+   
+   print "\n";   
+   # Save our new array:
    $self->_save();
    return 0;
    }
 
-sub migrate() {
-    my $self=shift;
-    my ($dbfile)=@_;
-    my $projects={};
-    use SCRAM::ProjectDB;
-    # Read the database file. The contents will be for just
-    # one architecture (the current one):
-    use FileHandle;
-    my $fh=FileHandle->new();
-    open($fh, "< $dbfile") || die "Can't read ".$dbfile.":".$!."\n";
-    while(<$fh>) {
-	chomp;
-	# Skip all linked databases:
-	next if ($_ =~ /project.lookup/);
-	# Get the name, version and path:
-	my ($name, $version, $junk, $path)=split(":");
-	# Check to see if the path to the area still exists. If not,
-	# skip it:
-	if (-d $path) {	    
-	    my $pobj=$self->dbproxy()->get_projects_with_name($name);	    
-	    if ($pobj) {
-		# Create new version:
-		my $pver = new SCRAM::version($version,$path);
-		$pobj->import_version($pver);
-	    } else {
-		my $pblock = new SCRAM::project($name);
-		# Create new version:
-		my $pver = new SCRAM::version($version,$path);
-		# Add new version:
-		$pblock->add_version($flag,$pver);
-		# Add the new project block to the arch block:
-		$self->dbproxy()->add_project($pblock);
-	    }	    	    
-	} else {
-	    print STDERR "migrate(): Skipping project ".$name." ".$version.": area non-existent.\n";
+sub link {
+	my $self=shift;
+	my $dbfile=shift;
+
+	my $newdb=SCRAM::ScramProjectDB->new($dbfile);
+	push @{$self->{linkeddbs}},$newdb; 
+	$self->_save();
+}
+
+sub unlink {
+	my $self=shift;
+	my $file=shift;
+	my $db;
+	
+	for (my $i=0; $i<=$#{$self->{linkeddbs}}; $i++ ) {
+	   $db=${$self->{linkeddbs}}[$i];
+	   if  ( $db->file() eq $file ) {
+	     $self->verbose("Removing link $file");
+	     splice (@{$self->{linkeddbs}},$i,1);
+	     $self->_save();
+	   }
 	}
-    }
-    undef $fh;
-    # Save and return:
-    $self->_save();
-    return 0;
 }
 
 # -- Support Routines
@@ -308,43 +329,66 @@ sub migrate() {
 #
 # Search through the project list until we get a match
 sub _findlocal {
-    my $self=shift;
-    my ($name,$version)=@_;
-    # Look in the local stash of projects found in the db:
-    my $pobj = $self->dbproxy()->get_projects_with_name($name);
-    my $obj;
-    if ($pobj) {
-	$obj = $pobj->version($version);
-    }
-    ($obj) ? return $obj : return undef;
+	my $self=shift;
+	my $name=shift;
+	my $version=shift;
+
+	my $found=-1;
+	for (my $i=0; $i<=$#{$self->{projects}}; $i++ ) {
+	  if  ( ( $self->{projects}[$i][0] eq $name) && 
+		( $self->{projects}[$i][1] eq $version) ) {
+	    $found=$i;
+	    last;
+	  }
+	}
+	return $found;
 }
 
-sub _initdb() {
-    my $self=shift;
-    my $fstring;
+sub _save {
+	my $self=shift;
 
-    $fstring.="<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n";
-    $fstring.="<ProjectDB>\n";
-    $fstring.=" <architecture name=\"".$ENV{SCRAM_ARCH}."\">\n";
-    $fstring.=" </architecture>\n";
-    $fstring.="</ProjectDB>\n";
-
-    use FileHandle;
-    my $fh=FileHandle->new();
-    my $filename=$self->{dbfile};
-    open($fh, ">$filename") || die "Can't write to ".$self->{dbfile}.":".$!."\n";
-    print $fh $fstring."\n";
-    undef $fh;
+	use FileHandle;
+        my $fh=FileHandle->new();
+	my $filename=$self->{dbfile};
+        open ( $fh, ">$filename" );
+	# print current links 
+	foreach $db ( @{$self->{linkeddbs}} ) {
+	   print $fh "\!DB ".$db->file()."\n";
+	}
+	# save project info
+	my $temp;
+	foreach $elem ( @{$self->{projects}} ) {
+	  $temp=join ":", @{$elem};
+	  print $fh $temp."\n";
+	}
+	undef $fh;
 }
 
-sub _save() {
-    my $self=shift;
-    use FileHandle;
-    my $fh=FileHandle->new();
-    my $filename=$self->{dbfile};
-    open($fh, ">$filename") || die "Can't write to ".$self->{dbfile}.":".$!."\n";
-    print $fh $self->write()."\n";
-    undef $fh;
-}
+sub _readdbfile {
+	my $self=shift;
+	my $file=shift;
+	
+	use FileHandle;
+        my $fh=FileHandle->new();
+	$self->verbose("Initialising db from $file");
+        open ( $fh, "<$file" );
 
-1;
+	my @vars;
+	my $newdb;
+	while ( $map=<$fh> ) {
+	  chomp $map;
+          if ( $map=~/^\!DB (.*)/ ) { # Check for other DB files
+                my $db=$1;
+                if ( -f $db ) {
+		  $self->verbose("Getting Linked DB $db");
+                  $newdb=SCRAM::ScramProjectDB->new($db);
+		  push @{$self->{linkeddbs}},$newdb; 
+                }
+                next;
+          }
+          @vars = split ":", $map;
+	  $self->verbose("registering project $map");
+	  push @{$self->{projects}}, [ @vars ];
+	}
+	undef $fh;
+}

@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-02-09 20:14:55+0100
-# Revision: $Id: ToolParser.pm,v 1.5.4.4 2007/02/27 11:38:39 sashby Exp $ 
+# Revision: $Id: ToolParser.pm,v 1.5.4.6 2007/12/13 14:35:44 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -13,6 +13,7 @@ package BuildSystem::ToolParser;
 require 5.004;
 
 use Exporter;
+use SCRAM::MsgLog;
 use ActiveDoc::SimpleDoc;
 use Utilities::Verbose;
 
@@ -602,7 +603,6 @@ sub processrawtool()
 	 next;
 	 }
       }
-   
    # Now handle all other normal tags:
    foreach my $normal_tag (qw( ENVIRONMENT RUNTIME )) 
       {
@@ -679,7 +679,6 @@ sub processrawtool()
 
    # Establish the order of parsing the value strings:
    my $order = $self->process_environments($environments);
-
    if ($self->{interactive})
       {
       # Set the values interactively:
@@ -749,13 +748,12 @@ sub find_settings()
       # in array of hashes):
       if ($envdata != 0 && $#$envdata == 0) # One element only!
 	 {
-	 print "\nFinding a value for $envname:","\n";
-	 print "\n";
+	 scramlogmsg("\nFinding a value for $envname:","\n\n");
 	 # We have an environment and only one data element:
 	 # Check the lookup DB:
 	 if ($tsv->checkDB($envname))
 	    {
-	    print "\tValidating value for $envname (found in tool DB):","\n";
+	    scramlogmsg("\tValidating value for $envname (found in tool DB):","\n");
 	    if ($tsv->validatepath())
 	       {
 	       # Save in TSV and store in ToolData object:
@@ -778,8 +776,7 @@ sub find_settings()
 	 }
       elsif ($envdata != 0 && $#$envdata > 0)
 	 {
-	 print "\nFinding a value for $envname:","\n";
-	 print "\n";
+	 scramlogmsg("\nFinding a value for $envname:","\n\n");
 	 foreach my $elementdata (@$envdata)
 	    {
 	    $path = $tsv->findvalue($envname, $elementdata);	 	    
@@ -798,14 +795,10 @@ sub find_settings()
 	 push(@$runtime, $envname);
 	 }
       }
-   
    # Check that the required libraries exist:
    $self->_lib_validate($tooldataobj);
-   
    # Now process the runtime settings:
-   print "\n";
-   print "-------------------------------\n";
-
+   scramlogmsg("\n-------------------------------\n");
    foreach my $rtname (@$runtime)
       {
       my $type = 'RUNTIME';	 
@@ -819,13 +812,12 @@ sub find_settings()
 	 # in array of hashes):
 	 if ($envdata != 0 && $#$envdata == 0) # One element only!
 	    {
-	    print "\nRuntime path settings for $realrtname:","\n";
-	    print "\n";
+	    scramlogmsg("\nRuntime path settings for $realrtname:","\n\n");
 	    # We have an environment and only one data element:
 	    # Check the lookup DB:
 	    if ($tsv->checkDB($rtname))
 	       {
-	       print "\tValidating value for path $realrtname (found in tool DB):","\n";
+	       scramlogmsg("\tValidating value for path $realrtname (found in tool DB):","\n");
 	       if ($tsv->validatepath())
 		  {
 		  # Save in TSV and store in ToolData object:
@@ -848,8 +840,7 @@ sub find_settings()
 	    }
 	 elsif ($envdata != 0 && $#$envdata > 0)
 	    {
-	    print "\nRuntime path settings for $realrtname:","\n";
-	    print "\n";
+	    scramlogmsg("\nRuntime path settings for $realrtname:","\n\n");
 	    foreach my $elementdata (@$envdata)
 	       {
 	       $path = $tsv->findvalue($rtname, $elementdata);	 	    
@@ -869,7 +860,7 @@ sub find_settings()
 	    {
 	    my $value='';
 	    $tsv->checkdefaults($envdata, \$value);
-	    print "\n";
+	    scramlogmsg("\n");
 	    
 	    # Chck to see if the value contains a variable that should be evaluated:
 	    if ($value =~ /$/)
@@ -881,7 +872,7 @@ sub find_settings()
 	       $value = $dvalue;
 	       }
 	    
-	    print "Runtime variable ",$rtname," set to \"",$value,"\"\n";
+	    scramlogmsg("Runtime variable ",$rtname," set to \"",$value,"\"\n");
 	    
 	    # Store the variable setting:
 	    $tooldataobj->runtime($rtname, [ $value ]);
@@ -893,7 +884,7 @@ sub find_settings()
 	 }
       }
    
-   print "\n";
+   scramlogmsg("\n");
    }
 
 sub interactively_find_settings()
@@ -1105,7 +1096,7 @@ sub _lib_validate()
    
    # Next we iterate over the list of libraries in our tool and
    # see if it was found in one of the libdirs:
-   print "\n\n", if ($#libraries != -1);
+   scramlogmsg("\n\n"), if ($#libraries != -1);
    foreach my $library (@libraries)
       {
       # Good status:
@@ -1122,10 +1113,10 @@ sub _lib_validate()
 	    $errorid = 1; 
 	    }
 	 }
-      printf("* Library check %-10s for lib%-12s\n",$errorstatus->{$errorid}, $library);
+      scramlogmsg(sprintf("* Library check %-10s for lib%-12s\n",$errorstatus->{$errorid}, $library));
       }
    
-   print "\n";
+   scramlogmsg("\n");
    }
 
 sub _check_system_libs()
