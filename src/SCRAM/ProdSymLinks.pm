@@ -39,6 +39,7 @@ sub mklink
   use File::Path;
   if (!-e "$ENV{LOCALTOP}/${link}")
   {
+    unlink "$ENV{LOCALTOP}/${link}";
     if (exists $self->{symlinks}{$link})
     {
       my $path=$self->{symlinks}{$link};
