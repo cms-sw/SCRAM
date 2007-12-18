@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.73 2007/12/14 09:03:55 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.74 2007/12/14 09:54:52 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -915,7 +915,7 @@ sub build()
    my $verbose=0;
    my $trap_flag=0;
    my $cachereset = 0;
-   if (!-e $ENV{SCRAM_INTwork}){$cachereset=1; print "Resetting caches","\n"; system("rm","-f",$builddatastore);} 
+   if (!-e "$workingdir"){$cachereset=1; print "Resetting caches","\n"; system("rm","-f",$builddatastore);} 
    
    # Getopt variables:
    my %opts = ( WRITE_GRAPHS => 0, # No graphs produced by default;
@@ -942,7 +942,7 @@ sub build()
       }
    else
       {
-      if ($convertxml){$fast=0;}
+      if ($convertxml || $cachereset){$fast=0;}
       # Check to see if we are in a local project area, then set the
       # runtime environment. The environments are set in %ENV:
       $self->checklocal();
