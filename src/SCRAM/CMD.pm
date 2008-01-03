@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.74 2007/12/14 09:54:52 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.75 2007/12/18 09:32:47 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -43,11 +43,11 @@ sub urlget()
    my (@ARGS) = @_;
    my %opts;
    my %options =
-      ("help"	=> sub { $self->{SCRAM_HELPER}->help('urlget'); exit(0) } );
+      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('urlget'); exit(0) } );
 
    local @ARGV = @ARGS;
 
-   Getopt::Long::config qw(default no_ignore_case require_order);
+   Getopt::Long::config qw(default no_ignore_case require_order bundling);
    
    if (! Getopt::Long::GetOptions(\%opts, %options))
       {
@@ -86,11 +86,11 @@ sub arch()
    my (@ARGS) = @_;
    my %opts;
    my %options =
-      ("help"	=> sub { $self->{SCRAM_HELPER}->help('arch'); exit(0) } );
+      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('arch'); exit(0) } );
    
    local @ARGV = @ARGS;
    
-   Getopt::Long::config qw(default no_ignore_case require_order);
+   Getopt::Long::config qw(default no_ignore_case require_order bundling);
    
    if (! Getopt::Long::GetOptions(\%opts, %options))
       {
@@ -116,15 +116,15 @@ sub arch()
 #    my $self=shift;
 #    my (@ARGS) = @_;
 #    my %opts;
-#    my %options = ("help"     => sub { $self->{SCRAM_HELPER}->help('toolbox'); exit(0) },
-# 		  "create"   => sub { $opts{TOOLBOX_CMD} = 'tbxcreate' },
-# 		  "get"      => sub { $opts{TOOLBOX_CMD} = 'tbxget' },
-# 		  "query"    => sub { $opts{TOOLBOX_CMD} = 'tbxquery' },
-# 		  "validate" => sub { $opts{TOOLBOX_CMD} = 'tbxvalidate' });
+#    my %options = ("help|h"     => sub { $self->{SCRAM_HELPER}->help('toolbox'); exit(0) },
+# 		  "create|c"   => sub { $opts{TOOLBOX_CMD} = 'tbxcreate' },
+# 		  "get|g"      => sub { $opts{TOOLBOX_CMD} = 'tbxget' },
+# 		  "query|q"    => sub { $opts{TOOLBOX_CMD} = 'tbxquery' },
+# 		  "validate|v" => sub { $opts{TOOLBOX_CMD} = 'tbxvalidate' });
    
 #    local @ARGV = @ARGS;
 
-#    Getopt::Long::config qw(default no_ignore_case require_order pass_through);
+#    Getopt::Long::config qw(default no_ignore_case require_order pass_through bundling);
    
 #    if (! Getopt::Long::GetOptions(\%opts, %options))
 #       {
@@ -153,18 +153,18 @@ sub arch()
 #    my (@ARGS) = @_;
 #    my %opts;
 #    my ($tbbootfile, $tag, $installdir, $installname, $verbose, $interactive);
-#    my %options = ("help"    => sub { $self->{SCRAM_HELPER}->help('toolbox'); exit(0) },
-# 		  "tag=s"   => sub { $tag = $_[1]; },
-# 		  "dir=s"   => sub { $installdir = $_[1]; },
-# 		  "name=s"  => sub { $installname = $_[1]; },
-# 		  "boot=s"  => sub { $tbbootfile = "file:".$_[1] });
+#    my %options = ("help|h"    => sub { $self->{SCRAM_HELPER}->help('toolbox'); exit(0) },
+# 		  "tag|t=s"   => sub { $tag = $_[1]; },
+# 		  "dir|d=s"   => sub { $installdir = $_[1]; },
+# 		  "name|n=s"  => sub { $installname = $_[1]; },
+# 		  "boot|b=s"  => sub { $tbbootfile = "file:".$_[1] });
    
 #    local @ARGV = @ARGS;
    
 #    # Catch the no arguments scenario:
 #    die "toolbox create: No arguments given.","\n", if ($#ARGV < 0);
 
-#    Getopt::Long::config qw(default no_ignore_case require_order);
+#    Getopt::Long::config qw(default no_ignore_case require_order bundling);
    
 #    if (! Getopt::Long::GetOptions(\%opts, %options))
 #       {
@@ -208,9 +208,9 @@ sub tool()
    my $rval=0;
    my %opts;
    my %options =
-      ("help"	=> sub { $self->{SCRAM_HELPER}->help('tool'); exit(0) } );
+      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('tool'); exit(0) } );
    
-   Getopt::Long::config qw(default no_ignore_case require_order);
+   Getopt::Long::config qw(default no_ignore_case require_order bundling);
    
    if (! Getopt::Long::GetOptions(\%opts, %options))
       {
@@ -477,12 +477,12 @@ sub install()
    my (@ARGS) = @_;
    my %opts = ( SCRAM_FORCE => 0 );
    my %options =
-      ("help"	=> sub { $self->{SCRAM_HELPER}->help('install'); exit(0) },
-       "force"  => sub { $opts{SCRAM_FORCE} = 1 } );
+      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('install'); exit(0) },
+       "force|f"  => sub { $opts{SCRAM_FORCE} = 1 } );
 
    local @ARGV = @ARGS;
    
-   Getopt::Long::config qw(default no_ignore_case require_order);
+   Getopt::Long::config qw(default no_ignore_case require_order bundling);
    
    if (! Getopt::Long::GetOptions(\%opts, %options))
       {
@@ -520,12 +520,12 @@ sub remove()
    my (@ARGS) = @_;
    my %opts = ( SCRAM_FORCE => 0 );
    my %options =
-      ("help"	=> sub { $self->{SCRAM_HELPER}->help('remove'); exit(0) },
-       "force"  => sub { $opts{SCRAM_FORCE} = 1 } );
+      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('remove'); exit(0) },
+       "force|f"  => sub { $opts{SCRAM_FORCE} = 1 } );
 
    local @ARGV = @ARGS;
    
-   Getopt::Long::config qw(default no_ignore_case require_order);
+   Getopt::Long::config qw(default no_ignore_case require_order bundling);
    
    if (! Getopt::Long::GetOptions(\%opts, %options))
       {
@@ -566,13 +566,13 @@ sub version()
    my (@ARGS) = @_;
    my %opts;
    my %options =
-      ("help"	=> sub { $self->{SCRAM_HELPER}->help('version'); exit(0) },
-       "cvsparam"  => sub { require Installation::SCRAM_SITE; &Installation::SCRAM_SITE::site_dump() },
-       "info" => sub { print "This is SCRAM, ",$self->{SCRAM_CVSID},"\n"});
+      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('version'); exit(0) },
+       "cvsparam|c"  => sub { require Installation::SCRAM_SITE; &Installation::SCRAM_SITE::site_dump() },
+       "info|i" => sub { print "This is SCRAM, ",$self->{SCRAM_CVSID},"\n"});
    
    local @ARGV = @ARGS;
    
-   Getopt::Long::config qw(default no_ignore_case require_order);
+   Getopt::Long::config qw(default no_ignore_case require_order bundling);
    
    if (! Getopt::Long::GetOptions(\%opts, %options))
       {
@@ -650,13 +650,13 @@ sub list()
    my (@ARGS) = @_;
    my %opts;
    my %options =
-      ("help"	 => sub { $self->{SCRAM_HELPER}->help('list'); exit(0) },
-       "oldstyle" => sub { $opts{SCRAM_OLDSTYLE} = 1 },
-       "compact" => sub { $opts{SCRAM_LISTCOMPACT} = 1 } );
+      ("help|h"	 => sub { $self->{SCRAM_HELPER}->help('list'); exit(0) },
+       "oldstyle|o" => sub { $opts{SCRAM_OLDSTYLE} = 1 },
+       "compact|c" => sub { $opts{SCRAM_LISTCOMPACT} = 1 } );
    
    local @ARGV = @ARGS;
    
-   Getopt::Long::config qw(default no_ignore_case require_order);
+   Getopt::Long::config qw(default no_ignore_case require_order bundling);
    
    if (! Getopt::Long::GetOptions(\%opts, %options))
       {
@@ -808,14 +808,14 @@ sub db()
    my (@ARGS) = @_;
    my %opts = ( SCRAM_DB_SHOW => 0, SCRAM_DB_LINK => 0, SCRAM_DB_UNLINK => 0 );
    my %options =
-      ("help"	=> sub { $self->{SCRAM_HELPER}->help('db'); exit(0) },
-       "show"   => sub { $opts{SCRAM_DB_SHOW} = 1 },
-       "link"   => sub { $opts{SCRAM_DB_LINK} = 1 },
-       "unlink" => sub { $opts{SCRAM_DB_UNLINK} = 1 } );
+      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('db'); exit(0) },
+       "show|s"   => sub { $opts{SCRAM_DB_SHOW} = 1 },
+       "link|l"   => sub { $opts{SCRAM_DB_LINK} = 1 },
+       "unlink|u" => sub { $opts{SCRAM_DB_UNLINK} = 1 } );
    
    local @ARGV = @ARGS;
    
-   Getopt::Long::config qw(default no_ignore_case require_order);
+   Getopt::Long::config qw(default no_ignore_case require_order bundling);
    
    if (! Getopt::Long::GetOptions(\%opts, %options))
       {
@@ -922,19 +922,19 @@ sub build()
 		SCRAM_TEST => 0 ); # test mode: don't run make;
    my $convertxml = 0;
    my %options =
-      ("help"     => sub { $self->{SCRAM_HELPER}->help('build'); exit(0) },
-       "verbose"  => sub { $ENV{SCRAM_BUILDVERBOSE} = 1 },
-       "testrun"  => sub { $opts{SCRAM_TEST} = 1 },
-       "reset"    => sub { if ($cachereset==0){ $cachereset=1; print "Resetting caches","\n"; system("rm","-rf",$builddatastore,"${workingdir}/MakeData/DirCache*")}},
-       "fast"     => sub { print "Skipping cache scan...","\n"; $fast=1 },
-       "writegraphs=s"  => sub { $opts{WRITE_GRAPHS} = 1; $graphmode=$_[1] },
-       "convertxml"  => sub { $convertxml =1 },
-       "xmlb"     => sub {$ENV{SCRAM_XMLBUILDFILES} = 1; print "SCRAM: Will read XML versions of your BuildFiles.","\n" } );
+      ("help|h"     => sub { $self->{SCRAM_HELPER}->help('build'); exit(0) },
+       "verbose|v"  => sub { $ENV{SCRAM_BUILDVERBOSE} = 1 },
+       "testrun|t"  => sub { $opts{SCRAM_TEST} = 1 },
+       "reset|r"    => sub { if ($cachereset==0){ $cachereset=1; print "Resetting caches","\n"; system("rm","-rf",$builddatastore,"${workingdir}/MakeData/DirCache*")}},
+       "fast|f"     => sub { print "Skipping cache scan...","\n"; $fast=1 },
+       "writegraphs|w=s"  => sub { $opts{WRITE_GRAPHS} = 1; $graphmode=$_[1] },
+       "convertxml|c"  => sub { $convertxml =1 },
+       "xmlb|x"     => sub {$ENV{SCRAM_XMLBUILDFILES} = 1; print "SCRAM: Will read XML versions of your BuildFiles.","\n" } );
    
    local (@ARGV) = @_;
 
    # Set the options:
-   Getopt::Long::config qw(default no_ignore_case require_order pass_through);
+   Getopt::Long::config qw(default no_ignore_case require_order pass_through bundling);
    
    if (! Getopt::Long::GetOptions(\%opts, %options))
       {
@@ -942,6 +942,11 @@ sub build()
       }
    else
       {
+
+      # BuildSystem::Make object created here to handle args passed to gmake:
+      use BuildSystem::MakeInterface;
+      my $MAKER = BuildSystem::MakeInterface->new(@ARGV);
+
       if ($convertxml || $cachereset){$fast=0;}
       # Check to see if we are in a local project area, then set the
       # runtime environment. The environments are set in %ENV:
@@ -1004,11 +1009,7 @@ sub build()
 	    }
 	 return 0;
 	 }
-      
-      # BuildSystem::Make object created here to handle args passed to gmake:
-      use BuildSystem::MakeInterface;
-      my $MAKER = BuildSystem::MakeInterface->new(@ARGV);
-      
+            
       # Now check the file status (BuildFiles in src tree) and config
       # file status (contents of config dir). We only reparse everything
       # and rebuild the makefiles if something changed:
@@ -1146,19 +1147,19 @@ sub project()
    #
    scramloginteractive(0);
    my %options =
-      ("help"   => sub { $self->{SCRAM_HELPER}->help('project'); exit(0) },
-       "dir=s"  => sub { $opts{SCRAM_INSTALL_DIR} = 1; $installdir = $_[1] },
-       "name=s" => sub { $opts{SCRAM_INSTALL_NAME} = 1; $installname = $_[1] },
-       "file=s" => sub { $opts{SCRAM_TOOLCONF_NAME} = 1; $toolconf = $_[1] },
-       "template" => sub { $self->project_template_copy(); exit(0) },
-       "update" => sub { $opts{SCRAM_UPDATE_AREA} = 1 },
-       "log"    => sub { scramloginteractive(1); },
-       "symlinks"=> sub { $symlinks=1; },
-       "boot=s" => sub { $opts{SCRAM_BOOTSTRAPFILE_NAME} = 1; $bootstrapfile = 'file:'.$_[1]; $bootfile = $_[1] }
+      ("help|h"   => sub { $self->{SCRAM_HELPER}->help('project'); exit(0) },
+       "dir|d=s"  => sub { $opts{SCRAM_INSTALL_DIR} = 1; $installdir = $_[1] },
+       "name|n=s" => sub { $opts{SCRAM_INSTALL_NAME} = 1; $installname = $_[1] },
+       "file|f=s" => sub { $opts{SCRAM_TOOLCONF_NAME} = 1; $toolconf = $_[1] },
+       "template|t" => sub { $self->project_template_copy(); exit(0) },
+       "update|u" => sub { $opts{SCRAM_UPDATE_AREA} = 1 },
+       "log|l"    => sub { scramloginteractive(1); },
+       "symlinks|s"=> sub { $symlinks=1; },
+       "boot|b=s" => sub { $opts{SCRAM_BOOTSTRAPFILE_NAME} = 1; $bootstrapfile = 'file:'.$_[1]; $bootfile = $_[1] }
        );
 
    local @ARGV = @ARGS;
-   Getopt::Long::config qw(default no_ignore_case require_order);
+   Getopt::Long::config qw(default no_ignore_case require_order bundling);
    
    if (! Getopt::Long::GetOptions(\%opts, %options))
       {
@@ -1629,14 +1630,14 @@ sub setup()
    my $toolconf;
    my %opts;
    my %options =
-      ("help"	=> sub { $self->{SCRAM_HELPER}->help('setup'); exit(0) },
-       "file=s" => sub { $toolconf = $_[1] },
-       "interactive" => sub { $interactive = 1 });
+      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('setup'); exit(0) },
+       "file|f=s" => sub { $toolconf = $_[1] },
+       "interactive|i" => sub { $interactive = 1 });
    
    local @ARGV = @ARGS;
    
    scramloginteractive(1);
-   Getopt::Long::config qw(default no_ignore_case require_order);
+   Getopt::Long::config qw(default no_ignore_case require_order bundling);
    
    if (! Getopt::Long::GetOptions(\%opts, %options))
       {
@@ -2078,13 +2079,13 @@ sub config()
    my (@ARGS) = @_;
    my %opts;
    my %options =
-      ("help"	=> sub { $self->{SCRAM_HELPER}->help('config'); exit(0) },
-       "tools"  => sub { $opts{SCRAM_DUMPCONFIG} = 1 },
-       "full"   => sub { $opts{SCRAM_DUMPFULL} = 1} );
+      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('config'); exit(0) },
+       "tools|t"  => sub { $opts{SCRAM_DUMPCONFIG} = 1 },
+       "full|f"   => sub { $opts{SCRAM_DUMPFULL} = 1} );
    
    local @ARGV = @ARGS;
    
-   Getopt::Long::config qw(default no_ignore_case require_order);
+   Getopt::Long::config qw(default no_ignore_case require_order bundling);
    
    if (! Getopt::Long::GetOptions(\%opts, %options))
       {
@@ -2194,14 +2195,14 @@ sub gui()
    my ($class, $showmeta);
    my %opts;
    my %options =
-      ("help"	=> sub { $self->{SCRAM_HELPER}->help('gui'); exit(0) },
-       "show=s" => sub { $opts{SHOWMETA}=1; $showmeta = $_[1] },
-       "edit=s" => sub { $opts{EDITMETA}=1; $class = $_[1] }
+      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('gui'); exit(0) },
+       "show|s=s" => sub { $opts{SHOWMETA}=1; $showmeta = $_[1] },
+       "edit|e=s" => sub { $opts{EDITMETA}=1; $class = $_[1] }
        );
    
    local @ARGV = @ARGS;
    
-   Getopt::Long::config qw(default no_ignore_case require_order);
+   Getopt::Long::config qw(default no_ignore_case require_order bundling);
    
    if (! Getopt::Long::GetOptions(\%opts, %options))
       {

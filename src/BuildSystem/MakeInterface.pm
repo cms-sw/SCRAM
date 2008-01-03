@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 14:49:43+0200
-# Revision: $Id: MakeInterface.pm,v 1.3.4.1 2007/11/08 15:25:27 muzaffar Exp $ 
+# Revision: $Id: MakeInterface.pm,v 1.5 2007/12/14 09:03:47 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -49,7 +49,7 @@ sub new()
      (
       "make"        => sub { }, # dummy so we can use help opt just for MakeInterface
       "s"           => sub { $self->{CMDOPTS}.=" -s" },
-      "j=s"         => sub { $self->{CMDOPTS}.=" -j ".$_[1] },
+      "j=i"         => sub { $self->{CMDOPTS}.=" -j ".$_[1] },
       "d"           => sub { $self->{CMDOPTS}.=" -d" },
       "k"           => sub { $self->{CMDOPTS}.=" -k" },
       "printdir"    => sub { $self->{CMDOPTS}.=" -w" },
@@ -57,11 +57,12 @@ sub new()
       "printdb"     => sub { $self->{CMDOPTS}.=" -p" }
       );
   
-  Getopt::Long::config qw(default no_ignore_case require_order);
+  Getopt::Long::config qw(default no_ignore_case require_order bundling);
   
   if (! Getopt::Long::GetOptions(\%opts, %options))
      {
      print "SCRAM Warning: Ignoring unknown option.","\n";
+     exit(1);
      }
   
   return $self;
