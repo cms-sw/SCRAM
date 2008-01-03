@@ -271,9 +271,7 @@ sub setup {
 	  $symlinks=shift || 0;
 	}
 	if ( (! defined $areaname) || ( $areaname eq "" ) ) {
-	  # -- make up a name from the project name and version
-          $vers=~s/^$name\_//;
-          $areaname=$name."_".$vers;
+          $areaname=$vers;
 	}
 	my $arealoc=$location."/".$areaname;
 	my $workloc=$arealoc."/".$self->{admindir};
