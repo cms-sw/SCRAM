@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.14.2.2 2007/11/08 15:25:27 muzaffar Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.18 2007/12/14 09:03:46 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -375,7 +375,7 @@ sub update()
        close(MKFILE);
        if (-d $dir)
           {
-          system("cd $dir; find . -name \"*\" -type f | xargs -n 2000 -i cat {} >> ${dir}.mk");
+          system("cd $dir; find . -name \"*\" -type f | xargs -n 2000 cat {} >> ${dir}.mk");
 	  }
        }
    }
