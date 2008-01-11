@@ -89,7 +89,7 @@ sub copydir
       }
    else
       {
-      die "Attempt to open a non-existent directory ($src). Exitting\n";
+      die "Attempt to open a non-existent directory ($src). Exiting\n";
       }
    }
 
@@ -154,7 +154,7 @@ sub copydirwithskip
       }
    else
       {
-      die "Attempt to open a non-existent directory ($src). Exitting\n";
+      die "Attempt to open a non-existent directory ($src). Exiting\n";
       }
    }
 

@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.24.2.7 2007/11/08 15:25:29 muzaffar Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.33 2007/12/14 09:04:10 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -70,7 +70,7 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => $SCRAM_VERSION || undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.24.2.7 2007/11/08 15:25:29 muzaffar Exp $',
+      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.33 2007/12/14 09:04:10 muzaffar Exp $',
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
@@ -806,7 +806,7 @@ Check that the current area is a project area and continue or exit otherwise.
 sub checklocal()
    {
    my $self=shift;
-   $self->scramfatal("Unable to locate the top of local release. Exitting."), if (! $self->islocal());   
+   $self->scramfatal("Unable to locate the top of local release. Exiting."), if (! $self->islocal());   
    }
 
 =item   C<checkareatype()>

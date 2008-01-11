@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.75 2007/12/18 09:32:47 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.76 2008/01/03 13:35:15 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -493,7 +493,7 @@ sub install()
       # Check to see if we are in a local project area:
       $self->checklocal();
       # Check to make sure that the project is a SCRAM V1 project:
-      $self->checkareatype($self->localarea()->location(),"Area type mismatch. Trying to execute a SCRAM command in a V0 project area using a V1x version of SCRAM. Exitting.");
+      $self->checkareatype($self->localarea()->location(),"Area type mismatch. Trying to execute a SCRAM command in a V0 project area using a V1x version of SCRAM. Exiting.");
       
       # Install the project:
       my $project = shift(@ARGV);
@@ -1077,7 +1077,7 @@ sub build()
  	 # Exit cleanly here if ctrl-c was given:
 	 if ($trap_flag == 1)
 	    {
-	    print $::bold."\nExitting on Ctrl-C.\n\n".$::normal,
+	    print $::bold."\nExiting on Ctrl-C.\n\n".$::normal,
 	    exit(0);
 	    }
 	 
@@ -1231,7 +1231,7 @@ sub bootfromrelease() {
 	$ENV{SCRAM_PROJECTVERSION} = $projectversion;
 	
 	# Check that the areas are compatible:
-	$self->checkareatype($ENV{RELEASETOP},"Project release area SCRAM version mismatch: current is V1, area is V0. Exitting.");
+	$self->checkareatype($ENV{RELEASETOP},"Project release area SCRAM version mismatch: current is V1, area is V0. Exiting.");
 	$area=$self->scramfunctions()->satellite($projectname,$projectversion,$installdir,$installname,$symlinks);
 	$ENV{SCRAM_CONFIGDIR} = $area->configurationdir();
 	
