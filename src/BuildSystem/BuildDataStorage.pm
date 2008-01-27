@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.19 2008/01/11 11:20:07 muzaffar Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.20 2008/01/11 13:45:12 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -292,9 +292,11 @@ sub update()
 	 if ($cinfo && $cinfo->[2] ne ""){$dircache->prune($path,0,$cinfo->[2]);}
 	 else
 	    {
-            my $item = $self->updatedirbf($dircache,$path,"",$cinfo);
-	    $runeng{$path}=$item;
-            my $flag=0;
+	    my $dpath = $self->datapath($path);
+	    my $pitem=undef;
+	    if(exists $self->{BUILDTREE}->{$dpath}){$pitem=$self->{BUILDTREE}->{$dpath};}
+	    my $item = $self->updatedirbf($dircache,$path,"",$cinfo);
+	    my $flag=0;
             if (!defined $projinfo)
                {
 	       if ($cinfo->[0] eq "library"){$flag=1;}
@@ -303,9 +305,22 @@ sub update()
                {
                $flag=$projinfo->ispublic($item);
                }
+	    if ($flag && (defined $pitem))
+	       {
+	       my $bf = $pitem->metabf();
+	       if (scalar(@$bf)>0)
+	          {
+	          $bf=$bf->[0];
+		  if (!exists $newbf->{$bf})
+		     {
+		     $self->{BUILDTREE}->{$dpath}=$pitem;
+		     next;
+		     }
+                  }
+               }
+	    $runeng{$path}=$item;
             if ($flag)
                {
-               my $dpath = $self->datapath($path);
                my $treeitem = $self->{BUILDTREE}->{$dpath};
                $dircache->{PACKMAP}{$treeitem->parent()}=$dpath;
                $item->publictype (1);
