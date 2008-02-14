@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.20 2008/01/11 13:45:12 muzaffar Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.21 2008/01/27 10:06:13 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -305,7 +305,7 @@ sub update()
                {
                $flag=$projinfo->ispublic($item);
                }
-	    if ($flag && (defined $pitem))
+	    if (defined $pitem)
 	       {
 	       my $bf = $pitem->metabf();
 	       if (scalar(@$bf)>0)
@@ -314,6 +314,7 @@ sub update()
 		  if (!exists $newbf->{$bf})
 		     {
 		     $self->{BUILDTREE}->{$dpath}=$pitem;
+		     delete $newdir->{$path};
 		     next;
 		     }
                   }
