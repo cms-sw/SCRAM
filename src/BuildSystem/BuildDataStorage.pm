@@ -294,7 +294,23 @@ sub update()
 	    {
 	    my $dpath = $self->datapath($path);
 	    my $pitem=undef;
-	    if(exists $self->{BUILDTREE}->{$dpath}){$pitem=$self->{BUILDTREE}->{$dpath};}
+	    if (exists $self->{BUILDTREE}->{$dpath})
+	       {
+	       $pitem=$self->{BUILDTREE}->{$dpath};
+	       if (defined $pitem)
+	          {
+	          my $bf = $pitem->metabf();
+	          if (scalar(@$bf)>0)
+	             {
+	             $bf=$bf->[0];
+		     if (!exists $newbf->{$bf})
+		        {
+		        delete $newdir->{$path};
+		        next;
+		        }
+                     }
+	          }
+	       }
 	    my $item = $self->updatedirbf($dircache,$path,"",$cinfo);
 	    my $flag=0;
             if (!defined $projinfo)
@@ -304,20 +320,6 @@ sub update()
             else
                {
                $flag=$projinfo->ispublic($item);
-               }
-	    if (defined $pitem)
-	       {
-	       my $bf = $pitem->metabf();
-	       if (scalar(@$bf)>0)
-	          {
-	          $bf=$bf->[0];
-		  if (!exists $newbf->{$bf})
-		     {
-		     $self->{BUILDTREE}->{$dpath}=$pitem;
-		     delete $newdir->{$path};
-		     next;
-		     }
-                  }
                }
 	    $runeng{$path}=$item;
             if ($flag)
