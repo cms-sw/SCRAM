@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-07-01 14:03:46+0200
-# Revision: $Id: TemplateInterface.pm,v 1.2.4.3 2007/11/08 15:25:27 muzaffar Exp $ 
+# Revision: $Id: TemplateInterface.pm,v 1.6 2007/12/14 09:03:47 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -52,12 +52,12 @@ sub new()
 
    if (!-f $makefile)
       {
-      if (!-f "$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/Makefile")
+      if (!-f "$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/SCRAM/GMake/Makefile")
          {
-	 die "Missing $ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/Makefile file.";
+	 die "Missing $ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/SCRAM/GMake/Makefile file.";
 	 }
       use File::Copy;
-      copy("$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/Makefile",$makefile) or die "Copy failed: $!";
+      copy("$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/SCRAM/GMake/Makefile",$makefile) or die "Copy failed: $!";
       utime 0,0,$makefile;
       }
 
@@ -71,10 +71,6 @@ sub _init()
    my $self=shift;
    my ($templatedir)=@_;
    
-   # Set the location where the templates may be found:
-   $self->template_dir($templatedir);
-   # Configure the template object:
-   $self->template_config();
    # Create the new Template object:
    $self->template_object();
    return $self;
@@ -83,57 +79,9 @@ sub _init()
 sub template_object()
    {
    my $self=shift;
-
-   # Instantiate a new Template object:
-   eval("use Template");
-
-   if ($@)
-      {
-      print "\nSCRAM Error: It appears that the module \"Template.pm\" is not installed.","\n";
-      print "             Please check your installaion. If you are an administrator,","\n";
-      print "             you can find the Perl Template Toolkit at www.cpan.org or at","\n";
-      print "             the web site of the author (Andy Wardley):","\n";
-      print "\n";
-      print "             www.template-toolkit.com","\n";
-      print "\n";
-      print "             You should install version 2.xx (2.13 or better).","\n";
-      print "\nscram-developers\@cern.ch","\n\n";
-      exit(1);
-      }
-   else
-      {
-      $self->{TEMPLATE_OBJECT} = Template->new($self->{TEMPLATE_CONFIG});
-      }
-
-   return $self;
-   }
-
-sub template_dir()
-   {
-   my $self=shift;
-   my ($templatedir)=@_;
-   my $dir = $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};
-   if ((exists $ENV{SCRAM_PROJECT_TEMPLATEDIR}) && 
-       ($ENV{SCRAM_PROJECT_TEMPLATEDIR} !~ /^\s*$/)) {
-       $dir = $ENV{SCRAM_PROJECT_TEMPLATEDIR};
-   }
-   $templatedir ||= $dir;
-   $self->{TEMPLATE_DIR} = $templatedir;
-   return $self;
-   }
-
-sub template_config()
-   {
-   my $self=shift;
-   # Set up Template opts:
-   $self->{TEMPLATE_CONFIG} =
-      {
-      INCLUDE_PATH => [ "$self->{TEMPLATE_DIR}","$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}" ],
-      PLUGIN_BASE  => [ qw(SCRAM::Plugins BuildSystem::Template::Plugins) ],
-      EVAL_PERL    => 1,
-      ABSOLUTE     => 1
-      };
+   require SCRAM::Plugins::BuildRules;
    
+   $self->{TEMPLATE_OBJECT} = SCRAM::Plugins::BuildRules->new();
    return $self;
    }
 

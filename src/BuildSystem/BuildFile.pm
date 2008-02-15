@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-12-03 19:03:15+0100
-# Revision: $Id: BuildFile.pm,v 1.29.4.5 2007/11/08 15:25:27 muzaffar Exp $ 
+# Revision: $Id: BuildFile.pm,v 1.32 2007/12/14 09:03:46 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -35,7 +35,7 @@ sub new()
    $self->{DEPENDENCIES} = {};
    $self->{content} = {};
    $self->{scramdoc}=ActiveDoc::SimpleDoc->new();
-   $self->{scramdoc}->newparse("builder",__PACKAGE__,'Subs');
+   $self->{scramdoc}->newparse("builder",__PACKAGE__,'Subs',shift);
    return $self;
    }
 
@@ -210,63 +210,15 @@ sub makefile()
    # The getter part:
    if (ref($object) eq __PACKAGE__)
       {
-      # Return Makefile content:
       return $self->{content}->{MAKEFILE};
-      }
-   
-   # Set our own Char handler so we can collect the content
-   # of the Makefile tag:
-   $object->setHandlers(Char => \&makefile_content);
-   $self->{makefilecontent} = [];
-   }
-
-sub makefile_content()
-   {
-   my ($object, @strings) = @_;
-   foreach my $str (@strings)
-      {
-      push(@{$self->{makefilecontent}},$str);
       }
    }
 
 sub makefile_()
    {
-   my ($object,$name)=@_;
-   $self->{nested} == 1 ? push(@{$self->{tagcontent}->{MAKEFILE}}, join("\n",@{$self->{makefilecontent}}))
-      : push(@{$self->{content}->{MAKEFILE}}, join("\n",@{$self->{makefilecontent}}));
-   delete $self->{makefilecontent};
-   # Unset the Char handler to revert to the default behaviour:
-   $object->setHandlers(Char => 0);
-   }
-
-sub define_group()
-   {
-   my ($object,$name,%attributes)=@_;
-   $self->pushlevel(\%attributes); # Set nested to 1;
-   }
-
-sub define_group_()
-   {
-   $self->{content}->{DEFINED_GROUP}->{$self->{id}->{'name'}}=$self->{tagcontent};
-   $self->poplevel();
-   }
-
-sub group()
-   {
-   my $object=shift;
-   # The getter part:
-   if (ref($object) eq __PACKAGE__)
-      {
-      # Add or return groups:
-      @_ ? push(@{$self->{content}->{GROUP}},@_)
-	 : @{$self->{content}->{GROUP}};
-      }
-   else
-      {
-      my ($name,%attributes)=@_;
-      $self->{nested} == 1 ? push(@{$self->{tagcontent}->{GROUP}}, $attributes{'name'})
-	 : push(@{$self->{content}->{GROUP}}, $attributes{'name'});
-      }
+   my ($object,$name,$cdata)=@_;
+   $self->{nested} == 1 ? push(@{$self->{tagcontent}->{MAKEFILE}}, join("\n",@$cdata))
+      : push(@{$self->{content}->{MAKEFILE}}, join("\n",@$cdata));
    }
 
 sub flags()
@@ -360,54 +312,6 @@ sub bin_()
    $self->poplevel();
    }
 
-sub module()
-   {
-   my ($object,$name,%attributes) = @_;
-   $self->pushlevel(\%attributes);# Set nested to 1;
-   }
-
-sub module_()
-   {
-   # Need unique name for the module (always use name of product). Either use "name"
-   # given, or use "file" value minus the ending:
-   if (exists ($self->{id}->{'name'}))
-      {
-      $name = $self->{id}->{'name'};
-      }
-   else
-      {
-      ($name) = ($self->{id}->{'file'} =~ /(.*)?\..*$/);
-      }
-
-   # Store the data:
-   $self->productcollector($name,'mod','MODULE');
-   $self->poplevel();
-   }
-
-sub application()
-   {
-   my ($object,$name,%attributes) = @_;
-   $self->pushlevel(\%attributes);# Set nested to 1;
-   }
-
-sub application_()
-   {
-   # Need unique name for the application (always use name of product). Either use "name"
-   # given, or use "file" value minus the ending:
-   if (exists ($self->{id}->{'name'}))
-      {
-      $name = $self->{id}->{'name'};
-      }
-   else
-      {
-      ($name) = ($self->{id}->{'file'} =~ /(.*)?\..*$/);
-      }
-
-   # Store the data:
-   $self->productcollector($name,'app','APPLICATION');
-   $self->poplevel();
-   }
-
 sub library()
    {
    my ($object,$name,%attributes) = @_;
@@ -429,54 +333,6 @@ sub library_()
 
    # Store the data:
    $self->productcollector($name,'lib','LIBRARY');
-   $self->poplevel();
-   }
-
-sub plugin()
-   {
-   my ($object,$name,%attributes) = @_;
-   $self->pushlevel(\%attributes);# Set nested to 1;
-   }
-
-sub plugin_()
-   {
-   # Need unique name for the plugin (always use name of product). Either use "name"
-   # given, or use "file" value minus the ending:
-   if (exists ($self->{id}->{'name'}))
-      {
-      $name = $self->{id}->{'name'};
-      }
-   else
-      {
-      ($name) = ($self->{id}->{'file'} =~ /(.*)?\..*$/);
-      }
-
-   # Store the data:
-   $self->productcollector($name,'plugin','PLUGIN');
-   $self->poplevel();
-   }
-
-sub unittest()
-   {
-   my ($object,$name,%attributes) = @_;
-   $self->pushlevel(\%attributes);# Set nested to 1;
-   }
-
-sub unittest_()
-   {
-   # Need unique name for the unittest (always use name of product). Either use "name"
-   # given, or use "file" value minus the ending:
-   if (exists ($self->{id}->{'name'}))
-      {
-      $name = $self->{id}->{'name'};
-      }
-   else
-      {
-      ($name) = ($self->{id}->{'file'} =~ /(.*)?\..*$/);
-      }
-
-   # Store the data:
-   $self->productcollector($name,'unittest','unittest');
    $self->poplevel();
    }
 
@@ -572,30 +428,6 @@ sub exporteddatatypes()
    return keys %{$self->{content}->{EXPORT}};
    }
 
-sub defined_group()
-   {
-   my $self=shift;
-
-   if (exists($self->{content}->{DEFINED_GROUP}))
-      {   
-      # Return a list of keys (group names) for defined groups:
-      return [ keys %{$self->{content}->{DEFINED_GROUP}} ];
-      }
-   else
-      {
-      return 0;
-      }
-   }
-
-sub dataforgroup()
-   {
-   my $self=shift;
-   my ($groupname)=@_;
-   # Return hash containing data for defined group
-   # $groupname or return undef: 
-   return $self->{content}->{DEFINED_GROUP}->{$groupname};
-   }
-
 sub buildproducts()
    {
    my $self=shift;
@@ -615,8 +447,8 @@ sub basic_tags()
    {
    my $self=shift;
    my $datatags=[];
-   my $buildtags=[ qw(BIN LIBRARY APPLICATION MODULE PLUGIN BUILDPRODUCTS) ];
-   my $skiptags=[ qw(DEFINED_GROUP ARCH EXPORT GROUP USE CLASSPATH) ];
+   my $buildtags=[ qw(BIN LIBRARY BUILDPRODUCTS) ];
+   my $skiptags=[ qw(ARCH EXPORT USE CLASSPATH) ];
    my $otherskiptags=[ qw( SKIPPEDDIRS ) ];
    my @all_skip_tags;
    
@@ -635,7 +467,6 @@ sub clean()
    my (@tags) = @_;
 
    # Delete some useless entries:
-   delete $self->{makefilecontent};
    delete $self->{simpledoc};
    delete $self->{id};
    delete $self->{tagcontent};

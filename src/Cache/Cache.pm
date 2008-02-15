@@ -5,7 +5,7 @@
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 #         (with contribution from Lassi.Tuura@cern.ch)
 # Update: 2003-11-27 16:45:18+0100
-# Revision: $Id: Cache.pm,v 1.7.2.2 2007/11/08 15:25:28 muzaffar Exp $ 
+# Revision: $Id: Cache.pm,v 1.10 2007/12/14 09:03:52 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -358,14 +358,14 @@ sub checkfiles()
    # Loop over all directories that need scanning (normally just src and config):
    if ($self->{convertxml})
       {
-      eval ("use SCRAM::Doc2XML");
+      eval ("use SCRAM::Plugins::Doc2XML");
       if (!$@)
          {
-	 $self->{convertxml} = SCRAM::Doc2XML->new();
+	 $self->{convertxml} = SCRAM::Plugins::Doc2XML->new();
 	 }
       else
          {
-	 print STDERR "**** WARNING: Can not convert $ENV{SCRAM_BUILDFILE} in to XML format. Missing SCRAM::Doc2XML perl module.\n";
+	 print STDERR "**** WARNING: Can not convert $ENV{SCRAM_BUILDFILE} in to XML format. Missing SCRAM::Plugins::Doc2XML perl module.\n";
 	 }
       }
    $self->{nonxml}=0;

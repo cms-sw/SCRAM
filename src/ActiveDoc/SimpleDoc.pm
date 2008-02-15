@@ -140,7 +140,7 @@ sub newparse()
    my $parse_style=shift;
    $dataclass ||= "ParsedDoc";
    $parse_style ||= 'Objects';
-   $self->{parsers}{$parselabel}=ActiveDoc::Parse->new($dataclass,$parse_style);
+   $self->{parsers}{$parselabel}=ActiveDoc::Parse->new($dataclass,$parse_style,shift);
    }
 
 sub filetoparse()

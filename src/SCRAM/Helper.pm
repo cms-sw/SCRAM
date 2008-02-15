@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.14.2.4 2007/12/13 14:35:45 muzaffar Exp $ 
+# Revision: $Id: Helper.pm,v 1.20 2007/12/14 09:03:56 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -93,18 +93,11 @@ sub version()
 
    $help.="Description:\n";
    $help.="\n";
-   $help.="\tWith no version argument given, this command will simply show\n";
-   $help.="\tthe current version number.\n";
-   $help.="\tIf a version argument is supplied, that version will be downloaded and\n";
-   $help.="\tinstalled, if not already locally available.\n";
+   $help.="\tthis command will simply show the current version number.\n";
    $help.="\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram version [-c] [-i] [-h] [<version>]$::normal\n";
-   $help.="\n";
-   $help.="The -i option shows CVS commit info (the value of the CVS Id variable).\n";
-   $help.="The -c option prints site CVS parameters to STDOUT. These parameters are used\n";
-   $help.="when downloading and installing new SCRAM versions.\n";
+   $help.="\tscram version [-h]$::normal\n";
 
    $help.="\n";
    
@@ -125,7 +118,7 @@ sub arch()
    $help.="\tscram arch$::normal\n";
    $help.="or\n";
    $help.="$::bold";
-   $help.="\tscram -arch <architecture>$::normal\n\nto set the architecture to that specified.\n";
+   $help.="\tscram --arch <architecture>$::normal\n\nto set the architecture to that specified.\n";
    $help.="\n";
 
    return $help;
@@ -143,9 +136,7 @@ sub runtime()
    $help.="\n";
    $help.="Usage:\n";
    $help.="\t$::bold scram runtime [-csh|-sh|-win] $::normal\n";
-   $help.="\t$::bold scram runtime [-csh|-sh|-win] -file filename $::normal\n";
-   $help.="\t$::bold scram runtime [-csh|-sh|-win] -file <filename> -info <variable>$::normal\n";
-   $help.="\t$::bold scram runtime [-csh|-sh|-win] -dump <filename> $::normal\n";
+   $help.="\t$::bold scram runtime [-csh|-sh|-win] --dump <filename> $::normal\n";
    $help.="\n";
    $help.="** Examples **\n";
    $help.="\n";
@@ -161,7 +152,7 @@ sub runtime()
    $help.="\n";
    $help.="To dump this environment to a file which can be sourced later, use\n";
    $help.="\n";
-   $help.="\t$::bold scram runtime -sh -dump env.sh $::normal\n";
+   $help.="\t$::bold scram runtime -sh --dump env.sh $::normal\n";
    $help.="\n";
 
    return $help;
@@ -302,10 +293,10 @@ sub project()
    $help.="\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram project [-t] [-l] [-d <area>] [-n <dir>] [-f <tools.conf>] <projecturl> [<projectversion>]$::normal\n";
+   $help.="\tscram project [-l] [-d <area>] [-n <dir>] [-f <tools.conf>] <projecturl> [<projectversion>]$::normal\n";
    $help.="\n";
    $help.="$::bold";
-   $help.="\tscram project -update [<projectversion>]$::normal\n";
+   $help.="\tscram project --update [<projectversion>]$::normal\n";
    $help.="\n";
    $help.="Options:\n";
    $help.="\n";
@@ -349,13 +340,6 @@ sub project()
    $help.="allow auto setup to proceed without reading files from a repository (STANDALONE mode).\n"; 
    $help.="\n";			      
    $help.="Use \"-l\" to see the detail log message when creating a dev area.\n";
-   $help.="\n";
-   $help.="Some project template files can be obtained using the command:\n";
-   $help.="\n";
-   $help.="$::bold";
-   $help.="\tscram project -template$::normal\n";
-   $help.="\n";			      
-   $help.="The templates will be copied to a directory called \"config\" in the current directory.\n";
    $help.="\n";
    $help.="An existing developer area for a project can be updated to a more recent version of\n";
    $help.="the SAME project by running \"scram project -update <VERSION>\" in the developer area.\n";
@@ -499,34 +483,6 @@ sub build()
    return $help;
    }
 
-sub config()
-   {
-   my $self=shift;
-   my $help;
-   $help.="Description:\n";
-   $help.="\n";
-   $help.="\tDump configuration information for the current project area.\n";
-   $help.="Usage:\n";
-   $help.="$::bold";
-   $help.="\tscram config [--tools] [--full] $::normal\n";
-   $help.="\n";   
-   $help.="The --tools option will dump a list of configured tools, rather like \"tool info\",\n";
-   $help.="but in a format parseable by external scripts. This could be used to create RPM/TAR files\n";
-   $help.="of external products required by the project.\n";
-   $help.="\n";
-   $help.="The format of each line of output is:\n";
-   $help.="\n";
-   $help.="\t<tool name>:<tool version>:scram project[0/1]:<base path>:<dependencies>\n";
-   $help.="\n\n";
-   $help.="<base path> can have the value <SYSTEM> if located in system directories (e.g., /lib).\n\n";
-   $help.="<dependencies> will be set to <NONE> if there are no external dependencies for this tool.\n";
-   $help.="\n";
-   $help.="The --full option will list the tool info and project information too.\n";
-   $help.="\n";      
-   
-   return $help;
-   }
-
 sub gui()
    {
    my $self=shift;
@@ -538,28 +494,13 @@ sub gui()
    $help.="\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram gui -edit [class]$::normal\n";
+   $help.="\tscram gui --edit [class]$::normal\n";
    $help.="$::bold";
-   $help.="\tscram gui -show [meta type]$::normal\n";
+   $help.="\tscram gui --show [meta type]$::normal\n";
    $help.="\n";
 
    return $help;
    }
-
-#
-# A template routine for future help commands:
-#
-# sub _template()
-#    {
-#    my $self=shift;
-#    my $help;
-
-#    $help.="\n";
-#    $help.="\n";
-   
-#    return $help;
-#    }
-
 
 ## 
 1;

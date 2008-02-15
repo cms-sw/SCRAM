@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-02-09 20:14:55+0100
-# Revision: $Id: ToolParser.pm,v 1.5.4.6 2007/12/13 14:35:44 muzaffar Exp $ 
+# Revision: $Id: ToolParser.pm,v 1.8 2007/12/14 09:03:47 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -278,26 +278,13 @@ sub environment()
 sub makefile()
    {
    my ($object,$name,%attributes)=@_;
-   # Set our own Char handler so we can collect the content
-   # of the Makefile tag:
-   $object->setHandlers(Char => \&makefile_content);
-   $self->{makefilecontent} = [];
-   }
-
-sub makefile_content()
-   {
-   my ($object, @strings) = @_;
-   push(@{$self->{makefilecontent}},@strings);
    }
 
 sub makefile_()
    {
-   my ($object,$name)=@_;
+   my ($object,$name,$cdata)=@_;
    push(@{$self->{"$self->{levels}->[$self->{nested}]".content}->{MAKEFILE}},
-	join('',@{$self->{makefilecontent}}));
-   delete $self->{makefilecontent};
-   # Unset the Char handler to revert to the default behaviour:
-   $object->setHandlers(Char => 0);
+	join("\n",@$cdata));
    }
 
 sub architecture()

@@ -104,102 +104,6 @@ sub arch()
       }
    }
 
-# =item   C<toolbox()>
-
-# Create and manage toolbox projects.
-# sub-commands are create, get and validate.
-   
-# =cut
-
-# sub toolbox()
-#    {
-#    my $self=shift;
-#    my (@ARGS) = @_;
-#    my %opts;
-#    my %options = ("help|h"     => sub { $self->{SCRAM_HELPER}->help('toolbox'); exit(0) },
-# 		  "create|c"   => sub { $opts{TOOLBOX_CMD} = 'tbxcreate' },
-# 		  "get|g"      => sub { $opts{TOOLBOX_CMD} = 'tbxget' },
-# 		  "query|q"    => sub { $opts{TOOLBOX_CMD} = 'tbxquery' },
-# 		  "validate|v" => sub { $opts{TOOLBOX_CMD} = 'tbxvalidate' });
-   
-#    local @ARGV = @ARGS;
-
-#    Getopt::Long::config qw(default no_ignore_case require_order pass_through bundling);
-   
-#    if (! Getopt::Long::GetOptions(\%opts, %options))
-#       {
-#       $self->scramfatal("Error parsing arguments. See \"scram toolbox -help\" for usage info.");
-#       }
-#    else
-#       {
-#       my $cmd=$opts{TOOLBOX_CMD};
-#       return $self->$cmd(@ARGV);
-#       }
-   
-#    # Return nice value:
-#    return 0;
-#    }
-
-# =item   C<tool()>
-
-# Manage the tools in the current SCRAM project area. Supported
-# sub-commands are list, info, tag, remove and template.
-   
-# =cut
-   
-# sub tbxcreate()
-#    {
-#    my $self=shift;
-#    my (@ARGS) = @_;
-#    my %opts;
-#    my ($tbbootfile, $tag, $installdir, $installname, $verbose, $interactive);
-#    my %options = ("help|h"    => sub { $self->{SCRAM_HELPER}->help('toolbox'); exit(0) },
-# 		  "tag|t=s"   => sub { $tag = $_[1]; },
-# 		  "dir|d=s"   => sub { $installdir = $_[1]; },
-# 		  "name|n=s"  => sub { $installname = $_[1]; },
-# 		  "boot|b=s"  => sub { $tbbootfile = "file:".$_[1] });
-   
-#    local @ARGV = @ARGS;
-   
-#    # Catch the no arguments scenario:
-#    die "toolbox create: No arguments given.","\n", if ($#ARGV < 0);
-
-#    Getopt::Long::config qw(default no_ignore_case require_order bundling);
-   
-#    if (! Getopt::Long::GetOptions(\%opts, %options))
-#       {
-#       $self->scramfatal("Error parsing arguments. See \"scram toolbox -help\" for usage info.");
-#       }
-#    else
-#       {
-#       # Default tag if none given:
-#       $tag ||= 'HEAD';     
-#       my $tbxbasedir=$installdir||=$ENV{SCRAM_TOOLBOX_HOME};
-
-#       use URL::URLcache;
-#       # Set up a cache (old-style, for URLs):
-#       my $globalcache = URL::URLcache->new($ENV{HOME}."/.scramrc/globalcache");
-
-#       use Configuration::Configuration;
-#       use Configuration::TBProject;
-#       my $toolbox = Configuration::TBProject->new($globalcache, $tbxbasedir);
-#       # Parse the boot file for the toolbox:
-#       my $toolbox_area = $toolbox->boot($tbbootfile, $installname);
-#       # Set the architecture:
-#       $toolbox_area->archname($ENV{'SCRAM_ARCH'});
-#       $toolbox_area->is_toolbox(1);
-#       $toolbox_area->tbxconfigfile($toolbox->configfilename_());
-#       # Save the area info:
-#       $toolbox_area->save();
-
-#       print "\n";
-#       print ">> Toolbox version ".$toolbox->version(). " installed at: ".$toolbox_area->location()." <<\n\n";
-      
-#       # Return nice value:
-#       return 0;      
-#       }
-#    }
- 
 sub tool()
    {
    my $self=shift;
@@ -381,51 +285,6 @@ sub tooltag()
    return 0;
    }
 
-=item   C<tooltemplate()>
-
-Install compiler or tool templates to the current directory. This is
-an out of date command.
-   
-=cut
-
-sub tooltemplate()
-   {
-   my $self=shift;
-   my ($templatetype) = @_;
-   my $templatedir=$ENV{SCRAM_HOME}."/Templates/toolbox";
-   
-   # There must be at least 1 arg:
-   $self->scramfatal("Insufficient arguments: see \"scram tool -help\" for usage info."), if (!$templatetype);
-   print "WARNING: This command is presently out-of-date!!","\n";
-   
-   # Check for a "compiler" or "basic" tag:
-   if ($templatetype =~ /^comp/ )
-      {
-      my $tdir=$templatedir."/CompilerTools/CXX";
-      # Copy the template from the SCRAM template dir:
-      print "Installing compiler templates in current directory-\n";
-      print "destination directory will be CompilerTemplates: ","\n";
-      system("cp","-r",$tdir,"CompilerTemplates");
-      # Clean up the directory (remove CVS directory):
-      system("rm","-rf","CompilerTemplates/CVS");
-      print "Done!","\n";
-      }
-   elsif ($templatetype =~ /^bas/ )
-      {
-      print "Installing basic tool template in current directory: ","\n";
-      system("cp",$templatedir."/basic_template",".");
-      print "Done!","\n";
-      }
-   else
-      {
-      $self->scramerror("Invalid template type. Please choose \"compiler\" or \"basic\"");
-      exit(1);
-      }
-   
-   # Return nice value:
-   return 0;
-   }
-
 =item   C<toolremove($toolname)>
 
 Remove the configured tool $toolname from the current configuration.
@@ -566,9 +425,7 @@ sub version()
    my (@ARGS) = @_;
    my %opts;
    my %options =
-      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('version'); exit(0) },
-       "cvsparam|c"  => sub { require Installation::SCRAM_SITE; &Installation::SCRAM_SITE::site_dump() },
-       "info|i" => sub { print "This is SCRAM, ",$self->{SCRAM_CVSID},"\n"});
+      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('version'); exit(0) });
    
    local @ARGV = @ARGS;
    
@@ -581,56 +438,7 @@ sub version()
       }
    else
       {
-      my $scramtopdir=$self->scramfunctions()->scram_topdir();      
-      # Was there a version arg? If so, switch to this version:
-      my ($version) = shift(@ARGV);
-      
-      if (defined ($version))
-	 {
-	 if ( -d $scramtopdir."/".$version )
-	    {
-	    print "Version $version already installed under ",$scramtopdir,"\n";
-	    }
-	 else
-	    {
-	    # Try downloading new version from CVS repository. Get settings from
-	    # our site configuration (SCRAM_SITE.pm):
-	    require Installation::SCRAM_SITE;
-	    
-	    my $cvs_settings = &Installation::SCRAM_SITE::CVS_site_parameters();
-	    
-	    print "Version $version not installed locally: attempting\n";
-	    print "download from the SCRAM CVS repository....\n\n";
-	    print "(CVSROOT = \"",$cvs_settings->{CVSROOT},"\", AUTH mode = \"",
-	    $cvs_settings->{AUTHMODE},"\", USER = \"",$cvs_settings->{USERNAME},"\")\n";
-	    print "\n";
-	    
-	    # set up and configure the cvs module for SCRAM
-	    require Utilities::CVSmodule;
-	    $cvsobject=Utilities::CVSmodule->new();
-	    
-	    $cvsobject->set_base($cvs_settings->{CVSROOT});
-	    $cvsobject->set_auth($cvs_settings->{AUTHMODE});
-	    $cvsobject->set_user($cvs_settings->{USERNAME});
-	    $cvsobject->set_passkey($cvs_settings->{PASSKEY});
-	    
-	    # Now check it out in the right place
-	    chdir $scramtopdir or die "Unable to change to $scramtopdir: $!\n";
-	    $cvsobject->invokecvs( ( split / /, 
-				     "co -d $version -r $version SCRAM" ));
-	    
-	    # Get rid of cvs object now we've finished
-	    $cvsobject=undef;
-	    }
-	 }
-      else
-	 {
-	 # Deal with links:
-	 print $ENV{SCRAM_VERSION};
-	 $version=readlink $ENV{SCRAM_HOME};
-	 print " ---> $version", if (defined ($version) );
-	 print "\n";
-	 }           
+      print $ENV{SCRAM_VERSION},"\n";
       }
    
    # Return nice value: 
@@ -894,8 +702,6 @@ Compile the source code in the current project area.
 sub build()
    {
    my $self=shift;
-   # Add config directory to @INC so that custom plugin packages can be used:
-   unshift @INC, $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};
    
    # The cache files:
    my $wrkdir = $ENV{LOCALTOP}."/.SCRAM/".$ENV{SCRAM_ARCH};
@@ -925,7 +731,7 @@ sub build()
       ("help|h"     => sub { $self->{SCRAM_HELPER}->help('build'); exit(0) },
        "verbose|v"  => sub { $ENV{SCRAM_BUILDVERBOSE} = 1 },
        "testrun|t"  => sub { $opts{SCRAM_TEST} = 1 },
-       "reset|r"    => sub { if ($cachereset==0){ $cachereset=1; print "Resetting caches","\n"; system("rm","-rf",$builddatastore,"${workingdir}/MakeData/DirCache*")}},
+       "reset|r"    => sub { if ($cachereset==0){ $cachereset=1; print "Resetting caches","\n"; system("rm","-rf",$builddatastore,"${workingdir}/MakeData/DirCache* ${workingdir}/MakeData/ExtraBuilsRules")}},
        "fast|f"     => sub { print "Skipping cache scan...","\n"; $fast=1 },
        "writegraphs|w=s"  => sub { $opts{WRITE_GRAPHS} = 1; $graphmode=$_[1] },
        "convertxml|c"  => sub { $convertxml =1 },
@@ -1151,7 +957,6 @@ sub project()
        "dir|d=s"  => sub { $opts{SCRAM_INSTALL_DIR} = 1; $installdir = $_[1] },
        "name|n=s" => sub { $opts{SCRAM_INSTALL_NAME} = 1; $installname = $_[1] },
        "file|f=s" => sub { $opts{SCRAM_TOOLCONF_NAME} = 1; $toolconf = $_[1] },
-       "template|t" => sub { $self->project_template_copy(); exit(0) },
        "update|u" => sub { $opts{SCRAM_UPDATE_AREA} = 1 },
        "log|l"    => sub { scramloginteractive(1); },
        "symlinks|s"=> sub { $symlinks=1; },
@@ -1241,9 +1046,7 @@ sub bootfromrelease() {
 	# The lookup db:
 	use SCRAM::AutoToolSetup;
 	
-	# Default path to conf file. Assume that the site name is STANDALONE if not already set:
-	$ENV{SCRAM_SITENAME} = 'STANDALONE', unless (exists($ENV{SCRAM_SITENAME}));
-	$toolconf ||= $area->location()."/".$ENV{SCRAM_CONFIGDIR}."/site/tools-".$ENV{SCRAM_SITENAME}.".conf";
+	$toolconf ||= $area->location()."/".$ENV{SCRAM_CONFIGDIR}."/site/tools.conf";
 	$::lookupdb = SCRAM::AutoToolSetup->new($toolconf);  
 	# Need a toolmanager, then we can setup:
 
@@ -1330,7 +1133,6 @@ sub bootnewproject()
    # download the tools:
    $req->download();
    # Need an autotoolssetup object:
-   $ENV{'SCRAM_SITENAME'} = $area->sitename();
    $ENV{'SCRAM_PROJECTDIR'} = $area->location();
    $ENV{'SCRAM_PROJECTVERSION'} = $area->version();
    
@@ -1465,7 +1267,7 @@ sub update_project_area()
 	    use SCRAM::AutoToolSetup;
 	    
 	    # Default path to conf file:
-	    my $toolconf ||= $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR}."/site/tools-".$ENV{SCRAM_SITENAME}.".conf";
+	    my $toolconf ||= $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR}."/site/tools.conf";
 	    $::lookupdb = SCRAM::AutoToolSetup->new($toolconf);  
 	    
 	    # Update Self and write the updated cache info:
@@ -1581,41 +1383,6 @@ sub create_productstores()
    mkpath($ENV{LOCALTOP}."/".$ENV{SCRAM_SOURCEDIR},0,$perms);
    }
 
-=item   C<project_template_copy()>
-
-Copy a basic set of build templates to the current directory.
-   
-=cut
-
-sub project_template_copy()
-   {
-   my $self=shift;
-   use Cwd qw(&cwd);
-   
-   print "SCRAM: Copying basic start config to current directory...","\n";
-
-   # Check to see if there's already a config dir. If so warn and return:
-   if ( -d cwd()."/config")
-      {
-      print "\n";
-      print "Warning: unable to install templates because you appear to have a config","\n";
-      print "         directory present already. Please delete it and re-run...","\n";
-      return;
-      }
-   else
-      {
-      my $tdir = $ENV{SCRAM_HOME}."/src/main/config";
-      my $dest = cwd()."/config";
-      print "SCRAM: Copying config templates from local SCRAM installation area","\n";
-      print "       ",$tdir,"\n";
-      &AddDir::copydir($tdir,$dest);
-      }
-   print "\nSuccesfully done!","\n";
-
-   # Return nice value:
-   return 0;
-   }
-
 =item   C<setup()>
 
 Set up tools in the current project area.
@@ -1648,8 +1415,7 @@ sub setup()
       # Check to see if we are in a local project area:
       $self->checklocal();
 
-      # Set sitename and project directory:
-      $ENV{'SCRAM_SITENAME'} = $self->localarea()->sitename();
+      # Set project directory:
       $ENV{'SCRAM_PROJECTDIR'} = $self->localarea()->location();
 
       my $toolname = shift(@ARGV);
@@ -1733,7 +1499,7 @@ sub runtime()
    #     Eventually sort topologically (by going through list of tools and
    #     seeing which tools those tools depend on, then sorting the list)
    #
-   my %opts = ( SCRAM_RT_FILE => 0, SCRAM_RT_DUMP => 0 );
+   my %opts = ( SCRAM_RT_DUMP => 0 );
    my $shelldata =
       {
       BOURNE =>
@@ -1767,8 +1533,6 @@ sub runtime()
        "sh"     => sub { $SCRAM_RT_SHELL = 'BOURNE' },
        "csh"    => sub { $SCRAM_RT_SHELL = 'TCSH'  },
        "win"    => sub { $SCRAM_RT_SHELL = 'CYGWIN' },
-       "file=s" => sub { $opts{SCRAM_RT_FILE} = 1; $runtimefile = $_[1] },
-       "info=s" => sub { $opts{SCRAM_RT_INFO} = 1; $rtvarname = $_[1] },
        "dump=s" => sub { $opts{SCRAM_RT_DUMP} = 1; $rtdumpfile = $_[1] } );
    
    local @ARGV = @ARGS;
@@ -1787,11 +1551,6 @@ sub runtime()
       # Also check to see that we received a shell argument:
       $self->scramfatal("No shell type given! See \"scram runtime -help\" for usage info."), if ($SCRAM_RT_SHELL eq '');
 
-      # If we're reading from s runtime file, check that it exists:
-      if ($opts{SCRAM_RT_FILE} && ! -f $runtimefile)
-	 {
-	 $self->scramfatal("Runtime file $runtimefile cannot be found or is not readable!");
-	 }
       
       # Save the current environment:
       $self->save_environment($shelldata->{$SCRAM_RT_SHELL}); # Probably have to do the restore here too so
@@ -1809,53 +1568,6 @@ sub runtime()
 	 open(RTFH,"> $rtdumpfile" ) || die $!,"\n";
 	 }
 
-      # Process runtime file arguments, if any. Using the info option only makes sense
-      # if we're reading from a file:
-      if ($opts{SCRAM_RT_INFO} && ! $opts{SCRAM_RT_FILE})
-	 {
-	 $self->scramfatal("Using the -info <varname> option only makes sense when reading from a file!");
-	 }
-      
-      # Read from runtime file:
-      if ($opts{SCRAM_RT_FILE})
-	 {
-	 use RuntimeFile;
-	 my $rtfile = RuntimeFile->new($runtimefile);
-	 
-	 # Read the file:
-	 $rtfile->read();
-
-	 # See if we have other args too:
-	 if ($opts{SCRAM_RT_INFO})
-	    {
-	    $rtfile->info($rtvarname);
-	    # And return:
-	    return 0;
-	    }
-	 else
-	    {
-	    # If info not required, dump the content to the rest of the runtime
-	    # process:
-	    my $rtcontent = $rtfile->content();
-	    
-	    while (my ($toolrt, $trtval) = each %{$rtcontent})
-	       {
-	       if (! exists ($variables->{$toolrt}))
-		  {
-		  $variables->{$toolrt} = 1;
-		  # When we print, we also use the same check via $shelldata->{$SCRAM_RT_SHELL}->{PRINTVAR}
-		  # so that we enable prepending of data to existing vars...just in case people want to do
-		  # this for things like LD_LIBRARY_PATH etc.:
-		  print RTFH $shelldata->{$SCRAM_RT_SHELL}->{EXPORT}." ".$toolrt.
-		     $shelldata->{$SCRAM_RT_SHELL}->{EQUALS}.$shelldata->{$SCRAM_RT_SHELL}->{QUOTE}($trtval->{'value'}.
-												    $shelldata->{$SCRAM_RT_SHELL}->{PRINTVAR}($toolrt))."\n";
-		  }
-	       }
-	    # Return:
-	    return 0;
-	    }
-	 }
-      
       # We need to process ourself. Check to see if tool "self" is
       # defined and if so, process it first.
       my $rawselected = $self->toolmanager()->selected();
@@ -2066,121 +1778,6 @@ sub restore_environment()
    %ENV=%restoredenv;
    }
 
-=item   C<config()>
-
-Dump some configuration information pertaining to the current area. Full
-tool information can also be dumped.
-   
-=cut
-
-sub config()
-   {
-   my $self=shift;
-   my (@ARGS) = @_;
-   my %opts;
-   my %options =
-      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('config'); exit(0) },
-       "tools|t"  => sub { $opts{SCRAM_DUMPCONFIG} = 1 },
-       "full|f"   => sub { $opts{SCRAM_DUMPFULL} = 1} );
-   
-   local @ARGV = @ARGS;
-   
-   Getopt::Long::config qw(default no_ignore_case require_order bundling);
-   
-   if (! Getopt::Long::GetOptions(\%opts, %options))
-      {
-      $self->scramfatal("Error parsing arguments. See \"scram config -help\" for usage info.");
-      }
-   else
-      {
-      # Check to see if we are in a local project area:
-      $self->checklocal();
-      my $localarea = $self->localarea();
-      
-      # If full info required:
-      if ($opts{SCRAM_DUMPCONFIG} && $opts{SCRAM_DUMPFULL})
-	 {
-	 print "SCRAM_PROJECTNAME=",$localarea->name(),"\n";
-	 print "SCRAM_PROJECTVERSION=",$localarea->version(),"\n";      
-	 print "SCRAM_TOOLBOXVERSION=",$localarea->toolboxversion(),"\n";
-	 # Perhaps show creation time. Check the timestamp of config/requirements:
-	 print "SCRAM_PROJECT_TIMESTAMP=",$localarea->creationtime(),"\n";
-	 print "SCRAM_PROJECT_RELEASE_TIMESTAMP=",$localarea->creationtime($ENV{RELEASETOP}),"\n"
-	    ,if (exists($ENV{RELEASETOP}));
-	 print "LOCALTOP=",$ENV{LOCALTOP},"\n";
-	 print "RELEASETOP=",$ENV{RELEASETOP},"\n", if (exists($ENV{RELEASETOP}));	 
-	 
-	 $self->dumpconfig();
-	 }
-      elsif ($opts{SCRAM_DUMPCONFIG})
-	 {
-	 $self->dumpconfig();
-	 }
-      else
-	 {
-	 # Just project info:
-	 print "SCRAM_PROJECTNAME=",$localarea->name(),"\n";
-	 print "SCRAM_PROJECTVERSION=",$localarea->version(),"\n";      
-	 print "SCRAM_TOOLBOXVERSION=",$localarea->toolboxversion(),"\n";
-	 # Perhaps show creation time. Check the timestamp of config/requirements:
-	 print "SCRAM_PROJECT_TIMESTAMP=",$localarea->creationtime(),"\n";
-	 print "SCRAM_PROJECT_RELEASE_TIMESTAMP=",$localarea->creationtime($ENV{RELEASETOP}),"\n"
-	    ,if (exists($ENV{RELEASETOP}));
-	 print "LOCALTOP=",$ENV{LOCALTOP},"\n";
-	 print "RELEASETOP=",$ENV{RELEASETOP},"\n", if (exists($ENV{RELEASETOP}));	 
-	 }
-            
-      # Return nice value:
-      return (0);
-      }
-   }
-
-=item   C<dumpconfig()>
-
-Dump configuration information for the current B<SCRAM_ARCH>. Only used internally.
-
-=cut
-
-sub dumpconfig()
-   {
-   my $self=shift;
-
-   print "##\n## Dumping configuration information for SCRAM_ARCH=",$ENV{SCRAM_ARCH},"\n##\n";
-
-   # Get array of setup tools:
-   my @setuptoolnames = $self->toolmanager()->toolsdata();
-   
-   # Exit if there aren't any tools:
-   $self->scramerror(">>>> No tools set up for current arch or area: unable to dump config. <<<<"),
-   if ( $#setuptoolnames < 0); 
-   
-   # Show list: format is "tool:toolversion:scram_project[0/1]:<base path>:<dependencies>
-   foreach $t (@setuptoolnames)
-      {
-      my $info = $t->toolname().":".$t->toolversion().":".$t->scram_project();
-
-      # Get the base path for this tool:
-      my $tname = $t->toolname();
-      $tname =~ tr/-/_/; # Some tools contain hyphens in name;
-      my $basepath = $t->variable_data(uc($tname)."_BASE");
-      ($basepath eq '') ? ($info .= ":<SYSTEM>") : ($info .= ":".$basepath);
-      
-      my @deps = $t->use();
-      
-      if ($#deps < 0)
-	 {
-	 $info .= ":<NONE>";
-	 }
-      else
-	 {
-	 $info .= ":";
-	 map { $_ =~ tr/A-Z/a-z/; $info .= $_." " } @deps;	 
-	 }
-      
-      print $info,"\n";	 
-      }
-   }
-
 =item   C<gui()>
 
 Function to create a GUI to allow interaction with build metadata.
@@ -2330,7 +1927,7 @@ sub show_compiler_gui()
    my $f_bottom = $mw->Frame(-relief => 'ridge', -bd => 2)
       ->pack(-side => 'bottom', -anchor => 'n', -expand => 1, -fill => 'x');
    
-   # A menu button inside the top frame, for exitting:
+   # A menu button inside the top frame, for exiting:
    my $exit_b = $f->Button(-text => "Save&Exit",
 			   -background => "red",
 			   -foreground => 'yellow',
@@ -2605,7 +2202,7 @@ sub show_tools_gui()
    my $f_bottom = $mw->Frame(-relief => 'ridge', -bd => 2)
       ->pack(-side => 'bottom', -anchor => 'n', -expand => 1, -fill => 'x');
 
-   # A menu button inside the top frame, for exitting:
+   # A menu button inside the top frame, for exiting:
    my $exit_b = $f->Button(-text => "Save&Exit",
 			   -background => "red",
 			   -foreground => 'yellow',

@@ -1,0 +1,4 @@
+Following is/are the step(s) needed to install SCRAM.
+- Edit bin/scram script and replace 
+  * @SCRAM_LOOKUPDB_DIR@ with the path of SCRAM DB directory <path>/scramdb.
+  * @SCRAM_VERSION@ with the SCRAM version string

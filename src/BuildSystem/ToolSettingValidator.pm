@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-10-14 10:16:21+0200
-# Revision: $Id: ToolSettingValidator.pm,v 1.4.4.1 2007/12/13 14:35:44 muzaffar Exp $ 
+# Revision: $Id: ToolSettingValidator.pm,v 1.5 2007/12/14 09:03:48 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -353,6 +353,13 @@ sub promptuser()
    scramlogdump();
    scramloginteractive(1);
    print "\n";
+   if ((!-t STDIN) || (!-t STDOUT))
+      {
+      print "ERROR: SCRAM does not allow to prompt for user input when running in batch mode.\n",
+            "       In batch mode all the tool files and site/tools.conf should provide the\n",
+	    "       values needed to setup a tool properly.\n";
+      exit 1;
+      }
 
    while ($novalid)
       {
@@ -420,8 +427,16 @@ sub promptuserforvar()
    my $novalid = 1;
    my $dummy = '';
    my $ORKEEP = '';
-
+   scramlogdump();
+   scramloginteractive(1);
    print "\n";
+   if ((!-t STDIN) || (!-t STDOUT))
+      {
+      print "ERROR: SCRAM does not allow to prompt for user input when running in batch mode.\n",
+            "       In batch mode all the tool files and site/tools.conf should provide the\n",
+	    "       values needed to setup a tool properly.\n";
+      exit 1;
+      }
 
    while ($novalid)
       {

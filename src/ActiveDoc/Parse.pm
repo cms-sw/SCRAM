@@ -32,20 +32,15 @@
 
 package ActiveDoc::Parse;
 require 5.004;
-use XML::Parser;
 
 sub new()
    {
    my $class=shift;
    $self={};
    bless $self, $class;
-   my ($dataclass, $parse_style)=@_;
-
-   $self->{xmlparser} = new XML::Parser (
-					 Style => $parse_style,
-					 ParseParamEnt => 1,
-					 ErrorContext => 3,
-					 Pkg   => $dataclass);   
+   my ($dataclass, $parse_style,$keep_running_onerr)=@_;
+   require SCRAM::Plugins::DocParser;
+   $self->{xmlparser} = new SCRAM::Plugins::DocParser($dataclass,$parse_style,$keep_running_onerr);
    return $self;
    }
 
@@ -83,13 +78,9 @@ sub parse()
    {
    my $self=shift;
    my ($file)=@_;
-   eval 
-   {
-     $self->{data} = $self->{xmlparser}->parse($self->getfilestring_($file));
-   };
-   if ($@)
+   if (!$self->{xmlparser}->parse($file,$self->getfilestring_($file)))
       {
-      print STDERR "**** ERROR: Failed parsing file: $file\n$@\n";
+      print STDERR "**** ERROR: Failed parsing file: $file.\n";
       }
    return $self;
    }
@@ -102,10 +93,10 @@ sub getfilestring_()
    my $read=0;
    if (($file!~/\.xml$/) && ($file!~/\/\.SCRAM\/InstalledTools\/[^\/]+$/))
       {
-      eval("use SCRAM::Doc2XML");
+      eval("use SCRAM::Plugins::Doc2XML");
       if (!$@)
          {
-         my $xmlconvertor = SCRAM::Doc2XML->new();
+         my $xmlconvertor = SCRAM::Plugins::Doc2XML->new();
          my $xml=$xmlconvertor->convert($file);
          $filestring = join("",@$xml);
          $xmlconvertor->clean();
@@ -122,10 +113,6 @@ sub getfilestring_()
    # Strip spaces at the beginning and end of the line:
    $filestring =~ s/^\s+//g;
    $filestring =~ s/\s+$//g;
-   # Finally strip the newlines:
-   #$filestring =~ s/\n//g;
-   # Strip out spaces in between tags:
-   #$filestring =~ s/>\s+</></g;
    $self->{filestring}=$filestring;
    return $filestring;
    }
@@ -133,7 +120,7 @@ sub getfilestring_()
 sub data()
    {
    my $self=shift;
-   return $self->{data}->[0];
+   return $self->{xmlparser}->getOutput();
    }
 
 sub includeparse

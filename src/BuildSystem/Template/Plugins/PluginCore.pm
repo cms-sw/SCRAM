@@ -4,15 +4,13 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-04-29 16:07:07+0200
-# Revision: $Id: PluginCore.pm,v 1.2.4.1 2007/11/08 15:25:27 muzaffar Exp $ 
+# Revision: $Id: PluginCore.pm,v 1.4 2007/12/14 09:03:50 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
 #--------------------------------------------------------------------
 package BuildSystem::Template::Plugins::PluginCore;
 use vars qw( @ISA );
-use base qw(Template::Plugin);
-use Template::Plugin;
 use Exporter;
 @ISA=qw(Exporter);
 
@@ -210,9 +208,9 @@ sub value ()
 	       push @$ret,$d;
 	       }
             }
-         if ((exists  $t->{$ENV{SCRAM_ARCH}}) && (exists $t->{$ENV{SCRAM_ARCH}}{$tag}))
+         if ((exists  $t->{ARCH}{$ENV{SCRAM_ARCH}}) && (exists $t->{ARCH}{$ENV{SCRAM_ARCH}}{$tag}))
             {
-            foreach my $d (@{$t->{$ENV{SCRAM_ARCH}}{$tag}})
+            foreach my $d (@{$t->{ARCH}{$ENV{SCRAM_ARCH}}{$tag}})
                {
 	       push @$ret,$d;
 	       }

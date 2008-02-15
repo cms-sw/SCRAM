@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.33 2007/12/14 09:04:10 muzaffar Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.34 2008/01/11 13:34:11 elmer Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -39,8 +39,6 @@ use Utilities::Architecture;
 use Utilities::Verbose;
 use SCRAM::CMD;
 
-our ($SCRAM_VERSION) = "@SCRAM_VERSION@";
-
 @ISA=qw(Exporter Utilities::Verbose SCRAM::CMD);
 @EXPORT_OK=qw( );
 
@@ -69,15 +67,13 @@ sub new()
       SCRAM_VERBOSE => 0 || $ENV{SCRAM_VERBOSE},
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
-      SCRAM_VERSION => $SCRAM_VERSION || undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.33 2007/12/14 09:04:10 muzaffar Exp $',
+      SCRAM_VERSION => $ENV{SCRAM_VERSION},
       SCRAM_TOOLMANAGER => undef,
       SCRAM_HELPER => new Helper,
       ISPROJECT => undef,
       };
   
    bless $self,$class;
-   $ENV{SCRAM_VERSION} = $self->{SCRAM_VERSION};
    $ENV{SCRAM_BUILDFILE} = "BuildFile";
    $self->_init();
    return $self;
@@ -108,6 +104,8 @@ sub _init()
    # only switch to another version if inside a project area
    # where scram_version is set:
    $self->versioncheck();
+   if (exists $ENV{LOCALTOP} && exists $ENV{SCRAM_CONFIGDIR})
+   {unshift @INC, $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};}
    return $self;
    }
 
@@ -121,7 +119,7 @@ defined here. Sets $self->{SCRAM_ALLOWEDCMDS} in the $::scram object.
 sub commands()
    {
    my $self = shift;
-   my @env_commands = qw(version arch runtime config);
+   my @env_commands = qw(version arch runtime);
    my @info_commands = qw(list db urlget); 
    my @buildenv_commands = qw(project setup tool gui);
    my @build_commands=qw(build install remove);
@@ -217,15 +215,9 @@ sub versioncheck() {
     # current release anyway. If we're in a project we use the "scram_version"
     # file in config directory:
     if ((!defined $self->{SCRAM_VERSIONCHECK}) && ($self->islocal())) {
-	my $version;
-	my $versionfile=$ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR}."/scram_version";
-	if ( -f $versionfile ) {
-	    open (VERSION, "<".$versionfile);
-	    $version=<VERSION>;
-	    chomp $version;
-	}
+	my $version=$self->scramfunctions()->versioninfile($ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR});
 	# Spawn the required version:
-	$self->scramfunctions()->spawnversion($version,@ARGV), if (defined ($version));
+	$self->scramfunctions()->spawnversion($version), if (defined ($version));
     }
     $self->{SCRAM_VERSIONCHECK} = 1;
     return $self;
@@ -244,24 +236,18 @@ sub remote_versioncheck() {
     my $self=shift;
     my $version;
     my ($remote_area)=shift || die "No remote area specified. Exit.\n";
-    local (@ARGV)=@_;
     # Get the version from the project area:
     $version = $remote_area->scramversion();
     
     if (!defined($version)) {
 	# Try to get the version from the area config. dir:
-	my $versionfile=$remote_area->location()."/".$remote_area->configurationdir()."/scram_version";
-	
-	if ( -f $versionfile ) {
-	    open (VERSION, "<".$versionfile);
-	    $version=<VERSION>;
-	    chomp $version;
-	} else {
+	$version = $self->scramfunctions()->versioninfile($remote_area->location()."/".$remote_area->configurationdir());
+	if (!defined $version) {
 	    $self->error("Unable to determine SCRAM version used to config. remote area.\n");
 	}
     }
     # Spawn the required version:
-    $self->scramfunctions()->spawnversion($version,@ARGV);    
+    $self->scramfunctions()->spawnversion($version);    
     return $self;
 }
 
@@ -294,31 +280,6 @@ sub _initenv()
    $ENV{SCRAM_INTwork}=$ENV{SCRAM_TMP}."/".$ENV{SCRAM_ARCH};
    $ENV{SCRAM_SOURCEDIR}="src";
    $ENV{SCRAM_INTlog}="logs";
-   ($ENV{SCRAM_BASEDIR}=$ENV{SCRAM_HOME}) =~ s/(.*)\/.*/$1/;
-   $ENV{SCRAM_BASEDIR} =~ s!:$!:/! if $^O eq 'MSWin32';
-   $ENV{SCRAM_TOOL_HOME}=$ENV{SCRAM_HOME}."/src";
-   
-   # Need a lookup database. Try the user's environment first to override
-   # the value set at install time (in SCRAM_SITE.pm):
-   if (exists $ENV{SCRAM_USERLOOKUPDB} && -f "$ENV{SCRAM_USERLOOKUPDB}")
-      {
-      print "Using $ENV{SCRAM_USERLOOKUPDB} as the database.","\n", if ($ENV{SCRAM_DEBUG});
-      $ENV{SCRAM_LOOKUPDB}=$ENV{SCRAM_USERLOOKUPDB};
-      }
-   
-   # A fallback option:
-   if ( ! ( exists $ENV{SCRAM_LOOKUPDB} ) )
-      {
-      if ( -d "$ENV{SCRAM_BASEDIR}/scramdb/" )
-	 {
-	 $ENV{SCRAM_LOOKUPDB}="$ENV{SCRAM_BASEDIR}/scramdb/project.lookup";
-	 }
-      else
-	 {
-	 # Just store in user home directory:
-	 $ENV{SCRAM_LOOKUPDB}=$ENV{HOME}."/project.lookup";
-	 }
-      }
    }
 
 =item   C<_loadscramdb()>
@@ -388,11 +349,6 @@ sub scramfunctions() {
 	require SCRAM::ScramFunctions;
 	$self->{functions} = SCRAM::ScramFunctions->new();
 	$self->architecture($ENV{SCRAM_ARCH});
-	if ($ENV{SCRAM_VERSION} eq '') {
-	    # If SCRAM_VERSION isn't set, extract the version
-	    # from the source tree:
-	    $ENV{SCRAM_VERSION} = $self->{functions}->getversion();
-	}
     } else {
 	return $self->{functions};
     }
@@ -525,21 +481,6 @@ sub debuglevel()
 
    @_ ? $self->{SCRAM_DEBUG} = shift # Modify or
       : $self->{SCRAM_DEBUG};        # retrieve
-   }
-
-=item   C<cvsid()>
-
-Return the current CVS id string (which contains information
-on last commit).				  
-
-=cut
-
-sub cvsid()
-   {
-   my $self=shift;
-
-   @_ ? $self->{SCRAM_CVSID} = shift # Modify or
-      : $self->{SCRAM_CVSID};        # retrieve
    }
 
 =item   C<projectname()>
@@ -819,9 +760,8 @@ sub checkareatype()
    {
    my $self=shift;
    my ($areapath, $message)=@_;
-   # Simple check: see if templates exist:
-   my (@templates)=glob($areapath."/config/*.tmpl");
-   $self->scramfatal($message), unless ($#templates > -1)
+   my $version=$self->scramfunctions()->versioninfile($ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR});
+   if ($version=~/^V0/){$self->scramfatal($message);}
    }
 
 =item   C<missing_package($package)>
@@ -1022,18 +962,18 @@ sub usage()
    $usage.="\n";
    $usage.= "Help on individual commands is available through";
    $usage.="\n\n";
-   $usage.= "\tscram <command> -help";
+   $usage.= "\tscram <command> --help";
    $usage.="\n\n";
    $usage.="\nOptions:\n";
    $usage.="--------\n";
-   $usage.=sprintf("%-28s : %-55s\n","-help","Show this help page.");
-   $usage.=sprintf("%-28s : %-55s\n","-verbose <class> ",
+   $usage.=sprintf("%-28s : %-55s\n","--help","Show this help page.");
+   $usage.=sprintf("%-28s : %-55s\n","--verbose <class> ",
 		   "Activate the verbose function on the specified class or list of classes.");
-   $usage.=sprintf("%-28s : %-55s\n","-debug ","Activate the verbose function on all SCRAM classes.");
+   $usage.=sprintf("%-28s : %-55s\n","--debug ","Activate the verbose function on all SCRAM classes.");
    $usage.="\n";
-   $usage.=sprintf("%-28s : %-55s\n","-arch <architecture>",
+   $usage.=sprintf("%-28s : %-55s\n","--arch <architecture>",
 		   "Set the architecture ID to that specified.");
-   $usage.=sprintf("%-28s : %-55s\n","-noreturn","Pause after command execution rather than just exitting.");
+   $usage.=sprintf("%-28s : %-55s\n","--noreturn","Pause after command execution rather than just exiting.");
    $usage.="\n";
 
    return $usage;

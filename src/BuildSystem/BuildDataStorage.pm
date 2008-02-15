@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.21 2008/01/27 10:06:13 muzaffar Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.18 2007/12/14 09:03:46 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -47,8 +47,6 @@ sub new()
   # Somewhere to store the dependencies:
   $self->{DEPENDENCIES} = {};  # GLOBAL dependencies
   $self->{SKIPPEDDIRS} = {};   # Global skipped dirs
-  
-  # Initialize the Template Engine:
   $self->init_engine();
   
   return $self;
@@ -266,8 +264,8 @@ sub update()
    mkpath("$mkpubpath/DirCache",0,0755);
    my %runeng = ();
    my $projinfo=undef;
-   eval ("use SCRAM::ProjectInfo");
-   if(!$@) {$projinfo = SCRAM::ProjectInfo->new();}
+   eval ("use SCRAM_ExtraBuildRule;");
+   if(!$@) {$projinfo = SCRAM_ExtraBuildRule->new();}
    if ($newbf)
       {
       foreach my $bf ("$ENV{SCRAM_BUILDFILE}.xml","$ENV{SCRAM_BUILDFILE}")
@@ -288,6 +286,7 @@ sub update()
          {
 	 if (!exists $newdir->{$path}) {next;}
 	 if ($path!~/^$ENV{SCRAM_SOURCEDIR}\/(.+)/){delete $newdir->{$path};next;}
+	 if ($path eq "$ENV{SCRAM_SOURCEDIR}/$ENV{SCRAM_SOURCEDIR}"){print "****WARNING: SCRAM does not support to have directory $ENV{LOCALTOP}/$ENV{SCRAM_SOURCEDIR}/$ENV{SCRAM_SOURCEDIR}.\n";next;}
 	 my $cinfo = $self->buildclass($path);
 	 if ($cinfo && $cinfo->[2] ne ""){$dircache->prune($path,0,$cinfo->[2]);}
 	 else
@@ -403,7 +402,7 @@ sub scan()
    my $self=shift;
    my ($buildfile, $datapath) = @_;
    my $bfparse;
-   $bfparse=BuildSystem::BuildFile->new();
+   $bfparse=BuildSystem::BuildFile->new(1);
    # Execute the parse:
    $bfparse->parse($buildfile);
    # See if there were skipped dirs:
@@ -425,17 +424,19 @@ sub scan()
 sub init_engine()
    {
    my $self=shift;
-   # Create the interface to the template engine:
-   use BuildSystem::TemplateInterface;
-   # Pass in the config dir as the location where templates live:
-   $self->{TEMPLATE_ENGINE} = BuildSystem::TemplateInterface->new();
+   if (!exists $self->{TEMPLATE_ENGINE})
+      {
+      # Create the interface to the template engine:
+      use BuildSystem::TemplateInterface;
+      # Pass in the config dir as the location where templates live:
+      $self->{TEMPLATE_ENGINE} = BuildSystem::TemplateInterface->new();
+      }
    }
 
 sub run_engine()
    {
    my $self=shift;
    my ($templatedata)=@_;
-
    $self->{TEMPLATE_ENGINE}->template_data($templatedata);
    $self->{TEMPLATE_ENGINE}->run();
    return $self;
@@ -455,6 +456,7 @@ sub buildclass
    # Split every cache definition into an array of pairs, directory
    # name and class.  So ClassPath of type "+foo/+bar/src+library"
    # becomes [ [ "" "foo" ] [ "" "bar" ] [ "src" "library" ] ]
+
    my @CLASSPATHS=@{$self->{BUILDTREE}->{$ENV{SCRAM_SOURCEDIR}}->rawdata()->{content}->{CLASSPATH}};
    # This does not work, even though classpath() is a valid method and rawdata()
    # returns an object blessed into the correct type:
