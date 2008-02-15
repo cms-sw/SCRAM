@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.34 2008/01/11 13:34:11 elmer Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.34.2.1 2008/02/15 14:58:04 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -121,7 +121,7 @@ sub commands()
    my $self = shift;
    my @env_commands = qw(version arch runtime);
    my @info_commands = qw(list db urlget); 
-   my @buildenv_commands = qw(project setup tool gui);
+   my @buildenv_commands = qw(project setup tool);
    my @build_commands=qw(build install remove);
    my @dev_cmds=qw();
 

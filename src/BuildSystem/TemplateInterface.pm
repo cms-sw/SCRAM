@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-07-01 14:03:46+0200
-# Revision: $Id: TemplateInterface.pm,v 1.6 2007/12/14 09:03:47 muzaffar Exp $ 
+# Revision: $Id: TemplateInterface.pm,v 1.6.2.1 2008/02/15 14:58:01 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -90,8 +90,7 @@ sub template_data()
    my $self=shift;
    my ($data) = @_;
 
-   # Set the things that we must set. The "data" key points
-   # to a DataCollector object. The "branch" data is a
+   # Set the things that we must set. The "branch" data is a
    # TreeItem object:
    $self->{TEMPLATE} = $data->template();
    # Add required data accessed by key:

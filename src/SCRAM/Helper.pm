@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.20 2007/12/14 09:03:56 muzaffar Exp $ 
+# Revision: $Id: Helper.pm,v 1.20.2.1 2008/02/15 14:58:03 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -377,7 +377,7 @@ sub setup()
    $help.="\tThe version of the tool to set up.\n";
    $help.="\n";			      
    $help.="url:\n";
-   $help.="\tURL (file: or http:) of the tool document describing the tool being set up.\n";
+   $help.="\tURL (file:) of the tool document describing the tool being set up.\n";
    $help.="\n";		      
    $help.="The -i option turns off the automatic search mechanism allowing for more\n";
    $help.="user interaction during setup.\n";
@@ -455,20 +455,6 @@ sub build()
    $help.="--reset              reset the project caches and rescan/rebuild.\n";
    $help.="--fast               skip checking the cache and go straight to building.\n";
    $help.="--convertxml         convert any non-xml BuildFile in to BuildFile.xml.\n";
-   $help.="--writegraphs=<g|p>  enable creation of dependency graphs. Set this to 'global' (g) if you\n";
-   $help.="                     want to create project-wide dependency graphs or 'package' (p) for\n";
-   $help.="                     package-level graphs. The graphs will be stored in the project working\n";
-   $help.="                     directory. If you set the environment variable SCRAM_WRITEGRAPHS=X\n";
-   $help.="                     (where X is PS/JPEG/GIF), SCRAM will automatically create the graphs in format X.\n\n";
-   $help.="                     Note that you must have AT&T's Dot program installed and in\n";
-   $help.="                     your path to be able to use this feature.\n\n";
-   $help.="\n";
-   $help.="$::bold";
-   $help.="Example:$::normal To refresh the current area cache, produce global dependency graphs but not run gmake\n";
-   $help.="\n";
-   $help.="$::bold";
-   $help.="\tscram build -r -w=g -t$::normal\n";
-   $help.="\n";
    $help.="\n";
    $help.="Make option flags can be passed to gmake at build-time: the supported options are\n";
    $help.="\n -n               print the commands that would be executed but do not run them\n";
@@ -478,25 +464,6 @@ sub build()
    $help.=" -k               continue for as long as possible after an error\n";
    $help.=" -s               do not print any output\n";                
    $help.=" -d               run gmake in debug mode\n\n";      
-   $help.="\n";
-
-   return $help;
-   }
-
-sub gui()
-   {
-   my $self=shift;
-   my $help;
-
-   $help.="Description:\n";
-   $help.="\n";
-   $help.="\tAllow user interaction with the build Metadata.\n";
-   $help.="\n";
-   $help.="Usage:\n";
-   $help.="$::bold";
-   $help.="\tscram gui --edit [class]$::normal\n";
-   $help.="$::bold";
-   $help.="\tscram gui --show [meta type]$::normal\n";
    $help.="\n";
 
    return $help;

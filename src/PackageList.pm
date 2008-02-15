@@ -30,7 +30,6 @@
 		URL::URL_cvs.pm
 		URL::URL_file.pm
 		URL::URL_filed.pm
-		URL::URL_http.pm
 		URL::URL_interface.pm
 		URL::URL_label.pm
 		URL::URLclass.pm

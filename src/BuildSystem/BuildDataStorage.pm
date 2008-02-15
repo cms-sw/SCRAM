@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.18 2007/12/14 09:03:46 muzaffar Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.23.2.1 2008/02/15 14:58:01 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -51,66 +51,6 @@ sub new()
   
   return $self;
   }
-
-sub grapher()
-   {
-   my $self=shift;
-   my ($mode,$writeopt)=@_;
-   
-   if ($mode)
-      {
-      $mode =~ tr[A-Z][a-z];
-      # Check to see what the mode is:
-      if ($mode =~ /^g.*?/)
-	 {	 
-	 $self->{GRAPH_MODE} = 'GLOBAL';
-	 # GLOBAL package graphing:
-	 use BuildSystem::SCRAMGrapher;
-	 $self->{SCRAMGRAPHER} = BuildSystem::SCRAMGrapher->new();
-	 }
-      elsif ($mode =~ /^p.*?/)
-	 {
-	 # All other cases assume per package. This means that each package
-	 # is responsible for creating/destroying grapher objects and writing
-	 # out graphs, if required:
-	 $self->{GRAPH_MODE} = 'PACKAGE';
-	 }
-      else
-	 {
-	 print "SCRAM error: no mode (w=p,w=g) given for graphing utility!","\n";
-	 exit(1);
-	 }
-      
-      # Set write option:
-      $self->{GRAPH_WRITE} = $writeopt;
-      }
-   else
-      {
-      print "SCRAM error: no mode (w=p,w=g) given for graphing utility!","\n";
-      exit(1);
-      }
-   }
-
-sub global_graph_writer()
-   {
-   my $self=shift;
-   my $name='Project';   
-   # Only produce graphs with DOT if enabled. This routine is
-   # only used at Project level:
-   if (defined($self->{SCRAMGRAPHER}) && $self->{GRAPH_WRITE})
-      {
-      my $data; # Fake data - there isn't a DataCollector object
-      $self->{SCRAMGRAPHER}->graph_write($data, $name);
-      delete $self->{SCRAMGRAPHER};
-      }
-   else
-      {
-      print "SCRAM error: can't write graph!","\n";
-      exit(1);
-      }
-   
-   return;
-   }
 
 #### The methods ####
 sub datapath()

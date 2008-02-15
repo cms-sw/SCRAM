@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.15.2.5 2007/12/13 14:35:44 muzaffar Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.19 2007/12/14 09:03:47 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -245,10 +245,10 @@ sub toolsetup()
       }
    
    # First, check to see if there was a tool URL given. If so, we might need to read
-   # from http or from a file: type URL:
+   # from a file: type URL:
    if (my ($proto, $urlv) = ($toolurl =~ /(.*):(.*)/))
       {      
-      # See what kind of URL (file:, http:, cvs:, svn:, .. ):
+      # See what kind of URL (file:, cvs:, svn:, .. ):
       if ($proto eq 'file')
 	 {
 	 # Check to see if there is a ~ and substitute the user
@@ -282,24 +282,6 @@ sub toolsetup()
 	 else
 	    {
 	    $::scram->scramerror("Unable to set up $toolname from URL \"$toolurl\" - $urlv does not exist!");		    
-	    }
-	 }
-      elsif ($proto eq 'http')
-	 {
-	 print "SCRAM: downloading $toolname from $toolurl","\n";
-	 # Download from WWW first:
-	 use LWP::Simple qw(&getstore);
-	 my $http_response_val = &getstore($toolurl, $filename);
-	 
-	 # Check the HTTP status. If doc not found, exit:
-	 if ($http_response_val != 200)
-	    {
-	    my ($server,$doc) = ($urlv =~ m|//(.*?)/(.*)|);	    
-	    $::scram->scramerror("Unable to set up $toolname: $doc not found on $server!");
-	    }
-	 else
-	    {
-	    $toolfile=$filename;
 	    }
 	 }
       elsif ($proto eq 'cvs')

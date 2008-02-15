@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-02-09 20:14:55+0100
-# Revision: $Id: ToolParser.pm,v 1.8 2007/12/14 09:03:47 muzaffar Exp $ 
+# Revision: $Id: ToolParser.pm,v 1.8.2.1 2008/02/15 14:58:01 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -46,6 +46,7 @@ sub new
    $self->{nested} = 0;
    $self->{scramdoc}=ActiveDoc::SimpleDoc->new();
    $self->{scramdoc}->newparse("setup", $self->{mydoctype},'Subs');
+   $self->{envorder}=[];
 
    return $self;
    }
@@ -272,6 +273,7 @@ sub environment()
       {
       # No entry yet so just store the hashref:
       $self->{"$self->{levels}->[$self->{nested}]".content}->{ENVIRONMENT}->{$envname} = [ $hashref ];
+      push @{$self->{envorder}},$envname;
       }
    }
 
@@ -514,6 +516,7 @@ sub processrawtool()
    my ($interactive) = @_;
    my $data = [];
    my $environments = {}; # Somewhere to collect our environments
+   my $envorder=[];
 
    # Set interactive mode if required:
    $self->{interactive} = $interactive;
@@ -664,54 +667,19 @@ sub processrawtool()
       $tooldataobj->scram_compiler($self->{content}->{SCRAM_COMPILER});
       }
 
-   # Establish the order of parsing the value strings:
-   my $order = $self->process_environments($environments);
    if ($self->{interactive})
       {
       # Set the values interactively:
-      $self->interactively_find_settings($tooldataobj, $environments, $order);
+      $self->interactively_find_settings($tooldataobj, $environments, $self->{envorder});
       }
    else
       {
       # Set the values:
-      $self->find_settings($tooldataobj, $environments, $order);
+      $self->find_settings($tooldataobj, $environments, $self->{envorder});
       }
      
    # Return a ToolData object:
    return $tooldataobj;
-   }
-
-sub process_environments()
-   {
-   my $self=shift;
-   my ($environments)=@_;
-   
-   use BuildSystem::SCRAMGrapher;
-   my $G = BuildSystem::SCRAMGrapher->new();
-
-   foreach $envtype (keys %{$environments})
-      {
-      while (my ($envcontent,$envdata) = each %{$environments->{$envtype}})
-	 {
-	 # Add a vertex for the VARIABLE name:
-	 $G->vertex($envcontent);
-
-	 foreach my $element (@$envdata)
-	    {
-	    if (exists($element->{'ELEMENTS'}))
-	       {
-	       map
-		  {
-		  # Add a path for each element in ELEMENTS:
-		  $G->edge($envcontent, $_);
-		  } @{$element->{'ELEMENTS'}};
-	       }
-	    }
-	 }
-      }
-
-   my $setup_order = $G->sort();
-   return $setup_order;
    }
 
 sub find_settings()
