@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-02-09 20:14:55+0100
-# Revision: $Id: ToolParser.pm,v 1.8.2.1 2008/02/15 14:58:01 muzaffar Exp $ 
+# Revision: $Id: ToolParser.pm,v 1.8.2.2 2008/02/15 17:30:59 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -76,7 +76,6 @@ sub tool()
       print "\n";
       $::scram->scramerror("Configuration problem! Wanted/actual ".$self->{tool}." tool versions differ (wanted = ".$self->{version}.", downloaded = ".$$hashref{'version'}.")\n");
       }
-   
    # Test to see if this doc defines a
    # scram-managed project or a compiler:
    if (exists ($$hashref{'type'}))
@@ -130,25 +129,6 @@ sub runtime()
    my ($object,$name,%attributes)=@_;
    my $hashref = \%attributes;   
    my $envname;
-   # Break the value/default value into its constituent parts:
-   foreach my $t (qw(value default))
-      {
-      if (exists ($$hashref{$t}))
-	 {
-	 $hashref->{ELEMENTS} = [];
-	 map
-	    {
-	    # In some cases, we might set a runtime path (e.g. LD_LIBRARY_PATH) to
-	    # a proper path value i.e. X:Y. In this case, don't bother adding the string
-	    # as a "variable" to ELEMENTS:
-	    if ($_ =~ m|\$(.*)?| && $_ !~ /:/) 
-	       {
-	       push(@{$hashref->{ELEMENTS}},$1);
-	       }
-	    } split("/",$hashref->{$t});
-	 }
-      }
-   
    # Check to see if we have a "type" arg. If so, we use this to create the key:
    if (exists ($hashref->{'type'}))
       {
@@ -246,28 +226,20 @@ sub environment()
    # Save a copy of the name of this environment:
    my $envname=$$hashref{'name'};
    delete $$hashref{'name'}; # Delete name entry so hash is more tidy
-   # Break the value/default value into its constituent parts:
-   foreach my $t (qw(value default))
-      {
-      if (exists ($$hashref{$t}))
-	 {
-	 $hashref->{ELEMENTS} = [];
-	 map
-	    {
-	    if ($_ =~ m|\$(.*)?|)
-	       {
-	       push(@{$hashref->{ELEMENTS}},$1);
-	       }
-	    } split("/",$hashref->{$t});
-	 }
-      }
-   
    # Before we save $hashref we need to know if there are already
    # any env tags with the same name. If there are, we must save all
    # data to an aray of hashes:
    if (exists ($self->{"$self->{levels}->[$self->{nested}]".content}->{ENVIRONMENT}->{$envname}))
       {
       push(@{$self->{"$self->{levels}->[$self->{nested}]".content}->{ENVIRONMENT}->{$envname}},$hashref);
+      my @norder=();
+      foreach my $env (@{$self->{envorder}})
+         {
+         if($env ne $envname) {push @norder,$env;}
+         }
+         $self->{envorder}=[];
+         push @{$self->{envorder}},@norder;
+         push @{$self->{envorder}},$envname;
       }
    else
       {
@@ -516,7 +488,6 @@ sub processrawtool()
    my ($interactive) = @_;
    my $data = [];
    my $environments = {}; # Somewhere to collect our environments
-   my $envorder=[];
 
    # Set interactive mode if required:
    $self->{interactive} = $interactive;
@@ -666,16 +637,28 @@ sub processrawtool()
       {
       $tooldataobj->scram_compiler($self->{content}->{SCRAM_COMPILER});
       }
-
+   
+   my @order=(); push @order,@{$self->{envorder}};
+   my %uorder=(); map {$uorder{$_}=1} @order;
+   foreach my $type (qw (ENVIRONMENT RUNTIME))
+      {
+      if (exists $environments->{$type})
+         {
+         foreach my $env (keys %{$environments->{$type}})
+            {
+            if (!exists $uorder{$env}){$uorder{$env}=1; push @order,$env;}
+            }
+         }
+      }
    if ($self->{interactive})
       {
       # Set the values interactively:
-      $self->interactively_find_settings($tooldataobj, $environments, $self->{envorder});
+      $self->interactively_find_settings($tooldataobj, $environments, \@order);
       }
    else
       {
       # Set the values:
-      $self->find_settings($tooldataobj, $environments, $self->{envorder});
+      $self->find_settings($tooldataobj, $environments, \@order);
       }
      
    # Return a ToolData object:

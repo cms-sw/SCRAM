@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.23.2.1 2008/02/15 14:58:01 muzaffar Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.23.2.2 2008/02/15 17:30:58 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -258,7 +258,7 @@ sub update()
                }
             else
                {
-               $flag=$projinfo->ispublic($item);
+               $flag=$projinfo->isPublic($item->class());
                }
 	    $runeng{$path}=$item;
             if ($flag)
