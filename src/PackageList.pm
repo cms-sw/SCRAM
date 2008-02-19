@@ -6,7 +6,6 @@
 		ActiveDoc::Parse.pm
 		ActiveDoc::SimpleDoc.pm
 		ActiveDoc::SimpleURLDoc.pm
-		ActiveDoc::TagContainer.pm
 		BuildSystem::BuildFile.pm
 		BuildSystem::Requirements.pm
 		BuildSystem::ToolCache.pm
@@ -29,9 +28,6 @@
 		URL::URL_base.pm
 		URL::URL_cvs.pm
 		URL::URL_file.pm
-		URL::URL_filed.pm
-		URL::URL_interface.pm
-		URL::URL_label.pm
 		URL::URLclass.pm
 		URL::URLhandler.pm
 		Utilities::AddDir.pm
@@ -39,7 +35,6 @@
 		Utilities::CVSmodule.pm
 		Utilities::DataItem.pm
 		Utilities::HashDB.pm
-		Utilities::PathMod.pm
 		Utilities::SCRAMUtils.pm
 		Utilities::Verbose.pm
 		);

@@ -14,7 +14,7 @@ Utilities::AddDir - Utility functions for creating or copying directories.
 
 =cut
 
-package AddDir;
+package Utilities::AddDir;
 require 5.001;
 require Exporter;
 use Cwd;
