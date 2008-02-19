@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.77.2.1 2008/02/15 14:58:03 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.77.2.2 2008/02/15 17:30:59 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -777,7 +777,7 @@ sub build()
       # Where to search for BuildFiles (from src):
       chdir($ENV{LOCALTOP});
       # Create the working dir if it doesn't exist
-      AddDir::adddir($workingdir), if (! -d $workingdir);
+      Utilities::AddDir::adddir($workingdir), if (! -d $workingdir);
 
       if ( -r $cachename )
 	 {
@@ -1224,7 +1224,7 @@ sub update_project_area()
 	       system("rm","-rf",$backupdir);
 	       }
 	    
-	    AddDir::adddir($backupdir);
+	    Utilities::AddDir::adddir($backupdir);
 	    # Move .SCRAM and config dirs there
 	    system("mv",$ENV{SCRAM_CONFIGDIR},$backupdir);
 	    system("mv",$self->localarea()->admindir(),$backupdir);
@@ -1243,7 +1243,7 @@ sub update_project_area()
 	    # to download tools again from CVS:
 	    $relarea->copyurlcache($ENV{LOCALTOP});
 	    # Copy the config dir:
-	    AddDir::copydir($relarea->location()."/".$relarea->configurationdir(),
+	    Utilities::AddDir::copydir($relarea->location()."/".$relarea->configurationdir(),
 		      $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR});
 
 	    # Change the project version to the new one:

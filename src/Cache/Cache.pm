@@ -5,7 +5,7 @@
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 #         (with contribution from Lassi.Tuura@cern.ch)
 # Update: 2003-11-27 16:45:18+0100
-# Revision: $Id: Cache.pm,v 1.10 2007/12/14 09:03:52 muzaffar Exp $ 
+# Revision: $Id: Cache.pm,v 1.10.2.1 2008/02/15 14:58:02 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -261,7 +261,7 @@ sub checktree()
 	    {
             $self->{REMOVEDBF}{$bfn}=1;
 	    delete $self->{BFCACHE}{$bfn};
-            AddDir::adddir($bfcachedir);
+            Utilities::AddDir::adddir($bfcachedir);
             open(BF,">${bfcachedir}/$ENV{SCRAM_BUILDFILE}");close(BF);
 	    $self->cachestatus(1);
 	    }
@@ -272,7 +272,7 @@ sub checktree()
          if ((! exists $self->{BFCACHE}{$bfn}) ||
              ($bftime != $self->{BFCACHE}{$bfn}))
             {
-            AddDir::adddir($bfcachedir);
+            Utilities::AddDir::adddir($bfcachedir);
             open(BF,">${bfcachedir}/$ENV{SCRAM_BUILDFILE}");close(BF);
             $self->{ADDEDBF}{$bfn}=1;
 	    delete $self->{BFCACHE}{"${path}/$ENV{SCRAM_BUILDFILE}"};
@@ -286,7 +286,7 @@ sub checktree()
 	    if ($ext eq ""){$self->{nonxml}+=1;}
 	    if (!-f "${bfcachedir}/$ENV{SCRAM_BUILDFILE}")
 	       {
-	       AddDir::adddir($bfcachedir);
+	       Utilities::AddDir::adddir($bfcachedir);
 	       open(BF,">${bfcachedir}/$ENV{SCRAM_BUILDFILE}");close(BF);
 	       }
 	    $self->cachestatus(1);

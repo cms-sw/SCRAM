@@ -280,7 +280,7 @@ sub setup {
 	$self->symlinks($symlinks);
 
 	# -- create top level structure and work area
-	AddDir::adddir($workloc);
+	Utilities::AddDir::adddir($workloc);
 
 	# -- add a cache
 	$self->_newcache();
@@ -496,7 +496,7 @@ sub copy {
 
 	# copy across the admin dir
         my $temp=$self->location()."/".$self->{admindir};
-	AddDir::copydir($temp,"$destination/".$self->{admindir});
+	Utilities::AddDir::copydir($temp,"$destination/".$self->{admindir});
 }
 
 sub align {
@@ -536,7 +536,7 @@ sub copysetup {
 	my $temp2=$dest."/".$self->{admindir}."/".$self->arch();
 	if ( $temp ne $temp2 ) {
 	 if ( -d $temp ) {
-          AddDir::copydir($temp,$temp2);
+          Utilities::AddDir::copydir($temp,$temp2);
 	  $rv=0;
 	 }
 	}
@@ -552,7 +552,7 @@ sub copyurlcache {
 	my $temp2=$dest."/".$self->{admindir}."/cache";
 	if ( $temp ne $temp2 ) {
 	 if ( -d $temp ) {
-          AddDir::copydir($temp,$temp2);
+          Utilities::AddDir::copydir($temp,$temp2);
 	  $rv=0;
 	 }
 	}
@@ -571,7 +571,7 @@ sub copywithskip {
 	 if ( -d $temp ) {
           my $fs=[];
           foreach my $f (@$filetoskip) {push @$fs,"${temp}/${f}";}
-          AddDir::copydirwithskip($temp,$temp2,$fs);
+          Utilities::AddDir::copydirwithskip($temp,$temp2,$fs);
 	  $rv=0;
 	 }
 	}

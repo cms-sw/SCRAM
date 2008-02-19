@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.20.2.1 2008/02/15 14:58:03 muzaffar Exp $ 
+# Revision: $Id: Helper.pm,v 1.20.2.2 2008/02/15 17:30:59 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -20,7 +20,7 @@ Helper - A package which provides each command with a helper function.
 
 =cut
 
-package Helper;
+package SCRAM::Helper;
 require 5.004;
 
 use Exporter;

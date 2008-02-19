@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.19 2007/12/14 09:03:47 muzaffar Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.19.2.1 2008/02/15 17:30:59 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -52,8 +52,8 @@ sub new
    $self->{tooltimestamp}="timestamps";
    
    # Make sure our tool download dir exists:
-   AddDir::adddir($self->{toolfiledir});
-   AddDir::adddir($self->{archstore});
+   Utilities::AddDir::adddir($self->{toolfiledir});
+   Utilities::AddDir::adddir($self->{archstore});
    
    # Set the tool cache file to read/write:
    $self->name($projectarea->toolcachename());
@@ -241,7 +241,7 @@ sub toolsetup()
    # If .SCRAM/InstalledTools doesn't exist, create it:
    if (! -d $self->{toolfiledir})
       {
-      AddDir::adddir($self->{toolfiledir});
+      Utilities::AddDir::adddir($self->{toolfiledir});
       }
    
    # First, check to see if there was a tool URL given. If so, we might need to read
@@ -622,7 +622,7 @@ sub updatetooltimestamp ()
       {
       if (!-d $stampdir)
 	 {
-	 AddDir::adddir($stampdir);
+	 Utilities::AddDir::adddir($stampdir);
 	 }
       open(TIMESTAMPFILE,">$stampfile");
       close(TIMESTAMPFILE);

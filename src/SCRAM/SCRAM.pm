@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.34.2.1 2008/02/15 14:58:04 muzaffar Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.34.2.2 2008/02/15 17:30:59 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -69,7 +69,7 @@ sub new()
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_VERSION => $ENV{SCRAM_VERSION},
       SCRAM_TOOLMANAGER => undef,
-      SCRAM_HELPER => new Helper,
+      SCRAM_HELPER => new SCRAM::Helper,
       ISPROJECT => undef,
       };
   
@@ -269,7 +269,7 @@ sub _initenv()
    # Check and set architecture:
    if (! defined $self->{SCRAM_ARCH})
       {
-      my $a = Architecture->new();
+      my $a = Utilities::Architecture->new();
       $self->architecture($a->arch());
       $self->system_architecture($a->system_arch_stem());
       $ENV{SCRAM_ARCH} = $self->architecture();
