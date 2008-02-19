@@ -21,10 +21,8 @@
 		SCRAM::Helper.pm
 		SCRAM::SCRAM.pm
 		SCRAM::AutoToolSetup.pm
-		SCRAM::ProjectSearcher.pm
 		SCRAM::ScramFunctions.pm
 		SCRAM::ScramProjectDB.pm
-		SCRAM::SearchIterator.pm
 		URL::URL_base.pm
 		URL::URL_cvs.pm
 		URL::URL_file.pm
