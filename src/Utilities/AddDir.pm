@@ -157,6 +157,9 @@ sub copydirwithskip
       die "Attempt to open a non-existent directory ($src). Exiting\n";
       }
    }
+1;
+
+__END__
 
 =back
 
