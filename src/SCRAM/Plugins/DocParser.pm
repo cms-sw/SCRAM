@@ -211,7 +211,7 @@ sub parseError_()
   my $self=shift;
   my $msg=shift;
   my $lineflag=shift || 0;
-  print STDERR "ERROR:XMLParser:",$self->{file},":",$self->{linenum},":";
+  print STDERR "ERROR: SCRAM::Plugins::DocParser:",$self->{file},":",$self->{linenum},":";
   print STDERR "$msg";
   if ($lineflag)
   {print STDERR "######### START #########\n",$self->{input},"\n######### END #########\n";}
@@ -227,7 +227,7 @@ sub initfile_()
   my $ref;
   if(!open($ref,$file))
   {
-    print STDERR "XMLParser: No such file to read:$file\n";
+    print STDERR "ERROR: SCRAM::Plugins::DocParser: No such file to read:$file\n";
     return 0;
   }
   while(my $line=<$ref>){chomp $line; push @{$self->{data}},$line;}
