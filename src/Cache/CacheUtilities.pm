@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-30 11:51:58+0100
-# Revision: $Id: CacheUtilities.pm,v 1.9 2007/12/14 09:03:53 muzaffar Exp $ 
+# Revision: $Id: CacheUtilities.pm,v 1.9.2.1 2008/02/21 16:51:47 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -45,7 +45,7 @@ use IO::File;
 use English;
 use Exporter;
 
-use Storable;
+use Storable qw(nstore retrieve);
 
 @ISA=qw(Exporter);
 
