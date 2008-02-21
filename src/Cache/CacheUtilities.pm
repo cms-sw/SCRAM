@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-30 11:51:58+0100
-# Revision: $Id: CacheUtilities.pm,v 1.7.2.1 2007/02/26 18:33:45 sashby Exp $ 
+# Revision: $Id: CacheUtilities.pm,v 1.9 2007/12/14 09:03:53 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -83,7 +83,7 @@ sub write()
    move($cachefilename,$cachefilename.".bak") if ( -r $cachefilename);   
    # Use the store method of the Storable package to write out the object to a file:
    eval {
-       store($cacheobject,$cachefilename);
+       nstore($cacheobject,$cachefilename);
    };
    
    die "Cache write error: ",$EVAL_ERROR,"\n", if ($EVAL_ERROR);
