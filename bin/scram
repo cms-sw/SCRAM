@@ -19,19 +19,14 @@ use SCRAM::SCRAM_SITE;
 use SCRAM::SCRAM;
 use Getopt::Long ();
 
-#### SCRAM Installation Values #################
-if ((!exists $ENV{SCRAM_VERSION}) || ($ENV{SCRAM_VERSION}=~/^\s*$/))
-   {
-   $ENV{'SCRAM_VERSION'}='@SCRAM_VERSION@';
-   }
+#### EDIT THESE: SCRAM Installation Values #################
+$ENV{'SCRAM_VERSION'}='@SCRAM_VERSION@';
+$ENV{'SCRAM_LOOKUPDB'}='@SCRAM_LOOKUPDB_DIR@/project.lookup';
+################################################
 if (exists $ENV{SCRAM_USERLOOKUPDB} && -f "$ENV{SCRAM_USERLOOKUPDB}")
    {
    $ENV{'SCRAM_LOOKUPDB'}=$ENV{SCRAM_USERLOOKUPDB};
    print "Using $ENV{SCRAM_USERLOOKUPDB} as the database.","\n", if ($ENV{SCRAM_DEBUG});
-   }
-else
-   {
-   $ENV{'SCRAM_LOOKUPDB'}='@SCRAM_LOOKUPDB_DIR@/project.lookup';
    }
 #### Core settings ####
 $main::bold = "";
