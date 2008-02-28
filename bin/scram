@@ -37,7 +37,7 @@ $main::error = "";
 $main::good = "";
 $main::prompt="";
 $main::ORIG_ARGV=[];
-push @$main::ORIG_ARGV,$ARGV;
+push @$main::ORIG_ARGV,@ARGV;
 
 # Test whether the output from SCRAM is being redirected, or
 # not (prevents escape signals from being printed to STDOUT if
