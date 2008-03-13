@@ -38,8 +38,9 @@ sub new()
    my $class=shift;
    $self={};
    bless $self, $class;
-   my ($dataclass, $parse_style,$keep_running_onerr)=@_;
+   my ($dataclass, $parse_style,$keep_running_onerr,$xml)=@_;
    require SCRAM::Plugins::DocParser;
+   $self->{xml}=$xml || 0;
    $self->{xmlparser} = new SCRAM::Plugins::DocParser($dataclass,$parse_style,$keep_running_onerr);
    return $self;
    }
@@ -91,7 +92,7 @@ sub getfilestring_()
    my ($file)=@_;
    my $filestring="";
    my $read=0;
-   if (($file!~/\.xml$/) && ($file!~/\/\.SCRAM\/InstalledTools\/[^\/]+$/))
+   if (($file!~/\.xml$/) && ($self->{xml}==0))
       {
       eval("use SCRAM::Plugins::Doc2XML");
       if (!$@)

@@ -1,0 +1,40 @@
+2008-03-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* bin/scram: Make use of --arch <arch> to properly switch to a different
+	scramdb.
+	* SCRAM/Plugins/ProjectChkSum.pm: New perl module for generating
+	checksum for a project config directory.
+	* PackageList.pm: Updated according to the removed perl modules.
+	* ActiveDoc/ActiveDoc.pm: Code cleanup.
+	* ActiveDoc/Parse.pm, ActiveDoc/SimpleDoc.pm: Updated to properly parse
+	XML and non-XML based files.
+	* ActiveDoc/SimpleURLDoc.pm: Code cleanup (no more tool caching)
+	* BuildSystem/ToolCache.pm: Code cleanup (no more tool caching) and no
+	more raw tool data storage.
+	* BuildSystem/ToolManager.pm: Code cleanup (no more tool caching),
+	always read tools for config/toolbox/<arch>. No need to provide tool
+	version while setting up tool.
+	* BuildSystem/ToolParser.pm: Code cleanup, only support single tool
+	version.
+	* Cache/Cache.pm: Code for converting non-XML BuildFiles to XML-based
+	files moved for CMD.pm.
+	* Cache/CacheUtilities.pm: SCRAM internal caches are now zipped (much
+	smaller size <500KB)
+	* Configuration/BootStrapProject.pm: Easy bootstraping project area, no
+	more requirements.xml files needed.
+	* Configuration/ConfigArea.pm: Code cleanup and multiple arch dev
+	support.
+	* SCRAM/AutoToolSetup.pm: Cod ecleanup and updates for multiple arch dev
+	support.
+	* SCRAM/CMD.pm: Code cleanup, multiple arch support, convertion of
+	non-XML BuildFiles to XML-based BuildFile.
+	* SCRAM/Helper.pm: updated help messages.
+	* SCRAM/ProdSymLinks.pm: Allowed environement variables to be used in
+	key too i.e. $(SCRAM_ARCH}:/tmp/${HOME} possible.
+	* SCRAM/SCRAM.pm: Code cleanup (merged code from ScramFunctions.pm).
+	* SCRAM/ScramProjectDB.pm: Cleanup, no more reading of
+	.SCRAM/Environment file when doing "scramv1 list".
+	* Utilities/AddDir.pm: Some new utility functions added.
+	* Utilities/CVSmodule.pm, Utilities/DataItem.pm, Utilities/HashDB.pm,
+	Utilities/IndexedFileStore.pm, Utilities/SCRAMUtils.pm,
+	Utilities/SVNmodule.pm, URL/*.pm: Removed perl modules.

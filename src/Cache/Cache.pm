@@ -5,7 +5,7 @@
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 #         (with contribution from Lassi.Tuura@cern.ch)
 # Update: 2003-11-27 16:45:18+0100
-# Revision: $Id: Cache.pm,v 1.10.2.1 2008/02/15 14:58:02 muzaffar Exp $ 
+# Revision: $Id: Cache.pm,v 1.10.2.2 2008/02/19 15:06:10 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -41,7 +41,7 @@ use Utilities::AddDir;
 
 =item   C<new()>
 
-Create a new Cache::Cache object. The name of the cache is B<DirCache.db> by default.
+Create a new Cache::Cache object. The name of the cache is B<DirCache.db.gz> by default.
 
 =cut
 
@@ -60,7 +60,7 @@ sub new()
    my $class=ref($proto) || $proto;
    my $self=
       {
-      CACHENAME => "DirCache.db",     # Name of global file/dir cache;
+      CACHENAME => "DirCache.db.gz",     # Name of global file/dir cache;
       BFCACHE => {},                  # BuildFile cache;
       DIRCACHE => {},                 # Source code cache;
       EXTRASUFFIX => {},              # path with extra suffix;
@@ -234,24 +234,6 @@ sub checktree()
    my $bfcachedir=$ENV{LOCALTOP}."/".$ENV{SCRAM_TMP}."/".$ENV{SCRAM_ARCH}."/cache/bf/${path}";
    my $bftime=0;
    my $bf="${path}/$ENV{SCRAM_BUILDFILE}";
-   if (($self->{convertxml}) && (!-f "${bf}.xml") && (-f "$bf"))
-       {
-       my $fref;
-       $self->{nonxml} = $self->{nonxml}+1;
-       if (open($fref,">${bf}.xml"))
-          {
-	  print ">> Converting $bf => ${bf}.xml\n";
-	  $self->{convertxml}->clean();
-          my $xml=$self->{convertxml}->convert($bf);
-	  foreach my $line (@$xml){print $fref "$line\n";}
-	  close($fref);
-	  $self->{convertxml}->clean();
-	  }
-       else
-          {
-	  print STDERR "**** WARNING: Can not open file for writing: ${bf}.xml\n";
-	  }
-       }
    foreach my $ext (".xml","")
       {
       my $bfn="$bf$ext";
@@ -260,6 +242,7 @@ sub checktree()
          if (exists $self->{BFCACHE}{$bfn})
 	    {
             $self->{REMOVEDBF}{$bfn}=1;
+	    print "ADDED:REMOVEDBF : $bfn\n";
 	    delete $self->{BFCACHE}{$bfn};
             Utilities::AddDir::adddir($bfcachedir);
             open(BF,">${bfcachedir}/$ENV{SCRAM_BUILDFILE}");close(BF);
@@ -352,22 +335,9 @@ sub checkfiles()
    {
    my $self=shift;
    $self->{cachereset}=shift || 0;
-   $self->{convertxml}=shift || 0;
    # Scan config dir for top-level data, then start from src:
    my @scandirs=($ENV{SCRAM_CONFIGDIR}, $ENV{SCRAM_SOURCEDIR});
    # Loop over all directories that need scanning (normally just src and config):
-   if ($self->{convertxml})
-      {
-      eval ("use SCRAM::Plugins::Doc2XML");
-      if (!$@)
-         {
-	 $self->{convertxml} = SCRAM::Plugins::Doc2XML->new();
-	 }
-      else
-         {
-	 print STDERR "**** WARNING: Can not convert $ENV{SCRAM_BUILDFILE} in to XML format. Missing SCRAM::Plugins::Doc2XML perl module.\n";
-	 }
-      }
    $self->{nonxml}=0;
    foreach my $scand (@scandirs)
       {
@@ -619,7 +589,7 @@ sub logmsg()
 =item   C<name()>
 
 Set or return the name of the cache. Normally set
-to B<DirCache.db> (and not architecture dependent).
+to B<DirCache.db.gz> (and not architecture dependent).
 
 =cut
 

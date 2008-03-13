@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-02-09 20:14:55+0100
-# Revision: $Id: ToolParser.pm,v 1.8.2.2 2008/02/15 17:30:59 muzaffar Exp $ 
+# Revision: $Id: ToolParser.pm,v 1.8.2.3 2008/02/18 10:36:08 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -22,15 +22,6 @@ use Utilities::Verbose;
 
 #
 sub new
-   ###############################################################
-   # new                                                         #
-   ###############################################################
-   # modified : Thu Nov 13 10:42:08 2003 / SFA                   #
-   # params   :                                                  #
-   #          :                                                  #
-   # function :                                                  #
-   #          :                                                  #
-   ###############################################################
    {
    my $proto=shift;
    my $class=ref($proto) || $proto;
@@ -38,14 +29,11 @@ sub new
    
    bless $self,$class;
    
-   $self->{cache}=shift;
-   $self->{mydoctype}="BuildSystem::ToolParser";
-   $self->{mydocversion}="1.1";
    $self->{interactive} = 0;
    $self->{content} = {};
    $self->{nested} = 0;
    $self->{scramdoc}=ActiveDoc::SimpleDoc->new();
-   $self->{scramdoc}->newparse("setup", $self->{mydoctype},'Subs');
+   $self->{scramdoc}->newparse("setup","BuildSystem::ToolParser",'Subs',undef,1);
    $self->{envorder}=[];
 
    return $self;
@@ -60,24 +48,9 @@ sub tool()
    $self->{levels}=['','tag','nexttag'];
    $$hashref{'name'} =~ tr[A-Z][a-z];
 
-   # Make sure we only pick up the tool requested:
-   if ( ($self->{tool} eq $$hashref{'name'}) && 
-	($self->{version} eq $$hashref{'version'} ))
-      {
-      # These variables will be used when expanding settings
-      # in tool variable defs:
-      $ENV{SCRAMToolname} = $$hashref{'name'};
-      $ENV{SCRAMToolversion} = $$hashref{'version'};
-      $self->{content}->{TOOLNAME}=$$hashref{'name'};
-      $self->{content}->{TOOLVERSION}=$$hashref{'version'};
-      }
-   else
-      {
-      print "\n";
-      $::scram->scramerror("Configuration problem! Wanted/actual ".$self->{tool}." tool versions differ (wanted = ".$self->{version}.", downloaded = ".$$hashref{'version'}.")\n");
-      }
-   # Test to see if this doc defines a
-   # scram-managed project or a compiler:
+   $self->{content}->{TOOLNAME}=$$hashref{'name'};
+   $self->{content}->{TOOLVERSION}=$$hashref{'version'};
+   
    if (exists ($$hashref{'type'}))
       {
       $$hashref{'type'} =~ tr[A-Z][a-z];
@@ -89,7 +62,6 @@ sub tool()
 	 }     
       elsif ($$hashref{'type'} eq 'compiler')
 	 {
-	 # Is tool a compiler? Store this for retrieval from tool manager obj:
 	 $self->{content}->{SCRAM_COMPILER} = 1;
 	 }
       else
@@ -305,12 +277,10 @@ sub architecture_()
 sub parse
    {
    my $self=shift;
-   my ($tool,$toolver,$file)=@_;   
-   $self->{tool}=$tool;
-   $self->{version}=$toolver;
+   my ($file)=@_;   
    $self->{scramdoc}->filetoparse($file);   
    $self->verbose("Setup Parse");
-   my $fhead='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><doc type="BuildSystem/ToolParser" version="1.0">';
+   my $fhead='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><doc type="BuildSystem::ToolParser" version="1.0">';
    my $ftail='</doc>';
    $self->{scramdoc}->parse("setup",$fhead,$ftail);
    delete $self->{scramdoc};

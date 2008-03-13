@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.20.2.2 2008/02/15 17:30:59 muzaffar Exp $ 
+# Revision: $Id: Helper.pm,v 1.20.2.3 2008/02/19 15:06:46 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -168,15 +168,12 @@ sub list()
    $help.="\tlocal SCRAM database (see \"scram install help\").\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram list [-c] [-h] [--oldstyle] [<projectname>]$::normal\n";
+   $help.="\tscram list [-c] [-h] [<projectname>]$::normal\n";
    $help.="\n";
    $help.="Use the -c option to list the available projects and versions installed in the local\n";
    $help.="SCRAM database without fancy formatting or header strings.\n";
    $help.="The project name, version and installation directory are printed on STDOUT, separated\n";
    $help.="by spaces for use in scripts.\n\n";
-   $help.="Use the --oldstyle option to show all projects from all versions (i.e. pre-V1) of SCRAM\n";
-   $help.="(by default, only projects built and installed with V1x will be listed).\n";
-   $help.="\n";
    
    return $help;
    }
@@ -192,45 +189,28 @@ sub db()
    $help.="\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram db <subcommand> $::normal\n";
+   $help.="\tscram db [-h] -s|<-l scramdb>|-u <scramdb>  $::normal\n";
    $help.="\n";
    $help.="Valid subcommands are:\n";
    $help.="\n"; 
-   $help.="-link\n"; 
+   $help.="-l|--link\n"; 
    $help.="\tMake available an additional database for project and\n";
    $help.="\tlist operations, e.g.\n";
    $help.="\n";
    $help.="$::bold";
-   $help.="\tscram db link $::normal /a/directory/path/project.lookup\n";
+   $help.="\tscram db --link $::normal /a/directory/path/project.lookup\n";
    $help.="\n";
-   $help.="-unlink\n"; 
+   $help.="-u|--unlink\n"; 
    $help.="\tRemove a database from the link list. Note this does\n";
    $help.="\tnot remove the database, just the link to it in SCRAM.\n";
    $help.="\n";
    $help.="$::bold";
-   $help.="\tscram db unlink $::normal /a/directory/path/project.lookup\n";
+   $help.="\tscram db --unlink $::normal /a/directory/path/project.lookup\n";
    $help.="\n";
-   $help.="-show\n"; 
+   $help.="-s|--show\n"; 
    $help.="\tList the databases that are linked in.\n";
    $help.="\n";
 
-   return $help;
-   }
-
-sub urlget()
-   {
-   my $self=shift;
-   my $help;
-   $help.="Description:\n";
-   $help.="\n";
-   $help.="\tRetrieve URL information. For example, show location in the cache\n";
-   $help.="\tof a local copy of a Tool Document.\n";
-   $help.="\n";
-   $help.="Usage:\n";
-   $help.="$::bold";
-   $help.="\tscram urlget [-h] <url>$::normal\n";
-   $help.="\n";
-   
    return $help;
    }
 
@@ -240,25 +220,14 @@ sub install()
    my $help;
    $help.="Description:\n";
    $help.="\n";
-   $help.="\tAssociates a label with the current release in the SCRAM database.\n";
-   $help.="\tThis allows other users to refer to a centrally installed project by\n";
-   $help.="\tthis label rather than a remote url reference.\n";
+   $help.="\tInstalled this project so that other user can create developer area against it.\n";
    $help.="\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram install [-f] [<project_tag> [<version_tag>]] $::normal\n";
+   $help.="\tscram install [-f]$::normal\n";
    $help.="\n";
    $help.="The -f flag can be used to force an installation of a project, overwriting any entries\n";
    $help.="with the same project name and version (useful in batch processing).\n";
-   $help.="\n";
-   $help.="<project_tag>:\n";
-   $help.="\n";
-   $help.="\toverride default label (the project name of the current release)\n";
-   $help.="\n";
-   $help.="<version_tag>:\n";
-   $help.="\n";
-   $help.="\tthe version tag of the current release. If version is not\n";
-   $help.="\tspecified the base release version will be taken by default.\n";
    $help.="\n";
 
    return $help;
@@ -273,7 +242,7 @@ sub remove()
    $help.="\tRemove a project entry from SCRAM database file (\"project.lookup\").\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram remove [-f] [<projectname>] [projectversion]$::normal\n";
+   $help.="\tscram remove [-f] <projectname> <projectversion>$::normal\n";
    $help.="\n";   
    $help.="The -f flag can be used to force removal of a project, not prompting the user for\n";
    $help.="confirmation (useful in batch processing).\n";
@@ -293,7 +262,7 @@ sub project()
    $help.="\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram project [-l] [-d <area>] [-n <dir>] [-f <tools.conf>] <projecturl> [<projectversion>]$::normal\n";
+   $help.="\tscram project [-l] [-s] [-d <area>] [-n <dir>] [-f <tools.conf>] <projecturl>|[<projectname> <projectversion>]$::normal\n";
    $help.="\n";
    $help.="$::bold";
    $help.="\tscram project --update [<projectversion>]$::normal\n";
@@ -316,8 +285,6 @@ sub project()
    $help.="\tcreate.\n";
    $help.="\n";
    $help.="\n";
-   $help.="Currently supported URL types are:\n";
-   $help.="\n";
    $help.="$::bold";
    $help.="database label$::normal\tLabels can be assigned to installed releases of projects for easy\n";
    $help.="access (See \"scram install\" command). If you specify a label you must also specify\n";
@@ -336,10 +303,20 @@ sub project()
    $help.="\tscram project -b ~/myprojects/projecta/config/boot $::normal\n";
    $help.="\n";
    $help.="\n";
-   $help.="Use the \"-f\" flag followed by a valid filename (which MUST end in \".conf\") to\n";
-   $help.="allow auto setup to proceed without reading files from a repository (STANDALONE mode).\n"; 
+   $help.="Use the \"-f\" flag followed by a valid filename to allow auto setup to proceed.\n";
    $help.="\n";			      
    $help.="Use \"-l\" to see the detail log message when creating a dev area.\n";
+   $help.="\n";
+   $help.="Use \"-s\" to create symlinks for lib/bin/tmp area. You need to have a ~/.scramrc/symlinks\n";
+   $help.="file which could have something like\n";
+   $help.="\t##### START OF:~/.scramrc/symlinks ########\n";
+   $help.="\t#FORMAT:link:/path \n";
+   $help.="\tlib:/tmp/\$(USER)/\$(SCRAM_PROJECTNAME)/\$(SCRAM_PROJECTVERSION)\n";
+   $help.="\ttmp:/tmp/\$(USER)/\$(SCRAM_PROJECTNAME)/\$(SCRAM_PROJECTVERSION)\n";
+   $help.="\t##### END OF:~/.scramrc/symlinks ########\n";
+   $help.="and scram will create\n";
+   $help.="/tmp/\$(USER)/\$(SCRAM_PROJECTNAME)/\$(SCRAM_PROJECTVERSION)/lib.<dummyname> -> \$(LOCALTOP)/lib\n";
+   $help.="/tmp/\$(USER)/\$(SCRAM_PROJECTNAME)/\$(SCRAM_PROJECTVERSION)/tmp.<dummyname> -> \$(LOCALTOP/tmp\n";
    $help.="\n";
    $help.="An existing developer area for a project can be updated to a more recent version of\n";
    $help.="the SAME project by running \"scram project -update <VERSION>\" in the developer area.\n";
@@ -360,30 +337,25 @@ sub setup()
    
    $help.="Description:\n";
    $help.="\n";			      
-   $help.="\tAllows installation/re-installation of a new tool/external package into an\n";
-   $help.="\talready existing development area. If no toolname is specified,\n";
+   $help.="\tAllows installation/re-installation of a new/existing tool/external package into an\n";
+   $help.="\talready existing development area. If no toolname/toolfile is specified,\n";
    $help.="\tthe complete installation process is initiated.\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram setup [-i] [toolname] [[version] [url]] [-f tools.conf]$::normal\n";
-   $help.="\n";			      
-   $help.="<projecturl>:\n";
-   $help.="\tThe URL of a SCRAM bootstrap file.\n";
+   $help.="\tscram setup [-i] [-h] [-f tools.conf] [<toolname>|<toolfile>]$::normal\n";
    $help.="\n";			      
    $help.="toolname:\n";
-   $help.="\tThe name of the tool to be set up.\n";
+   $help.="\tThe name of the tool to be set up. There must be a tool file under\n";
+   $help.="config/<arch>/tools/[selected|available]/<toolname>.xml\n";
    $help.="\n";			      
-   $help.="version:\n";
-   $help.="\tThe version of the tool to set up.\n";
-   $help.="\n";			      
-   $help.="url:\n";
-   $help.="\tURL (file:) of the tool document describing the tool being set up.\n";
-   $help.="\n";		      
+   $help.="toolfile:\n";
+   $help.="\tThis is a toolfile document describing the tool being set up.\n";
+   $help.="\n";
    $help.="The -i option turns off the automatic search mechanism allowing for more\n";
    $help.="user interaction during setup.\n";
    $help.="\n";			      
-   $help.="The -f option allows the user to specify a tools file (the filename MUST end\n";
-   $help.="in \".conf\"). This file contains values to be used for settings of the tool.\n";
+   $help.="The -f option allows the user to specify a tools file. This file contains\n";
+   $help.="values to be used for settings of the tool.\n";
    $help.="\n";			      
 
    return $help;
@@ -421,13 +393,6 @@ sub tool()
    $help.="$::bold";
    $help.="remove <tool_name> $::normal\n";
    $help.="        Remove the specified tool from the current project area.\n";
-   $help.="\n";
-   $help.="$::bold";
-   $help.="template <TYPE> $::normal\n";
-   $help.="\tCreate a template tool description file of type <TYPE>,\n";
-   $help.="\twhere <TYPE> can be either \"compiler\" or \"basic\" depending on whether the\n";
-   $help.="\ttemplate is for a compiler or for a basic tool.\n";
-   $help.="\tThe template will be created in the current directory.\n";
    $help.="\n";
    
    return $help;

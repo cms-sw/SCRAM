@@ -1,0 +1,84 @@
+
+			SCRAM Release Notes
+
+V2_0_0: 2008-03-13
+
+	* New SCRAM release series
+	* Supports for multiple arch development under one user area.
+	* Inital support for generating big objects files per shared lib/plugin
+	* Auto cleanup for renamed products
+	* No more .scramrc tool caches
+	* No more .SCRAM/cache for tool caching
+	* Tools are now public and available in config/toolbox for easy editing
+	* No more colplecated tool setup process, just providing the tool name
+	  or toolfile file is enough (no more version needed at command line)
+	* More code clean up
+	* More compact SCRAM internal caches (<500KB)
+	* Faster "scram list" as it is not reading .SCRAM/Environment file for
+	  all the installed projects
+
+V1_2_1: 2008-02-28
+
+	* Bug fix release.
+	* Properly pass the command-line argument when swaping SCRAM versions.
+
+
+V1_2_0: 2008-02-28
+
+	* New platform independent SCRAM
+	* A lot of code cleanup
+	* No more external binary dependency (platform independent SCRAM)
+	* New XML-parser (not expat based to avoid expat dependency)
+	* New code replacing the PERL Template Tool kit.
+
+V1_1_7: 2008-02-18	  
+
+	* Now SCRAM does not swap is the required SCRAM version and the used
+	  SCRAM versions are of the same SCRAM release series Vx_y.
+	
+V1_1_6: 2008-02-16
+
+	* Bug fix release
+	* Fixed the SCRAM internal caches format so that project build on 64bit
+	  machines are usable on 32bit machines.
+
+V1_1_5: 2008-02-16
+
+	* Same as V1_1_4
+
+V1_1_4: 2008-02-15
+
+	* Bug fix release
+	* Now properly rebuilds when a source file and directory stepm of
+	  package/src directory changed.
+	
+V1_1_3: 2008-02-12
+
+	* Bug fix release
+	* Correctly swap to older SCRAM release e.g. V1_0_*
+
+V1_1_2: 2008-02-06
+
+	* New improved SCRAM
+	* Much fast "scramv build"
+	* Compact build rules
+	* Compact scram internal cache
+	* scram is same as scramv1
+	* Much smaller runtime memory usage
+	* Auto cleanup for removed packages
+	* Robust XML-parser (expat based)
+	* Auto export of package level library names
+	* More usual command-line arguments parsing
+	* Symlinks for product store directories
+	* No more prompting for user input when in batch mode
+	* Order of -llib for linking fixed
+	* Only supported file transfer protocol is file:/
+	  (no more cvs/http/svn support)
+
+V1_0_3: 2006-11-08
+
+	* New release using new tool PERL Template ToolKit
+
+Shahzad Muzaffar <Shahzad.Muzaffar@cern.ch>
+Northeastern Univertsity,
+Boston, MA, USA

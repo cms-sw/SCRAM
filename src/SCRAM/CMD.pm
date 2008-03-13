@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.77.2.2 2008/02/15 17:30:59 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.77.2.3 2008/02/19 15:06:45 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -29,50 +29,6 @@ use Getopt::Long ();
 
 @ISA=qw(Exporter Utilities::Verbose);
 @EXPORT_OK=qw();
-
-=item   C<urlget($url)>
-
-Retrieve URL information. For example, show location in the cache
-of a local copy of a Tool Document.
-
-=cut
-
-sub urlget()
-   {
-   my $self=shift;
-   my (@ARGS) = @_;
-   my %opts;
-   my %options =
-      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('urlget'); exit(0) } );
-
-   local @ARGV = @ARGS;
-
-   Getopt::Long::config qw(default no_ignore_case require_order bundling);
-   
-   if (! Getopt::Long::GetOptions(\%opts, %options))
-      {
-      $self->scramfatal("Error parsing arguments. See \"scram urlget -help\" for usage info.");
-      }
-   else
-      {
-      # Check to see if we are in a local project area:
-      $self->checklocal();      
-      my $url = shift(@ARGV);
-      my ($uurl,$file)=$self->scramfunctions()->webget($self->localarea(),$url);
-
-      if ($file)
-	 {
-	 print "$file\n";
-	 }
-      else
-	 {
-	 $self->scramwarning("No file for URL found locally.");   
-	 }
-      }
-   
-   # Return nice value:
-   return 0;
-   }
 
 =item   C<arch()>
 
@@ -140,7 +96,7 @@ sub tool()
 	    $status=0; # Command found so OK;
 	    $rval = $self->$subcmd(@ARGV);
 	    }
-	 } qw( list info tag remove template );
+	 } qw( list info tag remove);
       
       # Print help and exit if no command matched:
       if ($status)
@@ -167,10 +123,10 @@ sub toollist()
    $self->checklocal();
    
    # Get array of setup tools:
-   my @setuptoolnames = $self->toolmanager()->toolsdata();
+   my $setuptoolnames = $self->toolmanager()->toolsdata();
    
    # Exit if there aren't any tools:
-   $self->scramerror(">>>> No tools set up for current arch or area! <<<<"),if ( $#setuptoolnames < 0); 
+   $self->scramerror(">>>> No tools set up for current arch or area! <<<<"),if ( scalar(@$setuptoolnames) <= 0); 
    
    # We have some tools:
    my $locationstring="Tool list for location ".$self->localarea()->location();
@@ -182,13 +138,12 @@ sub toollist()
    print "\n";
    
    # Show list:
-   foreach $t (@setuptoolnames)
+   foreach $t (@$setuptoolnames)
       {
       printf " %-20s %-10s\n",$t->toolname(),$t->toolversion();
       }
    
    print "\n";
-   # Return nice value:
    return 0;
    }
 
@@ -210,13 +165,8 @@ sub toolinfo()
    # Check to see if we are in a local project area:
    $self->checklocal();
    
-   # Get array of setup tools:
-   my @setuptoolnames = $self->toolmanager()->toolsdata();
-   
-   # Exit if there aren't any tools:
-   $self->scramerror(">>>> No tools set up for current arch or area! <<<<"),if ( $#setuptoolnames < 0); 
-
    # Get the setup tool object:
+   my $sut;
    if ($sut=$self->toolmanager()->checkifsetup($toolname))
       {
       # If we have a setup tool:
@@ -237,10 +187,9 @@ sub toolinfo()
       }
    else
       {
-      $self->scramerror(">>>> Tool ".$toolname." is not defined for this project area. <<<<");
+      $self->scramerror(">>>> Tool ".$toolname." is not setup for this project area. <<<<");
       exit(1);
       }
-   
    # Return nice value:
    return 0;
    }
@@ -264,10 +213,6 @@ sub tooltag()
    # Check to see if we are in a local project area:
    $self->checklocal();
 
-   # Get array of setup tools:
-   my @setuptoolnames = $self->toolmanager()->toolsdata();
-  
-   $self->scramerror(">>>> No tools set up for current arch or area! <<<<"),if ( $#setuptoolnames < 0); 
    $self->scramfatal("No tool name given: see \"scram tool -help\" for usage info."), if (!$toolname);
 
    # Get the setup tool object:
@@ -301,10 +246,6 @@ sub toolremove()
    # Check to see if we are in a local project area:
    $self->checklocal();
 
-   # Get array of setup tools:
-   my @setuptoolnames = $self->toolmanager()->toolsdata();
-    
-   $self->scramerror(">>>> No tools set up for current arch or area! <<<<"),if ( $#setuptoolnames < 0); 
    $self->scramfatal("Not enough args: see \"scram tool -help\" for usage info."), if (!$toolname);
    
    if ($sut=$self->toolmanager()->checkifsetup($toolname))
@@ -355,13 +296,8 @@ sub install()
       $self->checkareatype($self->localarea()->location(),"Area type mismatch. Trying to execute a SCRAM command in a V0 project area using a V1x version of SCRAM. Exiting.");
       
       # Install the project:
-      my $project = shift(@ARGV);
-      my $projectversion = shift(@ARGV);
-      $self->scramfunctions()->addareatoDB($opts{SCRAM_FORCE},$self->localarea(),$project,$projectversion);
-
-      # Also touch a register file called .installed in .SCRAM/<arch>:
+      $self->scramprojectdb()->addarea($opts{SCRAM_FORCE},$self->localarea());
       $self->register_install();
-      # Return nice value:
       return 0;
       }
    }
@@ -402,9 +338,11 @@ sub remove()
 	 }
       else
 	 { 
-	 $self->scramfunctions()->removeareafromDB($opts{SCRAM_FORCE},$project,$projectversion);
-	 # Remove the .installed file:
-	 $self->unregister_install();
+	 my $dirs=$self->scramprojectdb()->removearea($opts{SCRAM_FORCE},$project,$projectversion);
+	 foreach my $dir (@$dirs)
+	    {
+	    $self->unregister_install($dir);
+	    }
 	 }
       
       # Return nice value:  
@@ -459,7 +397,6 @@ sub list()
    my %opts;
    my %options =
       ("help|h"	 => sub { $self->{SCRAM_HELPER}->help('list'); exit(0) },
-       "oldstyle|o" => sub { $opts{SCRAM_OLDSTYLE} = 1 },
        "compact|c" => sub { $opts{SCRAM_LISTCOMPACT} = 1 } );
    
    local @ARGV = @ARGS;
@@ -488,88 +425,51 @@ sub list()
       # The project data:
       my $project = shift(@ARGV);
       my $projectversion = shift(@ARGV);
-      
-      # get all project data from  SCRAMDB:
-      my @projects = $self->getprojectsfromDB();
-      # We say goodbye if there aren't any projects installed:
-      $self->scramerror(">>>> No locally installed projects! <<<<"), if ( $#projects < 0);
-
-      # Otherwise, we continue. First, we see if the option SCRAM_OLDSTYLE is set. If so, we show all
-      # projects (V0_x ones too) in the same manner as other SCRAM versions. If not, we use the new
-      # mechanism which checks only for the .installed file.      
-      # Iterate over the list of projects:
-      foreach my $pr (@projects)
-	 {
-	 my $url='NULL';	 
-	 if ( $project  eq "" || $project eq $$pr[0] )
+      my $projects = $self->scramprojectdb()->listall();
+      foreach my $type ("local","linked")
+         {
+	 if(!exists $projects->{$type}){next;}
+         foreach my $pr (@{$projects->{$type}})
 	    {
-	    # Check that the area exists (i.e. check that a configarea object
-	    # is returned before attempting to test its' location):
-	    my $possiblearea=$self->scramfunctions()->scramprojectdb()->getarea($$pr[0],$$pr[1]);
-	    $url=$possiblearea->location(), if (defined ($possiblearea));
-	    
-	    if ($opts{SCRAM_OLDSTYLE})
+	    if (($project  ne "") && ($project ne $$pr[0])) {next;}
+	    if (($projectversion ne "") && ($projectversion ne $$pr[0])) {next;}
+	    my $url=$$pr[3];
+            if (!-e $url)
 	       {
-	       # See if area is readable:
-	       if ( -d $url)
-		  {
-		  # Check path to project:
-		  if ( -d "$url/bin/$ENV{SCRAM_ARCH}" || 
-		       -d "$url/lib/$ENV{SCRAM_ARCH}" || -d "$url/$ENV{SCRAM_ARCH}/lib")
-		     {
-		     if ($project eq $$pr[0])
-			{
-			$projectexists=1;
-			} # We've found at least one project
-		     my $pstring = sprintf "  %-15s %-25s  \n%45s%-30s\n",$$pr[0],$$pr[1],"--> ",$::bold.$url.$::normal;
-		     $pstring = sprintf "%-15s %-25s %-50s\n",$$pr[0],$$pr[1],$url, if ($opts{SCRAM_LISTCOMPACT});
-		     push(@foundareas,$pstring);
-		     }
-		  }
-	       else
-		  {
-		  # Area is missing:
-		  if ($url ne 'NULL')
-		     {
-		     push(@missingareas,sprintf ">>  Project area MISSING:   %-10s %-20s  \n",$$pr[0],$$pr[1]);
-		     }
-		  }
+	       if ($type eq "local"){push(@missingareas,"\t$url\n");}
 	       }
-	    else
+	    elsif (-d $url && $self->isregistered($url))
 	       {
-	       # The new mechanism. We see if project was registered:
-	       # See if area is readable:
-	       if ( -d $url)
-		  {
-		  if ($self->isregistered($possiblearea))
-		     {
-		     if ($project eq $$pr[0])
-			{
-			$projectexists=1;
-			} # We've found at least one project
-		     my $pstring = sprintf "  %-15s %-25s  \n%45s%-30s\n",$$pr[0],$$pr[1],"--> ",$::bold.$url.$::normal;
-		     $pstring = sprintf "%-15s %-25s %-50s\n",$$pr[0],$$pr[1],$url, if ($opts{SCRAM_LISTCOMPACT});
-		     push(@foundareas,$pstring);
-		     }
-		  }
-	       else
-		  {
-		  # Area is missing:
-		  if ($url ne 'NULL')
-		     {		     
-		     push(@missingareas,sprintf ">>  Project area MISSING:   %-10s %-20s  \n",$$pr[0],$$pr[1]);
-		     }
-		  }
+	       $projectexists=1;
+	       my $pstring = sprintf "  %-15s %-25s  \n%45s%-30s\n",$$pr[0],$$pr[1],"--> ",$::bold.$url.$::normal;
+	       $pstring = sprintf "%-15s %-25s %-50s\n",$$pr[0],$$pr[1],$url, if ($opts{SCRAM_LISTCOMPACT});
+	       push(@foundareas,$pstring);
 	       }
 	    }
 	 }
       
-      # Now dump out the info:
+      if (!$projectexists)
+         {
+	 if ($projectversion ne "")
+	    {
+	    print STDERR "Project $project version $projectversion is not installed yet for $ENV{SCRAM_ARCH}.\n";
+	    print STDERR "You can run \"scram list $project\" to see the available versions.\n";
+	    $self->scramerror(">>>> No SCRAM project $project version $version available. <<<<");
+	    }
+	 elsif ($project ne "")
+	    {
+	    print STDERR "No version of project $project is not installed yet for $ENV{SCRAM_ARCH}.\n";
+	    print STDERR "You can run \"scram list\" to see the available projects and their versions.\n";
+	    $self->scramerror(">>>> No SCRAM project $project available. <<<<");
+	    }
+	 else
+	    {
+	    $self->scramerror(">>>> There are no SCRAM project yet installed.! <<<<");
+	    }
+	 }
+      
       if ($opts{SCRAM_LISTCOMPACT})
 	 {
-	 $self->scramerror(">>>> No locally installed $project projects! <<<<"),
-	 if ( ! $projectexists && $project ne "");
-	 
 	 foreach $p (@foundareas)
 	    {
 	    print $p;
@@ -577,10 +477,6 @@ sub list()
 	 }
       else
 	 {
-	 # If there weren't any projects of the name given found:
-	 $self->scramerror(">>>> No locally installed $project projects! <<<<"),
-	 if ( ! $projectexists && $project ne "");
-	 
 	 # Otherwise, dump the info:
 	 print "\n","Listing installed projects....","\n\n";
 	 print $linebold,"\n";
@@ -597,7 +493,11 @@ sub list()
 	 }
       
       # Error if there were missing areas:
-      $self->scramerror("\n",@missingareas), if ( $#missingareas > -1 );
+      if ((scalar(@missingareas)>0) && ($ENV{SCRAM_DEBUG}))
+         {
+         print ">> Following project area(s) is/are registered but not readable/available:\n\n";
+	 $self->scramerror("\n",@missingareas);
+	 }
       }
    
    # Otherwise return nicely:
@@ -614,12 +514,13 @@ sub db()
    {
    my $self=shift;
    my (@ARGS) = @_;
+   my $db="";
    my %opts = ( SCRAM_DB_SHOW => 0, SCRAM_DB_LINK => 0, SCRAM_DB_UNLINK => 0 );
    my %options =
       ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('db'); exit(0) },
        "show|s"   => sub { $opts{SCRAM_DB_SHOW} = 1 },
-       "link|l"   => sub { $opts{SCRAM_DB_LINK} = 1 },
-       "unlink|u" => sub { $opts{SCRAM_DB_UNLINK} = 1 } );
+       "link|l=s"   => sub { $opts{SCRAM_DB_LINK} = 1; $db = $_[1] },
+       "unlink|u=s" => sub { $opts{SCRAM_DB_UNLINK} = 1; $db = $_[1] } );
    
    local @ARGV = @ARGS;
    
@@ -635,52 +536,51 @@ sub db()
       $self->scramerror("No installation database available - perhaps no projects have been installed locally?"),
       if ( ! -f $ENV{SCRAM_LOOKUPDB});
 
-      my $db=shift(@ARGV);
-      
-      # Check the options and do something useful:   
       if ($opts{SCRAM_DB_LINK})
 	 {
 	 if ( -f $db )
 	    {
-	    print "Current SCRAM database: ",$::bold.$ENV{SCRAM_LOOKUPDB}.$::normal,"\n";
-	    $self->scramfunctions()->scramprojectdb()->link($db); 
-	    print "\n","Linked ",$db," to current SCRAM database.","\n\n";
+	    if ($self->scramprojectdb()->link($db)==0)
+	       {
+	       print "Current SCRAM database: ",$::bold.$ENV{SCRAM_LOOKUPDB}.$::normal,"\n";
+	       print "Linked \"$db\" to current SCRAM database.\n";
+	       }
 	    }
 	 else
 	    {
-	    $self->scramerror("No valid DB file given as argument. See \"scram db -help\" for usage info.");
+	    $self->scramerror("Can not link to SCRAM-DB. No such file: $db");
 	    }
 	 }
       elsif ($opts{SCRAM_DB_UNLINK})
 	 {
-	 if ( -f $db )
+	 if ($self->scramprojectdb()->unlink($db)==0)
 	    {
 	    print "Current SCRAM database: ",$::bold.$ENV{SCRAM_LOOKUPDB}.$::normal,"\n";
-	    $self->scramfunctions()->scramprojectdb()->unlink($db); 
-	    print "\n","Unlinked ",$db," from current SCRAM database.","\n\n";
-	    }
-	 else
-	    {
-	    $self->scramerror("No valid DB file given as argument. See \"scram db -help\" for usage info.");
+	    print "Unlinked \"$db\" from current SCRAM database.\n";
 	    }
 	 }
       elsif ($opts{SCRAM_DB_SHOW})
 	 {
 	 print "Current SCRAM database: ",$::bold.$ENV{SCRAM_LOOKUPDB}.$::normal,"\n";
-	 my @links=$self->scramfunctions()->scramprojectdb()->listlinks();
-	 if (defined (@links))
+	 my $links=$self->scramprojectdb()->listlinks();
+	 my $flag=0;
+	 foreach my $type ("local","linked")
 	    {
-	    print "\n","The following SCRAM databases are linked to the current database: ","\n\n";
-	    foreach my $extdb (@links)
+	    if ((!exists $links->{$type}) || (scalar(@{$links->{$type}})==0)) { next;}
+	    $flag=1;
+	    print "The following SCRAM databases are linked ";
+	    if ($type eq "local")
+	       {
+	       print "directly:\n";
+	       }
+	    else {print "in-directly:\n";}
+	    foreach my $extdb (@{$links->{$type}})
 	       {
 	       print "\t".$extdb."\n";
 	       }
 	    print "\n";
 	    }
-	 else
-	    {
-	    print "There are no SCRAM databases linked.","\n";
-	    }
+	 if ($flag == 0) {print "There are no SCRAM databases linked.\n";}
 	 }
       else
 	 {
@@ -705,9 +605,9 @@ sub build()
    
    # The cache files:
    my $wrkdir = $ENV{LOCALTOP}."/.SCRAM/".$ENV{SCRAM_ARCH};
-   my $toolcache="${wrkdir}/ToolCache.db";
-   my $dircache="${wrkdir}/DirCache.db";
-   my $builddatastore="${wrkdir}/ProjectCache.db";
+   my $toolcache="${wrkdir}/ToolCache.db.gz";
+   my $dircache="${wrkdir}/DirCache.db.gz";
+   my $builddatastore="${wrkdir}/ProjectCache.db.gz";
    
    # The directories:
    my $workingdir=$ENV{LOCALTOP}."/".$ENV{SCRAM_INTwork};
@@ -797,35 +697,8 @@ sub build()
       # of config dir (templates, for example):
       $cacheobject->checkfiles($cachereset,$convertxml) unless $fast;
       
-      #if asked for xml based file creation then no need to run make
-      if ($convertxml)
-         {
-	 my $nonxml=$cacheobject->get_nonxml();
-	 if ($nonxml == 0)
-	    {
-	    print "There are no Non-XML based BuildFiles.\n";
-	    }
-         else
-	    {
-	    print "$nonxml Non-XML based BuildFile(s) processed.\n";
-	    }
-	 return 0;
-	 }
-            
-      # Now check the file status (BuildFiles in src tree) and config
-      # file status (contents of config dir). We only reparse everything
-      # and rebuild the makefiles if something changed:
       if ($cacheobject->cachestatus())
-	 {
-	 my $buildfiles = $cacheobject->get_data("ADDEDBF");
-	 my $filecache = $cacheobject->dircache();
-	 # Arrayref pointing to list of changed parent dirs:
-	 my $changeddirs = $cacheobject->modified_parentdirs();
-	 # Array of added dirs:
-	 my $addeddirs = $cacheobject->added_dirs();
-	 # Array of files removed:
-	 my $removedfiles = $cacheobject->schedremoval();
-	 
+         {
 	 use BuildSystem::BuildDataStorage;
 	 $buildstoreobject=BuildSystem::BuildDataStorage->new($configbuildfiledir);
 	 $buildstoreobject->name($builddatastore);
@@ -839,24 +712,15 @@ sub build()
 	    print $::bold."\nUser interrupt: Writing cache before exit.\n".$::normal;
 	    };
 	 
-	 
 	 if ( -r $builddatastore)    
 	    {
 	    print "Reading cached build data","\n";
 	    $buildstoreobject=&Cache::CacheUtilities::read($builddatastore);
 	    }
 	    # Update- check for changed or removed files. Also need to account for removed directories:
-	 if (!$buildstoreobject)
-	    {
-	    # Report an error and exit (implies that cache has disappeared):
-	    $self->scramerror("SCRAM: .SCRAM/".$ENV{SCRAM_ARCH}."/ProjectCache.db missing. Use \"-r\".");
-	    exit(1);
-	    }
-	    
 	 $buildstoreobject->init_engine(); # Restart the template engine
-
 	 # Run in update mode:
-	 $buildstoreobject->update($cacheobject,$self->toolmanager(), $filecache);
+	 $buildstoreobject->update($cacheobject);
 	 
 	 # Now write to the file cache. From here on, we're done with it:
 	 print "\nUpdating cache","\n",if ($ENV{SCRAM_DEBUG});
@@ -874,41 +738,91 @@ sub build()
 	    print $::bold."\nExiting on Ctrl-C.\n\n".$::normal,
 	    exit(0);
 	    }
-	 
-	 # At this point, all the data will have been processed and Makefiles generated.
-	 # So here's where we will run gmake (use -r to turn of implicit rules):
+	 }
+      if ($convertxml)
+         {
+	 return $self->convert2xml ($cacheobject,$buildstoreobject);
+	 }
+      if ( -f $ENV{SCRAM_INTwork}."/Makefile")
+	 {
+	 $cacheobject=();$buildstoreobject=();
 	 my $returnval = $MAKER->exec($ENV{SCRAM_INTwork}."/Makefile"),
 	 if (! $opts{SCRAM_TEST});
 	 print "MAKE not actually run: test build mode!","\n",if ($opts{SCRAM_TEST});
-
-	 # Return a value:
 	 return $returnval;
 	 }
       else
 	 {
-	 print "No changes to the cache....","\n",if ($ENV{SCRAM_DEBUG});
-	 # Everything is already up-to-date so we just build. Check to make sure we really
-	 # have a Makefile (it might've been cleaned away somehow):
-	 if ( -f $ENV{SCRAM_INTwork}."/Makefile")
-	    {
-	    my $returnval = $MAKER->exec($ENV{SCRAM_INTwork}."/Makefile"),
-	    if (! $opts{SCRAM_TEST});
-	    print "MAKE not actually run: test build mode!","\n",if ($opts{SCRAM_TEST});
-
-	    # Return a value:
-	    return $returnval;
-	    }
-	 else
-	    {
-	    $self->scramerror("SCRAM: No Makefile in working dir. \nPlease delete .SCRAM/".
-			      $ENV{SCRAM_ARCH}."/ProjectCache.db then rebuild.");
-	    exit(1);
-	    }
+	 $self->scramerror("SCRAM: No Makefile in working dir. \nPlease delete .SCRAM/".
+	                   $ENV{SCRAM_ARCH}."/ProjectCache.db.gz then rebuild.");
+	 exit(1);
 	 }
       }
-   
-   # Return nice value:
    return 0;
+   }
+   
+sub convert2xml ()
+   {
+   my $self=shift;
+   my $dircache=shift;
+   my $buildobj=shift || undef;
+   my $convertor;
+   my @bfs=();
+   my $bfn=$ENV{SCRAM_BUILDFILE};
+   foreach my $bf (keys %{$dircache->{BFCACHE}})
+      {
+      if ($bf=~/\/${bfn}.xml$/){next;}
+      if ((!-f $bf) || (-f "${bf}.xml")){next;}
+      push @bfs,$bf;
+      }
+   my $count=scalar(@bfs);
+   if ($count)
+      {
+      my $convertor=undef;
+      eval ("use SCRAM::Plugins::Doc2XML");
+      if (!$@){$convertor = SCRAM::Plugins::Doc2XML->new(1);}
+      else
+         {
+         print STDERR "**** WARNING: Can not convert $ENV{SCRAM_BUILDFILE} in to XML format. Missing SCRAM::Plugins::Doc2XML perl module.\n";
+         return 1;
+         }
+      if (!defined $buildobj)
+         {
+	 use Cache::CacheUtilities;
+	 $buildobj = &Cache::CacheUtilities::read("$ENV{LOCALTOP}/.SCRAM/$ENV{SCRAM_ARCH}/ProjectCache.db.gz");
+	 }
+      my $done=0;
+      my $src=$ENV{SCRAM_SOURCEDIR};	 
+      foreach my $bf (@bfs)
+         {
+	 $convertor->clean();
+	 print ">> Converting $bf => ${bf}.xml\n";
+	 my $xml=$convertor->convert($bf);
+	 if (open($fref,">${bf}.xml"))
+	    {
+	    foreach my $line (@$xml){print $fref "$line\n";}
+	    close($fref);
+	    $done++;
+	    $dircache->{BFCACHE}{"${bf}.xml"}=$dircache->{BFCACHE}{$bf};
+	    delete $dircache->{BFCACHE}{$bf};
+	    my $pack=$bf;
+	    $pack=~s/^$src\/(.+)\/$bfn$/$1/;
+	    if (exists $dircache->{PACKMAP}{$pack}){$pack = $dircache->{PACKMAP}{$pack};}
+	    if ((exists  $buildobj->{BUILDTREE}{$pack}) && (exists $buildobj->{BUILDTREE}{$pack}{METABF}))
+	       {
+	       pop @{$buildobj->{BUILDTREE}{$pack}{METABF}};
+	       push @{$buildobj->{BUILDTREE}{$pack}{METABF}},"${bf}.xml";
+	       }
+	    }
+	 else{print STDERR "**** WARNING: Can not open file for writing: ${bf}.xml\n";}
+	 }
+      if ($done)
+         {
+	 &Cache::CacheUtilities::write($buildobj,$buildobj->{CACHENAME});
+	 &Cache::CacheUtilities::write($dircache,$dircache->{CACHENAME});
+	 print "$done non-XML BuildFile converted.\n"; 
+	 }
+      }
    }
 
 =item   C<project()>
@@ -945,7 +859,6 @@ sub project()
        "dir|d=s"  => sub { $opts{SCRAM_INSTALL_DIR} = 1; $installdir = $_[1] },
        "name|n=s" => sub { $opts{SCRAM_INSTALL_NAME} = 1; $installname = $_[1] },
        "file|f=s" => sub { $opts{SCRAM_TOOLCONF_NAME} = 1; $toolconf = $_[1] },
-       "update|u" => sub { $opts{SCRAM_UPDATE_AREA} = 1 },
        "log|l"    => sub { scramloginteractive(1); },
        "symlinks|s"=> sub { $symlinks=1; },
        "boot|b=s" => sub { $opts{SCRAM_BOOTSTRAPFILE_NAME} = 1; $bootstrapfile = 'file:'.$_[1]; $bootfile = $_[1] }
@@ -965,15 +878,7 @@ sub project()
       $installdir ||= cwd(); # Current working dir unless set above
       
       # Check to see which type of boot we should do or whether we should do an update:
-      if ($opts{SCRAM_UPDATE_AREA})
-	 {
-	 # See if we hav a version arg:
-	 my $projectversion = shift(@ARGV);
-	 # We must be in a project area to start with:
-	 $self->checklocal();
-	 $self->update_project_area($installdir, $projectversion);
-	 }
-      elsif ($opts{SCRAM_BOOTSTRAPFILE_NAME})
+      if ($opts{SCRAM_BOOTSTRAPFILE_NAME})
 	 {
 	 $self->bootnewproject($bootstrapfile,$installdir,$toolconf);
 	 }
@@ -998,19 +903,18 @@ Function to create a developer area from an existing release (only used locally)
 sub bootfromrelease() {
     my $self=shift;
     my ($projectname,$projectversion,$installdir,$installname,$toolconf,$symlinks) = @_;
-    
     if ($projectname && $projectversion) {
-	my $relarea=$self->scramfunctions()->scramprojectdb()->getarea($projectname,$projectversion);
+	my $relarea=$self->scramprojectdb()->getarea($projectname,$projectversion);
 	
-	if ( ! defined $relarea ) {
-	    print "Error...no release area!","\n";
-	    $self->scramfatal("No release area found.");
-	} else {
-	    # Here we check the scram version that was used for the remote project area (the one we're trying
-	    # to base a developer area on). We then invoke whichever version is required and pass all argumnents
-	    # on down:
-	    $self->remote_versioncheck($relarea,"project",$projectname,$projectversion,$installdir,$installname,$toolconf);	    
-	}	
+	if ((! defined $relarea) || (!-d $relarea->archdir()))
+	   {
+	   print "Can not find a release area $projectname version $projectversion for SCRAM_ARCH $ENV{SCRAM_ARCH}.\n";
+	   $self->scramfatal("No release area found.");
+	   }
+	else
+	   {
+	   $self->remote_versioncheck($relarea);	    
+	   }
 
 	# From here, we're creating a new area which uses the same version of SCRAM as is accessed from the commandline (i.e.
 	# the current version):
@@ -1025,21 +929,19 @@ sub bootfromrelease() {
 	
 	# Check that the areas are compatible:
 	$self->checkareatype($ENV{RELEASETOP},"Project release area SCRAM version mismatch: current is V1, area is V0. Exiting.");
-	$area=$self->scramfunctions()->satellite($projectname,$projectversion,$installdir,$installname,$symlinks);
+	$area = $relarea->satellite($installdir,$installname,$symlinks,$self->localarea());
 	$ENV{SCRAM_CONFIGDIR} = $area->configurationdir();
-	
 	# Read the top-level BuildFile and create the required storage dirs. Do
 	# this before setting up self:
 	$self->create_productstores($area->location(),$symlinks);
 	# The lookup db:
 	use SCRAM::AutoToolSetup;
-	
-	$toolconf ||= $area->location()."/".$ENV{SCRAM_CONFIGDIR}."/site/tools.conf";
+
 	$::lookupdb = SCRAM::AutoToolSetup->new($toolconf);  
 	# Need a toolmanager, then we can setup:
 
 	my $toolmanager = $self->toolmanager($area);
-	$toolmanager->setupself($area->location());
+	$toolmanager->update ($area);
 
 	# Write the cached info:
 	$toolmanager->writecache();
@@ -1080,205 +982,44 @@ sub bootnewproject()
    {
    my $self=shift;
    my $areaname="";
-   my ($bootstrapfile,$installarea,$toolconf)=@_;
+   my ($bootstrapfile,$installarea,,$toolconf)=@_;
 
    use SCRAM::AutoToolSetup;
    use BuildSystem::ToolManager;
-   use Configuration::Requirements;
    use Configuration::BootStrapProject;
-   use ActiveDoc::ActiveStore;
-   # Set up a cache (old-style, for URLs):
-   my $globalcache = URL::URLcache->new($ENV{HOME}."/.scramrc/globalcache");
-   
    # Set up the bootstrapper:
-   my $bs=Configuration::BootStrapProject->new($globalcache, $installarea);
+   my $bs=Configuration::BootStrapProject->new($installarea);
    my $area=$bs->boot($bootstrapfile, $installarea);
-
-   $area->archname($ENV{'SCRAM_ARCH'});
-
    my $name=$area->location();
-   my $doc=$area->requirementsdoc();
-   my $cache=$area->cache();
-   my $db=$area->objectstore();
-   my $astore=ActiveDoc::ActiveStore->new($db, $cache);
-   my $req = Configuration::Requirements->new($astore, "file:".$doc, 
-					      $ENV{SCRAM_ARCH});
-
-   $area->toolboxversion($req->configversion());
 
    # Add ToolManager object to store all tool info:
-   my $toolmanager = BuildSystem::ToolManager->new($area, $ENV{SCRAM_ARCH});
+   my $toolmanager = BuildSystem::ToolManager->new($area);
 
-   # Add the configuration version to the tool manager:
-   $toolmanager->configversion($req->configversion());
-   
-   # Tell the Requirements class that there's a ToolManager to use:
-   $req->toolmanager($toolmanager);
-
-   # FIXME: (duplication) Add the configuration version to the tool manager:
-   $toolmanager->configversion($req->configversion());
-   
-   # download the tools:
-   $req->download();
    # Need an autotoolssetup object:
    $ENV{'SCRAM_PROJECTDIR'} = $area->location();
    $ENV{'SCRAM_PROJECTVERSION'} = $area->version();
    
-   $::lookupdb = SCRAM::AutoToolSetup->new($toolconf);   
-   
-   # Now run the full setup for the area:
-   scramlogmsg("\n","Using SCRAM toolbox version ",$area->toolboxversion(),"\n\n");
+   $::lookupdb = SCRAM::AutoToolSetup->new($toolconf);
    
    # Now set up selected tools:
    scramlogmsg("Setting up tools in project area","\n");
    scramlogmsg("------------------------------------------------\n\n");
 
-   $toolmanager->setupalltools($area->location(),1);
+   $toolmanager->setupalltools();
 
    # Read the top-level BuildFile and create the required storage dirs. Do
    # this before setting up self:
    $self->create_productstores($area->location(),0);
    # Now setup SELF:
-   $toolmanager->setupself($area->location());
+   $toolmanager->setupself();
 
-   # New tm's are not clones:
-   $toolmanager->cloned_tm(0);
    # Write the cached info:
    $toolmanager->writecache();
-   # Save the area info (toolbox version):
-   $area->save();
 
    scramlogmsg("\n>> Installation Located at: ".$area->location()." <<\n\n");
 
    # Return nice value:
    return 0;
-   }
-
-=item   C<update_project_area()>
-
-Function to update a developer area to a new, compatible, release. A message
-is issued to warn if no compatible area exists. Only used internally.
-   
-=cut
-
-sub update_project_area()
-   {
-   my $self=shift;
-   my ($installdir, $pversion) = @_;
-   my %compatvers;
-
-   # Get list of all project versions from database
-   # and store the compatible projects in an array.
-   # This information is needed whether the user is
-   # just querying or actually updating:
-   my @pdb = $self->getprojectsfromDB();
-
-   foreach my $p (@pdb)
-      {
-      # Check the project name and config version matches
-      # FIXME: what about the case where area was renamed (-n xx)?
-      if ($p->[0] eq $self->projectname() && $p->[1] ne $self->projectversion())
-	 {
-	 my $parea=$self->scramfunctions()->scramprojectdb()->getarea($p->[0], $p->[1]);
-
-	 if (defined($parea))
-	    {
-	    if ($parea->toolboxversion() eq $self->configversion())
-	       {
-	       # Save the corresponding compatible area objects:
-	       $compatvers{$p->[1]} = $parea;
-	       }
-	    }
-	 }
-      }
-   
-   # Check to make sure that the returned array is valid, i.e. that there are versions that
-   # one can update to:
-   print "SCRAM Project update mode: ","\n\n";
-   my ($nkeys) = scalar(keys %compatvers);
-   if ($nkeys > 0)
-      {      
-      # If no args then it's a query:
-      if (! $pversion)
-	 {
-	 print "You can update to one of the following versions","\n";
-	 print "\n";
-	 map
-	    {
-	    print "\t".$_."\n";
-	    } keys %compatvers;
-	 }
-      else
-	 {
-	 # Otherwise we try to update to a version:
-	 if (grep($pversion eq $_, keys %compatvers))
-	    {
-	    print "Going to update current area to version ",$pversion,"\n";
-	    # Create backup dir with name of current version:
-	    use Utilities::AddDir;
-	    my $backupdir = $ENV{LOCALTOP}."/.".$self->projectversion();
-	    # Delete the dir if the backup already exists (i.e. only
-	    # keep last backup):
-	    if (-d $backupdir)
-	       {
-	       system("rm","-rf",$backupdir);
-	       }
-	    
-	    Utilities::AddDir::adddir($backupdir);
-	    # Move .SCRAM and config dirs there
-	    system("mv",$ENV{SCRAM_CONFIGDIR},$backupdir);
-	    system("mv",$self->localarea()->admindir(),$backupdir);
-
-	    # Create the new version. Basically create a satellite area in
-	    # the current (i.e. project) area:
-	    my $relarea = $compatvers{$pversion};
-
-	    # Set RELEASETOP:
-	    $ENV{RELEASETOP} = $relarea->location();
-	    $self->versioncheck($relarea->scramversion());
-
-	    # Copy the admin dir (and with it, the ToolCache):   
-	    $relarea->copywithskip($ENV{LOCALTOP},['ProjectCache.db','DirCache.db','MakeData/DirCache','MakeData/DirCache.mk','MakeData/src.mk']);
-	    # Also, we need to copy .SCRAM/cache from the release area. This eliminates the need
-	    # to download tools again from CVS:
-	    $relarea->copyurlcache($ENV{LOCALTOP});
-	    # Copy the config dir:
-	    Utilities::AddDir::copydir($relarea->location()."/".$relarea->configurationdir(),
-		      $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR});
-
-	    # Change the project version to the new one:
-	    $self->localarea()->version($pversion);
-	    # Link to the release area and save the environment data:
-	    $self->localarea()->linkarea($relarea);
-	    $self->localarea()->save();
-	    # The lookup db:
-	    use SCRAM::AutoToolSetup;
-	    
-	    # Default path to conf file:
-	    my $toolconf ||= $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR}."/site/tools.conf";
-	    $::lookupdb = SCRAM::AutoToolSetup->new($toolconf);  
-	    
-	    # Update Self and write the updated cache info:
-	    my $toolmanager = $self->toolmanager();
-	    $toolmanager->setupself($ENV{LOCALTOP}); # FIXME// The toolmanager should be reloaded before setting up self....
-	    $toolmanager->writecache();	    
-	    print "\n\nUpdate procedure complete.\n";	    
-	    }
-	 else
-	    {
-	    print "Version \"".$pversion."\" of ".$self->projectname()." is not valid.","\n";
-	    print "\n";
-	    return 1;
-	    }
-	 }
-      print "\n";
-      }
-   else
-      {
-      print "No compatible versions of ".$self->projectname()." found to update to.","\n";      
-      print "\n";
-      return 1;
-      }
    }
 
 =item   C<create_productstores()>
@@ -1371,6 +1112,41 @@ sub create_productstores()
    mkpath($ENV{LOCALTOP}."/".$ENV{SCRAM_SOURCEDIR},0,$perms);
    }
 
+sub setupnewarch_()
+   {
+   my $self=shift;
+   my $interactive=shift;
+   my $toolconf=shift;
+   scramloginteractive($interactive);
+   my $toolbox="$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/toolbox";
+   if (!-d "${toolbox}/$ENV{SCRAM_ARCH}")
+      {
+      if (!$self->{force})
+         {
+         my $archs = $self->availablearch ($ENV{LOCALTOP});
+         if (scalar(@$archs)>0)
+            {
+            print "Your project area is currently setup for following SCRAM_ARCH(s):\n";
+            print "\t",join("\n\t",@$archs),"\n";
+            }
+         else
+            {
+	    print "ERROR: Your current project area \"$ENV{LOCALTOP}\" seems to be curpted.\n",
+	          "SCRAM could not find any tools installed under $ENV{SCRAM_CONFIGDIR}/toolbox.\n";
+	    exit 1;
+	    }
+         print "Do you want to add setup for new SCRAM_ARCH: $ENV{SCRAM_ARCH} (y/n):";
+         if ( ! (<STDIN>=~/y/i ) )
+            {
+	    return 0;
+	    }
+         }
+      use File::Basename;
+      my $area=$self->localarea();
+      my $loc = $area->location();
+      $self->bootfromrelease($area->name(),$area->version(),dirname($loc),basename($loc),$toolconf,$area->symlinks());
+      }
+   }
 =item   C<setup()>
 
 Set up tools in the current project area.
@@ -1406,10 +1182,43 @@ sub setup()
       # Set project directory:
       $ENV{'SCRAM_PROJECTDIR'} = $self->localarea()->location();
 
-      my $toolname = shift(@ARGV);
-      my $toolversion = shift(@ARGV);
-      my $toolurl = shift(@ARGV);
-
+      my $tool = shift(@ARGV);
+      if ($tool ne "")
+         {
+	 my $file=0;
+         if ($tool=~s/^\s*file://i)
+	    {
+	    $file=1;
+	    if ($tool!~/^\//) {$tool=cwd()."/$tool";}
+	    }
+	 if ($file)
+	    {
+	    if (!-f $tool){die "ERROR: Can not setup tool. No such file found: $tool.";}
+	    }
+	 elsif (!-f $tool)  
+	    {
+	    my $lctool=lc($tool);
+	    if ($lctool ne "self")
+	       {
+	       $tool = "$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/toolbox/$ENV{SCRAM_ARCH}/tools/selected/${lctool}.xml";
+               if (!-f $tool)
+                  {
+	          $tool = "$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/toolbox/$ENV{SCRAM_ARCH}/tools/available/${lctool}.xml";
+	          if (!-f $tool)
+	             {
+		     die "ERROR: Can not setup tool \"$lctool\" because of missing \"${lctool}.xml\" file under $ENV{SCRAM_CONFIGDIR}/toolbox/$ENV{SCRAM_ARCH}/tools directory.\n";
+		     }
+	          }
+	       }
+	    else{$tool=$lctool;}
+	    }
+	 elsif($tool!~/^\//) {$tool=cwd()."/$tool";}
+         }
+      else
+         {
+	 return $self->setupnewarch_ ($interactive,$toolconf);
+	 }
+      
       # Get the tool manager:
       my $toolmanager = $self->toolmanager();
       # Set interactive option:
@@ -1419,40 +1228,28 @@ sub setup()
       use SCRAM::AutoToolSetup;
       $::lookupdb = SCRAM::AutoToolSetup->new($toolconf);
 
-      if ($toolname && $toolversion && $toolurl)
-	 {	 
-	 $toolmanager->toolsetup($self->localarea()->location(),
-				 $toolname,
-				 $toolversion,
-				 $toolurl);
-	 }
-      elsif ($toolname)
+      if ($tool)
 	 {
-	 if ($toolname eq 'self')
-	    {
-	    # First, create the productstore directories if they do not already exist:
-	    $self->create_productstores($self->localarea()->location());	    
-	    $toolmanager->setupself($self->localarea()->location());
-	    }
+	 if ($tool ne "self"){$toolmanager->coresetup($tool);}
 	 else
 	    {
-	    $toolmanager->toolsetup($self->localarea()->location(),$toolname,$toolversion);
+	    $self->create_productstores($self->localarea()->location());
+	    $toolmanager->setupself();
 	    }
-	 print "\n";
 	 }
       else
 	 {
 	 print "Setting up all tools in current area","\n";
 
-	 # If there isn't a ToolCache.db file where we expect it, it implies that
+	 # If there isn't a ToolCache.db.gz file where we expect it, it implies that
 	 # we are setting up tools for the n'th platform:
 	 if (! -f $self->localarea()->toolcachename())
 	    {
 	    $self->create_productstores($self->localarea()->location());	    
-	    $toolmanager->setupself($self->localarea()->location());
+	    $toolmanager->setupself();
 	    }
 	 
-	 $toolmanager->setupalltools($self->localarea()->location(),0);
+	 $toolmanager->setupalltools();
 	 }
       
       # Write to the tool cache and exit:
@@ -1473,55 +1270,19 @@ sub runtime()
    {
    my $self=shift;
    my (@ARGS) = @_;
-   my $runtimefile = "";
-   my $rtdumpfile ||= "runtime";
    my $SCRAM_RT_SHELL="";
-   my $rtvarname="";
-   my $paths={}; 
-   my $variables={};
-   my $rtstring;
-   
-   local *RTFH = *STDOUT;
    #
    # NB: Overall environment/path ordering: SELF, TOOLS, USER
    #     Eventually sort topologically (by going through list of tools and
    #     seeing which tools those tools depend on, then sorting the list)
    #
-   my %opts = ( SCRAM_RT_DUMP => 0 );
-   my $shelldata =
-      {
-      BOURNE =>
-	 {
-	 EQUALS => '=',
-	 SEP => ':',
-	 EXPORT => 'export',
-	 PRINTVAR => sub { (exists $ENV{$_[0]}) ? return ':$'.'SCRAMRT_'.$_[0] : return '' },
-	 QUOTE => sub { return "\"$_[0]\";" }
-	 },
-      TCSH =>
-	 {
-	 EQUALS => ' ',
-	 SEP => ':',
-	 EXPORT => 'setenv',
-	 PRINTVAR => sub { (exists $ENV{$_[0]}) ? return ':{$'.'SCRAMRT_'.$_[0].'}' : return '' },
-	 QUOTE => sub { return "\"$_[0]\";" }
-	 },
-      CYGWIN =>
-	 {
-	 EQUALS => '=',
-	 SEP => ';',
-	 EXPORT => 'set',
-	 PRINTVAR => sub { (exists $ENV{$_[0]}) ? return ';%'.'SCRAMRT_'.$_[0] : return '' },
-	 QUOTE => sub { return "\"$_[0]\";" }
-	 }
-      };
-   
+   my %opts = ( SCRAM_RT_DUMP => "" );
    my %options =
       ("help"	=> sub { $self->{SCRAM_HELPER}->help('runtime'); exit(0) },
        "sh"     => sub { $SCRAM_RT_SHELL = 'BOURNE' },
        "csh"    => sub { $SCRAM_RT_SHELL = 'TCSH'  },
        "win"    => sub { $SCRAM_RT_SHELL = 'CYGWIN' },
-       "dump=s" => sub { $opts{SCRAM_RT_DUMP} = 1; $rtdumpfile = $_[1] } );
+       "dump=s" => sub { $opts{SCRAM_RT_DUMP} = $_[1] } );
    
    local @ARGV = @ARGS;
    
@@ -1538,129 +1299,23 @@ sub runtime()
       
       # Also check to see that we received a shell argument:
       $self->scramfatal("No shell type given! See \"scram runtime -help\" for usage info."), if ($SCRAM_RT_SHELL eq '');
-
       
-      # Save the current environment:
-      $self->save_environment($shelldata->{$SCRAM_RT_SHELL}); # Probably have to do the restore here too so
-                                           # that all previous settings are restored before
-                                           # applying the runtime environment
-
-      # Some preliminary stuff. Check to see which shell we're using and
-      # where we're dumping the RT to:
+      $self->save_environment_($SCRAM_RT_SHELL);
+      
       print "Using ",$SCRAM_RT_SHELL," shell syntax","\n", if ($ENV{SCRAM_DEBUG});
-
-      # If we're dumping to a file, open the file here:
-      if ($opts{SCRAM_RT_DUMP})
+      my $ref;
+      if ($opts{SCRAM_RT_DUMP} ne "")
 	 {
-	 print "Dumping RT environment to file ",$rtdumpfile,"\n";
-	 open(RTFH,"> $rtdumpfile" ) || die $!,"\n";
+	 print "Dumping RT environment to file ",$opts{SCRAM_RT_DUMP},"\n";
+	 open($ref,"> ".$opts{SCRAM_RT_DUMP} ) || die $!,"\n";
 	 }
-
-      # We need to process ourself. Check to see if tool "self" is
-      # defined and if so, process it first.
-      my $rawselected = $self->toolmanager()->selected();
-      # Get list of setup tools:
-      my $tools = $self->toolmanager()->setup();
-      # NB: At the moment, all SELF settings (i.e. local ones) come before
-      # any other runtime envs from tools:
-      if (exists ($tools->{'self'}) && (my $toolrt = $tools->{'self'}->runtime()))
-	 {
-	 while (my ($toolrt, $trtval) = each %{$toolrt})
-	    {
-	    if ($toolrt =~ /^PATH:(.*?)$/)
-	       {
-	       # Need an array where we can store the path elements:
-	       (! exists $rtstring->{$1}) ? $rtstring->{$1} = [] : undef;
-	       
-	       # $trtval is an array reference so we need to
-	       # iterate over the elements of the array:
-	       map
-		  {
-		  if (! exists ($paths->{$1}->{$_}))
-		     {
-		     # Keep track of which paths we've already seen:
-		     $paths->{$1}->{$_} = 1 ;
-		     # Add the path element onto the array:
-		     push(@{$rtstring->{$1}},$_);
-		     }
-		  } @$trtval; 
-	       }
-	    else
-	       {
-	       # Ordinary variable:
-	       if (! exists ($variables->{$toolrt}))
-		  {
-		  $variables->{$toolrt} = 1;
-		  print RTFH $shelldata->{$SCRAM_RT_SHELL}->{EXPORT}." ".$toolrt.
-		     $shelldata->{$SCRAM_RT_SHELL}->{EQUALS}.$shelldata->{$SCRAM_RT_SHELL}->{QUOTE}(@$trtval)."\n";
-		  }
-	       }
-	    }
-	 }
-      
-      # Since we want to prepend to any existing paths, we want to append
-      # ":${VAR}" or suchlike. We start with the tools.
-      # Sort according to the order in which the tools were selected (i.e., the order in which
-      # they appear in RequirementsDoc):
-      foreach $tool ( sort { %{$rawselected}->{$a}
-			     <=> %{$rawselected}->{$b}}
-		      keys %{$rawselected} )
-	 {
-	 # Extract the runtime content for this tool:
-	 my $toolrt = $tools->{$tool}->runtime(), if (exists $tools->{$tool});
-	 
-	 # If we really have a some runtime data, continue:
-	 if (defined ($toolrt))
-	    {
-	    while (my ($toolrt, $trtval) = each %{$toolrt})
-	       {
-	       if ($toolrt =~ /^PATH:(.*?)$/)
-		  {
-		  # Need an array where we can store the path elements:
-		  (! exists $rtstring->{$1}) ? $rtstring->{$1} = [] : undef;
-
-		  # $trtval is an array reference so we need to
-		  # iterate over the elements of the array:
-		  map
-		     {
-		     if (! exists ($paths->{$1}->{$_}))
-			{
-			# Keep track of which paths we've already seen:
-			$paths->{$1}->{$_} = 1 ;
-			# Add the path element onto the array:
-			push(@{$rtstring->{$1}},$_);
-			}
-		     } @$trtval; 
-		  }
-	       else
-		  {
-		  # Ordinary variable:
-		  if (! exists ($variables->{$toolrt}))
-		     {
-		     $variables->{$toolrt} = 1;
-		     print RTFH $shelldata->{$SCRAM_RT_SHELL}->{EXPORT}." ".$toolrt.
-			$shelldata->{$SCRAM_RT_SHELL}->{EQUALS}.$shelldata->{$SCRAM_RT_SHELL}->{QUOTE}(@$trtval)."\n";
-		     }
-		  }
-	       }
-	    }
-	 }
-     
-      # Now dump out the path settings in the appropriate flavoured syntax:   
-      map
-	 {
-	 print "";
-	 print RTFH $shelldata->{$SCRAM_RT_SHELL}->{EXPORT}." ".$_.
-	    $shelldata->{$SCRAM_RT_SHELL}->{EQUALS}.$shelldata->{$SCRAM_RT_SHELL}->{QUOTE}
-	 (join("$shelldata->{$SCRAM_RT_SHELL}->{SEP}",@{$rtstring->{$_}}).$shelldata->{$SCRAM_RT_SHELL}->{PRINTVAR}($_))."\n";
-	 } keys %{$rtstring};
+      $self->setenv_($SCRAM_RT_SHELL,$ref);
+      if ($ref){close($ref);}
       }
-   
-   # Return nice value: 
    return 0;
    }
 
-=item   C<save_environment()>
+=item   C<save_environment_()>
 
 Save the current runtime environment. This function is used to
 restore an environment to its original state, usually before
@@ -1668,12 +1323,14 @@ setting the runtime for a new area. Only used internally.
  
 =cut
 
-sub save_environment()
+sub save_environment_()
    {
    # The SCRAMRT_x variables must also be written out in
    # the required shell flavour
    my $self=shift;
-   my ($shelldata)=@_;
+   my $shell=shift;
+   my $ref=shift || *STDOUT;
+   my $sd = $self->shelldata_()->{$shell};
    
    # Use combination of project name and version to set unique ID
    # for SCRAMRT_SET variable:
@@ -1683,17 +1340,9 @@ sub save_environment()
    # If it has, no need to save the environment:
    if (exists($ENV{SCRAMRT_SET}))
       {
-      if ($ENV{SCRAMRT_SET} ne $rtkey)
-	 {
-	 $self->restore_environment();
-	 delete $ENV{SCRAMRT_SET};
-	 # Save the environment:
-	 $self->save_environment($shelldata);
-	 }
-      else
-	 {
-	 $self->restore_environment();
-	 }
+      $self->restore_environment_();
+      delete $ENV{SCRAMRT_SET};
+      $self->save_environment_($shell,$ref);
       }
    else
       {
@@ -1717,16 +1366,16 @@ sub save_environment()
 	    $varvalue =~ s/\`/\\\`/g;	    
 
 	    # Print out var:
-	    print RTFH $shelldata->{EXPORT}." ".'SCRAMRT_'.$varname.$shelldata->{EQUALS}.$shelldata->{QUOTE}($varvalue)."\n";
+	    print $ref $sd->{EXPORT}." ".'SCRAMRT_'.$varname.$sd->{EQUALS}.$sd->{QUOTE}($varvalue)."\n";
 	    }
 	 }
       
       # Set the key that says "RTDONE":
-      print RTFH $shelldata->{EXPORT}." ".'SCRAMRT_SET'.$shelldata->{EQUALS}.$shelldata->{QUOTE}($rtkey)."\n";
+      print $ref $sd->{EXPORT}." ".'SCRAMRT_SET'.$sd->{EQUALS}.$sd->{QUOTE}($rtkey)."\n";
       }
    }
 
-=item   C<restore_environment()>
+=item   C<restore_environment_()>
 
 Restore the original runtime environment. This function is used to
 restore an environment to its original state, usually before
@@ -1734,7 +1383,7 @@ setting the runtime for a new area. Only used internally.
 
 =cut
 
-sub restore_environment()
+sub restore_environment_()
    {
    my $self=shift;
    my %currentenv=%ENV;
@@ -1766,22 +1415,35 @@ sub restore_environment()
    %ENV=%restoredenv;
    }
 
-=item   C<runtimebuildenv_()>
-
-Set the build runtime environment.
-   
-=cut
-
-sub runtimebuildenv_()
+sub shelldata_ ()
    {
-   my $self=shift;
-   my $SCRAM_RT_SHELL="BOURNE"; # Make shell is /bin/sh
-   my $paths={}; 
-   my $variables={};
-   my $rtstring={};
-   my $shelldata =
+   my $sd =
       {
       BOURNE =>
+	 {
+	 EQUALS => '=',
+	 SEP => ':',
+	 EXPORT => 'export',
+	 PRINTVAR => sub { (exists $ENV{$_[0]}) ? return ':$'.'SCRAMRT_'.$_[0] : return '' },
+	 QUOTE => sub { return "\"$_[0]\";" }
+	 },
+      TCSH =>
+	 {
+	 EQUALS => ' ',
+	 SEP => ':',
+	 EXPORT => 'setenv',
+	 PRINTVAR => sub { (exists $ENV{$_[0]}) ? return ':{$'.'SCRAMRT_'.$_[0].'}' : return '' },
+	 QUOTE => sub { return "\"$_[0]\";" }
+	 },
+      CYGWIN =>
+	 {
+	 EQUALS => '=',
+	 SEP => ';',
+	 EXPORT => 'set',
+	 PRINTVAR => sub { (exists $ENV{$_[0]}) ? return ';%'.'SCRAMRT_'.$_[0] : return '' },
+	 QUOTE => sub { return "\"$_[0]\";" }
+	 },
+      RTBOURNE =>
 	 {
 	 EQUALS => '=',
 	 SEP => ':',
@@ -1791,14 +1453,63 @@ sub runtimebuildenv_()
 	 SETSTRING => sub { return "$_[0]" }
 	 }
       };
+   return $sd;
+   }
    
-   # We need to process ourself. Check to see if tool "self" is
-   # defined and if so, process it first.
-   my $rawselected = $self->toolmanager()->selected();
-   # Get list of setup tools:
-   my $tools = $self->toolmanager()->setup();
-   # NB: At the moment, all SELF settings (i.e. local ones) come before
-   # any other runtime envs from tools:
+sub setenv_()
+   {
+   my $self=shift;
+   my $s=shift;
+   my $ref=shift || *STDOUT;
+   my $sd = $self->shelldata_();
+   my $env=$self->runtime_();
+   foreach my $h (@{$env->{variables}})
+      {
+      my ($var,$val) = each %$h;
+      if ($s eq "RTBOURNE")
+	 {
+	 $ENV{$var} = $sd->{$s}->{SETSTRING}(@$val);
+         }
+      else
+	 {
+	 print $ref $sd->{$s}->{EXPORT}." ".$var.$sd->{$s}->{EQUALS}.$sd->{$s}->{QUOTE}(@$val)."\n";
+	 }
+      }
+   foreach my $var (keys %{$env->{path}})
+      {
+      my $val=$env->{path}{$var};
+      if ($s eq "RTBOURNE")
+	 {
+         $ENV{$var} = $sd->{$s}->{SETSTRING}(join($sd->{$s}->{SEP},@$val).$sd->{$s}->{PRINTVAR}($var));
+	 }
+      else
+	 {
+	 print $ref $sd->{$s}->{EXPORT}." ".$var.$sd->{$s}->{EQUALS}.$sd->{$s}->{QUOTE}
+	            (join($sd->{$s}->{SEP},@$val).$sd->{$s}->{PRINTVAR}($var))."\n";
+	 }
+      }
+   return 0;
+   }
+   
+sub runtimebuildenv_()
+   {
+   my $self=shift;
+   $self->setenv_ ("RTBOURNE");
+   return 0;
+   }
+
+
+sub runtime_ ()
+   {
+   my $self=shift;
+   my $rtstring={};
+   $rtstring->{path}={};
+   $rtstring->{variables}=[];
+   my $paths={};
+   my $variables={};
+   my $tmanager = $self->toolmanager();
+   my $tools  = $tmanager->setup();
+   my $vindex=0;
    if (exists ($tools->{'self'}) && (my $toolrt = $tools->{'self'}->runtime()))
       {
       while (my ($toolrt, $trtval) = each %{$toolrt})
@@ -1806,9 +1517,8 @@ sub runtimebuildenv_()
 	 if ($toolrt =~ /^PATH:(.*?)$/)
 	    {
 	    # Need an array where we can store the path elements:
-	    (! exists $rtstring->{$1}) ? $rtstring->{$1} = [] : undef;
-	    
-	    # $trtval is an array reference so we need to
+	    (! exists $rtstring->{path}{$1}) ? $rtstring->{path}{$1} = [] : undef;
+            # $trtval is an array reference so we need to
 	    # iterate over the elements of the array:
 	    map
 	       {
@@ -1817,7 +1527,7 @@ sub runtimebuildenv_()
 		  # Keep track of which paths we've already seen:
 		  $paths->{$1}->{$_} = 1 ;
 		  # Add the path element onto the array:
-		  push(@{$rtstring->{$1}},$_);
+		  push(@{$rtstring->{path}{$1}},$_);
 		  }
 	       } @$trtval; 
 	    }
@@ -1827,24 +1537,18 @@ sub runtimebuildenv_()
 	    if (! exists ($variables->{$toolrt}))
 	       {
 	       $variables->{$toolrt} = 1;
-	       $ENV{$toolrt} = $shelldata->{$SCRAM_RT_SHELL}->{SETSTRING}(@$trtval);
+	       $rtstring->{variables}[$vindex++]{$toolrt}=$trtval;
 	       }
 	    }
 	 }
       }
-   
-   # Since we want to prepend to any existing paths, we want to append
-   # ":${VAR}" or suchlike. We start with the tools.
-   # Sort according to the order in which the tools were selected (i.e., the order in which
-   # they appear in RequirementsDoc):
-   foreach $tool ( sort { %{$rawselected}->{$a}
-			  <=> %{$rawselected}->{$b}}
-		   keys %{$rawselected} )
+      
+   my $otools = $tmanager->toolsdata();
+   foreach $tool ( reverse @$otools )
       {
       # Extract the runtime content for this tool:
-      my $toolrt = $tools->{$tool}->runtime(), if (exists $tools->{$tool});
-      
-      # If we really have a some runtime data, continue:
+      my $tname=$tool->toolname();
+      my $toolrt = $tool->runtime();
       if (defined ($toolrt))
 	 {
 	 while (my ($toolrt, $trtval) = each %{$toolrt})
@@ -1852,8 +1556,8 @@ sub runtimebuildenv_()
 	    if ($toolrt =~ /^PATH:(.*?)$/)
 	       {
 	       # Need an array where we can store the path elements:
-	       (! exists $rtstring->{$1}) ? $rtstring->{$1} = [] : undef;
-	       
+	       (! exists $rtstring->{path}{$1}) ? $rtstring->{path}{$1} = [] : undef;
+
 	       # $trtval is an array reference so we need to
 	       # iterate over the elements of the array:
 	       map
@@ -1863,7 +1567,7 @@ sub runtimebuildenv_()
 		     # Keep track of which paths we've already seen:
 		     $paths->{$1}->{$_} = 1 ;
 		     # Add the path element onto the array:
-		     push(@{$rtstring->{$1}},$_);
+		     push(@{$rtstring->{path}{$1}},$_);
 		     }
 		  } @$trtval; 
 	       }
@@ -1873,25 +1577,14 @@ sub runtimebuildenv_()
 	       if (! exists ($variables->{$toolrt}))
 		  {
 		  $variables->{$toolrt} = 1;
-		  $ENV{$toolrt} = $shelldata->{$SCRAM_RT_SHELL}->{SETSTRING}(@$trtval);
+		  $rtstring->{variables}[$vindex++]{$toolrt}=$trtval;
 		  }
 	       }
 	    }
 	 }
       }
-   
-   # Now dump out the path settings in the appropriate flavoured syntax:   
-   map
-      {
-      print "";
-      $ENV{$_} = $shelldata->{$SCRAM_RT_SHELL}->{SETSTRING}
-      (join("$shelldata->{$SCRAM_RT_SHELL}->{SEP}",@{$rtstring->{$_}}).$shelldata->{$SCRAM_RT_SHELL}->{PRINTVAR}($_));
-      } keys %{$rtstring};
-      
-   # Return nice value: 
-   return 0;
+   return $rtstring;
    }
-
 
 #### End of CMD.pm ####
 1;

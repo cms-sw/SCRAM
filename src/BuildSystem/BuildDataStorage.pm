@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.23.2.2 2008/02/15 17:30:58 muzaffar Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.23.2.3 2008/02/18 10:36:08 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -191,8 +191,7 @@ sub updateproductstore()
 sub update()
    {
    my $self=shift;
-   my ($dircache, $toolmanager) = @_;
-   $self->{TOOLMANAGER} = $toolmanager;
+   my ($dircache) = @_;
    
    my $newbf  = $dircache->get_data("ADDEDBF");
    my $newdir = $dircache->get_data("ADDEDDIR");
@@ -727,10 +726,9 @@ sub save()
    my $self=shift;
    # Delete unwanted stuff:
    delete $self->{DEPENDENCIES};
-   delete $self->{TOOLMANAGER};
    delete $self->{TEMPLATE_ENGINE};
    delete $self->{SCRAM_PROJECTS};
-   delete $self->{SCRAM_PROJECT_BASES};   
+   delete $self->{SCRAM_PROJECT_BASES};
    return $self;
    }
 

@@ -21,8 +21,11 @@ sub readlinks
     while(my $line=<$ref>)
     {
       chomp $line;
+      $line=~s/^\s*//;$line=~s/\s*$//;
+      if(($line eq "") || ($line=~/^\s*#/)){next;}
       my ($link,$path,@extra)=split /:/,$line;
       $link=~s/^(.*?)\/.*$/$1/;
+      while($link=~/^(.*)\$\((.+?)\)(.*)$/){$link="$1$ENV{$2}$3";}
       $self->{symlinks}{$link}=$path;
     }
     close($ref); 
