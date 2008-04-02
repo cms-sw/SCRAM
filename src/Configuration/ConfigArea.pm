@@ -217,7 +217,7 @@ sub satellite {
 	$sat->releasetop($relloc);
 	$sat->configchksum($self->configchksum());
 	$sat->setup(@_);
-        $self->copywithskip($self->archdir(),$sat->archdir(),["InstalledTools","ProjectCache.db.gz","DirCache.db.gz","MakeData/DirCache","MakeData/DirCache.mk","MakeData/src.mk"]);
+        $self->copywithskip($self->archdir(),$sat->archdir(),["InstalledTools","ProjectCache.db.gz","RuntimeCache.db.gz","DirCache.db.gz","MakeData/DirCache","MakeData/DirCache.mk","MakeData/src.mk"]);
 	$envfile = $sat->archdir()."/Environment";
 	open ( $fh, "> $envfile" ) or  $sat->error("Cannot Open \"$envfile\" file to Save\n $!"); 
 	print $fh "RELEASETOP=$relloc\n";

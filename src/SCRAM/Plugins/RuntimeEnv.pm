@@ -183,6 +183,13 @@ sub restore_environment_()
     }
   }
   %ENV=%BENV;
+  if ($pver=~/^V[01]_/)
+  {
+    print STDERR "****WARNING: Setting up runtime environment on top of a OLD SCRAM-based environment.\n",
+                 "**** Your environment was already setup for \"$penv[0]\" version \"$penv[1]\".\n",
+                 "**** The changes you had made in envirnment after setting up \"$penv[0]\" version \"$penv[1]\"\n",
+		 "**** environment are lost.\n";
+  }
 }
 
 sub init_ ()
@@ -235,9 +242,24 @@ sub runtime_ ()
   my $self=shift;
   if (exists $self->{env}{rtstring}){return $self->{env}{rtstring};}
   $self->{env}={};
+  my $scram=$self->{scram};
+  my $cdir=$scram->localarea()->archdir();
+  my $cache="${cdir}/RuntimeCache.db.gz";
+  if(-f $cache && -s $cache)
+  {
+    my $ctime=(stat($cache))[9];
+    my $ttime=(stat("${cdir}/ToolCache.db.gz"))[9];
+    if ($ttime < $ctime)
+    {
+      use Cache::CacheUtilities;
+      my $c=&Cache::CacheUtilities::read($cache);
+      $self->{env}{rtstring}=&Cache::CacheUtilities::read($cache);
+      return $self->{env}{rtstring};
+    }
+  }
   $self->{env}{rtstring}{variables}=[];
   $self->{env}{rtstring}{path}={};
-  my $tmanager = $self->{scram}->toolmanager();
+  my $tmanager = $scram->toolmanager();
   my $otools = $tmanager->toolsdata();
   my $tools  = $tmanager->setup();
   if (exists $tools->{'self'}){push @$otools,$tools->{'self'};}
@@ -249,6 +271,14 @@ sub runtime_ ()
   }
   foreach my $tool ( @compilertools ){$self->toolenv_($tool);}
   my $vindex=scalar(@{$self->{env}{rtstring}{variables}});
+  foreach my $k (keys %{$self->{env}}){if($k ne "rtstring"){delete $self->{env}{$k};}}
+  my $cref;
+  if (open($cref,">$cache"))
+  {
+    close($cref);
+    use Cache::CacheUtilities;
+    &Cache::CacheUtilities::write($self->{env}{rtstring},$cache);
+  }
   return $self->{env}{rtstring};
 }
    

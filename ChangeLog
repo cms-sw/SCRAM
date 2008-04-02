@@ -1,5 +1,16 @@
 2008-04-02 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
+	* SCRAM/Plugin/RuntimeEnv.pm: Now saves the tools runtime in 
+	.SCRAM/<arch>/RuntimeEnvCache.db.gz file. Every time an external tool
+	is changes (ToolCache.db.gz) file changes then this
+	RuntimeEnvCache.db.gz file will be update too.
+	It also now prints a warning message when it tries to setup
+	runtime environment on top of a already set SCRAM V1 environment.
+	* Configuration/ConfigArea.pm: Do not copy RuntimeEnvCache.db.gz 
+	when creating a developer area.
+
+2008-04-02 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
 	* SCRAM/Plugin/RuntimeEnv.pm: Newly added module for setting runtime
 	environment.
 	* SCRAM/SCRAM.pm, SCRAM/CMD.pm: Fixed to use new SCRAM::Plugin::RuntimeEnv
