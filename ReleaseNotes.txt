@@ -1,7 +1,7 @@
 
 			SCRAM Release Notes
 
-V2_0_0: 2008-03-13
+V2_0_0: 2008-04-02
 
 	* New SCRAM release series
 	* Supports for multiple arch development under one user area.
@@ -16,6 +16,15 @@ V2_0_0: 2008-03-13
 	* More compact SCRAM internal caches (<500KB)
 	* Faster "scram list" as it is not reading .SCRAM/Environment file for
 	  all the installed projects
+	* New RuntimeEnv module for setting up runtime environment. Now the
+	changes you make b/w two "scram runtime" are not lost but they are move
+	at the end of variable. e.g. 
+	- After first "scram runtime" PATH will become
+	  PATH=<values from scram>:<init value of PATH>
+	- After you changes
+	  PATH=<your name changes1>:<values from scram>:<init value of PATH>:<your name changes2>
+	- After 2nd "scram runtime"
+	  PATH=<values from scram>:<your name changes1>:<init value of PATH>:<your name changes2>
 
 V1_2_1: 2008-02-28
 

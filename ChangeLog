@@ -1,3 +1,32 @@
+2008-04-02 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugin/RuntimeEnv.pm: Newly added module for setting runtime
+	environment.
+	* SCRAM/SCRAM.pm, SCRAM/CMD.pm: Fixed to use new SCRAM::Plugin::RuntimeEnv
+	for setting up the runtime environment.
+	Now scram runtime behaviour is
+	like this e.g for PATH runtime variable
+	- At first "scramv1 runtime -csh", it will
+	  - backup all the env variables it is going to modify with
+	  the values set by scram
+	    PATH => PATH_SCRAMRT=<values_set_by_scram>
+	  - backup all the env variables with their initial values
+	    PATH => SCRAMRT_PATH=<init_value_of_PATH>
+	  - set the env variable with new values
+	    PATH=<values_set_by_scram>:${SCRAMRT_PATH}
+	- Now if you make changes in env after doing "scram runtime"
+	  PATH=<your_new_changes1>:${PATH}
+	  PATH=${PATH}:<your_new_changes2>
+        - Next time when you do "scramv1 run" then it will set
+	  - PATH_SCRAMRT=<values_set_by_scram>
+	  - SCRAMRT_PATH=<value of ${PATH} with ${PATH_SCRAMRT} removed from it>
+	  - PATH=<values_set_by_scram>:${SCRAMRT_PATH}
+	  So in this case you will end up with
+	  PATH=<values_set_by_scram>:<your_new_changes1>:<init_value_of_PATH>:<your_new_changes2>
+	In case if the initial environment was set by SCRAM V1_x or V0_X then
+	the next "scram runtime" will behave as old SCRAM i.e. changes you
+	made after first "scram runtime" will be lost.
+	
 2008-03-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* bin/scram: Make use of --arch <arch> to properly switch to a different

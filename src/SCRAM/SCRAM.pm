@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.34.2.3 2008/02/19 15:06:46 muzaffar Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.34.2.3.2.1 2008/03/13 12:54:52 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -94,6 +94,12 @@ sub init()
    return $self;
    }
 
+sub initx_()
+   {
+   my $self=shift;
+   $self->_initlocalarea();
+   $self->_initenv();
+   }
 =item   C<commands()>
 
 Returns a reference to a list of supported commands which are also

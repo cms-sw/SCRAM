@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.77.2.3 2008/02/19 15:06:45 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.77.2.3.2.1 2008/03/13 12:54:51 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -653,7 +653,9 @@ sub build()
       # Check to see if we are in a local project area, then set the
       # runtime environment. The environments are set in %ENV:
       $self->checklocal();
-      $self->runtimebuildenv_();
+      use SCRAM::Plugins::RuntimeEnv;
+      my $env=SCRAM::Plugins::RuntimeEnv->new($self);
+      $env->runtimebuildenv();
       $self->create_productstores($ENV{LOCALTOP});
       # Set location variables:
       use Cwd;
@@ -922,15 +924,12 @@ sub bootfromrelease() {
 	scramlogmsg("Creating a developer area based on project ",$projectname,", version ",$projectversion,"\n");
 
 	# Set RELEASETOP:
-	$ENV{RELEASETOP} = $relarea->location();	
-	# Set the var for project name and version:
-	$ENV{SCRAM_PROJECTNAME} = $projectname;
-	$ENV{SCRAM_PROJECTVERSION} = $projectversion;
-	
+	$ENV{RELEASETOP} = $relarea->location();
 	# Check that the areas are compatible:
 	$self->checkareatype($ENV{RELEASETOP},"Project release area SCRAM version mismatch: current is V1, area is V0. Exiting.");
 	$area = $relarea->satellite($installdir,$installname,$symlinks,$self->localarea());
-	$ENV{SCRAM_CONFIGDIR} = $area->configurationdir();
+	chdir ($area->location());
+	$self->initx_();
 	# Read the top-level BuildFile and create the required storage dirs. Do
 	# this before setting up self:
 	$self->create_productstores($area->location(),$symlinks);
@@ -1300,7 +1299,9 @@ sub runtime()
       # Also check to see that we received a shell argument:
       $self->scramfatal("No shell type given! See \"scram runtime -help\" for usage info."), if ($SCRAM_RT_SHELL eq '');
       
-      $self->save_environment_($SCRAM_RT_SHELL);
+      use SCRAM::Plugins::RuntimeEnv;
+      my $env=SCRAM::Plugins::RuntimeEnv->new ($self);
+      $env->save ($SCRAM_RT_SHELL);
       
       print "Using ",$SCRAM_RT_SHELL," shell syntax","\n", if ($ENV{SCRAM_DEBUG});
       my $ref;
@@ -1309,281 +1310,10 @@ sub runtime()
 	 print "Dumping RT environment to file ",$opts{SCRAM_RT_DUMP},"\n";
 	 open($ref,"> ".$opts{SCRAM_RT_DUMP} ) || die $!,"\n";
 	 }
-      $self->setenv_($SCRAM_RT_SHELL,$ref);
+      $env->setenv($SCRAM_RT_SHELL,$ref);
       if ($ref){close($ref);}
       }
    return 0;
-   }
-
-=item   C<save_environment_()>
-
-Save the current runtime environment. This function is used to
-restore an environment to its original state, usually before
-setting the runtime for a new area. Only used internally.
- 
-=cut
-
-sub save_environment_()
-   {
-   # The SCRAMRT_x variables must also be written out in
-   # the required shell flavour
-   my $self=shift;
-   my $shell=shift;
-   my $ref=shift || *STDOUT;
-   my $sd = $self->shelldata_()->{$shell};
-   
-   # Use combination of project name and version to set unique ID
-   # for SCRAMRT_SET variable:
-   my $rtkey =$ENV{SCRAM_PROJECTNAME}.":".$ENV{SCRAM_PROJECTVERSION};
-   
-   # Check to see if runtime environment has already been set.
-   # If it has, no need to save the environment:
-   if (exists($ENV{SCRAMRT_SET}))
-      {
-      $self->restore_environment_();
-      delete $ENV{SCRAMRT_SET};
-      $self->save_environment_($shell,$ref);
-      }
-   else
-      {
-      # Save the environment.
-      # Store all environment variables as SCRAMRT_x so
-      # that environment can be reset to original (pre-scram runtime)
-      # settings:
-      while (my ($varname, $varvalue) = each %ENV)
-	 {
-	 # We must skip any internal SCRAM environment settings, including
-	 # LOCALTOP and RELEASETOP
-	 next if ($varname eq "_"); # Also, makes no sense to store "_", the last command run:
-	 next if ($varname eq "PWD"); # Also, don't want to override PWD!
-	 next if ($varname eq "PROMPT_COMMAND"); # A feature of bash.
-
-	 if ($varname !~ /^SCRAM_.*/ && $varname !~ /^SCRAM$/ && $varname !~ /^LOCALTOP$|^RELEASETOP$|^LOCALRT$|^BASE_PATH$/)
-	    {
-	    # Check to see if the value of the variable contains quotes. If so, handle them properly:
-	    $varvalue =~ s/\"/\\\"/g;
-	    # Also handle backticks:
-	    $varvalue =~ s/\`/\\\`/g;	    
-
-	    # Print out var:
-	    print $ref $sd->{EXPORT}." ".'SCRAMRT_'.$varname.$sd->{EQUALS}.$sd->{QUOTE}($varvalue)."\n";
-	    }
-	 }
-      
-      # Set the key that says "RTDONE":
-      print $ref $sd->{EXPORT}." ".'SCRAMRT_SET'.$sd->{EQUALS}.$sd->{QUOTE}($rtkey)."\n";
-      }
-   }
-
-=item   C<restore_environment_()>
-
-Restore the original runtime environment. This function is used to
-restore an environment to its original state, usually before
-setting the runtime for a new area. Only used internally.
-
-=cut
-
-sub restore_environment_()
-   {
-   my $self=shift;
-   my %currentenv=%ENV;
-   my %restoredenv;
-   
-   # Restore the environment from the SCRAMRT_x variables. We start with a clean slate, copying
-   # all SCRAM_x variables, SCRAMRT_x variables and expanding the SCRAMRT_x variables so that x
-   # is restored:
-   while (my ($varname, $varvalue) = each %currentenv)
-      {
-      if ($varname =~ /^SCRAMRT_(.*)/)
-	 {
-	 my $var=$1;
-	 $currentenv{$var} =~ s/\Q$currentenv{$varname}\E//g;
-	 $currentenv{$var} =~ s/^:*//;  # Deal with any Path variables
-	 $restoredenv{$var} = $currentenv{$varname};
-	 }
-      else
-	 {
-	 # These are the internal SCRAM variables that should be kept:
-	 if ($varname =~ /^SCRAM_.*/ || $varname =~ /^SCRAM$/ || $varname =~ /^LOCALTOP$|^RELEASETOP$/)
-	    {
-	    $restoredenv{$varname} = $currentenv{$varname};
-	    }
-	 }
-      }
-   
-   # Copy the new env to ENV:
-   %ENV=%restoredenv;
-   }
-
-sub shelldata_ ()
-   {
-   my $sd =
-      {
-      BOURNE =>
-	 {
-	 EQUALS => '=',
-	 SEP => ':',
-	 EXPORT => 'export',
-	 PRINTVAR => sub { (exists $ENV{$_[0]}) ? return ':$'.'SCRAMRT_'.$_[0] : return '' },
-	 QUOTE => sub { return "\"$_[0]\";" }
-	 },
-      TCSH =>
-	 {
-	 EQUALS => ' ',
-	 SEP => ':',
-	 EXPORT => 'setenv',
-	 PRINTVAR => sub { (exists $ENV{$_[0]}) ? return ':{$'.'SCRAMRT_'.$_[0].'}' : return '' },
-	 QUOTE => sub { return "\"$_[0]\";" }
-	 },
-      CYGWIN =>
-	 {
-	 EQUALS => '=',
-	 SEP => ';',
-	 EXPORT => 'set',
-	 PRINTVAR => sub { (exists $ENV{$_[0]}) ? return ';%'.'SCRAMRT_'.$_[0] : return '' },
-	 QUOTE => sub { return "\"$_[0]\";" }
-	 },
-      RTBOURNE =>
-	 {
-	 EQUALS => '=',
-	 SEP => ':',
-	 EXPORT => 'export',
-	 PRINTVAR => sub { (exists $ENV{$_[0]}) ? return ':'.$ENV{$_[0]} : return '' },
-	 QUOTE => sub { return "\"$_[0]\";" },
-	 SETSTRING => sub { return "$_[0]" }
-	 }
-      };
-   return $sd;
-   }
-   
-sub setenv_()
-   {
-   my $self=shift;
-   my $s=shift;
-   my $ref=shift || *STDOUT;
-   my $sd = $self->shelldata_();
-   my $env=$self->runtime_();
-   foreach my $h (@{$env->{variables}})
-      {
-      my ($var,$val) = each %$h;
-      if ($s eq "RTBOURNE")
-	 {
-	 $ENV{$var} = $sd->{$s}->{SETSTRING}(@$val);
-         }
-      else
-	 {
-	 print $ref $sd->{$s}->{EXPORT}." ".$var.$sd->{$s}->{EQUALS}.$sd->{$s}->{QUOTE}(@$val)."\n";
-	 }
-      }
-   foreach my $var (keys %{$env->{path}})
-      {
-      my $val=$env->{path}{$var};
-      if ($s eq "RTBOURNE")
-	 {
-         $ENV{$var} = $sd->{$s}->{SETSTRING}(join($sd->{$s}->{SEP},@$val).$sd->{$s}->{PRINTVAR}($var));
-	 }
-      else
-	 {
-	 print $ref $sd->{$s}->{EXPORT}." ".$var.$sd->{$s}->{EQUALS}.$sd->{$s}->{QUOTE}
-	            (join($sd->{$s}->{SEP},@$val).$sd->{$s}->{PRINTVAR}($var))."\n";
-	 }
-      }
-   return 0;
-   }
-   
-sub runtimebuildenv_()
-   {
-   my $self=shift;
-   $self->setenv_ ("RTBOURNE");
-   return 0;
-   }
-
-
-sub runtime_ ()
-   {
-   my $self=shift;
-   my $rtstring={};
-   $rtstring->{path}={};
-   $rtstring->{variables}=[];
-   my $paths={};
-   my $variables={};
-   my $tmanager = $self->toolmanager();
-   my $tools  = $tmanager->setup();
-   my $vindex=0;
-   if (exists ($tools->{'self'}) && (my $toolrt = $tools->{'self'}->runtime()))
-      {
-      while (my ($toolrt, $trtval) = each %{$toolrt})
-	 {
-	 if ($toolrt =~ /^PATH:(.*?)$/)
-	    {
-	    # Need an array where we can store the path elements:
-	    (! exists $rtstring->{path}{$1}) ? $rtstring->{path}{$1} = [] : undef;
-            # $trtval is an array reference so we need to
-	    # iterate over the elements of the array:
-	    map
-	       {
-	       if (! exists ($paths->{$1}->{$_}))
-		  {
-		  # Keep track of which paths we've already seen:
-		  $paths->{$1}->{$_} = 1 ;
-		  # Add the path element onto the array:
-		  push(@{$rtstring->{path}{$1}},$_);
-		  }
-	       } @$trtval; 
-	    }
-	 else
-	    {
-	    # Ordinary variable:
-	    if (! exists ($variables->{$toolrt}))
-	       {
-	       $variables->{$toolrt} = 1;
-	       $rtstring->{variables}[$vindex++]{$toolrt}=$trtval;
-	       }
-	    }
-	 }
-      }
-      
-   my $otools = $tmanager->toolsdata();
-   foreach $tool ( reverse @$otools )
-      {
-      # Extract the runtime content for this tool:
-      my $tname=$tool->toolname();
-      my $toolrt = $tool->runtime();
-      if (defined ($toolrt))
-	 {
-	 while (my ($toolrt, $trtval) = each %{$toolrt})
-	    {
-	    if ($toolrt =~ /^PATH:(.*?)$/)
-	       {
-	       # Need an array where we can store the path elements:
-	       (! exists $rtstring->{path}{$1}) ? $rtstring->{path}{$1} = [] : undef;
-
-	       # $trtval is an array reference so we need to
-	       # iterate over the elements of the array:
-	       map
-		  {
-		  if (! exists ($paths->{$1}->{$_}))
-		     {
-		     # Keep track of which paths we've already seen:
-		     $paths->{$1}->{$_} = 1 ;
-		     # Add the path element onto the array:
-		     push(@{$rtstring->{path}{$1}},$_);
-		     }
-		  } @$trtval; 
-	       }
-	    else
-	       {
-	       # Ordinary variable:
-	       if (! exists ($variables->{$toolrt}))
-		  {
-		  $variables->{$toolrt} = 1;
-		  $rtstring->{variables}[$vindex++]{$toolrt}=$trtval;
-		  }
-	       }
-	    }
-	 }
-      }
-   return $rtstring;
    }
 
 #### End of CMD.pm ####
