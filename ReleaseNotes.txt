@@ -25,6 +25,7 @@ V2_0_0: 2008-04-02
 	  PATH=<your name changes1>:<values from scram>:<init value of PATH>:<your name changes2>
 	- After 2nd "scram runtime"
 	  PATH=<values from scram>:<your name changes1>:<init value of PATH>:<your name changes2>
+	- gmake is now run with full path to avoid picking it up from /usr/bin area.
 
 V1_2_1: 2008-02-28
 
