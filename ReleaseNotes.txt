@@ -1,7 +1,7 @@
 
 			SCRAM Release Notes
 
-V2_0_0: 2008-04-02
+V2_0_0: 2008-04-14
 
 	* New SCRAM release series
 	* Supports for multiple arch development under one user area.
@@ -17,6 +17,8 @@ V2_0_0: 2008-04-02
 	* Faster "scram list" as it is not reading .SCRAM/Environment file for
 	  all the installed projects
 	* New RuntimeEnv module for setting up runtime environment. Now the
+	* Fixed the bug when the package level src directory deleted and there is only
+	BuildFile left in the package.
 	changes you make b/w two "scram runtime" are not lost but they are move
 	at the end of variable. e.g. 
 	- After first "scram runtime" PATH will become

@@ -1,3 +1,9 @@
+2008-04-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* BuildSystem/BuildDataStorage.pm: Fixed the bug when package level
+	src directory is deleted and there is only BuildFile left in the
+	package directory.
+
 2008-04-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/Plugin/RuntimeEnv.pm: Cleanup.
