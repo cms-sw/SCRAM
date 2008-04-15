@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.77.2.2 2008/02/15 17:30:59 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.77.2.3 2008/02/19 15:06:45 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -856,7 +856,7 @@ sub build()
 	 $buildstoreobject->init_engine(); # Restart the template engine
 
 	 # Run in update mode:
-	 $buildstoreobject->update($cacheobject,$self->toolmanager(), $filecache);
+	 $buildstoreobject->update($cacheobject);
 	 
 	 # Now write to the file cache. From here on, we're done with it:
 	 print "\nUpdating cache","\n",if ($ENV{SCRAM_DEBUG});

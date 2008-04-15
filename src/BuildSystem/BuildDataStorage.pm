@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.23.2.2 2008/02/15 17:30:58 muzaffar Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.23.2.3 2008/02/18 10:36:08 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -188,14 +188,31 @@ sub updateproductstore()
    }
 }
 
+sub getbf ()
+   {
+   my $self=shift;
+   my $dpath=shift;
+   my $bfile="";
+   if (exists $self->{BUILDTREE}->{$dpath})
+      {
+      my $item=$self->{BUILDTREE}->{$dpath};
+      if (defined $item)
+	 {
+	 my $bf = $item->metabf();
+	 if (scalar(@$bf)>0){$bfile=$bf->[0];}
+	 }
+      }
+   return $bfile;
+   }
+
 sub update()
    {
    my $self=shift;
-   my ($dircache, $toolmanager) = @_;
-   $self->{TOOLMANAGER} = $toolmanager;
-   
+   my ($dircache) = @_;
+
    my $newbf  = $dircache->get_data("ADDEDBF");
    my $newdir = $dircache->get_data("ADDEDDIR");
+   my $remdir = $dircache->get_data("REMOVEDDIR");
    use File::Path;
    my $mkpath = $ENV{LOCALTOP}."/".$ENV{SCRAM_INTwork}."/MakeData";
    my $mkpubpath = $ENV{LOCALTOP}."/.SCRAM/".$ENV{SCRAM_ARCH}."/MakeData";
@@ -214,7 +231,7 @@ sub update()
 	    {
             my $treeitem = $self->updatedirbf($dircache,$ENV{SCRAM_SOURCEDIR},$ENV{SCRAM_CONFIGDIR}."/${bf}");
             $self->updateproductstore($treeitem);
-            $runeng{$ENV{SCRAM_SOURCEDIR}}=$treeitem;
+            $runeng{$ENV{SCRAM_SOURCEDIR}}=1;
             delete $newbf->{$ENV{SCRAM_CONFIGDIR}."/${bf}"};
 	    last;
 	    }
@@ -232,23 +249,21 @@ sub update()
 	 else
 	    {
 	    my $dpath = $self->datapath($path);
-	    my $pitem=undef;
-	    if (exists $self->{BUILDTREE}->{$dpath})
+	    if (exists $dircache->{PACKMAP}{$dpath})
 	       {
-	       $pitem=$self->{BUILDTREE}->{$dpath};
-	       if (defined $pitem)
-	          {
-	          my $bf = $pitem->metabf();
-	          if (scalar(@$bf)>0)
-	             {
-	             $bf=$bf->[0];
-		     if (!exists $newbf->{$bf})
-		        {
-		        delete $newdir->{$path};
-		        next;
-		        }
-                     }
-	          }
+	       my $map=$dircache->{PACKMAP}{$dpath};
+	       if (($remdir) && (exists $remdir->{$ENV{SCRAM_SOURCEDIR}."/${map}"}))
+		  {
+		  $bf=$self->getbf($map);
+		  if ($bf){$newbf||={};$newbf->{$bf}=1;}
+		  delete $newdir->{$path};
+		  next;
+		  }
+	       }
+	    else
+	       {
+	       $bf=$self->getbf($dpath);
+	       if (($bf ne "") && ($newbf) && (!exists $newbf->{$bf})){delete $newdir->{$path};next;}
 	       }
 	    my $item = $self->updatedirbf($dircache,$path,"",$cinfo);
 	    my $flag=0;
@@ -260,11 +275,23 @@ sub update()
                {
                $flag=$projinfo->isPublic($item->class());
                }
-	    $runeng{$path}=$item;
+	    $runeng{$path}=1;
             if ($flag)
                {
                my $treeitem = $self->{BUILDTREE}->{$dpath};
-               $dircache->{PACKMAP}{$treeitem->parent()}=$dpath;
+	       my $parent=$treeitem->parent();
+	       my $bf = $self->getbf($parent);
+	       if ($bf)
+	       {
+	         $newbf||={};
+		 $newbf->{$bf}=1;
+		 if (!exists $runeng{$parent})
+		    {
+		    $runeng{$parent}=1;
+		    delete $self->{BUILDTREE}->{$parent}{RAWDATA};
+		    }
+	       }
+               $dircache->{PACKMAP}{$parent}=$dpath;
                $item->publictype (1);
                }
 	    }
@@ -273,26 +300,29 @@ sub update()
       
    my %mkrebuild=();
    $mkrebuild{"${mkpath}/RmvDirCache"}=1;
-   my $remdir = $dircache->get_data("REMOVEDDIR");
    if ($remdir)
       {
       foreach  my $path (keys %{$remdir})
          {
 	 delete $remdir->{$path};
+	 my $dpath=$self->datapath($path);
+	 if (exists $self->{BUILDTREE}->{$dpath}){delete $self->{BUILDTREE}->{$dpath};}
+	 foreach my $map (keys %{$dircache->{PACKMAP}})
+	    {
+	    if ($dircache->{PACKMAP}{$map} eq $dpath)
+	       {
+	       delete $dircache->{PACKMAP}{$map};
+	       last;
+	       }
+	    }
 	 my $spath = $path; $spath =~ s|/|_|g;
 	 open(OFILE,">${mkpath}/RmvDirCache/${spath}.mk");
 	 print OFILE "REMOVED_DIRS += $path\n";
 	 close(OFILE);
 	 my $mpath = "${mkpath}/DirCache/${spath}.mk";
-	 if (!-f $mpath)
-	    {
-	    $mpath = "${mkpubpath}/DirCache/${spath}.mk";
-	    }
-	 if (-f $mpath)
-	    {
-	    unlink $mpath;
-	    $mkrebuild{dirname($mpath)}=1;
-	    }
+	 if (-f $mpath){unlink $mpath;$mkrebuild{dirname($mpath)}=1;}
+	 $mpath = "${mkpubpath}/DirCache/${spath}.mk";
+	 if (-f $mpath){unlink $mpath;$mkrebuild{dirname($mpath)}=1;}
 	 }
       }
       
@@ -301,10 +331,8 @@ sub update()
       foreach my $bf (keys %{$newbf})
          {
          my $dpath = $self->datapath($bf);
-	 if (exists $dircache->{PACKMAP}{$dpath})
-	    {
-	    $dpath = $dircache->{PACKMAP}{$dpath};
-	    }
+	 if (exists $dircache->{PACKMAP}{$dpath}){$dpath = $dircache->{PACKMAP}{$dpath};}
+	 if (!exists $self->{BUILDTREE}->{$dpath}){$dpath=$self->datapath($bf);}
 	 $self->scan($bf,$dpath);
 	 $self->{BUILDTREE}->{$dpath}->metabf($bf);
 	 $runeng{"$ENV{SCRAM_SOURCEDIR}/${dpath}"} = $self->{BUILDTREE}->{$dpath};
@@ -313,8 +341,10 @@ sub update()
       }
    foreach my $path (sort {$a cmp $b} keys %runeng)
       {
-      my $treeitem = $runeng{$path};
+      my $dpath=$self->datapath($path);
       delete $newdir->{$path};
+      if(!exists $self->{BUILDTREE}->{$dpath}){next;}
+      my $treeitem = $self->{BUILDTREE}->{$dpath};
       $self->run_engine($treeitem);
       if (exists $treeitem->{MKDIR})
          {
@@ -355,7 +385,6 @@ sub scan()
       {
       $self->skipdir($datapath,$skipped->[1]);
       }
-
    $self->storedata($datapath, $bfparse);
 
    return $self;
@@ -727,10 +756,9 @@ sub save()
    my $self=shift;
    # Delete unwanted stuff:
    delete $self->{DEPENDENCIES};
-   delete $self->{TOOLMANAGER};
    delete $self->{TEMPLATE_ENGINE};
    delete $self->{SCRAM_PROJECTS};
-   delete $self->{SCRAM_PROJECT_BASES};   
+   delete $self->{SCRAM_PROJECT_BASES};
    return $self;
    }
 
