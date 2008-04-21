@@ -4,6 +4,7 @@
 V2_0_X: 2008-04-21
 
 	* Bug fixed for arch specific flags.
+	* Switch to use gzip if Compress::Zlib perl module not available.
 
 V2_0_0: 2008-04-21
 

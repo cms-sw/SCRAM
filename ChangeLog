@@ -2,6 +2,8 @@
 
 	* BuildSystem/Template/Plugins/PluginCore.pm: Bug fixed for flags which 
 	are arch specific.
+	* Cache/CacheUtilities.pm: Switch to use gzip if Compress::Zlib perl
+	module is not installed.
 
 2008-04-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
