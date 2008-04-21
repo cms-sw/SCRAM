@@ -1,3 +1,8 @@
+2008-04-21 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* BuildSystem/Template/Plugins/PluginCore.pm: Bug fixed for flags which 
+	are arch specific.
+
 2008-04-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* BuildSystem/BuildDataStorage.pm: Fixed the bug when package level
