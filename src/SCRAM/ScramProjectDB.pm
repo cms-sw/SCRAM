@@ -180,7 +180,7 @@ sub addarea
 		  }
 	       }
 	    }
-	 else
+	 elsif($ENV{SCRAM_DEBUG})
 	    {
 	    print "Related Project : $name ".$self->{projects}[$index][1]."\n";
 	    }
