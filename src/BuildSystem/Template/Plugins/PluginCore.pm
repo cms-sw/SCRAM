@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-04-29 16:07:07+0200
-# Revision: $Id: PluginCore.pm,v 1.4 2007/12/14 09:03:50 muzaffar Exp $ 
+# Revision: $Id: PluginCore.pm,v 1.4.2.1 2008/02/15 14:58:01 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -155,20 +155,20 @@ sub allflags()
 	       push @{$self->{FLAG_CACHE}{$f}},($f eq "CPPDEFINES") ? "-D$fv":$fv;
 	       }
 	    }
-	 if ((exists $t->{content}{ARCH}) &&
-	     (exists $t->{content}{ARCH}{$ENV{SCRAM_ARCH}}) &&
-	     (exists $t->{content}{ARCH}{$ENV{SCRAM_ARCH}}{FLAGS}))
+	 }
+      if ((exists $t->{content}{ARCH}) &&
+	  (exists $t->{content}{ARCH}{$ENV{SCRAM_ARCH}}) &&
+	  (exists $t->{content}{ARCH}{$ENV{SCRAM_ARCH}}{FLAGS}))
+	 {
+	 foreach my $f (keys %{$t->{content}{ARCH}{$ENV{SCRAM_ARCH}}{FLAGS}})
 	    {
-	    foreach my $f (keys %{$t->{content}{ARCH}{$ENV{SCRAM_ARCH}}{FLAGS}})
+	    if (!exists $self->{FLAG_CACHE}{$f})
 	       {
-	       if (!exists $self->{FLAG_CACHE}{$f})
-	          {
-	          $self->{FLAG_CACHE}{$f}=[];
-	          }
-	       foreach my $fv (@{$t->{content}{ARCH}{$ENV{SCRAM_ARCH}}{FLAGS}{$f}})
-	          {
-	          push @{$self->{FLAG_CACHE}{$f}},($f eq "CPPDEFINES") ? "-D$fv":$fv;
-	          }
+	       $self->{FLAG_CACHE}{$f}=[];
+	       }
+	    foreach my $fv (@{$t->{content}{ARCH}{$ENV{SCRAM_ARCH}}{FLAGS}{$f}})
+	       {
+	       push @{$self->{FLAG_CACHE}{$f}},($f eq "CPPDEFINES") ? "-D$fv":$fv;
 	       }
 	    }
 	 }
