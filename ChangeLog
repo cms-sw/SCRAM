@@ -1,3 +1,9 @@
+2008-05-15 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugins/Attic/RuntimeEnv.pm: Do not set SCRAMRT_* and *_SCRAMRT
+	backup variavles when doing "scram build" and also then do not set the
+	environment when "scram b" is called recursively.
+
 2008-04-21 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* BuildSystem/Template/Plugins/PluginCore.pm: Bug fixed for flags which 

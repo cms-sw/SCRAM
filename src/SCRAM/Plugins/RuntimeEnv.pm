@@ -9,6 +9,8 @@ sub new()
    bless $self, $class;
    my $scram=shift;
    $self->{scram}=$scram;
+   if(exists $ENV{SCRAM_RTBOURNE_SET}){$self->{recursive}=1;}
+   else{$self->{recursive}=0;}
    $self->init_();
    return $self;
 }
@@ -24,6 +26,7 @@ sub runtimebuildenv()
 sub setenv()
 {
   my $self=shift;
+  if ($self->{recursive}){return;}
   my $s=shift;
   my $ref=shift || *STDOUT;
   my $sd = $self->{shell}{$s};
@@ -49,6 +52,7 @@ sub setenv()
   }
   if ($s eq "RTBOURNE")
   {
+    push @data,{"SCRAM_RTBOURNE_SET" => $ENV{SCRAMRT_SET}};
     foreach my $var (keys %{$env->{xenv}})
     {
       my $val=$env->{xenv}{$var};
@@ -81,8 +85,12 @@ sub setenv()
   {
     while (my ($var,$val) = each %$h)
     {
-      if ($s eq "RTBOURNE"){$ENV{$var} = $val;next;}
-      while($val=~/^(.*)\$ENV\{([^\}]+)\}(.*)$/){$val="$1$ENV{$2}$3";}
+      if ($s eq "RTBOURNE")
+      {
+        if (($var=~/^SCRAMRT_.+$/) || ($var=~/_SCRAMRT(DEL|)$/)){if ($var ne "SCRAMRT_SET"){delete $ENV{$var};next;}}
+        $ENV{$var} = $val;
+	next;
+      }
       if (exists $oenv->{$var})
       {
         my $v=$oenv->{$var};
@@ -98,6 +106,7 @@ sub setenv()
 sub save()
 {
   my $self=shift;
+  if ($self->{recursive}){return;}
   my $shell=shift;
   my $ref=shift || *STDOUT;
   if (exists($ENV{SCRAMRT_SET}))
@@ -132,7 +141,7 @@ sub save()
       if (exists $env->{path}{$name}){$value=&cleanpath_($value,$sep);}
       $data[$index++]{"SCRAMRT_$name"}=$value;
     }
-    $data[$index++]{SCRAMRT_SET}="$ENV{SCRAM_PROJECTNAME}:$ENV{SCRAM_PROJECTVERSION}:$ENV{SCRAM_VERSION}";
+    $data[$index++]{SCRAMRT_SET}="$ENV{SCRAM_PROJECTNAME}:$ENV{SCRAM_PROJECTVERSION}:$ENV{SCRAM_ARCH}:$ENV{SCRAM_VERSION}";
     foreach my $v (@data)
     {
       while(my ($name, $value) = each %$v)

@@ -5,6 +5,9 @@ V2_0_X: 2008-04-21
 
 	* Bug fixed for arch specific flags.
 	* Switch to use gzip if Compress::Zlib perl module not available.
+	* SCRAM internal backup variables *_SCRAMRT* and SCRAMRT_* are not set
+	when "scram build" is run.
+	* SCRAM now does not set the environment when "scram build" is run recursively.
 
 V2_0_0: 2008-04-21
 
