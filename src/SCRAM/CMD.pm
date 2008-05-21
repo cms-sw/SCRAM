@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.77.2.3.2.1 2008/03/13 12:54:51 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.77.2.3.2.2 2008/04/02 13:09:01 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1144,6 +1144,11 @@ sub setupnewarch_()
       my $area=$self->localarea();
       my $loc = $area->location();
       $self->bootfromrelease($area->name(),$area->version(),dirname($loc),basename($loc),$toolconf,$area->symlinks());
+      return 1;
+      }
+   else
+      {
+      return 0;
       }
    }
 =item   C<setup()>
@@ -1213,9 +1218,9 @@ sub setup()
 	    }
 	 elsif($tool!~/^\//) {$tool=cwd()."/$tool";}
          }
-      else
+      elsif ($self->setupnewarch_ ($interactive,$toolconf))
          {
-	 return $self->setupnewarch_ ($interactive,$toolconf);
+	 return;
 	 }
       
       # Get the tool manager:
