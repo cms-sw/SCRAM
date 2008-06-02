@@ -1,3 +1,7 @@
+2008-06-02 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* Cache/Cache.pm: Disable the non-xml BuildFile read warning.
+
 2008-05-21 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/CMD.pm: Bug fix, scram setup now setup all the tools if no

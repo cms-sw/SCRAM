@@ -5,7 +5,7 @@
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 #         (with contribution from Lassi.Tuura@cern.ch)
 # Update: 2003-11-27 16:45:18+0100
-# Revision: $Id: Cache.pm,v 1.10.2.2 2008/02/19 15:06:10 muzaffar Exp $ 
+# Revision: $Id: Cache.pm,v 1.10.2.2.2.1 2008/03/13 12:54:51 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -358,7 +358,7 @@ sub checkfiles()
       }
    if ($self->{nonxml} > 0)
       {
-      print STDERR "**** WARNING: ",$self->{nonxml}," non-xml based $ENV{SCRAM_BUILDFILE} were read.\n";
+      #print STDERR "**** WARNING: ",$self->{nonxml}," non-xml based $ENV{SCRAM_BUILDFILE} were read.\n";
       }
    return $self;
    }

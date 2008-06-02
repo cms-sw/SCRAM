@@ -8,6 +8,7 @@ V2_0_X: 2008-04-21
 	* SCRAM internal backup variables *_SCRAMRT* and SCRAMRT_* are not set
 	when "scram build" is run.
 	* SCRAM now does not set the environment when "scram build" is run recursively.
+	* No more reading of non-xml based BuildFile warning.
 
 V2_0_0: 2008-04-21
 
