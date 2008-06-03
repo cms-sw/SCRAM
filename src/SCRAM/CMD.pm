@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.77.2.3 2008/02/19 15:06:45 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.77.2.4 2008/04/15 07:55:34 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1837,6 +1837,7 @@ sub runtimebuildenv_()
    # ":${VAR}" or suchlike. We start with the tools.
    # Sort according to the order in which the tools were selected (i.e., the order in which
    # they appear in RequirementsDoc):
+   my $gmakebase="";
    foreach $tool ( sort { %{$rawselected}->{$a}
 			  <=> %{$rawselected}->{$b}}
 		   keys %{$rawselected} )
@@ -1858,6 +1859,7 @@ sub runtimebuildenv_()
 	       # iterate over the elements of the array:
 	       map
 		  {
+		  if (($tool eq "gmake") && ($1 eq "PATH") && ($gmakebase eq "") && (-x $_."/gmake")){$gmakebase=$_;}
 		  if (! exists ($paths->{$1}->{$_}))
 		     {
 		     # Keep track of which paths we've already seen:
@@ -1887,7 +1889,7 @@ sub runtimebuildenv_()
       $ENV{$_} = $shelldata->{$SCRAM_RT_SHELL}->{SETSTRING}
       (join("$shelldata->{$SCRAM_RT_SHELL}->{SEP}",@{$rtstring->{$_}}).$shelldata->{$SCRAM_RT_SHELL}->{PRINTVAR}($_));
       } keys %{$rtstring};
-      
+   $ENV{SCRAM_GMAKE_PATH}=$gmakebase;
    # Return nice value: 
    return 0;
    }
