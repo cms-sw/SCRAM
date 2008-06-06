@@ -1,3 +1,8 @@
+2008-06-06 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugins/RuntimeEnv.pm,BuildSystem/MakeInterface.pm: Fixed to run
+	 default gmake if "gmake" is not setup as an external tool.
+
 2008-06-02 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* Cache/Cache.pm: Disable the non-xml BuildFile read warning.

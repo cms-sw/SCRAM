@@ -1,5 +1,10 @@
 
 			SCRAM Release Notes
+V2_0_1: 2008-06-06
+	* First real version of V2_0 series.
+	* Now if gmake is not set as an external tool then SCRAM uses default
+	gmake instead of trying to run /gmake.
+	* Contains all the features/bug fixes went in to SCRAM V2_0_* versions.
 
 V2_0_X: 2008-04-21
 
