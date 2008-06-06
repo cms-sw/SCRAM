@@ -313,6 +313,7 @@ sub toolenv_ ()
   my $vindex=scalar(@{$self->{env}{rtstring}{variables}});
   my $tname=$tool->toolname();
   my $toolrt = $tool->runtime();
+  my $gmake="";
   if (defined ($toolrt))
   {
     while (my ($toolrt, $trtval) = each %{$toolrt})
@@ -322,7 +323,11 @@ sub toolenv_ ()
         (! exists $self->{env}{rtstring}{path}{$1}) ? $self->{env}{rtstring}{path}{$1} = [] : undef;
 	map
 	{
-	  if (($tname eq "gmake") && ($1 eq "PATH")){$self->{env}{rtstring}{xenv}{SCRAM_GMAKE_PATH}=$_;}
+	  if (($tname eq "gmake") && ($1 eq "PATH") && ($gmake eq "") && (-x $_."/gmake"))
+	  {
+	    $gmake=$_."/";
+	    $self->{env}{rtstring}{xenv}{SCRAM_GMAKE_PATH}=$gmake;
+	  }
 	  if (! exists ($self->{env}{paths}{$1}{$_}))
 	  {
 	    $self->{env}{paths}{$1}{$_} = 1 ;

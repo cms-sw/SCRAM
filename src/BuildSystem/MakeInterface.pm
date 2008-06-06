@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 14:49:43+0200
-# Revision: $Id: MakeInterface.pm,v 1.6 2008/01/03 13:35:14 muzaffar Exp $ 
+# Revision: $Id: MakeInterface.pm,v 1.6.4.1 2008/04/07 09:29:14 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -29,7 +29,7 @@ sub new()
   {
   my $proto=shift;
   my $class=ref($proto) || $proto;
-  my $self={ GMAKECMD => '$SCRAM_GMAKE_PATH/gmake', CMDOPTS => ' -r' };
+  my $self={ GMAKECMD => '${SCRAM_GMAKE_PATH}gmake', CMDOPTS => ' -r' };
   bless $self,$class;
   $|=1;
 
