@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.77.2.3.2.2 2008/04/02 13:09:01 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.77.2.3.2.3 2008/05/21 08:07:33 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -653,7 +653,7 @@ sub build()
       # Check to see if we are in a local project area, then set the
       # runtime environment. The environments are set in %ENV:
       $self->checklocal();
-      use SCRAM::Plugins::RuntimeEnv;
+      eval "use SCRAM::Plugins::RuntimeEnv";
       my $env=SCRAM::Plugins::RuntimeEnv->new($self);
       $env->runtimebuildenv();
       $self->create_productstores($ENV{LOCALTOP});
@@ -905,12 +905,17 @@ Function to create a developer area from an existing release (only used locally)
 sub bootfromrelease() {
     my $self=shift;
     my ($projectname,$projectversion,$installdir,$installname,$toolconf,$symlinks) = @_;
+    my $iname=$installname || $projectversion;
     if ($projectname && $projectversion) {
 	my $relarea=$self->scramprojectdb()->getarea($projectname,$projectversion);
-	
+	if (-d "${installdir}/${iname}/".$relarea->admindir()."/$ENV{SCRAM_ARCH}")
+	   {
+	   print STDERR "WARNING: There already exists ${installdir}/${iname} area for SCRAM_ARCH $ENV{SCRAM_ARCH}.\n";
+	   exit 0;
+	   }
 	if ((! defined $relarea) || (!-d $relarea->archdir()))
 	   {
-	   print "Can not find a release area $projectname version $projectversion for SCRAM_ARCH $ENV{SCRAM_ARCH}.\n";
+	   print STDERR "Can not find a release area $projectname version $projectversion for SCRAM_ARCH $ENV{SCRAM_ARCH}.\n";
 	   $self->scramfatal("No release area found.");
 	   }
 	else
@@ -1300,11 +1305,11 @@ sub runtime()
       {
       # Check to see if we are in a local project area:
       $self->checklocal();
-      
+
       # Also check to see that we received a shell argument:
       $self->scramfatal("No shell type given! See \"scram runtime -help\" for usage info."), if ($SCRAM_RT_SHELL eq '');
       
-      use SCRAM::Plugins::RuntimeEnv;
+      eval "use SCRAM::Plugins::RuntimeEnv";
       my $env=SCRAM::Plugins::RuntimeEnv->new ($self);
       $env->save ($SCRAM_RT_SHELL);
       
