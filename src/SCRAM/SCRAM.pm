@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.34.2.3.2.1 2008/03/13 12:54:52 muzaffar Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.34.2.3.2.2 2008/04/02 13:09:01 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -292,7 +292,6 @@ sub _initlocalarea() {
 	    $area->bootstrapfromlocation($loc);
 	    ($ENV{THISDIR}=cwd) =~ s/^\Q$loc\L//;
 	    $ENV{THISDIR} =~ s/^\///;
-	    $ENV{LOCALRT} = $loc;
 	    $ENV{BASE_PATH} = $loc;
 	    $self->projectname($area->name());
 	    $self->projectversion($area->version());
@@ -494,7 +493,7 @@ Check that the current area is a project area and continue or exit otherwise.
 sub checklocal()
    {
    my $self=shift;
-   $self->scramfatal("Unable to locate the top of local release. Exiting."), if (! $self->islocal());   
+   $self->scramfatal("Unable to locate the top of local release. Please run this command from a SCRAM-based area."), if (! $self->islocal());   
    }
 
 =item   C<checkareatype()>
@@ -727,7 +726,7 @@ Print a fatal error message string $message and exit.
 sub scramfatal()
    {
    my $self=shift;
-   print "SCRAM ",$self->fatal(@_),"\n";
+   print STDERR "SCRAM ",$self->fatal(@_),"\n";
    exit(1);
    }
 
