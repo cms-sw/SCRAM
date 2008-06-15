@@ -1,5 +1,14 @@
 2008-06-06 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
+	* SCRAM/Plugins/RuntimeEnv.pm: Do not skip LOCALRT env variable.
+	* SCRAM/SCRAM.pm: Do not set LOCALRT here, it was set by  self tool,
+	make all fetal messages go to stderror, local RuntimeEnv perl module
+	dynamically so that we can pick it up from project release area too,
+	warning message added when try to create a dev area which already
+	exists.
+	
+2008-06-06 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
 	* SCRAM/Plugins/RuntimeEnv.pm,BuildSystem/MakeInterface.pm: Fixed to run
 	 default gmake if "gmake" is not setup as an external tool.
 

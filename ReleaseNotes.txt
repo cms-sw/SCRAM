@@ -1,5 +1,13 @@
 
 			SCRAM Release Notes
+V2_0_2: 2008-06-15
+
+	* Bug fixed: LOCALRT is now set when doing scram runtime.
+	* RuntimeEnv.pm perl plugin is now dynamically loaded.
+	* All fetal error messages now go to std error.
+	* User is warned when he/she tries to create a dev area which alread
+	exists. 
+	
 V2_0_1: 2008-06-06
 	* First real version of V2_0 series.
 	* Now if gmake is not set as an external tool then SCRAM uses default
