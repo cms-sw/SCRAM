@@ -228,7 +228,7 @@ sub init_ ()
 {
   my $self=shift;
   foreach my $v (keys %ENV){$self->{OENV}{$v}=$ENV{$v};}
-  $self->{skipenv}='^(_|PWD|PROMPT_COMMAND|SCRAM_.+|SCRAMV1_.+|SCRAM|LOCALTOP|RELEASETOP|LOCALRT|BASE_PATH)$';
+  $self->{skipenv}='^(_|PWD|PROMPT_COMMAND|SCRAM_.+|SCRAMV1_.+|SCRAM|LOCALTOP|RELEASETOP|BASE_PATH)$';
   $self->{shell} =
      {
      BOURNE =>
