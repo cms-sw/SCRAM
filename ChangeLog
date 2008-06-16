@@ -1,4 +1,4 @@
-2008-06-06 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+2008-06-16 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/Plugins/RuntimeEnv.pm: Do not skip LOCALRT env variable.
 	* SCRAM/SCRAM.pm: Do not set LOCALRT here, it was set by  self tool,

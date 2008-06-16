@@ -1,6 +1,6 @@
 
 			SCRAM Release Notes
-V2_0_2: 2008-06-15
+V2_0_2: 2008-06-16
 
 	* Bug fixed: LOCALRT is now set when doing scram runtime.
 	* RuntimeEnv.pm perl plugin is now dynamically loaded.
