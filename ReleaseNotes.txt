@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_0_X: 2008-06-1*
+	
+	* Support for big library added.
+	
 V2_0_2: 2008-06-16
 
 	* Bug fixed: LOCALRT is now set when doing scram runtime.

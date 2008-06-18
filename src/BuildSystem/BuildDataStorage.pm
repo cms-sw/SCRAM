@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.23.2.3.2.1 2008/03/13 12:54:50 muzaffar Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.23.2.3.2.2 2008/04/14 16:24:53 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -350,7 +350,7 @@ sub update()
          {
          foreach my $d (keys %{$treeitem->{MKDIR}})
             {
-            $d=~s/\/\//\//;
+            $d=~s/\/\//\//g;
             $mkrebuild{$d}=1;
             }
 	 delete $treeitem->{MKDIR};

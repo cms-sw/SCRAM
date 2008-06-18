@@ -1,3 +1,9 @@
+2008-06-18 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* BuildSystem/BuildDataStorage.pm,BuildSystem/TemplateInterface.pm:
+	Basic biglib support added, the changes will not break old SCRAM
+	releases.
+
 2008-06-16 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/Plugins/RuntimeEnv.pm: Do not skip LOCALRT env variable.

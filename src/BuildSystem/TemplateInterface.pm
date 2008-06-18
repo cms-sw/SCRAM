@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-07-01 14:03:46+0200
-# Revision: $Id: TemplateInterface.pm,v 1.6.2.1 2008/02/15 14:58:01 muzaffar Exp $ 
+# Revision: $Id: TemplateInterface.pm,v 1.6.2.2 2008/02/15 17:30:59 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -119,16 +119,28 @@ sub run()
       $item->{MKDIR}{"$ENV{LOCALTOP}/$ENV{SCRAM_INTwork}/MakeData/DirCache"}=1;
       }
 
-   $self->{MAKEFILEFH} = FileHandle->new();
-   $self->{MAKEFILEFH}->open(">$file");
-   local *FH = $self->{MAKEFILEFH};
+   $self->{TEMPLATE_DATA}->{MAKEFILE} = $file;
+   $self->{TEMPLATE_DATA}->{MAKEFILEFH} = FileHandle->new();
+   $self->{TEMPLATE_DATA}->{MAKEFILEFH}->open(">$file");
    
+   #Change the interface for SCRAM V3 series for backward compatibility
+   #with V2 series we still need to keep this interface
    $self->{TEMPLATE_OBJECT}->process($self->{TEMPLATE},
 				     $self->{TEMPLATE_DATA},
-				     $self->{MAKEFILEFH} )
+				     $self->{TEMPLATE_DATA}->{MAKEFILEFH})
       || die "SCRAM: Template error --> ",$self->{TEMPLATE_OBJECT}->error;
    
-   $self->{MAKEFILEFH}->close();
+   $self->{TEMPLATE_DATA}->{MAKEFILEFH}->close();
+   my $file1 = $self->{TEMPLATE_DATA}->{MAKEFILE};
+   if ($file ne $file1)
+      {
+      if (!-s $file1){unlink $file1;}
+      if ($file1=~/\/DirCache\/[^\/]+$/)
+         {
+         use File::Basename;
+         $item->{MKDIR}{dirname($file1)}=1;
+         }
+      }
    }
 
 1;
