@@ -1,3 +1,9 @@
+2008-06-20 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/CMD.pm: Fixed to print out proper error message when
+	"scram project name version" commnad is run with name/version which
+	does not exist.
+
 2008-06-18 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* BuildSystem/BuildDataStorage.pm,BuildSystem/TemplateInterface.pm:

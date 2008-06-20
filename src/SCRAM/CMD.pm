@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.77.2.3.2.3 2008/05/21 08:07:33 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.77.2.3.2.4 2008/06/15 07:55:17 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -908,20 +908,19 @@ sub bootfromrelease() {
     my $iname=$installname || $projectversion;
     if ($projectname && $projectversion) {
 	my $relarea=$self->scramprojectdb()->getarea($projectname,$projectversion);
+	if ((!defined $relarea) || (!-d $relarea->archdir()))
+	   {
+	   print STDERR "ERROR: Unable to find release area for \"$projectname\" version \"$projectversion\".\n",
+	                "       Please make sure you have used the correct name/version.\n",
+			"       You can run \"scram list $projectname\" to get the list of available versions.\n";
+	   exit 1;
+	   }
 	if (-d "${installdir}/${iname}/".$relarea->admindir()."/$ENV{SCRAM_ARCH}")
 	   {
 	   print STDERR "WARNING: There already exists ${installdir}/${iname} area for SCRAM_ARCH $ENV{SCRAM_ARCH}.\n";
 	   exit 0;
 	   }
-	if ((! defined $relarea) || (!-d $relarea->archdir()))
-	   {
-	   print STDERR "Can not find a release area $projectname version $projectversion for SCRAM_ARCH $ENV{SCRAM_ARCH}.\n";
-	   $self->scramfatal("No release area found.");
-	   }
-	else
-	   {
-	   $self->remote_versioncheck($relarea);	    
-	   }
+	$self->remote_versioncheck($relarea);
 
 	# From here, we're creating a new area which uses the same version of SCRAM as is accessed from the commandline (i.e.
 	# the current version):
