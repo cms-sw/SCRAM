@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.34.2.3.2.2 2008/04/02 13:09:01 muzaffar Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.34.2.3.2.3 2008/06/15 07:54:02 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -242,7 +242,7 @@ sub _initarch ()
       my $arch=$ENV{SCRAM_ARCH} || "";
       if ($arch=~/^\s*$/)
          {
-         USE Utilities::Architecture;
+         use Utilities::Architecture;
 	 my $a = Utilities::Architecture->new();
 	 $arch=$a->arch();
 	 $ENV{SCRAM_ARCH}=$arch;
