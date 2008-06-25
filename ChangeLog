@@ -1,3 +1,8 @@
+2008-06-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/SCRAM.pm: Replaced "USE" with "use" which is a valid perl key
+	word. Due to this scram was failing when SCRAM_ARCH was not set.
+
 2008-06-20 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/CMD.pm: Fixed to print out proper error message when

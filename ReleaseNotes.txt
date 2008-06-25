@@ -5,6 +5,7 @@ V2_0_X: 2008-06-1*
 	* Support for big library added.
 	* Proper error message when "scram project name ver" command is run
 	with name/ver which does not exist.
+	* Bug fixed which causes scram to fail when SCRAM_ARCH is not set.
 	
 V2_0_2: 2008-06-16
 
