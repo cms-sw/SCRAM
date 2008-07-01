@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.77.2.3.2.4 2008/06/15 07:55:17 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.77.2.3.2.5 2008/06/20 09:41:58 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -432,7 +432,7 @@ sub list()
          foreach my $pr (@{$projects->{$type}})
 	    {
 	    if (($project  ne "") && ($project ne $$pr[0])) {next;}
-	    if (($projectversion ne "") && ($projectversion ne $$pr[0])) {next;}
+	    if (($projectversion ne "") && ($projectversion ne $$pr[1])) {next;}
 	    my $url=$$pr[3];
             if (!-e $url)
 	       {

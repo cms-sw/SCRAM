@@ -1,3 +1,8 @@
+2008-07-01 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/CMD.pm: Bug fixed which was causing the "scram list proj vers"
+	to fail.
+
 2008-06-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/SCRAM.pm: Replaced "USE" with "use" which is a valid perl key

@@ -1,6 +1,9 @@
 
 			SCRAM Release Notes
-V2_0_X: 2008-06-1*
+V2_0_X: 2008-07-01
+	* Bug fixed which was causing "scram list <proj> <ver>" to fail.
+
+V2_0_3: 2008-06-28
 	
 	* Support for big library added.
 	* Proper error message when "scram project name ver" command is run
