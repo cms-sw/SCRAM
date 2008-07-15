@@ -247,8 +247,8 @@ sub _toolsdata()
       $order++;
       if(!defined $data->[$order]){$data->[$order]=[];}
       push @{$data->[$order]},$self->{SETUP}{$tool};
+      $self->{internal}{donetools}{$tool}=$order;
       }
-   $self->{internal}{donetools}{$tool}=$order;
    return $order;
    }
 
@@ -257,10 +257,10 @@ sub _toolsdata_scram()
    my $self = shift;
    my $tool=shift;
    my $data=shift || [];
-   my $order=scalar(@$data)-1;
+   my $order=-1;
    if(exists $self->{internal}{donetools}{$tool}){return $self->{internal}{donetools}{$tool};}
-   if(!exists $self->{internal}{scram_tools}{$tool}){return -1;}
    $self->{internal}{donetools}{$tool}=$order;
+   if(!exists $self->{internal}{scram_tools}{$tool}){return $order;}
    use Configuration::ConfigArea;
    use Cache::CacheUtilities;
    my $cache=uc($tool)."_BASE";
@@ -276,11 +276,11 @@ sub _toolsdata_scram()
    if (!-f $cachefile)
       {
       print "ERROR: Tools cache file for release area \"$cache\" is not available.\n";
-      $self->{internal}{donetools}{$tool}=1;
       return $order;
       }
    $cache=&Cache::CacheUtilities::read($cachefile);
    my $tools=$cache->setup();
+   $order=scalar(@$data)-1;
    foreach my $use (keys %$tools)
       {
       if ($tools->{$use}->scram_project() == 1)
@@ -290,9 +290,9 @@ sub _toolsdata_scram()
 	 }
       }
    $order++;
-   $self->{internal}{donetools}{$tool}=$order;
    if(!defined $data->[$order]){$data->[$order]=[];}
    push @{$data->[$order]},$self->{SETUP}{$tool};
+   $self->{internal}{donetools}{$tool}=$order;
    return $order;
    }
    
