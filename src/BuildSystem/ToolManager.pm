@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.19.2.2 2008/02/19 15:06:03 muzaffar Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.19.2.2.2.1 2008/03/13 12:54:50 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -215,7 +215,15 @@ sub toolsdata()
       }
    delete $self->{internal}{donetools};
    delete $self->{internal}{scram_tools};
-   return $tooldata;
+   my $data=[];
+   foreach my $d (@$tooldata)
+      {
+      if (ref($d) eq "ARRAY")
+         {
+	 foreach my $t (@$d) {push @$data,$t;}
+	 }
+      }
+   return $data;
    }
 
 sub _toolsdata()
@@ -223,16 +231,25 @@ sub _toolsdata()
    my $self = shift;
    my $tool=shift;
    my $data=shift || [];
-   if(exists $self->{internal}{donetools}{$tool}){return;}
-   $self->{internal}{donetools}{$tool}=1;
+   my $order=-1;
+   if(exists $self->{internal}{donetools}{$tool}){return $self->{internal}{donetools}{$tool};}
+   $self->{internal}{donetools}{$tool}=$order;
    if (exists $self->{SETUP}{$tool})
       {
       if (exists $self->{SETUP}{$tool}{USE})
          {
-	 foreach my $use (@{$self->{SETUP}{$tool}{USE}}){$self->_toolsdata(lc($use),$data);}
+	 foreach my $use (@{$self->{SETUP}{$tool}{USE}})
+	    {
+	    my $o=$self->_toolsdata(lc($use),$data);
+	    if ($o>$order){$order=$o;}
+	    }
 	 }
-      push @$data,$self->{SETUP}{$tool};
+      $order++;
+      if(!defined $data->[$order]){$data->[$order]=[];}
+      push @{$data->[$order]},$self->{SETUP}{$tool};
       }
+   $self->{internal}{donetools}{$tool}=$order;
+   return $order;
    }
 
 sub _toolsdata_scram()
@@ -240,9 +257,10 @@ sub _toolsdata_scram()
    my $self = shift;
    my $tool=shift;
    my $data=shift || [];
-   if(exists $self->{internal}{donetools}{$tool}){return;}
-   if(!exists $self->{internal}{scram_tools}{$tool}){return;}
-   $self->{internal}{donetools}{$tool}=1;
+   my $order=scalar(@$data)-1;
+   if(exists $self->{internal}{donetools}{$tool}){return $self->{internal}{donetools}{$tool};}
+   if(!exists $self->{internal}{scram_tools}{$tool}){return -1;}
+   $self->{internal}{donetools}{$tool}=$order;
    use Configuration::ConfigArea;
    use Cache::CacheUtilities;
    my $cache=uc($tool)."_BASE";
@@ -250,7 +268,7 @@ sub _toolsdata_scram()
    if (!-d $cache)
       {
       print "ERROR: Release area \"$cache\" for \"$tool\" is not available.\n";
-      return;
+      return $order;
       }
    my $area=Configuration::ConfigArea->new();
    $area->location($cache);
@@ -259,7 +277,7 @@ sub _toolsdata_scram()
       {
       print "ERROR: Tools cache file for release area \"$cache\" is not available.\n";
       $self->{internal}{donetools}{$tool}=1;
-      return;
+      return $order;
       }
    $cache=&Cache::CacheUtilities::read($cachefile);
    my $tools=$cache->setup();
@@ -267,10 +285,15 @@ sub _toolsdata_scram()
       {
       if ($tools->{$use}->scram_project() == 1)
 	 {
-	 $self->_toolsdata_scram($use,$data);
+	 my $o=$self->_toolsdata_scram($use,$data);
+	 if ($o>$order){$order=$o;}
 	 }
       }
-   push @$data,$self->{SETUP}{$tool};
+   $order++;
+   $self->{internal}{donetools}{$tool}=$order;
+   if(!defined $data->[$order]){$data->[$order]=[];}
+   push @{$data->[$order]},$self->{SETUP}{$tool};
+   return $order;
    }
    
 sub checkifsetup()
