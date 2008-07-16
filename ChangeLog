@@ -1,3 +1,9 @@
+2008-07-16 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* BuildSystem/ToolManager.pm: Fixed the ordering of the tools.
+	* SCRAM/ScramProjectDB.pm: force the file permissions of SCRAM
+	DB file to be 0644.
+
 2008-07-01 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/CMD.pm: Bug fixed which was causing the "scram list proj vers"

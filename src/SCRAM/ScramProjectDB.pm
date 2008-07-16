@@ -281,6 +281,8 @@ sub _save {
 	  print $fh $temp."\n";
 	}
 	close($fh);
+        my $mode=0644;
+        chmod $mode,$filename;
 }
 
 sub _readdbfile {
