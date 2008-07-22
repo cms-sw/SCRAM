@@ -4,6 +4,8 @@ V2_0_X: 2008-07-16
 	* Bug fixed which was causing "scram list <proj> <ver>" to fail.
 	* Fixed the tool ordering.
 	* Set file permissions of SCRAM DB to 0644.
+	* New env variables set b/w two "scram runtime" are not wiped out any
+	more.
 
 V2_0_3: 2008-06-28
 	

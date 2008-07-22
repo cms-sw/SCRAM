@@ -165,12 +165,14 @@ sub restore_environment_()
   my $pver=$penv[2] || "V1_";
   my $skip=$self->{skipenv};
   #print STDERR "PVER:$pver\n";
+  my %xvar=();
   while (my ($name, $value) = each %BENV)
   {
     if ($name =~ /^(.*)_SCRAMRT(DEL|)$/)
     {
       my $var=$1;
       my $type=$2;
+      $xvar{$var}=1;
       if ($pver=~/^V[01]_/)
       {
         delete $BENV{$name};
@@ -199,7 +201,7 @@ sub restore_environment_()
     if ($name !~ /^SCRAMRT_.*/)
     {
       next if ($name=~/$skip/);
-      delete $BENV{$name};
+      $BENV{"SCRAMRT_$name"}=$value;
     }
   }
   while (my ($name, $value) = each %BENV)
@@ -210,6 +212,7 @@ sub restore_environment_()
       my $v1=$BENV{$name};
       delete $BENV{$name};
       if ($var=~/^SCRAMV1_.+/){next;}
+      if ((!exists $BENV{$var}) && (!exists $xvar{$var})){next;}
       if (exists $env->{path}{$var}){$v1=&cleanpath_($v1,$sep);}
       $BENV{$var}=$v1;
     }

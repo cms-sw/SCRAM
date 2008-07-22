@@ -1,3 +1,8 @@
+2008-07-22 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugins/RuntimeEnv.pm: Now scram runtime does not wipe out the
+	new variables set b/w two scram runtimes.
+
 2008-07-16 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* BuildSystem/ToolManager.pm: Fixed the ordering of the tools.
