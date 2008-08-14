@@ -70,16 +70,24 @@ sub setenv()
     }
   }
   my $oenv=$self->{OENV};
-  my $unset="";
+  my $unset="";my $unset_vars="";
   foreach my $v (keys %$oenv)
   {
     if (!exists $udata{$v})
     {
-      if ($s ne "RTBOURNE"){$unset.=" $v";}
+      if ($s ne "RTBOURNE")
+      {
+        $unset.=" $v";
+        if (($v!~/^SCRAMRT_/) && ($v!~/_SCRAMRT(DEL|)$/)){$unset_vars.="       $v\n";}
+      }
       delete $ENV{$v};
     }
   }
-  if($unset){print $ref $sd->{UNEXPORT}." $unset;\n";}
+  if($unset)
+  {
+    if ($unset_vars){print STDERR "**** Following environment variables are going to be unset.\n$unset_vars";}
+    print $ref $sd->{UNEXPORT}." $unset;\n";
+  }
   
   foreach my $h (@data)
   {
@@ -117,6 +125,7 @@ sub save()
   }
   else
   {
+    my $env_prefix=$self->{env_backup_prefix};
     my $env = $self->runtime_();
     my @data=();my $index=0;
     my $sep=$self->{shell}{$shell}{SEP};
@@ -125,15 +134,15 @@ sub save()
     {
       while (my ($name, $value) = each %$h)
       {
-	if(exists $ENV{$name}){$data[$index++]{"${name}_SCRAMRT"}=$value->[0];}
-	else{$data[$index++]{"${name}_SCRAMRTDEL"}=$value->[0];}
+	if(exists $ENV{$name}){$data[$index++]{"${env_prefix}${name}_SCRAMRT"}=$value->[0];}
+	else{$data[$index++]{"${env_prefix}${name}_SCRAMRTDEL"}=$value->[0];}
       }
     }
     while (my ($name, $value) = each %{$env->{path}})
     {
       my $str=join($sep,@$value);
-      if(exists $ENV{$name}){$data[$index++]{"${name}_SCRAMRT"}=$str;}
-      else{$data[$index++]{"${name}_SCRAMRTDEL"}=$str;}
+      if(exists $ENV{$name}){$data[$index++]{"${env_prefix}${name}_SCRAMRT"}=$str;}
+      else{$data[$index++]{"${env_prefix}${name}_SCRAMRTDEL"}=$str;}
     }
     while (my ($name, $value) = each %ENV)
     {
@@ -162,75 +171,65 @@ sub restore_environment_()
   my $env = $self->runtime_();
   my $sep=$self->{shell}{$shell}{SEP};
   my %BENV=%ENV;
-  my $pver=$penv[2] || "V1_";
+  my $pver=$penv[3] || "V1_";
+  if ($pver=~/^V(\d+)_/){$pver=$1;}
   my $skip=$self->{skipenv};
-  #print STDERR "PVER:$pver\n";
-  my %xvar=();
-  while (my ($name, $value) = each %BENV)
-  {
-    if ($name =~ /^(.*)_SCRAMRT(DEL|)$/)
-    {
-      my $var=$1;
-      my $type=$2;
-      $xvar{$var}=1;
-      if ($pver=~/^V[01]_/)
-      {
-        delete $BENV{$name};
-        delete $BENV{$var};
-	if ($type eq "DEL"){delete $BENV{"SCRAMRT_$var"};}
-	next;
-      }
-      my $v1 = $BENV{$name};
-      my $v2 = $BENV{$var};
-      delete $BENV{$name};
-      delete $BENV{$var};
-      if (exists $env->{path}{$var})
-      {
-	$v2=~s/^(.*?$sep|)\Q$v1\E($sep.*|)$/$1$2/;
-	$v2=~s/^$sep*//;
-	$v2=~s/$sep*$//;
-	$v2=~s/$sep$sep/$sep/g;
-      }
-      elsif ($v2 eq $v1){$v2="";}
-      if (($v2 eq "") && ($type eq "DEL")){delete $BENV{"SCRAMRT_$var"};}
-      else{$BENV{"SCRAMRT_$var"}=$v2;}
-    }
-  }
-  while (my ($name, $value) = each %BENV)
-  {
-    if ($name !~ /^SCRAMRT_.*/)
-    {
-      next if ($name=~/$skip/);
-      $BENV{"SCRAMRT_$name"}=$value;
-    }
-  }
-  while (my ($name, $value) = each %BENV)
-  {
-    if ($name =~ /^SCRAMRT_(.*)/)
-    {
-      my $var=$1;
-      my $v1=$BENV{$name};
-      delete $BENV{$name};
-      if ($var=~/^SCRAMV1_.+/){next;}
-      if ((!exists $BENV{$var}) && (!exists $xvar{$var})){next;}
-      if (exists $env->{path}{$var}){$v1=&cleanpath_($v1,$sep);}
-      $BENV{$var}=$v1;
-    }
-  }
-  %ENV=%BENV;
-  if ($pver=~/^V[01]_/)
+  if ($pver=~/^[01]$/)
   {
     print STDERR "****WARNING: Setting up runtime environment on top of a OLD SCRAM-based environment.\n",
                  "**** Your environment was already setup for \"$penv[0]\" version \"$penv[1]\".\n",
                  "**** The changes you had made in envirnment after setting up \"$penv[0]\" version \"$penv[1]\"\n",
 		 "**** are lost.\n";
+    my %restoredenv;
+    while (my ($name, $value) = each %BENV)
+    {
+      if ($name=~/_SCRAMRT(DEL|)$/){next;}
+      elsif ($name =~ /^SCRAMRT_(.+)$/){$restoredenv{$1} = $value;}
+      elsif ($name=~/$skip/){$restoredenv{$name} = $value;}
+    }
+    %BENV=%restoredenv;
   }
+  else
+  {
+    while (my ($name, $value) = each %BENV)
+    {
+      if ($name =~ /^SCRAMRT_/){delete $BENV{$name};}
+      elsif ($name=~/$skip/){next;}
+      elsif ($name =~ /^(.*)_SCRAMRT(DEL|)$/)
+      {
+        my $var=$1;
+        my $type=$2;
+        delete $BENV{$name};
+	if ($pver ne "2"){$var=~s/^SRT_//;}
+	if (exists $BENV{$var})
+	{
+	  my $v = $BENV{$var};
+          if (exists $env->{path}{$var})
+          {
+	    $v=~s/^(.*?$sep|)\Q$value\E($sep.*|)$/$1$2/;
+	    $v=~s/^$sep*//;
+	    $v=~s/$sep*$//;
+	    $v=~s/$sep$sep/$sep/g;
+          }
+          elsif ($v eq $value){$v="";}
+          if (($v eq "") && ($type eq "DEL")){delete $BENV{$var};}
+	  else{$BENV{$var}=$v;}
+	}
+      }
+    }
+  }
+  %ENV=%BENV;
 }
 
 sub init_ ()
 {
   my $self=shift;
   foreach my $v (keys %ENV){$self->{OENV}{$v}=$ENV{$v};}
+  my $v=$ENV{SCRAM_VERSION};
+  $v=~s/^V(\d+)_.*/$1/;
+  if ($v > 2){$v="SRT_";}
+  else{$v="";}
+  $self->{env_backup_prefix}=$v;
   $self->{skipenv}='^(_|PWD|PROMPT_COMMAND|SCRAM_.+|SCRAMV1_.+|SCRAM|LOCALTOP|RELEASETOP|BASE_PATH)$';
   $self->{shell} =
      {

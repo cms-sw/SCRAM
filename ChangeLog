@@ -1,3 +1,15 @@
+2008-08-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugins/RuntimeEnv.pm: Fix for setting env on Mac because on Mac
+	setting backups for variables like DYLD_* were causing some trouble. Fix
+	for setting up env from SCRAM V1 project first and then SCRAM V2 project.
+
+2008-07-30 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/SCRAM.pm: An error message printed out at stderr to inform
+	developer that the release top for his/her dev. area has been
+	removed/unusable.
+
 2008-07-22 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/Plugins/RuntimeEnv.pm: Now scram runtime does not wipe out the

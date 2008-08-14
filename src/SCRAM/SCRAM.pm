@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.34.2.3.2.3 2008/06/15 07:54:02 muzaffar Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.34.2.3.2.4 2008/06/25 12:33:27 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -268,6 +268,29 @@ sub islocal()
 
    }
 
+sub installedProjects() 
+   {
+   my $self=shift;
+   my $nregexp=shift;
+   my $vregexp=shift;
+   my $projects=$self->scramprojectdb()->listall();
+   my %results=();
+   foreach my $type ("local","linked") {
+      if(!exists $projects->{$type}){next;}
+      foreach my $pr (@{$projects->{$type}}) {
+	 my $name=$$pr[0];
+	 if ($name!~/$nregexp/){next;}
+	 my $version=$$pr[1];
+	 if ($version!~/$vregexp/){next;}
+	 my $url=$$pr[3];
+         if ((-e $url) && (-d $url) && ($self->isregistered($url))){
+	    $results{$name}{$version}=$url;
+	 }
+      }
+   }
+   return %results;
+}
+   
 =item   C<_initlocalarea()>
 
 Initialise the local area. Once this function has been run, a
@@ -293,10 +316,36 @@ sub _initlocalarea() {
 	    ($ENV{THISDIR}=cwd) =~ s/^\Q$loc\L//;
 	    $ENV{THISDIR} =~ s/^\///;
 	    $ENV{BASE_PATH} = $loc;
-	    $self->projectname($area->name());
-	    $self->projectversion($area->version());
+	    my $name=$area->name(); $version=$area->version();
+	    $self->projectname($name);
+	    $self->projectversion($version);
 	    $self->localarea($area);
 	    $self->islocal(1);
+	    my $rel=$area->releasetop();
+	    if (defined $rel) {
+	       my $pfile="$rel/".$area->admindir()."/".$ENV{SCRAM_ARCH}."/ProjectCache.db.gz";
+	       if (!-f $pfile) {
+		  my $vregexp=$version;
+		  $vregexp=~s/^(([^\d]*\d+_\d+)_).*$/$1/; my $relseries=$2;
+	          print STDERR "********** ERROR: Missing Release top ************\n",
+		               "  The release area \"$rel\"\n",
+		               "  for \"$name\" version \"$version\" is not available/usable.\n";
+		  my %res=$self->installedProjects("^$name\$","^${vregexp}.+");
+		  if (exists $res{$name}) {
+		     delete $res{$name}{$version};
+		     my @rels=keys %{$res{$name}};
+		     if (@rels>0) {
+			print STDERR "  In case this release has been deprecated, you can move your code to\n",
+			             "  one of the following release(s) of release series \"$relseries\".\n\n",
+			             "  ",join("\n  ",@rels),"\n";
+		     }
+		     else {
+		       print STDERR "  Sorry, there is no other release installed which you can use for this release series \"$relseries\".\n";
+		     }
+		     print STDERR "***********************************************\n";
+		  }
+	       }
+	    }
 	}
     }
 }

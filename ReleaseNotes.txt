@@ -1,11 +1,22 @@
 
 			SCRAM Release Notes
-V2_0_X: 2008-07-16
+
+V2_0_X: 2008-08-14
+
+	* Error message for deprecated releases added.
+	* Runtime environment setting fixed.
+	* Setting runtime env on Mac also fixed.
+	
+V2_0_5: 2008-07-22
+
+	* New env variables set b/w two "scram runtime" are not wiped out any
+	more.
+
+V2_0_4: 2008-07-16
+
 	* Bug fixed which was causing "scram list <proj> <ver>" to fail.
 	* Fixed the tool ordering.
 	* Set file permissions of SCRAM DB to 0644.
-	* New env variables set b/w two "scram runtime" are not wiped out any
-	more.
 
 V2_0_3: 2008-06-28
 	
@@ -23,6 +34,7 @@ V2_0_2: 2008-06-16
 	exists. 
 	
 V2_0_1: 2008-06-06
+
 	* First real version of V2_0 series.
 	* Now if gmake is not set as an external tool then SCRAM uses default
 	gmake instead of trying to run /gmake.
