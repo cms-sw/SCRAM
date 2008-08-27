@@ -5,7 +5,7 @@
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 #         (with contribution from Lassi.Tuura@cern.ch)
 # Update: 2003-11-27 16:45:18+0100
-# Revision: $Id: Cache.pm,v 1.10.2.2.2.1 2008/03/13 12:54:51 muzaffar Exp $ 
+# Revision: $Id: Cache.pm,v 1.10.2.2.2.2 2008/06/02 16:20:26 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -277,6 +277,10 @@ sub checktree()
          last;
 	 }
       }
+   if (exists $self->{ExtraDirCache})
+      {
+      eval {$self->{ExtraDirCache}->DirCache($self,$path);};
+      }
    # Process sub-directories
    foreach my $item (@items)
       {
@@ -339,6 +343,8 @@ sub checkfiles()
    my @scandirs=($ENV{SCRAM_CONFIGDIR}, $ENV{SCRAM_SOURCEDIR});
    # Loop over all directories that need scanning (normally just src and config):
    $self->{nonxml}=0;
+   eval ("use SCRAM::Plugins::DirCache;");
+   if(!$@) {$self->{ExtraDirCache} = SCRAM::Plugins::DirCache->new();}
    foreach my $scand (@scandirs)
       {
       $self->logmsg("SCRAM: Scanning $scand [dofiles set to ".$dofiles."]\n");
@@ -356,6 +362,7 @@ sub checkfiles()
 	    }
 	 }
       }
+   delete $self->{ExtraDirCache};
    if ($self->{nonxml} > 0)
       {
       #print STDERR "**** WARNING: ",$self->{nonxml}," non-xml based $ENV{SCRAM_BUILDFILE} were read.\n";

@@ -1,3 +1,8 @@
+2008-08-27 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* Cache/Cache.pm: Added hack to load SCRAM::Plugins::DirCache to do project
+	specific stuff. This will help for big library generation.
+
 2008-08-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/Plugins/RuntimeEnv.pm: Fix for setting env on Mac because on Mac
