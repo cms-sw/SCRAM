@@ -150,7 +150,7 @@ sub save()
       if (exists $env->{path}{$name}){$value=&cleanpath_($value,$sep);}
       $data[$index++]{"SCRAMRT_$name"}=$value;
     }
-    $data[$index++]{SCRAMRT_SET}="$ENV{SCRAM_PROJECTNAME}:$ENV{SCRAM_PROJECTVERSION}:$ENV{SCRAM_ARCH}:$ENV{SCRAM_VERSION}";
+    $data[$index++]{SCRAMRT_SET}="$ENV{SCRAM_PROJECTNAME}:$ENV{SCRAM_PROJECTVERSION}:$ENV{SCRAM_ARCH}:$ENV{SCRAM_VERSION}:${env_prefix}";
     foreach my $v (@data)
     {
       while(my ($name, $value) = each %$v)
@@ -191,6 +191,7 @@ sub restore_environment_()
   }
   else
   {
+    my $prefix=$penv[4] || "";
     while (my ($name, $value) = each %BENV)
     {
       if ($name =~ /^SCRAMRT_/){delete $BENV{$name};}
@@ -200,7 +201,7 @@ sub restore_environment_()
         my $var=$1;
         my $type=$2;
         delete $BENV{$name};
-	if ($pver ne "2"){$var=~s/^SRT_//;}
+	if ($prefix ne ""){$var=~s/^$prefix//;}
 	if (exists $BENV{$var})
 	{
 	  my $v = $BENV{$var};

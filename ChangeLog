@@ -1,3 +1,9 @@
+2008-09-09 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugins/RuntimeEnv.pm: Improved env backup so that current SCRAM
+	releases should be able to correctly re-use the env backup of future
+	releases.
+
 2008-08-27 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* Cache/Cache.pm: Added hack to load SCRAM::Plugins::DirCache to do project

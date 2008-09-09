@@ -1,8 +1,9 @@
 
 			SCRAM Release Notes
 
-V2_0_X: 2008-08-27
+V2_0_X: 2008-09-09
 
+	* Improved env backup for future releases.
 	* Error message for deprecated releases added.
 	* Runtime environment setting fixed.
 	* Setting runtime env on Mac also fixed.
