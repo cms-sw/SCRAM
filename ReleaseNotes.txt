@@ -1,8 +1,10 @@
 
 			SCRAM Release Notes
 
-V2_0_X: 2008-09-09
+V2_0_X: 2008-09-15
 
+	* Auto compilation of newly added source (e.g. *.cc) files for
+	test/bin/plugins products if the product's file attrib has *.cc.
 	* Improved env backup for future releases.
 	* Error message for deprecated releases added.
 	* Runtime environment setting fixed.
