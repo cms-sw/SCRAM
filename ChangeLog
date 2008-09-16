@@ -2,7 +2,7 @@
 	* BuildSystem/Product.pm: The file="name" attrib of library/bin tag from
 	the BuildFile is saved as it is in the generated rules i.e SCRAM is not
 	going to expand *.cc in to individual file names. This will
-	automatically build newly added .cc files without updated the BuildFile.
+	automatically build newly added .cc files without updating the BuildFile.
 	
 2008-09-09 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
