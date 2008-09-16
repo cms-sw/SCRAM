@@ -24,7 +24,7 @@ sub _chksum()
   my $dref;
   if (opendir($dref,$dir))
   {
-    my @fs=readdir($dref);
+    my @fs=sort readdir($dref);
     closedir($dref);
     foreach my $f (@fs)
     {

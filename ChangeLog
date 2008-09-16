@@ -1,4 +1,10 @@
+2008-09-16 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugins/ProjectChkSum.pm: Checksum is calculated by first sorting
+	the files names in order to get uniq chksum for different arch.
+	
 2008-09-15 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+	
 	* BuildSystem/Product.pm: The file="name" attrib of library/bin tag from
 	the BuildFile is saved as it is in the generated rules i.e SCRAM is not
 	going to expand *.cc in to individual file names. This will

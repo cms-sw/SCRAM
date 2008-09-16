@@ -1,8 +1,10 @@
 
 			SCRAM Release Notes
 
-V2_0_X: 2008-09-15
+V2_0_X: 2008-09-16
 
+	* Checksum calculation fixed for multiple arch dev. under same user
+	area.
 	* Auto compilation of newly added source (e.g. *.cc) files for
 	test/bin/plugins products if the product's file attrib has *.cc.
 	* Improved env backup for future releases.
