@@ -1,3 +1,10 @@
+2008-09-17 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/CMD.pm: Print an error message when --update is passed for a
+	scram project command. --update option was broken since long and now
+	scram prints an error message when this option is used.
+	* SCRAM/Helper.pm: Updated the help message for project command.
+
 2008-09-16 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/Plugins/ProjectChkSum.pm: Checksum is calculated by first sorting

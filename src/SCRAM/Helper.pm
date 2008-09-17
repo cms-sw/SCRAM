@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.20.2.3 2008/02/19 15:06:46 muzaffar Exp $ 
+# Revision: $Id: Helper.pm,v 1.20.2.3.2.1 2008/03/13 12:54:51 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -262,10 +262,7 @@ sub project()
    $help.="\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram project [-l] [-s] [-d <area>] [-n <dir>] [-f <tools.conf>] <projecturl>|[<projectname> <projectversion>]$::normal\n";
-   $help.="\n";
-   $help.="$::bold";
-   $help.="\tscram project --update [<projectversion>]$::normal\n";
+   $help.="\tscram project [-l] [-s] [-d <area>] [-n <dir>] [-f <tools.conf>] <-b <projecturl>|<projectname> <projectversion>>$::normal\n";
    $help.="\n";
    $help.="Options:\n";
    $help.="\n";
@@ -317,14 +314,6 @@ sub project()
    $help.="and scram will create\n";
    $help.="/tmp/\$(USER)/\$(SCRAM_PROJECTNAME)/\$(SCRAM_PROJECTVERSION)/lib.<dummyname> -> \$(LOCALTOP)/lib\n";
    $help.="/tmp/\$(USER)/\$(SCRAM_PROJECTNAME)/\$(SCRAM_PROJECTVERSION)/tmp.<dummyname> -> \$(LOCALTOP/tmp\n";
-   $help.="\n";
-   $help.="An existing developer area for a project can be updated to a more recent version of\n";
-   $help.="the SAME project by running \"scram project -update <VERSION>\" in the developer area.\n";
-   $help.="If no VERSION is given, the command is considered like a query and will return a list\n";
-   $help.="of project versions which are compatible with the configuration of the current area.\n";
-   $help.="\n";
-   $help.="A subsequent invocation of the command with a valid VERSION will then update the area\n";
-   $help.="to that version.\n";
    $help.="\n";
    
    return $help;

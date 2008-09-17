@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.77.2.3.2.5 2008/06/20 09:41:58 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.77.2.3.2.6 2008/07/01 15:15:16 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -844,7 +844,6 @@ sub project()
 	       SCRAM_INSTALL_DIR => 0,
 	       SCRAM_INSTALL_NAME => 0,
 	       SCRAM_TOOLCONF_NAME => 0,
-	       SCRAM_UPDATE_AREA => 0,
 	       SCRAM_BOOTSTRAPFILE_NAME => 0
 	       );
    # Here are the options for the project command. We need to support changing the location
@@ -863,7 +862,8 @@ sub project()
        "file|f=s" => sub { $opts{SCRAM_TOOLCONF_NAME} = 1; $toolconf = $_[1] },
        "log|l"    => sub { scramloginteractive(1); },
        "symlinks|s"=> sub { $symlinks=1; },
-       "boot|b=s" => sub { $opts{SCRAM_BOOTSTRAPFILE_NAME} = 1; $bootstrapfile = 'file:'.$_[1]; $bootfile = $_[1] }
+       "boot|b=s" => sub { $opts{SCRAM_BOOTSTRAPFILE_NAME} = 1; $bootstrapfile = 'file:'.$_[1]; $bootfile = $_[1] },
+       "update|u" => sub { $self->scramerror("Command-line argument \"--update\" is no more supported."); }
        );
 
    local @ARGV = @ARGS;
