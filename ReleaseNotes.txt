@@ -1,7 +1,7 @@
 
 			SCRAM Release Notes
 
-V2_0_X: 2008-09-17
+V2_0_6: 2008-10-02
 
 	* --update option disabled for "scram project" command.
 	* Checksum calculation fixed for multiple arch dev. under same user
