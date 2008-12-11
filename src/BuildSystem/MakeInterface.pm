@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 14:49:43+0200
-# Revision: $Id: MakeInterface.pm,v 1.6.4.1 2008/04/07 09:29:14 muzaffar Exp $ 
+# Revision: $Id: MakeInterface.pm,v 1.6.4.2 2008/06/06 14:09:31 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -76,7 +76,7 @@ sub exec()
    my $makecmd=$self->{GMAKECMD}.$self->{CMDOPTS}." -f ".$makefile." ".join(" ",@ARGV);
 
    # Try without forking:
-   exec "$makecmd" || die "SCRAM MakeInterface::exec(): Unable to exec()...$!","\n";
+   exec("$makecmd") || die "SCRAM MakeInterface::exec(): Unable to run gmake ...$!","\n";
    }
 
 1;
