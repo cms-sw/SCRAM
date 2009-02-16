@@ -1,6 +1,12 @@
 
 			SCRAM Release Notes
 
+V2_1_0: 2009-02-16
+
+	* A proper error message when gmake command not found.
+	* Use of Data::Dumper to stor SCRAM caches which are portable for
+	different platforms.
+
 V2_0_6: 2008-10-02
 
 	* --update option disabled for "scram project" command.
