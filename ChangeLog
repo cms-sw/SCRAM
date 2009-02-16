@@ -1,3 +1,8 @@
+2009-02-16 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* Cache/CacheUtilities.pm: Used Data::Dumper to store SCRAM cache which
+	is portable for different arch.
+
 2008-09-17 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/CMD.pm: Print an error message when --update is passed for a

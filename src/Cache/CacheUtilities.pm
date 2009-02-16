@@ -1,32 +1,33 @@
 package Cache::CacheUtilities;
 require 5.004;
-use Storable qw(nfreeze thaw retrieve nstore);
+use Data::Dumper;
 BEGIN {
   eval "use Compress::Zlib qw(gzopen);";
   if ($@){$Cache::CacheUtilities::zipUntility="GZip";}
   else{$Cache::CacheUtilities::zipUntility="CompressZLib";}
+  $Data::Dumper::Varname='cache';
 }
 
 sub read()
    {
+   my ($file) = @_;
    my $data=();
    my $func="read${zipUntility}";
-   &$func(@_,\$data);
-   my $cache=eval {thaw($data);};
-   if ($EVAL_ERROR){die "Cache loading error: ",$EVAL_ERROR,"\n";}
+   &$func($file,\$data);
+   my $cache = eval "$data";
+   die "Cache $file load error: ",$@,"\n", if ($@);
    return $cache;
    }
 
 sub write()
    {
-   my $cache=shift;
-   my $file=shift;
+   my ($cache,$file)=@_;
    use File::Copy;
    if (-r $file){move($file,"${file}.bak");}
-   my $ok=1;
+   my $ok=1; my $err="";
    my $fcache=();
-   eval {$fcache=nfreeze($cache);};
-   if ($EVAL_ERROR){$ok=0;}
+   eval {$fcache=Dumper($cache);};
+   if ($@){$err=$@;$ok=0;}
    else
    {
       my $func="write${zipUntility}";
@@ -41,7 +42,7 @@ sub write()
    else
       {
       if (-r "${file}.bak"){move("${file}.bak",$file);}
-      die "ERROR: Writing Cache file: $file\n";
+      die "ERROR: Writing Cache file $file: $err\n";
       }
    return;
    }
