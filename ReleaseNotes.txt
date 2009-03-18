@@ -1,6 +1,11 @@
 
 			SCRAM Release Notes
 
+V2_1_2: 2009-03-18
+
+	* Bug fix release.
+	* Fixed interactive tool setup bug.
+
 V2_1_1: 2009-02-25
 
 	* Same as V2_1_0 but build with no compiler dependency.

@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-02-09 20:14:55+0100
-# Revision: $Id: ToolParser.pm,v 1.8.2.3 2008/02/18 10:36:08 muzaffar Exp $ 
+# Revision: $Id: ToolParser.pm,v 1.8.2.3.2.1 2008/03/13 12:54:50 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -692,12 +692,6 @@ sub find_settings()
 	    $self->store($tooldataobj, $envname, $path);	    
 	    }
 	 }
-      elsif (exists($ENV{$envname}))
-	 {
-	 # Nothing to do here:
-	 push(@$runtime, $envname); # FIX From Shahzad.
-	 next;
-	 }
       else
 	 {
 	 push(@$runtime, $envname);
@@ -858,11 +852,6 @@ sub interactively_find_settings()
 	    # Save in ToolData object:
 	    $self->store($tooldataobj, $envname, $path);	    
 	    }
-	 }
-      elsif (exists($ENV{$envname}))
-	 {
-	 # Nothing to do here:
-	 next;
 	 }
       else
 	 {
