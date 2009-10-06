@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.23.2.3.2.2 2008/04/14 16:24:53 muzaffar Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.23.2.3.2.3 2008/06/18 10:29:04 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -374,7 +374,7 @@ sub scan()
    my $bfparse;
    $bfparse=BuildSystem::BuildFile->new(1);
    # Execute the parse:
-   $bfparse->parse($buildfile);
+   if (-e  $buildfile) {$bfparse->parse($buildfile);}
    # See if there were skipped dirs:
    my $skipped = $bfparse->skippeddirs($datapath);   
    # Check to see if there was an info array for this location.

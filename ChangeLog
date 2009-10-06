@@ -1,3 +1,11 @@
+2009-10-06 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* BuildSystem/BuildDataStorage.pm: Make sure the BuildFile exists before
+	parsing it.
+	* SCRAM/CMD.pm: Do not read the DirCache.db if -f option is used. This
+	will allow o run "scram build -f clean" if DirCache.db is corrupted.
+	* SCRAM/Plugins/RuntimeEnv.pm: Cleanup, Runtime.db was read twice.
+
 2009-03-18 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* BuildSystem/ToolParser.pm: Fixed the interactive tool setup for variables

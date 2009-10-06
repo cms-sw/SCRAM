@@ -279,7 +279,6 @@ sub runtime_ ()
     if ($ttime < $ctime)
     {
       use Cache::CacheUtilities;
-      my $c=&Cache::CacheUtilities::read($cache);
       $self->{env}{rtstring}=&Cache::CacheUtilities::read($cache);
       return $self->{env}{rtstring};
     }

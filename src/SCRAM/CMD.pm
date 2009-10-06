@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.77.2.3.2.6 2008/07/01 15:15:16 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.77.2.3.2.7 2008/09/17 14:59:39 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -605,7 +605,6 @@ sub build()
    
    # The cache files:
    my $wrkdir = $ENV{LOCALTOP}."/.SCRAM/".$ENV{SCRAM_ARCH};
-   my $toolcache="${wrkdir}/ToolCache.db.gz";
    my $dircache="${wrkdir}/DirCache.db.gz";
    my $builddatastore="${wrkdir}/ProjectCache.db.gz";
    
@@ -681,12 +680,12 @@ sub build()
       # Create the working dir if it doesn't exist
       Utilities::AddDir::adddir($workingdir), if (! -d $workingdir);
 
-      if ( -r $cachename )
+      if ( (-r $cachename) && (!$fast) )
 	 {
 	 print "Reading cached data","\n",if ($ENV{SCRAM_DEBUG});
 	 $cacheobject=&Cache::CacheUtilities::read($cachename);
 	 }
-      elsif (-x "$ENV{SCRAM_CONFIGDIR}/ProjectInit")
+      if (-x "$ENV{SCRAM_CONFIGDIR}/ProjectInit")
          {
 	 print "Running $ENV{SCRAM_CONFIGDIR}/ProjectInit script","\n",if ($ENV{SCRAM_DEBUG});
 	 my $rv = system("$ENV{SCRAM_CONFIGDIR}/ProjectInit");
