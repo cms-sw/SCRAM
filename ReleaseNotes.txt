@@ -5,7 +5,7 @@ V2_1_3: 2009-10-06
 
 	* Bug fix release.
 	* SCRAM now does not read internal caches when -f command-line option is
-	used, this avoid SCRAm to fail is caches were corrupted.
+	used, this avoid SCRAM to fail when caches are corrupted.
 
 V2_1_2: 2009-03-18
 
