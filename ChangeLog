@@ -1,3 +1,8 @@
+2009-11-23 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/SCRAM.pm: Warning message are now sent to STDERR so that eval 
+	do not try to execute the error message itself.
+
 2009-10-06 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* BuildSystem/BuildDataStorage.pm: Make sure the BuildFile exists before
