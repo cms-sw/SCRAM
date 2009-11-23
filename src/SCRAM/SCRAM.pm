@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.34.2.3.2.4 2008/06/25 12:33:27 muzaffar Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.34.2.3.2.5 2008/08/14 14:20:48 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -521,12 +521,12 @@ sub toolmanager()
          }
       else
          {
-	 print "You are trying to build/setup tools for SCRAM_ARCH $ENV{SCRAM_ARCH}.\n",
+	 print STDERR "You are trying to build/setup tools for SCRAM_ARCH $ENV{SCRAM_ARCH}.\n",
 	       "while your project area is currently setup for following SCRAM_ARCH(s):\n";
 	 my $archs = $self->availablearch ($location->location());
-         if (scalar(@$archs)>0){print "\t",join("\n\t",@$archs),"\n";}
-         else{print "  No tools setup for any SCRAM_ARCH (seems like your area is curpted).\n";}
-	 print "Please make sure your SCRAM_ARCH environment variable is correct.\n";
+         if (scalar(@$archs)>0){print STDERR "\t",join("\n\t",@$archs),"\n";}
+         else{print STDERR "  No tools setup for any SCRAM_ARCH (seems like your area is curpted).\n";}
+	 print STDERR "Please make sure your SCRAM_ARCH environment variable is correct.\n";
 	 exit 1;
          }
       }
