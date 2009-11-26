@@ -1,6 +1,11 @@
 
 			SCRAM Release Notes
 
+V2_1_4: 2009-11-26
+
+	* Proper display of error message when eval `scram runtime -sh`
+	is for a dev area which is not setup for current SCRAM_ARCH.
+
 V2_1_3: 2009-10-06
 
 	* Bug fix release.
