@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.77.2.3.2.7 2008/09/17 14:59:39 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.77.2.3.2.8 2009/10/06 15:26:51 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1308,7 +1308,9 @@ sub runtime()
       $self->scramfatal("No shell type given! See \"scram runtime -help\" for usage info."), if ($SCRAM_RT_SHELL eq '');
       
       eval "use SCRAM::Plugins::RuntimeEnv";
+      die "Cache $file load error: ",$@,"\n", if ($@);
       my $env=SCRAM::Plugins::RuntimeEnv->new ($self);
+      $env->optional_env(@ARGV);
       $env->save ($SCRAM_RT_SHELL);
       
       print "Using ",$SCRAM_RT_SHELL," shell syntax","\n", if ($ENV{SCRAM_DEBUG});

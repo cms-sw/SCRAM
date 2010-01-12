@@ -1,3 +1,12 @@
+2010-01-11 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/CMD.pm: Fix for extra optional environment variables.
+	* SCRAM/Plugins/RuntimeEnv.pm: No more SCRAMRT_* backup environment
+	variables are created to suppose old SCRAVM V1 versions. Backup
+	environment variables are now saved with a prefix of SRT_ to avoid
+	DYLD_* warnings on Mac. Special variables for setting up the optional
+	environment are added.
+
 2009-11-23 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/SCRAM.pm: Warning message are now sent to STDERR so that eval 

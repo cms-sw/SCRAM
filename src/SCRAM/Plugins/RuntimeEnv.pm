@@ -11,6 +11,7 @@ sub new()
    $self->{scram}=$scram;
    if(exists $ENV{SCRAM_RTBOURNE_SET}){$self->{recursive}=1;}
    else{$self->{recursive}=0;}
+   $self->{optiona_paths}={};
    $self->init_();
    return $self;
 }
@@ -31,6 +32,7 @@ sub setenv()
   my $ref=shift || *STDOUT;
   my $sd = $self->{shell}{$s};
   my $sep=$sd->{SEP};
+  my $env_prefix=$self->{env_backup_prefix};
   my $env=$self->runtime_();
   my %udata=();
   my @data=(); my $index=0;
@@ -44,11 +46,11 @@ sub setenv()
   }
   foreach my $var (keys %{$env->{path}})
   {
-    my $val=$env->{path}{$var};
+    if ($var=~/^(.+?)_SRTOPT_(.+)$/){next;}
     $udata{$var}=1;
-    my $xvar="$var";
-    if ($s ne "RTBOURNE"){$xvar="SCRAMRT_$var";}
-    $data[$index++]{$var}=join($sep,@$val).&fixpathvar_($xvar,$sep);
+    my $btype = $self->{backup_type}{$var};
+    $data[$index++]{$var}=$ENV{"${env_prefix}${var}${btype}"}.&fixpathvar_($var,$sep);
+    #$data[$index++]{$var}=join($sep,@{$env->{path}{$var}}).&fixpathvar_($var,$sep);
   }
   if ($s eq "RTBOURNE")
   {
@@ -134,21 +136,61 @@ sub save()
     {
       while (my ($name, $value) = each %$h)
       {
-	if(exists $ENV{$name}){$data[$index++]{"${env_prefix}${name}_SCRAMRT"}=$value->[0];}
-	else{$data[$index++]{"${env_prefix}${name}_SCRAMRTDEL"}=$value->[0];}
+	my $btype="_SCRAMRT";
+	if (!exists $ENV{$name}){$btype="_SCRAMRTDEL";}
+	$data[$index++]{"${env_prefix}${name}${btype}"}=$value->[0];
       }
     }
+    $self->{backup_type}={};
+    my %opt=();
     while (my ($name, $value) = each %{$env->{path}})
     {
-      my $str=join($sep,@$value);
-      if(exists $ENV{$name}){$data[$index++]{"${env_prefix}${name}_SCRAMRT"}=$str;}
-      else{$data[$index++]{"${env_prefix}${name}_SCRAMRTDEL"}=$str;}
+      if ($name=~/^(.+?)_SRTOPT_(.+)$/)
+      {
+        if (exists $self->{optiona_paths}{$1}){$opt{$2}{$1}=1;}
+        next;
+      }
+      my $btype="_SCRAMRT";
+      if (!exists $ENV{$name}){$btype="_SCRAMRTDEL";}
+      $data[$index++]{"${env_prefix}${name}${btype}"}=&cleanpath_(join($sep,@$value),$sep);
+      $self->{backup_type}{$name}=$btype;
     }
-    while (my ($name, $value) = each %ENV)
+    foreach my $v (keys %opt)
     {
-      next if ($name=~/$skip/);
-      if (exists $env->{path}{$name}){$value=&cleanpath_($value,$sep);}
-      $data[$index++]{"SCRAMRT_$name"}=$value;
+      my $btype="";
+      my $nbtype="";
+      if (exists $self->{backup_type}{$v})
+      {
+        $btype=$self->{backup_type}{$v};
+	$nbtype=$btype;
+      }
+      else
+      {
+        $nbtype="_SCRAMRT";
+	if (!exists $ENV{$v}){$nbtype="_SCRAMRTDEL";}
+	$self->{backup_type}{$v}=$nbtype;
+      }
+      foreach my $t (keys %{$opt{$v}})
+      {
+	my $xindex=$index;
+        my $pval="";
+	if ($btype ne "")
+	{
+          for(my $i=0;$i<$index;$i++)
+	  {
+	    if (exists $data[$i]{"${env_prefix}${v}${btype}"})
+	    {
+	      $xindex=$i;
+	      $pval=$data[$i]{"${env_prefix}${v}${btype}"};
+	      last;
+	    }
+	  }
+        }
+	my $nval=join($sep,@{$env->{path}{$t."_SRTOPT_".$v}});
+        if ($pval ne ""){$nval="${nval}${sep}${pval}";}
+        $data[$xindex]{"${env_prefix}${v}${nbtype}"}=&cleanpath_($nval,$sep);
+        if ($xindex == $index){$index++;}
+      }
     }
     $data[$index++]{SCRAMRT_SET}="$ENV{SCRAM_PROJECTNAME}:$ENV{SCRAM_PROJECTVERSION}:$ENV{SCRAM_ARCH}:$ENV{SCRAM_VERSION}:${env_prefix}";
     foreach my $v (@data)
@@ -160,6 +202,13 @@ sub save()
       }
     }
   }
+}
+
+sub optional_env ()
+{
+  my $self=shift;
+  $self->{optiona_paths}={};
+  foreach my $t (@_){$self->{optiona_paths}{uc($t)}=1;}
 }
 
 sub restore_environment_()
@@ -227,8 +276,11 @@ sub init_ ()
   my $self=shift;
   foreach my $v (keys %ENV){$self->{OENV}{$v}=$ENV{$v};}
   my $v=$ENV{SCRAM_VERSION};
-  $v=~s/^V(\d+)_.*/$1/;
-  if ($v > 2){$v="SRT_";}
+  if ($v=~/^V(\d+)_(\d+)_.*/)
+  {
+    if (($1 > 2) || (($1 == 2) && ($2 >= 2))){$v="SRT_";}
+    else{$v="";}
+  }
   else{$v="";}
   $self->{env_backup_prefix}=$v;
   $self->{skipenv}='^(_|PWD|PROMPT_COMMAND|SCRAM_.+|SCRAMV1_.+|SCRAM|LOCALTOP|RELEASETOP|BASE_PATH)$';
@@ -355,7 +407,18 @@ sub cleanpath_()
   my $sep=shift;
   my %upath=();
   my @opath=();
-  foreach my $p (split /$sep+/,$str){if(!exists $upath{$p}){push @opath,$p; $upath{$p}=1;}}
+  foreach my $p (split /$sep+/,$str)
+  {
+    while($p=~s/\/\//\//g){}
+    while($p=~s/\/\.\//\//g){}
+    while($p=~s/\/\.$//){}
+    if ($p eq ""){$p="/";}
+    if(!exists $upath{$p})
+    {
+      $upath{$p}=1;
+      push @opath,$p;
+    }
+  }
   return join($sep,@opath);
 }
 
