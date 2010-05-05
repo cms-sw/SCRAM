@@ -260,11 +260,18 @@ sub init_()
 sub read_()
 {
   my $self=shift;
-  my $line=shift @{$self->{data}};
-  if(!defined $line){return 0;}
-  $self->{input}.=$line;
-  $self->{linenum}++;
-  return 1;
+  while(1)
+  {
+    my $line=shift @{$self->{data}};
+    if(!defined $line){return 0;}
+    $self->{linenum}++;
+    if ($line!~/^\s*#/)
+    {
+      $self->{input}.=$line; 
+      return 1;
+    }
+  }
+  return 0;
 }
 
 1;
