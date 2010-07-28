@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.77.2.3.2.8 2009/10/06 15:26:51 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.77.2.3.2.9 2010/01/12 08:02:24 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -683,13 +683,18 @@ sub build()
       if ( (-r $cachename) && (!$fast) )
 	 {
 	 print "Reading cached data","\n",if ($ENV{SCRAM_DEBUG});
-	 $cacheobject=&Cache::CacheUtilities::read($cachename);
+	 my $xcache=&Cache::CacheUtilities::read($cachename);
+	 if (defined $xcache) {$cacheobject=$xcache;}
 	 }
       if (-x "$ENV{SCRAM_CONFIGDIR}/ProjectInit")
          {
 	 print "Running $ENV{SCRAM_CONFIGDIR}/ProjectInit script","\n",if ($ENV{SCRAM_DEBUG});
 	 my $rv = system("$ENV{SCRAM_CONFIGDIR}/ProjectInit");
 	 print "Script exitted with status ",$rv,"\n",if ($ENV{SCRAM_DEBUG});
+         }
+      if ( (!-f $builddatastore) || (-z $builddatastore))
+         {
+         $cachereset=1;
          }
 
       # Set verbosity for cache object:
@@ -716,7 +721,8 @@ sub build()
 	 if ( -r $builddatastore)    
 	    {
 	    print "Reading cached build data","\n";
-	    $buildstoreobject=&Cache::CacheUtilities::read($builddatastore);
+	    my $xcache=&Cache::CacheUtilities::read($builddatastore);
+	    if (defined $xcache) {$buildstoreobject=$xcache;}
 	    }
 	    # Update- check for changed or removed files. Also need to account for removed directories:
 	 $buildstoreobject->init_engine(); # Restart the template engine
@@ -1322,6 +1328,45 @@ sub runtime()
 	 }
       $env->setenv($SCRAM_RT_SHELL,$ref);
       if ($ref){close($ref);}
+      }
+   return 0;
+   }
+
+=item   C<runtime()>
+
+Set the runtime environment for the current area.
+   
+=cut
+
+sub unsetenv()
+   {
+   my $self=shift;
+   my (@ARGS) = @_;
+   my $SCRAM_RT_SHELL="";
+   my %opts = ();
+   my %options =
+      ("help"	=> sub { $self->{SCRAM_HELPER}->help('unsetenv'); exit(0) },
+       "sh"     => sub { $SCRAM_RT_SHELL = 'BOURNE' },
+       "csh"    => sub { $SCRAM_RT_SHELL = 'TCSH'  },
+       "win"    => sub { $SCRAM_RT_SHELL = 'CYGWIN' });
+   
+   local @ARGV = @ARGS;
+   
+   Getopt::Long::config qw(default no_ignore_case require_order);
+   
+   if (! Getopt::Long::GetOptions(\%opts, %options))
+      {
+      $self->scramfatal("Error parsing arguments. See \"scram unsetenv -help\" for usage info.");
+      }
+   else
+      {
+      $self->scramfatal("No shell type given! See \"scram unsetenv -help\" for usage info."), if ($SCRAM_RT_SHELL eq '');
+      
+      eval "use SCRAM::Plugins::RuntimeEnv";
+      die "Cache $file load error: ",$@,"\n", if ($@);
+      my $env=SCRAM::Plugins::RuntimeEnv->new ($self);
+      print "Using ",$SCRAM_RT_SHELL," shell syntax","\n", if ($ENV{SCRAM_DEBUG});
+      $env->unsetenv($SCRAM_RT_SHELL);
       }
    return 0;
    }

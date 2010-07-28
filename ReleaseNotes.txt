@@ -1,6 +1,13 @@
 
 			SCRAM Release Notes
 
+V2_2_X: 2010-07-28
+
+	* Bug fixed for SCRAM caches corruption problems.
+	* New scram command "unsetenv" added to unset the already set
+	runtime environment.
+	* Improved runtime environment configurable via projects.
+
 V2_2_0: 2010-01-11
 
 	* DYLD_* environment warning fixed for Mac.

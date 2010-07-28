@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.20.2.3.2.1 2008/03/13 12:54:51 muzaffar Exp $ 
+# Revision: $Id: Helper.pm,v 1.20.2.3.2.2 2008/09/17 14:59:39 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -153,6 +153,32 @@ sub runtime()
    $help.="To dump this environment to a file which can be sourced later, use\n";
    $help.="\n";
    $help.="\t$::bold scram runtime -sh --dump env.sh $::normal\n";
+   $help.="\n";
+
+   return $help;
+   }
+
+sub unsetenv()
+   {
+   my $self=shift;
+   my $help;
+   
+   $help.="Description:\n";
+   $help.="\n";
+   $help.="\tPrint the shell commands in order to clean the already set runtime environment.\n";
+   $help.="\n";
+   $help.="Usage:\n";
+   $help.="\t$::bold scram unsetenv [-csh|-sh|-win] $::normal\n";
+   $help.="\n";
+   $help.="** Examples **\n";
+   $help.="\n";
+   $help.="Clean up project runtime environment settings in the current TCSH shell:-\n";
+   $help.="$::bold\n";
+   $help.="\teval `scram unsetenv -csh` $::normal\n";
+   $help.="\n";
+   $help.="Clean up project runtime environment settings in a BASH/SH:-\n";
+   $help.="$::bold\n";
+   $help.="\teval `scram unsetenv -sh` $::normal\n";
    $help.="\n";
 
    return $help;

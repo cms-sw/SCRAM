@@ -32,37 +32,39 @@ sub setenv()
   my $ref=shift || *STDOUT;
   my $sd = $self->{shell}{$s};
   my $sep=$sd->{SEP};
-  my $env_prefix=$self->{env_backup_prefix};
-  my $env=$self->runtime_();
   my %udata=();
   my @data=(); my $index=0;
-  foreach my $h (@{$env->{variables}})
+  if (!exists $self->{unsetenv})
   {
-    while (my ($var,$val) = each %$h)
+    my $env_prefix=$self->{env_backup_prefix};
+    my $env=$self->runtime_();
+
+    foreach my $h (@{$env->{variables}})
     {
+      while (my ($var,$val) = each %$h)
+      {
+        $udata{$var}=1;
+        $data[$index++]{$var}=$val->[0];
+      }
+    }
+    foreach my $var (keys %{$env->{path}})
+    {
+      if ($var=~/^(.+?)_SRTOPT_(.+)$/){next;}
       $udata{$var}=1;
-      $data[$index++]{$var}=$val->[0];
+      my $btype = $self->{backup_type}{$var};
+      $data[$index++]{$var}=$ENV{"${env_prefix}${var}${btype}"}.&fixpathvar_($var,$sep);
+    }
+    if ($s eq "RTBOURNE")
+    {
+      push @data,{"SCRAM_RTBOURNE_SET" => $ENV{SCRAMRT_SET}};
+      foreach my $var (keys %{$env->{xenv}})
+      {
+        my $val=$env->{xenv}{$var};
+        $udata{$var}=1;
+        $data[$index++]{$var}=$val;
+      }
     }
   }
-  foreach my $var (keys %{$env->{path}})
-  {
-    if ($var=~/^(.+?)_SRTOPT_(.+)$/){next;}
-    $udata{$var}=1;
-    my $btype = $self->{backup_type}{$var};
-    $data[$index++]{$var}=$ENV{"${env_prefix}${var}${btype}"}.&fixpathvar_($var,$sep);
-    #$data[$index++]{$var}=join($sep,@{$env->{path}{$var}}).&fixpathvar_($var,$sep);
-  }
-  if ($s eq "RTBOURNE")
-  {
-    push @data,{"SCRAM_RTBOURNE_SET" => $ENV{SCRAMRT_SET}};
-    foreach my $var (keys %{$env->{xenv}})
-    {
-      my $val=$env->{xenv}{$var};
-      $udata{$var}=1;
-      $data[$index++]{$var}=$val;
-    }
-  }
-  
   while(my ($var,$val) = each %ENV)
   {
     if (!exists $udata{$var})
@@ -87,7 +89,7 @@ sub setenv()
   }
   if($unset)
   {
-    if ($unset_vars){print STDERR "**** Following environment variables are going to be unset.\n$unset_vars";}
+    if ($unset_vars && (!exists $self->{unsetenv})){print STDERR "**** Following environment variables are going to be unset.\n$unset_vars";}
     print $ref $sd->{UNEXPORT}." $unset;\n";
   }
   
@@ -211,13 +213,25 @@ sub optional_env ()
   foreach my $t (@_){$self->{optiona_paths}{uc($t)}=1;}
 }
 
+sub unsetenv()
+{
+  my $self=shift;
+  my $shell=shift || "TCSH";
+  if (exists($ENV{SCRAMRT_SET}))
+  {
+    $self->{unsetenv}=1;
+    $self->restore_environment_($shell);
+    $self->setenv($shell);
+    delete $self->{unsetenv};
+  }
+}
+
 sub restore_environment_()
 {
   my $self=shift;
   my $shell=shift;
   my @penv=split /:/,$ENV{SCRAMRT_SET};
   delete $ENV{SCRAMRT_SET};
-  my $env = $self->runtime_();
   my $sep=$self->{shell}{$shell}{SEP};
   my %BENV=%ENV;
   my $pver=$penv[3] || "V1_";
@@ -254,14 +268,14 @@ sub restore_environment_()
 	if (exists $BENV{$var})
 	{
 	  my $v = $BENV{$var};
-          if (exists $env->{path}{$var})
-          {
+	  if ($v eq $value){$v="";}
+	  else
+	  {
 	    $v=~s/^(.*?$sep|)\Q$value\E($sep.*|)$/$1$2/;
 	    $v=~s/^$sep*//;
 	    $v=~s/$sep*$//;
 	    $v=~s/$sep$sep/$sep/g;
           }
-          elsif ($v eq $value){$v="";}
           if (($v eq "") && ($type eq "DEL")){delete $BENV{$var};}
 	  else{$BENV{$var}=$v;}
 	}
@@ -340,7 +354,22 @@ sub runtime_ ()
   my $tmanager = $scram->toolmanager();
   my $otools = $tmanager->toolsdata();
   my $tools  = $tmanager->setup();
-  if (exists $tools->{'self'}){push @$otools,$tools->{'self'};}
+  $self->{force_tools_env}={};
+  $self->{skip_runtime}={};
+  $self->{force_tools_env}{self}=1;
+  $self->{force_tools_env}{lc($ENV{SCRAM_PROJECTNAME})}=1;
+  if (exists $tools->{'self'})
+  {
+    push @$otools,$tools->{'self'};
+    if (exists $tools->{self}{FLAGS}{NO_EXTERNAL_RUNTIME})
+    {
+      foreach my $x (@{$tools->{self}{FLAGS}{NO_EXTERNAL_RUNTIME}}){$self->{skip_runtime}{$x}=1;}
+    }
+    if(exists $tools->{self}{FLAGS}{SKIP_TOOLS_SYMLINK})
+    {
+      foreach my $t (@{$tools->{self}{FLAGS}{SKIP_TOOLS_SYMLINK}}){$self->{force_tools_env}{lc($t)}=1;}
+    }
+  }
   my @compilertools=();
   foreach my $tool ( reverse @$otools )
   {
@@ -370,9 +399,9 @@ sub toolenv_ ()
   my $gmake="";
   if (defined ($toolrt))
   {
-    while (my ($toolrt, $trtval) = each %{$toolrt})
+    while (my ($trtvar, $trtval) = each %{$toolrt})
     {
-      if ($toolrt =~ /^PATH:(.*?)$/)
+      if ($trtvar =~ /^PATH:(.*?)$/)
       {
         (! exists $self->{env}{rtstring}{path}{$1}) ? $self->{env}{rtstring}{path}{$1} = [] : undef;
 	map
@@ -382,19 +411,22 @@ sub toolenv_ ()
 	    $gmake=$_."/";
 	    $self->{env}{rtstring}{xenv}{SCRAM_GMAKE_PATH}=$gmake;
 	  }
-	  if (! exists ($self->{env}{paths}{$1}{$_}))
+	  if ((!exists $self->{skip_runtime}{$1}) || (exists $self->{force_tools_env}{$tname}))
 	  {
-	    $self->{env}{paths}{$1}{$_} = 1 ;
-	    push(@{$self->{env}{rtstring}{path}{$1}},$_);
+	    if (! exists ($self->{env}{paths}{$1}{$_}))
+	    {
+	      $self->{env}{paths}{$1}{$_} = 1 ;
+	      push(@{$self->{env}{rtstring}{path}{$1}},$_);
+	    }
 	  }
 	} @$trtval; 
       }
       else
       {
-	if (! exists ($self->{env}{variables}{$toolrt}))
+	if (! exists ($self->{env}{variables}{$trtvar}))
 	{
-	  $self->{env}{variables}{$toolrt} = 1;
-	  $self->{env}{rtstring}{variables}[$vindex++]{$toolrt}=$trtval;
+	  $self->{env}{variables}{$trtvar} = 1;
+	  $self->{env}{rtstring}{variables}[$vindex++]{$trtvar}=$trtval;
 	}
       }
     }

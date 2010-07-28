@@ -1,3 +1,15 @@
+2010-07-28 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* Cache/Cache.pm: Re-creation of scram internals caches in case
+	they get corrupted.
+	* SCRAM/CMD.pm: Checks added to make sure that scram internal
+	caches are valid. If cache files are corrupted then re-create 
+	them. Support added to unset the runtime environment
+	(scram unsetenv -csh).
+	SCRAM/Plugins/RuntimeEnv.pm: Support added for unset runtime
+	environment and skip setting runtime environment path for which
+	symlinks are created in the release/dev area.
+
 2010-01-11 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/CMD.pm: Fix for extra optional environment variables.

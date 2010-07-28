@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.34.2.3.2.5 2008/08/14 14:20:48 muzaffar Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.34.2.3.2.6 2009/11/23 08:45:31 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -110,7 +110,7 @@ defined here. Sets $self->{SCRAM_ALLOWEDCMDS} in the $::scram object.
 sub commands()
    {
    my $self = shift;
-   my @env_commands = qw(version arch runtime);
+   my @env_commands = qw(version arch runtime unsetenv);
    my @info_commands = qw(list db); 
    my @buildenv_commands = qw(project setup tool);
    my @build_commands=qw(build install remove);

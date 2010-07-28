@@ -5,7 +5,7 @@
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 #         (with contribution from Lassi.Tuura@cern.ch)
 # Update: 2003-11-27 16:45:18+0100
-# Revision: $Id: Cache.pm,v 1.10.2.2.2.2 2008/06/02 16:20:26 muzaffar Exp $ 
+# Revision: $Id: Cache.pm,v 1.10.2.2.2.3 2008/08/27 11:08:03 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -232,6 +232,7 @@ sub checktree()
       }
    
    my $bfcachedir=$ENV{LOCALTOP}."/".$ENV{SCRAM_TMP}."/".$ENV{SCRAM_ARCH}."/cache/bf/${path}";
+   my $cbf="${bfcachedir}/$ENV{SCRAM_BUILDFILE}";
    my $bftime=0;
    my $bf="${path}/$ENV{SCRAM_BUILDFILE}";
    foreach my $ext (".xml","")
@@ -242,10 +243,9 @@ sub checktree()
          if (exists $self->{BFCACHE}{$bfn})
 	    {
             $self->{REMOVEDBF}{$bfn}=1;
-	    print "ADDED:REMOVEDBF : $bfn\n";
 	    delete $self->{BFCACHE}{$bfn};
             Utilities::AddDir::adddir($bfcachedir);
-            open(BF,">${bfcachedir}/$ENV{SCRAM_BUILDFILE}");close(BF);
+            open(BF,">${cbf}");close(BF);
 	    $self->cachestatus(1);
 	    }
          }
@@ -255,10 +255,13 @@ sub checktree()
          if ((! exists $self->{BFCACHE}{$bfn}) ||
              ($bftime != $self->{BFCACHE}{$bfn}))
             {
-            Utilities::AddDir::adddir($bfcachedir);
-            open(BF,">${bfcachedir}/$ENV{SCRAM_BUILDFILE}");close(BF);
-            $self->{ADDEDBF}{$bfn}=1;
-	    delete $self->{BFCACHE}{"${path}/$ENV{SCRAM_BUILDFILE}"};
+	    if ((!-f "${cbf}") || (exists $self->{BFCACHE}{$bfn}))
+	       {
+               Utilities::AddDir::adddir($bfcachedir);
+               open(BF,">${cbf}");close(BF);
+               }
+	    $self->{ADDEDBF}{$bfn}=1;
+	    delete $self->{BFCACHE}{$bf};
             $self->{BFCACHE}{$bfn}=$bftime;
 	    if ($ext eq ""){$self->{nonxml}+=1;}
             $self->cachestatus(1);
@@ -267,10 +270,10 @@ sub checktree()
             {
 	    $self->{ADDEDBF}{$bfn}=1;
 	    if ($ext eq ""){$self->{nonxml}+=1;}
-	    if (!-f "${bfcachedir}/$ENV{SCRAM_BUILDFILE}")
+	    if (!-f "${cbf}")
 	       {
 	       Utilities::AddDir::adddir($bfcachedir);
-	       open(BF,">${bfcachedir}/$ENV{SCRAM_BUILDFILE}");close(BF);
+	       open(BF,">${cbf}");close(BF);
 	       }
 	    $self->cachestatus(1);
 	    }
