@@ -403,7 +403,7 @@ sub toolenv_ ()
     {
       if ($trtvar =~ /^PATH:(.*?)$/)
       {
-        (! exists $self->{env}{rtstring}{path}{$1}) ? $self->{env}{rtstring}{path}{$1} = [] : undef;
+	(! exists $self->{env}{rtstring}{path}{$1}) ? $self->{env}{rtstring}{path}{$1} = [] : undef;
 	map
 	{
 	  if (($tname eq "gmake") && ($1 eq "PATH") && ($gmake eq "") && (-x $_."/gmake"))
