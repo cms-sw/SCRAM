@@ -1,7 +1,7 @@
 
 			SCRAM Release Notes
 
-V2_2_X: 2010-07-28
+V2_2_1: 2010-08-11
 
 	* Bug fixed for SCRAM caches corruption problems.
 	* New scram command "unsetenv" added to unset the already set
