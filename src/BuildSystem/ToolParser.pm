@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-02-09 20:14:55+0100
-# Revision: $Id: ToolParser.pm,v 1.8.2.3.2.1 2008/03/13 12:54:50 muzaffar Exp $ 
+# Revision: $Id: ToolParser.pm,v 1.8.2.3.2.2 2009/03/18 16:58:42 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -29,7 +29,6 @@ sub new
    
    bless $self,$class;
    
-   $self->{interactive} = 0;
    $self->{content} = {};
    $self->{nested} = 0;
    $self->{scramdoc}=ActiveDoc::SimpleDoc->new();
@@ -455,12 +454,8 @@ sub getrawdata()
 sub processrawtool()
    {
    my $self=shift;
-   my ($interactive) = @_;
    my $data = [];
    my $environments = {}; # Somewhere to collect our environments
-
-   # Set interactive mode if required:
-   $self->{interactive} = $interactive;
 
    # Somewhere to store the data:
    use BuildSystem::ToolData;
@@ -620,18 +615,7 @@ sub processrawtool()
             }
          }
       }
-   if ($self->{interactive})
-      {
-      # Set the values interactively:
-      $self->interactively_find_settings($tooldataobj, $environments, \@order);
-      }
-   else
-      {
-      # Set the values:
-      $self->find_settings($tooldataobj, $environments, \@order);
-      }
-     
-   # Return a ToolData object:
+   $self->find_settings($tooldataobj, $environments, \@order);
    return $tooldataobj;
    }
 
@@ -657,39 +641,16 @@ sub find_settings()
       if ($envdata != 0 && $#$envdata == 0) # One element only!
 	 {
 	 scramlogmsg("\nFinding a value for $envname:","\n\n");
-	 # We have an environment and only one data element:
-	 # Check the lookup DB:
-	 if ($tsv->checkDB($envname))
-	    {
-	    scramlogmsg("\tValidating value for $envname (found in tool DB):","\n");
-	    if ($tsv->validatepath())
-	       {
-	       # Save in TSV and store in ToolData object:
-	       $tsv->savevalue($envname,$tsv->pathfromdb());
-	       $self->store($tooldataobj, $envname, $tsv->pathfromdb());
-	       }
-	    else
-	       {
-	       $path = $tsv->findvalue($envname, $envdata);	     	       
-	       # Save the value in ToolData object:
-	       $self->store($tooldataobj, $envname, $path);	       
-	       }
-	    }
-	 else
-	    {
-	    $path = $tsv->findvalue($envname, $envdata);	     	       
-	    # Save in ToolData object:
-	    $self->store($tooldataobj, $envname, $path);
-	    }
+	 $path = $tsv->findvalue($envname, $envdata);	     	       
+	 $self->store($tooldataobj, $envname, $path);
 	 }
       elsif ($envdata != 0 && $#$envdata > 0)
 	 {
 	 scramlogmsg("\nFinding a value for $envname:","\n\n");
 	 foreach my $elementdata (@$envdata)
 	    {
-	    $path = $tsv->findvalue($envname, $elementdata);	 	    
-	    # Save in ToolData object:
-	    $self->store($tooldataobj, $envname, $path);	    
+	    $path = $tsv->findvalue($envname, $elementdata);
+	    $self->store($tooldataobj, $envname, $path);
 	    }
 	 }
       else
@@ -697,48 +658,22 @@ sub find_settings()
 	 push(@$runtime, $envname);
 	 }
       }
-   # Check that the required libraries exist:
    $self->_lib_validate($tooldataobj);
-   # Now process the runtime settings:
    scramlogmsg("\n-------------------------------\n");
    foreach my $rtname (@$runtime)
       {
       my $type = 'RUNTIME';	 
       my $envdata = $tsv->environment($type, $rtname);
       my ($rttype,$realrtname) = split(':',$rtname);      
-      
+
       # Only validate paths:
       if ($rtname =~ /:/)
 	 {	
-	 # Handle single-occurrence variables first (i.e. VAR appears once
-	 # in array of hashes):
 	 if ($envdata != 0 && $#$envdata == 0) # One element only!
 	    {
 	    scramlogmsg("\nRuntime path settings for $realrtname:","\n\n");
-	    # We have an environment and only one data element:
-	    # Check the lookup DB:
-	    if ($tsv->checkDB($rtname))
-	       {
-	       scramlogmsg("\tValidating value for path $realrtname (found in tool DB):","\n");
-	       if ($tsv->validatepath())
-		  {
-		  # Save in TSV and store in ToolData object:
-		  $tsv->savevalue($rtname, $tsv->pathfromdb());
-		  $tooldataobj->runtime($rtname, [ $tsv->pathfromdb() ]);
-		  }
-	       else
-		  {
-		  $path = $tsv->findvalue($rtname, $envdata);	     	       
-		  # Save the value in ToolData object:
-		  $tooldataobj->runtime($rtname, [ $path ]);
-		  }
-	       }
-	    else
-	       {
-	       $path = $tsv->findvalue($rtname, $envdata);	     	       
-	       # Save in ToolData object:
-	       $tooldataobj->runtime($rtname, [ $path ]);
-	       }
+            $path = $tsv->findvalue($rtname, $envdata);	     	       
+            $tooldataobj->runtime($rtname, [ $path ]);
 	    }
 	 elsif ($envdata != 0 && $#$envdata > 0)
 	    {
@@ -746,7 +681,6 @@ sub find_settings()
 	    foreach my $elementdata (@$envdata)
 	       {
 	       $path = $tsv->findvalue($rtname, $elementdata);	 	    
-	       # Save in ToolData object:
 	       $tooldataobj->runtime($rtname, [ $path ]);
 	       }
 	    }
@@ -757,26 +691,22 @@ sub find_settings()
 	 }
       else
 	 {
-	 # Handle runtime variables:
 	 if ($envdata != 0 && $#$envdata == 0) # One element only!
 	    {
 	    my $value='';
-	    $tsv->checkdefaults($envdata, \$value);
+	    if ($tsv->checkdefaults($envdata, \$value)==0)
+	       {
+	       $tsv->promptuser($rtname,$value);
+	       }
 	    scramlogmsg("\n");
 	    
-	    # Chck to see if the value contains a variable that should be evaluated:
 	    if ($value =~ /$/)
 	       {
-	       # If so, find the value and substitute. This should work for all
-	       # occurrences of variables because by this point (and because the ordering
-	       # was established at the start) all other variables will have real values:
  	       my $dvalue = $tsv->_expandvars($value);
 	       $value = $dvalue;
 	       }
 	    
 	    scramlogmsg("Runtime variable ",$rtname," set to \"",$value,"\"\n");
-	    
-	    # Store the variable setting:
 	    $tooldataobj->runtime($rtname, [ $value ]);
 	    }
 	 else
@@ -787,164 +717,6 @@ sub find_settings()
       }
    
    scramlogmsg("\n");
-   }
-
-sub interactively_find_settings()
-   {
-   my $self=shift;
-   my ($tooldataobj, $environments, $ordering)=@_;
-   my $stringtoeval;
-   my $runtime=[];
-   my ($path, $dpath);
-   
-   use BuildSystem::ToolSettingValidator;
-   
-   my $tsv = BuildSystem::ToolSettingValidator->new($environments, $self->toolname(), $self->{interactive});
-   
-   foreach my $envname (@$ordering)
-      {
-      my $type = 'ENVIRONMENT';
-      my $envdata = $tsv->environment($type, $envname);
-
-      # Handle single-occurrence variables first (i.e. VAR appears once
-      # in array of hashes):
-      if ($envdata != 0 && $#$envdata == 0) # One element only!
-	 {
-	 print "\nFinding a value for $envname:","\n";
-	 print "\n";
-	 # We have an environment and only one data element:
-	 # Check the lookup DB:
-	 if ($tsv->checkDB($envname))
-	    {
-	    print "\tValidating value for $envname (found in tool DB):","\n";
-	    if ($tsv->validatepath())
-	       {
-	       # This is our default:
-	       $dpath = $tsv->pathfromdb();
-	       # Run promptuser() to see if this value can be kept
-	       # or should be changed:
-	       $path = $tsv->promptuser($envname, $dpath); 
-	       # Save in TSV and store in ToolData object:
-	       $tsv->savevalue($envname,$path);
-	       $self->store($tooldataobj, $envname, $path);
-	       }
-	    else
-	       {
-	       $path = $tsv->ifindvalue($envname, $envdata);
-	       # Save the value in ToolData object:
-	       $self->store($tooldataobj, $envname, $path);
-	       }
-	    }
-	 else
-	    {
-	    $dpath = $tsv->ifindvalue($envname, $envdata);
-	    # Save in ToolData object:
-	    $self->store($tooldataobj, $envname, $dpath);
-	    }
-	 }
-      elsif ($envdata != 0 && $#$envdata > 0)
-	 {
-	 print "\nFinding a value for $envname:","\n";
-	 print "\n";
-	 foreach my $elementdata (@$envdata)
-	    {
-	    $path = $tsv->ifindvalue($envname, $elementdata);
-	    # Save in ToolData object:
-	    $self->store($tooldataobj, $envname, $path);	    
-	    }
-	 }
-      else
-	 {
-	 push(@$runtime, $envname);
-	 }
-      }
-   
-   # Check that the required libraries exist:
-   $self->_lib_validate($tooldataobj);
-   
-   # Now process the runtime settings:
-   print "\n";
-   print "-------------------------------\n";
-   foreach my $rtname (@$runtime)
-      {
-      my $type = 'RUNTIME';	 
-      my $envdata = $tsv->environment($type, $rtname);
-      my ($rttype,$realrtname) = split(':',$rtname);      
-      
-      # Only validate paths:
-      if ($rtname =~ /:/)
-	 {	
-	 # Handle single-occurrence variables first (i.e. VAR appears once
-	 # in array of hashes):
-	 if ($envdata != 0 && $#$envdata == 0) # One element only!
-	    {
-	    print "\nRuntime path settings for $realrtname:","\n";
-	    print "\n";
-	    # We have an environment and only one data element:
-	    # Check the lookup DB:
-	    if ($tsv->checkDB($rtname))
-	       {
-	       print "\tValidating value for path $realrtname (found in tool DB):","\n";
-	       if ($tsv->validatepath())
-		  {
-		  $dpath = $tsv->pathfromdb();
-		  # Run promptuser() to see if this value can be kept
-		  # or should be changed:
-		  $path = $tsv->promptuser($rtname, $dpath);		  
-		  # Save in TSV and store in ToolData object:
-		  $tsv->savevalue($rtname, $path);
-		  $tooldataobj->runtime($rtname, [ $path ]);
-		  }
-	       else
-		  {
-		  $dpath = $tsv->ifindvalue($rtname, $envdata);
-		  # Save the value in ToolData object:
-		  $tooldataobj->runtime($rtname, [ $path ]);
-		  }
-	       }
-	    else
-	       {
-	       $path = $tsv->ifindvalue($rtname, $envdata);
-	       # Save in ToolData object:
-	       $tooldataobj->runtime($rtname, [ $path ]);
-	       }
-	    }
-	 elsif ($envdata != 0 && $#$envdata > 0)
-	    {
-	    print "\nRuntime path settings for $realrtname:","\n";
-	    print "\n";
-	    foreach my $elementdata (@$envdata)
-	       {
-	       $path = $tsv->ifindvalue($rtname, $elementdata);
-	       # Save in ToolData object:
-	       $tooldataobj->runtime($rtname, [ $path ]);
-	       }
-	    }
-	 else
-	    {
-	    next;
-	    }
-	 }
-      else
-	 {
-	 # Handle runtime variables:
-	 if ($envdata != 0 && $#$envdata == 0) # One element only!
-	    {
-	    my $dvalue='';
-	    $tsv->checkdefaults($envdata, \$dvalue);
-	    print "\n";
-	    my $value = $tsv->promptuserforvar($rtname, $dvalue);
-	    # Store the variable setting:
-	    $tooldataobj->runtime($rtname, [ $value ]);
-	    }
-	 else
-	    {
-	    next;
-	    }
-	 }
-      }
-   
-   print "\n";
    }
 
 sub store()

@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.34.2.3.2.6 2009/11/23 08:45:31 muzaffar Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.34.2.3.2.7 2010/07/28 15:34:12 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -517,7 +517,6 @@ sub toolmanager()
          $self->info("Reading tool data from ToolCache.db.gz") if ($self->{SCRAM_DEBUG});
          use Cache::CacheUtilities;
          $self->{toolmanager}=&Cache::CacheUtilities::read($location->toolcachename());
-	 $self->{toolmanager}->interactive(0);
          }
       else
          {

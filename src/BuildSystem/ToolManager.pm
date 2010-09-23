@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.19.2.2.2.1 2008/03/13 12:54:50 muzaffar Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.19.2.2.2.3 2008/07/15 12:12:40 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -45,14 +45,6 @@ sub init ()
    $self->dirty();
    }
   
-sub interactive()
-   {
-   my $self=shift;
-   # Interactive mode on/off:
-   @_ ? $self->{interactive} = shift
-      : ((defined $self->{interactive}) ? $self->{interactive} : 0);
-   }
-
 sub setupalltools()
    {
    my $self = shift;
@@ -80,7 +72,7 @@ sub coresetup()
    scramlogmsg("\n",$::bold."Setting up ",$toolname," version ",$toolversion,":  ".$::normal,"\n");
    
    # Next, set up the tool:
-   my $store = $toolparser->processrawtool($self->interactive());
+   my $store = $toolparser->processrawtool();
 
    # Check to see if this tool is a compiler. If so, store it.
    # Also store the language that this compiler supprots, and a
@@ -108,6 +100,7 @@ sub coresetup()
 	 }
       symlink("../available/${toolname}.xml",$desfile); 
       }
+   scramlogclean();
    return $self;
    }
 
@@ -128,7 +121,7 @@ sub setupself()
       $selfparser->parse($filename);
 
       # Next, set up the tool:
-      $store = $selfparser->processrawtool($self->interactive());
+      $store = $selfparser->processrawtool();
 
       # If we are in a developer area, also add RELEASETOP paths:
       if (exists($ENV{RELEASETOP}))

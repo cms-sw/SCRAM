@@ -1,3 +1,19 @@
+2010-09-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* AutoToolSetup.pm: Removed file.
+	* BuildSystem/ToolManager.pm: Do not allow to setup a tool
+	interactively.
+	* BuildSystem/ToolParser.pm: Always use value from the toolfile
+	instead of looking for defaults in site/tools.conf.
+	* BuildSystem/ToolSettingValidator.pm: Do not promt use for input,
+	just exit with non-zero code when a value for a variable is missing.
+	* Configuration/BootStrapProject.pm: Cleanup for site/tools.conf
+	which is no more needed.
+	* SCRAM/CMD.pm: Cleanup for AutoToolSetup which is no more needed.
+	* SCRAM/Helper.pm: No more user interactive mode for setting up a
+	tool.
+	* SCRAM/SCRAM.pm: Cleanup for interactive mode.
+
 2010-07-28 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* Cache/Cache.pm: Re-creation of scram internals caches in case

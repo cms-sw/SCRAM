@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.20.2.3.2.2 2008/09/17 14:59:39 muzaffar Exp $ 
+# Revision: $Id: Helper.pm,v 1.20.2.3.2.3 2010/07/28 15:34:12 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -288,7 +288,7 @@ sub project()
    $help.="\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram project [-l] [-s] [-d <area>] [-n <dir>] [-f <tools.conf>] <-b <projecturl>|<projectname> <projectversion>>$::normal\n";
+   $help.="\tscram project [-l] [-s] [-d <area>] [-n <dir>] <-b <projecturl>|<projectname> <projectversion>>$::normal\n";
    $help.="\n";
    $help.="Options:\n";
    $help.="\n";
@@ -326,8 +326,6 @@ sub project()
    $help.="\tscram project -b ~/myprojects/projecta/config/boot $::normal\n";
    $help.="\n";
    $help.="\n";
-   $help.="Use the \"-f\" flag followed by a valid filename to allow auto setup to proceed.\n";
-   $help.="\n";			      
    $help.="Use \"-l\" to see the detail log message when creating a dev area.\n";
    $help.="\n";
    $help.="Use \"-s\" to create symlinks for lib/bin/tmp area. You need to have a ~/.scramrc/symlinks\n";
@@ -357,7 +355,7 @@ sub setup()
    $help.="\tthe complete installation process is initiated.\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram setup [-i] [-h] [-f tools.conf] [<toolname>|<toolfile>]$::normal\n";
+   $help.="\tscram setup [-h] [<toolname>|<toolfile>]$::normal\n";
    $help.="\n";			      
    $help.="toolname:\n";
    $help.="\tThe name of the tool to be set up. There must be a tool file under\n";
@@ -366,12 +364,6 @@ sub setup()
    $help.="toolfile:\n";
    $help.="\tThis is a toolfile document describing the tool being set up.\n";
    $help.="\n";
-   $help.="The -i option turns off the automatic search mechanism allowing for more\n";
-   $help.="user interaction during setup.\n";
-   $help.="\n";			      
-   $help.="The -f option allows the user to specify a tools file. This file contains\n";
-   $help.="values to be used for settings of the tool.\n";
-   $help.="\n";			      
 
    return $help;
    }

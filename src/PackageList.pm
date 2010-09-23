@@ -16,7 +16,6 @@
 		SCRAM::CMD.pm
 		SCRAM::Helper.pm
 		SCRAM::SCRAM.pm
-		SCRAM::AutoToolSetup.pm
 		SCRAM::ScramProjectDB.pm
 		Utilities::AddDir.pm
 		Utilities::Architecture.pm

@@ -79,15 +79,6 @@ sub project_()
          my $boot=$self->{scramdoc}->filetoparse();
          die "Project creating error. Missing directory \"${toolbox}/tools\" in the toolbox. Please fix file \"$boo\" and set a valid toolbox directory.";
          }
-      if (-d "${toolbox}/site")
-         {
-	 Utilities::AddDir::copydir("${toolbox}/site","${conf}/site");
-	 }
-      else
-         {
-	 Utilities::AddDir::adddir("${conf}/site");
-	 my $rf;open($rf,">${conf}/site/tools.conf");close($rf);
-         }
       }
    else
       {

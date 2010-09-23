@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.77.2.3.2.9 2010/01/12 08:02:24 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.77.2.3.2.10 2010/07/28 15:34:12 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -843,12 +843,11 @@ sub project()
    my $self=shift;
    my (@ARGS) = @_;
    my ($installdir, $installname);
-   my ($toolconf,$bootfile,$bootstrapfile);
+   my ($bootfile,$bootstrapfile);
    my $symlinks=0;
    my %opts = (
 	       SCRAM_INSTALL_DIR => 0,
 	       SCRAM_INSTALL_NAME => 0,
-	       SCRAM_TOOLCONF_NAME => 0,
 	       SCRAM_BOOTSTRAPFILE_NAME => 0
 	       );
    # Here are the options for the project command. We need to support changing the location
@@ -864,7 +863,7 @@ sub project()
       ("help|h"   => sub { $self->{SCRAM_HELPER}->help('project'); exit(0) },
        "dir|d=s"  => sub { $opts{SCRAM_INSTALL_DIR} = 1; $installdir = $_[1] },
        "name|n=s" => sub { $opts{SCRAM_INSTALL_NAME} = 1; $installname = $_[1] },
-       "file|f=s" => sub { $opts{SCRAM_TOOLCONF_NAME} = 1; $toolconf = $_[1] },
+       "file|f=s" => sub { print STDERR "****WARNING: obsolete command-line argument '-f'\n" },
        "log|l"    => sub { scramloginteractive(1); },
        "symlinks|s"=> sub { $symlinks=1; },
        "boot|b=s" => sub { $opts{SCRAM_BOOTSTRAPFILE_NAME} = 1; $bootstrapfile = 'file:'.$_[1]; $bootfile = $_[1] },
@@ -887,13 +886,13 @@ sub project()
       # Check to see which type of boot we should do or whether we should do an update:
       if ($opts{SCRAM_BOOTSTRAPFILE_NAME})
 	 {
-	 $self->bootnewproject($bootstrapfile,$installdir,$toolconf);
+	 $self->bootnewproject($bootstrapfile,$installdir);
 	 }
       else
 	 {
 	 my $projectname = shift(@ARGV);
 	 my $projectversion = shift(@ARGV);	 
-	 $self->bootfromrelease($projectname,$projectversion,$installdir,$installname,$toolconf,$symlinks);
+	 $self->bootfromrelease($projectname,$projectversion,$installdir,$installname,$symlinks);
 	 }     
       }
    
@@ -909,7 +908,7 @@ Function to create a developer area from an existing release (only used locally)
 
 sub bootfromrelease() {
     my $self=shift;
-    my ($projectname,$projectversion,$installdir,$installname,$toolconf,$symlinks) = @_;
+    my ($projectname,$projectversion,$installdir,$installname,$symlinks) = @_;
     my $iname=$installname || $projectversion;
     if ($projectname && $projectversion) {
 	my $relarea=$self->scramprojectdb()->getarea($projectname,$projectversion);
@@ -942,11 +941,6 @@ sub bootfromrelease() {
 	# Read the top-level BuildFile and create the required storage dirs. Do
 	# this before setting up self:
 	$self->create_productstores($area->location(),$symlinks);
-	# The lookup db:
-	use SCRAM::AutoToolSetup;
-
-	$::lookupdb = SCRAM::AutoToolSetup->new($toolconf);  
-	# Need a toolmanager, then we can setup:
 
 	my $toolmanager = $self->toolmanager($area);
 	$toolmanager->update ($area);
@@ -971,7 +965,6 @@ sub bootfromrelease() {
 	
 	scramlogmsg("\n\nInstallation procedure complete.\n");
 	scramlogmsg("Developer area located at:\n\n\t\t".$area->location()."\n\n");
-	#scramlogdump();
     } else {
 	$self->scramfatal("Insufficient arguments: see \"scram project -help\" for usage info.");
     }
@@ -990,9 +983,8 @@ sub bootnewproject()
    {
    my $self=shift;
    my $areaname="";
-   my ($bootstrapfile,$installarea,,$toolconf)=@_;
+   my ($bootstrapfile,$installarea)=@_;
 
-   use SCRAM::AutoToolSetup;
    use BuildSystem::ToolManager;
    use Configuration::BootStrapProject;
    # Set up the bootstrapper:
@@ -1006,8 +998,6 @@ sub bootnewproject()
    # Need an autotoolssetup object:
    $ENV{'SCRAM_PROJECTDIR'} = $area->location();
    $ENV{'SCRAM_PROJECTVERSION'} = $area->version();
-   
-   $::lookupdb = SCRAM::AutoToolSetup->new($toolconf);
    
    # Now set up selected tools:
    scramlogmsg("Setting up tools in project area","\n");
@@ -1124,8 +1114,7 @@ sub setupnewarch_()
    {
    my $self=shift;
    my $interactive=shift;
-   my $toolconf=shift;
-   scramloginteractive($interactive);
+   scramloginteractive(0);
    my $toolbox="$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/toolbox";
    if (!-d "${toolbox}/$ENV{SCRAM_ARCH}")
       {
@@ -1152,7 +1141,7 @@ sub setupnewarch_()
       use File::Basename;
       my $area=$self->localarea();
       my $loc = $area->location();
-      $self->bootfromrelease($area->name(),$area->version(),dirname($loc),basename($loc),$toolconf,$area->symlinks());
+      $self->bootfromrelease($area->name(),$area->version(),dirname($loc),basename($loc),$area->symlinks());
       return 1;
       }
    else
@@ -1170,13 +1159,11 @@ sub setup()
    {
    my $self=shift;
    my (@ARGS) = @_;
-   my $interactive = 0;
-   my $toolconf;
    my %opts;
    my %options =
       ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('setup'); exit(0) },
-       "file|f=s" => sub { $toolconf = $_[1] },
-       "interactive|i" => sub { $interactive = 1 });
+       "file|f=s" => sub { print STDERR "****WARNING: obsolete command-line argument '-f'\n" },
+       "interactive|i" => sub { print STDERR "****WARNING: obsolete command-line argument '-i'\n"});
    
    local @ARGV = @ARGS;
    
@@ -1227,20 +1214,14 @@ sub setup()
 	    }
 	 elsif($tool!~/^\//) {$tool=cwd()."/$tool";}
          }
-      elsif ($self->setupnewarch_ ($interactive,$toolconf))
+      elsif ($self->setupnewarch_ ())
          {
 	 return;
 	 }
       
       # Get the tool manager:
       my $toolmanager = $self->toolmanager();
-      # Set interactive option:
-      $toolmanager->interactive($interactive);
       
-      # Initialize the lookup table:
-      use SCRAM::AutoToolSetup;
-      $::lookupdb = SCRAM::AutoToolSetup->new($toolconf);
-
       if ($tool)
 	 {
 	 if ($tool ne "self"){$toolmanager->coresetup($tool);}

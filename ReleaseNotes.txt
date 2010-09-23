@@ -1,6 +1,12 @@
 
 			SCRAM Release Notes
 
+V2_2_X: 2010-09-07
+
+	* SCRAM now forces that all the tool files provide the valid
+	values.
+	* No more "scram setup" interactive mode.
+
 V2_2_1: 2010-08-11
 
 	* Bug fixed for SCRAM caches corruption problems.
