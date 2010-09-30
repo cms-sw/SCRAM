@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.77.2.3.2.10 2010/07/28 15:34:12 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.77.2.3.2.11 2010/09/23 10:46:22 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -275,10 +275,12 @@ sub install()
    {
    my $self=shift;
    my (@ARGS) = @_;
+   my $install_dir = "";
    my %opts = ( SCRAM_FORCE => 0 );
    my %options =
       ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('install'); exit(0) },
-       "force|f"  => sub { $opts{SCRAM_FORCE} = 1 } );
+       "force|f"  => sub { $opts{SCRAM_FORCE} = 1 },
+       "dir|d=s"  => sub { $install_dir = $_[1] } );
 
    local @ARGV = @ARGS;
    
@@ -296,7 +298,7 @@ sub install()
       $self->checkareatype($self->localarea()->location(),"Area type mismatch. Trying to execute a SCRAM command in a V0 project area using a V1x version of SCRAM. Exiting.");
       
       # Install the project:
-      $self->scramprojectdb()->addarea($opts{SCRAM_FORCE},$self->localarea());
+      $self->scramprojectdb()->addarea($opts{SCRAM_FORCE},$self->localarea(),$install_dir);
       $self->register_install();
       return 0;
       }

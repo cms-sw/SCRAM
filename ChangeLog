@@ -1,3 +1,9 @@
+2010-09-30 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+	* SCRAM/ScramProjectDB.pm: Allow register project path with a
+	different path.
+	* SCRAM/CMD.pm: Added -d option for "scram install" to provide
+	the install path of the project.
+
 2010-09-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* AutoToolSetup.pm: Removed file.

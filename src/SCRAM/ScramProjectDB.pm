@@ -74,11 +74,12 @@ sub addarea
    my $self=shift;
    my $flag=shift;
    my $area=shift;
+   my $url=shift || "";
    my $name=$area->name();
    my $version=$area->version();
 
    my $type="file";
-   my $url=$area->location();
+   if ($url eq ""){$url=$area->location();}
    $self->_readdbfile ($self->{dbfile},1);
    my $rv = 1;
    # -- check for duplicates
