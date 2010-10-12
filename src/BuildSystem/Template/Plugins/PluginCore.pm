@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-04-29 16:07:07+0200
-# Revision: $Id: PluginCore.pm,v 1.4.2.1 2008/02/15 14:58:01 muzaffar Exp $ 
+# Revision: $Id: PluginCore.pm,v 1.4.2.1.2.1 2008/04/21 13:11:55 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -156,17 +156,16 @@ sub allflags()
 	       }
 	    }
 	 }
-      if ((exists $t->{content}{ARCH}) &&
-	  (exists $t->{content}{ARCH}{$ENV{SCRAM_ARCH}}) &&
-	  (exists $t->{content}{ARCH}{$ENV{SCRAM_ARCH}}{FLAGS}))
+      my @archs=$self->getArchsForTag($t->{content},"FLAGS");
+      foreach my $arch (@archs)
 	 {
-	 foreach my $f (keys %{$t->{content}{ARCH}{$ENV{SCRAM_ARCH}}{FLAGS}})
+	 foreach my $f (keys %{$t->{content}{ARCH}{$arch}{FLAGS}})
 	    {
 	    if (!exists $self->{FLAG_CACHE}{$f})
 	       {
 	       $self->{FLAG_CACHE}{$f}=[];
 	       }
-	    foreach my $fv (@{$t->{content}{ARCH}{$ENV{SCRAM_ARCH}}{FLAGS}{$f}})
+	    foreach my $fv (@{$t->{content}{ARCH}{$arch}{FLAGS}{$f}})
 	       {
 	       push @{$self->{FLAG_CACHE}{$f}},($f eq "CPPDEFINES") ? "-D$fv":$fv;
 	       }
@@ -208,10 +207,11 @@ sub value ()
 	       push @$ret,$d;
 	       }
             }
-         if ((exists  $t->{ARCH}{$ENV{SCRAM_ARCH}}) && (exists $t->{ARCH}{$ENV{SCRAM_ARCH}}{$tag}))
-            {
-            foreach my $d (@{$t->{ARCH}{$ENV{SCRAM_ARCH}}{$tag}})
-               {
+	 my @archs=$self->getArchsForTag($t,$tag);
+	 foreach my $arch (@archs)
+	    {
+            foreach my $d (@{$t->{ARCH}{$arch}{$tag}})
+	       {
 	       push @$ret,$d;
 	       }
 	    }
@@ -302,4 +302,21 @@ sub thisproductdata()
    $self->allflags();
    }
 
+sub getArchsForTag()
+   {
+   my ($self,$t,$tag)=@_;
+   my @xarch=();
+   if (exists $t->{ARCH})
+      {
+      my $sarch=$ENV{SCRAM_ARCH};
+      foreach my $arch (sort keys %{$t->{ARCH}})
+         {
+         if (($sarch=~/$arch/) && (exists $t->{ARCH}{$arch}{$tag}))
+            {
+            push @xarch,$arch;
+            }
+         }
+      }
+   return @xarch;
+   }
 1;

@@ -1,3 +1,8 @@
+2010-10-12 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* BuildSystem/Template/Plugins/PluginCore.pm: Allow arch specific flags
+	and dependency. 
+
 2010-09-30 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 	* SCRAM/ScramProjectDB.pm: Allow register project path with a
 	different path.
