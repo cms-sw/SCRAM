@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.77.2.3.2.11 2010/09/23 10:46:22 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.77.2.3.2.12 2010/09/30 16:33:43 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -953,16 +953,12 @@ sub bootfromrelease() {
         my $temp=$area->location()."/".$area->{admindir}."/".$area->arch();
         if (-f "${temp}/MakeData/Tools.mk")
            {
-           my $t1=(stat("${temp}/MakeData/Tools.mk"))[9];
-           if (-e "${temp}/timestamps")
-              {
-              my $t2=(stat("${temp}/MakeData/Tools.mk"))[9];
-              utime $t2+1,$t2+1,"${temp}/MakeData/Tools.mk";
-              if (-f "${temp}/timestamps/self")
-                 {
-                 utime $t2+2,$t2+2,"${temp}/timestamps/self";
-                 }
-              }
+	   my $t1=(stat("${temp}/MakeData/Tools.mk"))[9];
+	   utime $t1-1,$t1-1,"${temp}/MakeData/Tools.mk";
+	   if (-f "${temp}/timestamps/self")
+	      {
+	      utime $t1,$t1,"${temp}/timestamps/self";
+	      }
            }
 	
 	scramlogmsg("\n\nInstallation procedure complete.\n");

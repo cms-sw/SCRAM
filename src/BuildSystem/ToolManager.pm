@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.19.2.2.2.3 2008/07/15 12:12:40 muzaffar Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.19.2.2.2.4 2010/09/23 10:46:22 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -98,6 +98,7 @@ sub coresetup()
          {
          copy($srcfile,$desfile1);
 	 }
+      if (-e $desfile) { unlink($desfile);}
       symlink("../available/${toolname}.xml",$desfile); 
       }
    scramlogclean();
