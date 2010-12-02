@@ -1,7 +1,7 @@
 
 			SCRAM Release Notes
 
-V2_2_X: 2010-10-12
+V2_2_X: 2010-12-02
 
 	* SCRAM now forces that all the tool files provide the valid
 	values.
@@ -9,6 +9,7 @@ V2_2_X: 2010-10-12
 	* Now in BuildFile one can specify arch specific flags with only
 	partial arch name in the architecture tag. e.g. slc, slc5, ia32
 	etc.
+	* Fix scram setup for tools in dev area.
 
 V2_2_1: 2010-08-11
 
