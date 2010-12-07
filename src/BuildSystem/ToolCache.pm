@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-28 10:14:08+0100
-# Revision: $Id: ToolCache.pm,v 1.4 2006/09/11 14:53:39 sashby Exp $ 
+# Revision: $Id: ToolCache.pm,v 1.4.10.1 2008/03/13 12:54:50 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -45,6 +45,13 @@ sub dirty()
    $self->{internal}{dirty}=1;
    }
 
+sub isdirty()
+   {
+   my $self = shift;
+   my $dirty = $self->{internal}{dirty} || 0;
+   return $dirty;
+   }
+   
 sub writecache()
    {
    my $self=shift;

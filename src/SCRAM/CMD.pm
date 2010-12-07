@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.77.2.3.2.12 2010/09/30 16:33:43 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.77.2.3.2.13 2010/12/02 15:57:31 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -1245,7 +1245,13 @@ sub setup()
 	 }
       
       # Write to the tool cache and exit:
+      my $dirty=$toolmanager->isdirty();
       $toolmanager->writecache();
+      if (($dirty) &&
+          (-x "$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/SCRAM/linkexternal.pl"))
+         {
+	 system("cd $ENV{LOCALTOP}; $ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/SCRAM/linkexternal.pl  --arch $ENV{SCRAM_ARCH}");
+	 }
       }
    
    # Return nice value: 

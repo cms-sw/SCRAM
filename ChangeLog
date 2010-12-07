@@ -1,3 +1,8 @@
+2010-12-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/CMD.pm: Create symlinks when an external tool is changed.
+	* BuildSystem/ToolCache.pm: isdirty() support method added.
+
 2010-12-02 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/CMD.pm: Fix the timestamp of Tools.mk file.

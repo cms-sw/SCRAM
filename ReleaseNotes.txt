@@ -10,6 +10,8 @@ V2_2_X: 2010-12-02
 	partial arch name in the architecture tag. e.g. slc, slc5, ia32
 	etc.
 	* Fix scram setup for tools in dev area.
+	* Now SCRAM automatically updatedsymlinks for externals when a tool
+	definition is changed.
 
 V2_2_1: 2010-08-11
 
