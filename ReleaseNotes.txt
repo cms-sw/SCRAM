@@ -1,0 +1,207 @@
+
+			SCRAM Release Notes
+
+V2_2_2: 2011-01-06
+
+	* SCRAM now forces that all the tool files provide the valid
+	values.
+	* No more "scram setup" interactive mode.
+	* Now in BuildFile one can specify arch specific flags with only
+	partial arch name in the architecture tag. e.g. slc, slc5, ia32
+	etc.
+	* Fix scram setup for tools in dev area.
+	* Now SCRAM automatically updatedsymlinks for externals when a tool
+	definition is changed.
+
+V2_2_1: 2010-08-11
+
+	* Bug fixed for SCRAM caches corruption problems.
+	* New scram command "unsetenv" added to unset the already set
+	runtime environment.
+	* Improved runtime environment configurable via projects.
+
+V2_2_0: 2010-01-11
+
+	* DYLD_* environment warning fixed for Mac.
+	* SCRAMRT_* backup variables are no more available.
+	* Support for setup optional environment variables added.
+
+V2_1_4: 2009-11-26
+
+	* Proper display of error message when eval `scram runtime -sh`
+	is for a dev area which is not setup for current SCRAM_ARCH.
+
+V2_1_3: 2009-10-06
+
+	* Bug fix release.
+	* SCRAM now does not read internal caches when -f command-line option is
+	used, this avoid SCRAM to fail when caches are corrupted.
+
+V2_1_2: 2009-03-18
+
+	* Bug fix release.
+	* Fixed interactive tool setup bug.
+
+V2_1_1: 2009-02-25
+
+	* Same as V2_1_0 but build with no compiler dependency.
+
+V2_1_0: 2009-02-16
+
+	* A proper error message when gmake command not found.
+	* Use of Data::Dumper to stor SCRAM caches which are portable for
+	different platforms.
+
+V2_0_6: 2008-10-02
+
+	* --update option disabled for "scram project" command.
+	* Checksum calculation fixed for multiple arch dev. under same user
+	area.
+	* Auto compilation of newly added source (e.g. *.cc) files for
+	test/bin/plugins products if the product's file attrib has *.cc.
+	* Improved env backup for future releases.
+	* Error message for deprecated releases added.
+	* Runtime environment setting fixed.
+	* Setting runtime env on Mac also fixed.
+	* Auto update of internal caches when the pkgs.txt files are changed
+	  (needed for big libraries).
+	
+V2_0_5: 2008-07-22
+
+	* New env variables set b/w two "scram runtime" are not wiped out any
+	more.
+
+V2_0_4: 2008-07-16
+
+	* Bug fixed which was causing "scram list <proj> <ver>" to fail.
+	* Fixed the tool ordering.
+	* Set file permissions of SCRAM DB to 0644.
+
+V2_0_3: 2008-06-28
+	
+	* Support for big library added.
+	* Proper error message when "scram project name ver" command is run
+	with name/ver which does not exist.
+	* Bug fixed which causes scram to fail when SCRAM_ARCH is not set.
+	
+V2_0_2: 2008-06-16
+
+	* Bug fixed: LOCALRT is now set when doing scram runtime.
+	* RuntimeEnv.pm perl plugin is now dynamically loaded.
+	* All fetal error messages now go to std error.
+	* User is warned when he/she tries to create a dev area which alread
+	exists. 
+	
+V2_0_1: 2008-06-06
+
+	* First real version of V2_0 series.
+	* Now if gmake is not set as an external tool then SCRAM uses default
+	gmake instead of trying to run /gmake.
+	* Contains all the features/bug fixes went in to SCRAM V2_0_* versions.
+
+V2_0_X: 2008-04-21
+
+	* Bug fixed for arch specific flags.
+	* Switch to use gzip if Compress::Zlib perl module not available.
+	* SCRAM internal backup variables *_SCRAMRT* and SCRAMRT_* are not set
+	when "scram build" is run.
+	* SCRAM now does not set the environment when "scram build" is run recursively.
+	* No more reading of non-xml based BuildFile warning.
+
+V2_0_0: 2008-04-21
+
+	* Added V2_0_0 Tag.
+
+V2_0_0_relcand*: 2008-04-14
+
+	* New SCRAM release series
+	* Supports for multiple arch development under one user area.
+	* Inital support for generating big objects files per shared lib/plugin
+	* Auto cleanup for renamed products
+	* No more .scramrc tool caches
+	* No more .SCRAM/cache for tool caching
+	* Tools are now public and available in config/toolbox for easy editing
+	* No more colplecated tool setup process, just providing the tool name
+	  or toolfile file is enough (no more version needed at command line)
+	* More code clean up
+	* More compact SCRAM internal caches (<500KB)
+	* Faster "scram list" as it is not reading .SCRAM/Environment file for
+	  all the installed projects
+	* Fixed the bug when the package level src directory deleted and there is only
+	BuildFile left in the package.
+	* New RuntimeEnv module for setting up runtime environment. Now the
+	changes you make b/w two "scram runtime" are not lost but they are move
+	at the end of variable. e.g. 
+	- After first "scram runtime" PATH will become
+	  PATH=<values from scram>:<init value of PATH>
+	- After you changes
+	  PATH=<your name changes1>:<values from scram>:<init value of PATH>:<your name changes2>
+	- After 2nd "scram runtime"
+	  PATH=<values from scram>:<your name changes1>:<init value of PATH>:<your name changes2>
+	- gmake is now run with full path to avoid picking it up from /usr/bin area.
+
+V1_2_1: 2008-02-28
+
+	* Bug fix release.
+	* Properly pass the command-line argument when swaping SCRAM versions.
+
+
+V1_2_0: 2008-02-28
+
+	* New platform independent SCRAM
+	* A lot of code cleanup
+	* No more external binary dependency (platform independent SCRAM)
+	* New XML-parser (not expat based to avoid expat dependency)
+	* New code replacing the PERL Template Tool kit.
+
+V1_1_7: 2008-02-18	  
+
+	* Now SCRAM does not swap is the required SCRAM version and the used
+	  SCRAM versions are of the same SCRAM release series Vx_y.
+	
+V1_1_6: 2008-02-16
+
+	* Bug fix release
+	* Fixed the SCRAM internal caches format so that project build on 64bit
+	  machines are usable on 32bit machines.
+
+V1_1_5: 2008-02-16
+
+	* Same as V1_1_4
+
+V1_1_4: 2008-02-15
+
+	* Bug fix release
+	* Now properly rebuilds when a source file and directory stepm of
+	  package/src directory changed.
+	
+V1_1_3: 2008-02-12
+
+	* Bug fix release
+	* Correctly swap to older SCRAM release e.g. V1_0_*
+
+V1_1_2: 2008-02-06
+
+	* New improved SCRAM
+	* Much fast "scramv build"
+	* Compact build rules
+	* Compact scram internal cache
+	* scram is same as scramv1
+	* Much smaller runtime memory usage
+	* Auto cleanup for removed packages
+	* Robust XML-parser (expat based)
+	* Auto export of package level library names
+	* More usual command-line arguments parsing
+	* Symlinks for product store directories
+	* No more prompting for user input when in batch mode
+	* Order of -llib for linking fixed
+	* Only supported file transfer protocol is file:/
+	  (no more cvs/http/svn support)
+
+V1_0_3: 2006-11-08
+
+	* New release using new tool PERL Template ToolKit
+
+Shahzad Muzaffar <Shahzad.Muzaffar@cern.ch>
+Northeastern Univertsity,
+Boston, MA, USA

@@ -1,0 +1,285 @@
+2010-12-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/CMD.pm: Create symlinks when an external tool is changed.
+	* BuildSystem/ToolCache.pm: isdirty() support method added.
+
+2010-12-02 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/CMD.pm: Fix the timestamp of Tools.mk file.
+	* BuildSystem/ToolManager.pm: Properly create symlinks for newly
+	setup tools.
+
+2010-10-12 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* BuildSystem/Template/Plugins/PluginCore.pm: Allow arch specific flags
+	and dependency. 
+
+2010-09-30 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+	* SCRAM/ScramProjectDB.pm: Allow register project path with a
+	different path.
+	* SCRAM/CMD.pm: Added -d option for "scram install" to provide
+	the install path of the project.
+
+2010-09-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* AutoToolSetup.pm: Removed file.
+	* BuildSystem/ToolManager.pm: Do not allow to setup a tool
+	interactively.
+	* BuildSystem/ToolParser.pm: Always use value from the toolfile
+	instead of looking for defaults in site/tools.conf.
+	* BuildSystem/ToolSettingValidator.pm: Do not promt use for input,
+	just exit with non-zero code when a value for a variable is missing.
+	* Configuration/BootStrapProject.pm: Cleanup for site/tools.conf
+	which is no more needed.
+	* SCRAM/CMD.pm: Cleanup for AutoToolSetup which is no more needed.
+	* SCRAM/Helper.pm: No more user interactive mode for setting up a
+	tool.
+	* SCRAM/SCRAM.pm: Cleanup for interactive mode.
+
+2010-07-28 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* Cache/Cache.pm: Re-creation of scram internals caches in case
+	they get corrupted.
+	* SCRAM/CMD.pm: Checks added to make sure that scram internal
+	caches are valid. If cache files are corrupted then re-create 
+	them. Support added to unset the runtime environment
+	(scram unsetenv -csh).
+	SCRAM/Plugins/RuntimeEnv.pm: Support added for unset runtime
+	environment and skip setting runtime environment path for which
+	symlinks are created in the release/dev area.
+
+2010-01-11 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/CMD.pm: Fix for extra optional environment variables.
+	* SCRAM/Plugins/RuntimeEnv.pm: No more SCRAMRT_* backup environment
+	variables are created to suppose old SCRAVM V1 versions. Backup
+	environment variables are now saved with a prefix of SRT_ to avoid
+	DYLD_* warnings on Mac. Special variables for setting up the optional
+	environment are added.
+
+2009-11-23 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/SCRAM.pm: Warning message are now sent to STDERR so that eval 
+	do not try to execute the error message itself.
+
+2009-10-06 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* BuildSystem/BuildDataStorage.pm: Make sure the BuildFile exists before
+	parsing it.
+	* SCRAM/CMD.pm: Do not read the DirCache.db if -f option is used. This
+	will allow o run "scram build -f clean" if DirCache.db is corrupted.
+	* SCRAM/Plugins/RuntimeEnv.pm: Cleanup, Runtime.db was read twice.
+
+2009-03-18 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* BuildSystem/ToolParser.pm: Fixed the interactive tool setup for variables
+	which are already set as runtime environment.
+
+2009-02-16 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* Cache/CacheUtilities.pm: Used Data::Dumper to store SCRAM cache which
+	is portable for different arch.
+
+2008-09-17 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/CMD.pm: Print an error message when --update is passed for a
+	scram project command. --update option was broken since long and now
+	scram prints an error message when this option is used.
+	* SCRAM/Helper.pm: Updated the help message for project command.
+
+2008-09-16 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugins/ProjectChkSum.pm: Checksum is calculated by first sorting
+	the files names in order to get uniq chksum for different arch.
+	
+2008-09-15 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+	
+	* BuildSystem/Product.pm: The file="name" attrib of library/bin tag from
+	the BuildFile is saved as it is in the generated rules i.e SCRAM is not
+	going to expand *.cc in to individual file names. This will
+	automatically build newly added .cc files without updating the BuildFile.
+	
+2008-09-09 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugins/RuntimeEnv.pm: Improved env backup so that current SCRAM
+	releases should be able to correctly re-use the env backup of future
+	releases.
+
+2008-08-27 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* Cache/Cache.pm: Added hack to load SCRAM::Plugins::DirCache to do project
+	specific stuff. This will help for big library generation.
+
+2008-08-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugins/RuntimeEnv.pm: Fix for setting env on Mac because on Mac
+	setting backups for variables like DYLD_* were causing some trouble. Fix
+	for setting up env from SCRAM V1 project first and then SCRAM V2 project.
+
+2008-07-30 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/SCRAM.pm: An error message printed out at stderr to inform
+	developer that the release top for his/her dev. area has been
+	removed/unusable.
+
+2008-07-22 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugins/RuntimeEnv.pm: Now scram runtime does not wipe out the
+	new variables set b/w two scram runtimes.
+
+2008-07-16 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* BuildSystem/ToolManager.pm: Fixed the ordering of the tools.
+	* SCRAM/ScramProjectDB.pm: force the file permissions of SCRAM
+	DB file to be 0644.
+
+2008-07-01 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/CMD.pm: Bug fixed which was causing the "scram list proj vers"
+	to fail.
+
+2008-06-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/SCRAM.pm: Replaced "USE" with "use" which is a valid perl key
+	word. Due to this scram was failing when SCRAM_ARCH was not set.
+
+2008-06-20 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/CMD.pm: Fixed to print out proper error message when
+	"scram project name version" commnad is run with name/version which
+	does not exist.
+
+2008-06-18 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* BuildSystem/BuildDataStorage.pm,BuildSystem/TemplateInterface.pm:
+	Basic biglib support added, the changes will not break old SCRAM
+	releases.
+
+2008-06-16 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugins/RuntimeEnv.pm: Do not skip LOCALRT env variable.
+	* SCRAM/SCRAM.pm: Do not set LOCALRT here, it was set by  self tool,
+	make all fetal messages go to stderror, local RuntimeEnv perl module
+	dynamically so that we can pick it up from project release area too,
+	warning message added when try to create a dev area which already
+	exists.
+	
+2008-06-06 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugins/RuntimeEnv.pm,BuildSystem/MakeInterface.pm: Fixed to run
+	 default gmake if "gmake" is not setup as an external tool.
+
+2008-06-02 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* Cache/Cache.pm: Disable the non-xml BuildFile read warning.
+
+2008-05-21 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/CMD.pm: Bug fix, scram setup now setup all the tools if no
+	tool name is provided on the command-line.
+
+2008-05-15 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugins/Attic/RuntimeEnv.pm: Do not set SCRAMRT_* and *_SCRAMRT
+	backup variavles when doing "scram build" and also then do not set the
+	environment when "scram b" is called recursively.
+
+2008-04-21 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* BuildSystem/Template/Plugins/PluginCore.pm: Bug fixed for flags which 
+	are arch specific.
+	* Cache/CacheUtilities.pm: Switch to use gzip if Compress::Zlib perl
+	module is not installed.
+
+2008-04-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* BuildSystem/BuildDataStorage.pm: Fixed the bug when package level
+	src directory is deleted and there is only BuildFile left in the
+	package directory.
+
+2008-04-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugin/RuntimeEnv.pm: Cleanup.
+	* BuildSystem/MakeInterface.pm: Run with full path to avoid picking
+	it up from /usr/bin area.
+
+2008-04-02 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugin/RuntimeEnv.pm: Now saves the tools runtime in 
+	.SCRAM/<arch>/RuntimeEnvCache.db.gz file. Every time an external tool
+	is changes (ToolCache.db.gz) file changes then this
+	RuntimeEnvCache.db.gz file will be update too.
+	It also now prints a warning message when it tries to setup
+	runtime environment on top of a already set SCRAM V1 environment.
+	* Configuration/ConfigArea.pm: Do not copy RuntimeEnvCache.db.gz 
+	when creating a developer area.
+
+2008-04-02 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugin/RuntimeEnv.pm: Newly added module for setting runtime
+	environment.
+	* SCRAM/SCRAM.pm, SCRAM/CMD.pm: Fixed to use new SCRAM::Plugin::RuntimeEnv
+	for setting up the runtime environment.
+	Now scram runtime behaviour is
+	like this e.g for PATH runtime variable
+	- At first "scramv1 runtime -csh", it will
+	  - backup all the env variables it is going to modify with
+	  the values set by scram
+	    PATH => PATH_SCRAMRT=<values_set_by_scram>
+	  - backup all the env variables with their initial values
+	    PATH => SCRAMRT_PATH=<init_value_of_PATH>
+	  - set the env variable with new values
+	    PATH=<values_set_by_scram>:${SCRAMRT_PATH}
+	- Now if you make changes in env after doing "scram runtime"
+	  PATH=<your_new_changes1>:${PATH}
+	  PATH=${PATH}:<your_new_changes2>
+        - Next time when you do "scramv1 run" then it will set
+	  - PATH_SCRAMRT=<values_set_by_scram>
+	  - SCRAMRT_PATH=<value of ${PATH} with ${PATH_SCRAMRT} removed from it>
+	  - PATH=<values_set_by_scram>:${SCRAMRT_PATH}
+	  So in this case you will end up with
+	  PATH=<values_set_by_scram>:<your_new_changes1>:<init_value_of_PATH>:<your_new_changes2>
+	In case if the initial environment was set by SCRAM V1_x or V0_X then
+	the next "scram runtime" will behave as old SCRAM i.e. changes you
+	made after first "scram runtime" will be lost.
+	
+2008-03-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* bin/scram: Make use of --arch <arch> to properly switch to a different
+	scramdb.
+	* SCRAM/Plugins/ProjectChkSum.pm: New perl module for generating
+	checksum for a project config directory.
+	* PackageList.pm: Updated according to the removed perl modules.
+	* ActiveDoc/ActiveDoc.pm: Code cleanup.
+	* ActiveDoc/Parse.pm, ActiveDoc/SimpleDoc.pm: Updated to properly parse
+	XML and non-XML based files.
+	* ActiveDoc/SimpleURLDoc.pm: Code cleanup (no more tool caching)
+	* BuildSystem/ToolCache.pm: Code cleanup (no more tool caching) and no
+	more raw tool data storage.
+	* BuildSystem/ToolManager.pm: Code cleanup (no more tool caching),
+	always read tools for config/toolbox/<arch>. No need to provide tool
+	version while setting up tool.
+	* BuildSystem/ToolParser.pm: Code cleanup, only support single tool
+	version.
+	* Cache/Cache.pm: Code for converting non-XML BuildFiles to XML-based
+	files moved for CMD.pm.
+	* Cache/CacheUtilities.pm: SCRAM internal caches are now zipped (much
+	smaller size <500KB)
+	* Configuration/BootStrapProject.pm: Easy bootstraping project area, no
+	more requirements.xml files needed.
+	* Configuration/ConfigArea.pm: Code cleanup and multiple arch dev
+	support.
+	* SCRAM/AutoToolSetup.pm: Cod ecleanup and updates for multiple arch dev
+	support.
+	* SCRAM/CMD.pm: Code cleanup, multiple arch support, convertion of
+	non-XML BuildFiles to XML-based BuildFile.
+	* SCRAM/Helper.pm: updated help messages.
+	* SCRAM/ProdSymLinks.pm: Allowed environement variables to be used in
+	key too i.e. $(SCRAM_ARCH}:/tmp/${HOME} possible.
+	* SCRAM/SCRAM.pm: Code cleanup (merged code from ScramFunctions.pm).
+	* SCRAM/ScramProjectDB.pm: Cleanup, no more reading of
+	.SCRAM/Environment file when doing "scramv1 list".
+	* Utilities/AddDir.pm: Some new utility functions added.
+	* Utilities/CVSmodule.pm, Utilities/DataItem.pm, Utilities/HashDB.pm,
+	Utilities/IndexedFileStore.pm, Utilities/SCRAMUtils.pm,
+	Utilities/SVNmodule.pm, URL/*.pm: Removed perl modules.

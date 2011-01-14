@@ -1,0 +1,118 @@
+#!/usr/bin/env perl
+
+BEGIN
+   {
+   use File::Basename;
+   use Cwd;
+   my $installdir=dirname($0);
+   if ($installdir!~/^\//)
+      {
+      $installdir=getcwd()."/${installdir}";
+      }
+   $installdir=dirname($installdir);
+   $ENV{'SCRAM_TOOL_HOME'}="${installdir}/src";
+   $ENV{'SCRAM'}=$0;
+   unshift @INC,"$installdir", "${installdir}/src";
+   }
+
+use SCRAM::SCRAM_SITE;
+use SCRAM::SCRAM;
+use Getopt::Long ();
+
+#### EDIT THESE: SCRAM Installation Values #################
+$ENV{'SCRAM_VERSION'}='@SCRAM_VERSION@';
+$ENV{'SCRAM_LOOKUPDB'}='@SCRAM_LOOKUPDB_DIR@/project.lookup';
+#### Core settings ####
+$main::bold = "";
+$main::normal = "";
+$main::line = "-"x80;
+$main::lookupdb = "";
+$main::error = "";
+$main::good = "";
+$main::prompt="";
+$main::ORIG_ARGV=[];
+push @$main::ORIG_ARGV,@ARGV;
+$|=1;
+
+# Test whether the output from SCRAM is being redirected, or
+# not (prevents escape signals from being printed to STDOUT if
+# STDOUT is redirected to a file or piped):
+if ( -t STDIN && -t STDOUT && $^O !~ /MSWin32|cygwin/ )
+   {
+   $bold = "\033[1m";
+   $normal = "\033[0m";
+   $prompt = "\033[0;32;1m";
+   $fail = "\033[0;31;1m"; # Red
+   $pass = "\033[0;33;1m"; # Yellow
+   $good = $bold.$pass;    # Status messages ([OK])
+   $error = $bold.$fail;   #                 ([ERROR])
+   }
+
+# Start a SCRAM session:
+$scram = SCRAM::SCRAM->new();
+
+# Getopt option variables:
+my %opts;
+my %options =
+   ("verbose|v=s"	=> sub { $ENV{SCRAM_VERBOSE} = $ENV{SCRAM_DEBUG} = 1; $scram->classverbosity($_[1]) },
+    "debug|d"		=> sub { $ENV{SCRAM_DEBUG} = 1; $scram->fullverbosity() },
+    "arch|a=s"		=> sub { $opts{SCRAM_ARCH} = $_[1] },
+    "noreturn|n"        => sub { $opts{SCRAM_NORETURN} = 1 }, # Pause after returning (for download in NS)
+    "force|f"           => sub { $opts{SCRAM_FORCE} = 1 }, # A force flag for commands that might need it
+    "help|h"		=> sub { $opts{SCRAM_HELP} = 1 }
+    );
+
+# Get the options using Getopt:
+Getopt::Long::config qw(default no_ignore_case require_order bundling);
+
+if (! Getopt::Long::GetOptions(\%opts, %options))
+   {
+   $scram->scramfatal("Error parsing arguments. See \"scram help\" for usage info.");
+   exit(1);
+   }
+
+# Check for a valid command and execute it or show an error message:
+my $command=shift(@ARGV);
+
+# Handle help option:
+if ($opts{SCRAM_HELP} || ! $command)
+   {
+   print $scram->usage();
+   exit(0);
+   }
+
+#FIXME: Assuming the each SCRAM_ARCH has its own SCRAM-DB   
+if ($opts{SCRAM_ARCH})
+   {
+   my $newarch=$opts{SCRAM_ARCH};
+   my $oldarch = $scram->architecture();
+   if ($oldarch ne $newarch)
+      {
+      $ENV{SCRAM_ARCH} = $newarch;
+      $scram->architecture($newarch);
+      my $db=$ENV{'SCRAM_LOOKUPDB'};
+      $db=~s/\/$oldarch(\/.+|)$/\/$newarch$1/;
+      if (-f $db) {$ENV{'SCRAM_LOOKUPDB'} = $db; }
+      }
+   }
+if (exists $ENV{SCRAM_USERLOOKUPDB} && -f "$ENV{SCRAM_USERLOOKUPDB}")
+   {
+   $ENV{'SCRAM_LOOKUPDB'} = $ENV{SCRAM_USERLOOKUPDB};
+   print "Using $ENV{SCRAM_USERLOOKUPDB} as the database.","\n", if ($ENV{SCRAM_DEBUG});
+   }
+$scram->init ($opts{SCRAM_FORCE});
+
+# Now execute the desired command (the routine automatically
+# checks to make sure the command is valid):
+my $retval = $scram->execcommand($command,@ARGV);
+
+# Check to see if we have --noreturn set. If so, we may be running
+# as a helper application in a web browser:
+if ($opts{SCRAM_NORETURN})
+   {
+   print "\n";
+   my $dummy = <STDIN>;
+   }
+
+exit($retval);
+#### End of SCRAM script ####
