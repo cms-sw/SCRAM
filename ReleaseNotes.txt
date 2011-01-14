@@ -1,6 +1,10 @@
 
 			SCRAM Release Notes
 
+V2_2_X: 2011-01-14
+
+	* XML comment of type <!--   --> supported.
+
 V2_2_2: 2011-01-06
 
 	* SCRAM now forces that all the tool files provide the valid

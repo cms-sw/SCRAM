@@ -1,3 +1,8 @@
+2011-01-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+	
+	* SCRAM/Plugins/DocParser.pm: Allowed <!-- --> style comment
+	in .xml type tool definitions and BuildFiles.
+
 2010-12-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/CMD.pm: Create symlinks when an external tool is changed.
