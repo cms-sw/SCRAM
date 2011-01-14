@@ -79,6 +79,7 @@ sub process_()
       my $tagline=$1; $input=$2;
       if($tagline=~/^\s*$/){$self->parseError_("Empty tag found.\n",1);return 0;}
       elsif($tagline=~/^\?xml\s*/){$self->{input}=$input;}
+      elsif($tagline=~/^!--/){$self->{input}=$input;}
       else
       {
         my $tag={};
