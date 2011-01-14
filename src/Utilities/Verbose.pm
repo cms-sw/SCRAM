@@ -77,3 +77,6 @@ sub error {
 	print $string."\n";
 	exit 1;
 }
+
+1;
+

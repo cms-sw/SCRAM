@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-02-09 20:14:55+0100
-# Revision: $Id: ToolParser.pm,v 1.5.4.6 2007/12/13 14:35:44 muzaffar Exp $ 
+# Revision: $Id: ToolParser.pm,v 1.8.2.3.2.3 2010/09/23 10:46:22 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -22,15 +22,6 @@ use Utilities::Verbose;
 
 #
 sub new
-   ###############################################################
-   # new                                                         #
-   ###############################################################
-   # modified : Thu Nov 13 10:42:08 2003 / SFA                   #
-   # params   :                                                  #
-   #          :                                                  #
-   # function :                                                  #
-   #          :                                                  #
-   ###############################################################
    {
    my $proto=shift;
    my $class=ref($proto) || $proto;
@@ -38,14 +29,11 @@ sub new
    
    bless $self,$class;
    
-   $self->{cache}=shift;
-   $self->{mydoctype}="BuildSystem::ToolParser";
-   $self->{mydocversion}="1.1";
-   $self->{interactive} = 0;
    $self->{content} = {};
    $self->{nested} = 0;
    $self->{scramdoc}=ActiveDoc::SimpleDoc->new();
-   $self->{scramdoc}->newparse("setup", $self->{mydoctype},'Subs');
+   $self->{scramdoc}->newparse("setup","BuildSystem::ToolParser",'Subs',undef,1);
+   $self->{envorder}=[];
 
    return $self;
    }
@@ -59,25 +47,9 @@ sub tool()
    $self->{levels}=['','tag','nexttag'];
    $$hashref{'name'} =~ tr[A-Z][a-z];
 
-   # Make sure we only pick up the tool requested:
-   if ( ($self->{tool} eq $$hashref{'name'}) && 
-	($self->{version} eq $$hashref{'version'} ))
-      {
-      # These variables will be used when expanding settings
-      # in tool variable defs:
-      $ENV{SCRAMToolname} = $$hashref{'name'};
-      $ENV{SCRAMToolversion} = $$hashref{'version'};
-      $self->{content}->{TOOLNAME}=$$hashref{'name'};
-      $self->{content}->{TOOLVERSION}=$$hashref{'version'};
-      }
-   else
-      {
-      print "\n";
-      $::scram->scramerror("Configuration problem! Wanted/actual ".$self->{tool}." tool versions differ (wanted = ".$self->{version}.", downloaded = ".$$hashref{'version'}.")\n");
-      }
+   $self->{content}->{TOOLNAME}=$$hashref{'name'};
+   $self->{content}->{TOOLVERSION}=$$hashref{'version'};
    
-   # Test to see if this doc defines a
-   # scram-managed project or a compiler:
    if (exists ($$hashref{'type'}))
       {
       $$hashref{'type'} =~ tr[A-Z][a-z];
@@ -89,7 +61,6 @@ sub tool()
 	 }     
       elsif ($$hashref{'type'} eq 'compiler')
 	 {
-	 # Is tool a compiler? Store this for retrieval from tool manager obj:
 	 $self->{content}->{SCRAM_COMPILER} = 1;
 	 }
       else
@@ -129,25 +100,6 @@ sub runtime()
    my ($object,$name,%attributes)=@_;
    my $hashref = \%attributes;   
    my $envname;
-   # Break the value/default value into its constituent parts:
-   foreach my $t (qw(value default))
-      {
-      if (exists ($$hashref{$t}))
-	 {
-	 $hashref->{ELEMENTS} = [];
-	 map
-	    {
-	    # In some cases, we might set a runtime path (e.g. LD_LIBRARY_PATH) to
-	    # a proper path value i.e. X:Y. In this case, don't bother adding the string
-	    # as a "variable" to ELEMENTS:
-	    if ($_ =~ m|\$(.*)?| && $_ !~ /:/) 
-	       {
-	       push(@{$hashref->{ELEMENTS}},$1);
-	       }
-	    } split("/",$hashref->{$t});
-	 }
-      }
-   
    # Check to see if we have a "type" arg. If so, we use this to create the key:
    if (exists ($hashref->{'type'}))
       {
@@ -245,59 +197,39 @@ sub environment()
    # Save a copy of the name of this environment:
    my $envname=$$hashref{'name'};
    delete $$hashref{'name'}; # Delete name entry so hash is more tidy
-   # Break the value/default value into its constituent parts:
-   foreach my $t (qw(value default))
-      {
-      if (exists ($$hashref{$t}))
-	 {
-	 $hashref->{ELEMENTS} = [];
-	 map
-	    {
-	    if ($_ =~ m|\$(.*)?|)
-	       {
-	       push(@{$hashref->{ELEMENTS}},$1);
-	       }
-	    } split("/",$hashref->{$t});
-	 }
-      }
-   
    # Before we save $hashref we need to know if there are already
    # any env tags with the same name. If there are, we must save all
    # data to an aray of hashes:
    if (exists ($self->{"$self->{levels}->[$self->{nested}]".content}->{ENVIRONMENT}->{$envname}))
       {
       push(@{$self->{"$self->{levels}->[$self->{nested}]".content}->{ENVIRONMENT}->{$envname}},$hashref);
+      my @norder=();
+      foreach my $env (@{$self->{envorder}})
+         {
+         if($env ne $envname) {push @norder,$env;}
+         }
+         $self->{envorder}=[];
+         push @{$self->{envorder}},@norder;
+         push @{$self->{envorder}},$envname;
       }
    else
       {
       # No entry yet so just store the hashref:
       $self->{"$self->{levels}->[$self->{nested}]".content}->{ENVIRONMENT}->{$envname} = [ $hashref ];
+      push @{$self->{envorder}},$envname;
       }
    }
 
 sub makefile()
    {
    my ($object,$name,%attributes)=@_;
-   # Set our own Char handler so we can collect the content
-   # of the Makefile tag:
-   $object->setHandlers(Char => \&makefile_content);
-   $self->{makefilecontent} = [];
-   }
-
-sub makefile_content()
-   {
-   my ($object, @strings) = @_;
-   push(@{$self->{makefilecontent}},@strings);
    }
 
 sub makefile_()
    {
-   my ($object,$name)=@_;
+   my ($object,$name,$cdata)=@_;
    push(@{$self->{"$self->{levels}->[$self->{nested}]".content}->{MAKEFILE}},
-	join('',@{$self->{makefilecontent}}));
-   delete $self->{makefilecontent};
-   # Unset the Char handler to revert to the default behaviour:
-   $object->setHandlers(Char => 0);
+	join("\n",@$cdata));
    }
 
 sub architecture()
@@ -344,12 +276,10 @@ sub architecture_()
 sub parse
    {
    my $self=shift;
-   my ($tool,$toolver,$file)=@_;   
-   $self->{tool}=$tool;
-   $self->{version}=$toolver;
+   my ($file)=@_;   
    $self->{scramdoc}->filetoparse($file);   
    $self->verbose("Setup Parse");
-   my $fhead='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><doc type="BuildSystem/ToolParser" version="1.0">';
+   my $fhead='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><doc type="BuildSystem::ToolParser" version="1.0">';
    my $ftail='</doc>';
    $self->{scramdoc}->parse("setup",$fhead,$ftail);
    delete $self->{scramdoc};
@@ -524,12 +454,8 @@ sub getrawdata()
 sub processrawtool()
    {
    my $self=shift;
-   my ($interactive) = @_;
    my $data = [];
    my $environments = {}; # Somewhere to collect our environments
-
-   # Set interactive mode if required:
-   $self->{interactive} = $interactive;
 
    # Somewhere to store the data:
    use BuildSystem::ToolData;
@@ -676,55 +602,21 @@ sub processrawtool()
       {
       $tooldataobj->scram_compiler($self->{content}->{SCRAM_COMPILER});
       }
-
-   # Establish the order of parsing the value strings:
-   my $order = $self->process_environments($environments);
-   if ($self->{interactive})
-      {
-      # Set the values interactively:
-      $self->interactively_find_settings($tooldataobj, $environments, $order);
-      }
-   else
-      {
-      # Set the values:
-      $self->find_settings($tooldataobj, $environments, $order);
-      }
-     
-   # Return a ToolData object:
-   return $tooldataobj;
-   }
-
-sub process_environments()
-   {
-   my $self=shift;
-   my ($environments)=@_;
    
-   use BuildSystem::SCRAMGrapher;
-   my $G = BuildSystem::SCRAMGrapher->new();
-
-   foreach $envtype (keys %{$environments})
+   my @order=(); push @order,@{$self->{envorder}};
+   my %uorder=(); map {$uorder{$_}=1} @order;
+   foreach my $type (qw (ENVIRONMENT RUNTIME))
       {
-      while (my ($envcontent,$envdata) = each %{$environments->{$envtype}})
-	 {
-	 # Add a vertex for the VARIABLE name:
-	 $G->vertex($envcontent);
-
-	 foreach my $element (@$envdata)
-	    {
-	    if (exists($element->{'ELEMENTS'}))
-	       {
-	       map
-		  {
-		  # Add a path for each element in ELEMENTS:
-		  $G->edge($envcontent, $_);
-		  } @{$element->{'ELEMENTS'}};
-	       }
-	    }
-	 }
+      if (exists $environments->{$type})
+         {
+         foreach my $env (keys %{$environments->{$type}})
+            {
+            if (!exists $uorder{$env}){$uorder{$env}=1; push @order,$env;}
+            }
+         }
       }
-
-   my $setup_order = $G->sort();
-   return $setup_order;
+   $self->find_settings($tooldataobj, $environments, \@order);
+   return $tooldataobj;
    }
 
 sub find_settings()
@@ -749,94 +641,39 @@ sub find_settings()
       if ($envdata != 0 && $#$envdata == 0) # One element only!
 	 {
 	 scramlogmsg("\nFinding a value for $envname:","\n\n");
-	 # We have an environment and only one data element:
-	 # Check the lookup DB:
-	 if ($tsv->checkDB($envname))
-	    {
-	    scramlogmsg("\tValidating value for $envname (found in tool DB):","\n");
-	    if ($tsv->validatepath())
-	       {
-	       # Save in TSV and store in ToolData object:
-	       $tsv->savevalue($envname,$tsv->pathfromdb());
-	       $self->store($tooldataobj, $envname, $tsv->pathfromdb());
-	       }
-	    else
-	       {
-	       $path = $tsv->findvalue($envname, $envdata);	     	       
-	       # Save the value in ToolData object:
-	       $self->store($tooldataobj, $envname, $path);	       
-	       }
-	    }
-	 else
-	    {
-	    $path = $tsv->findvalue($envname, $envdata);	     	       
-	    # Save in ToolData object:
-	    $self->store($tooldataobj, $envname, $path);
-	    }
+	 $path = $tsv->findvalue($envname, $envdata);	     	       
+	 $self->store($tooldataobj, $envname, $path);
 	 }
       elsif ($envdata != 0 && $#$envdata > 0)
 	 {
 	 scramlogmsg("\nFinding a value for $envname:","\n\n");
 	 foreach my $elementdata (@$envdata)
 	    {
-	    $path = $tsv->findvalue($envname, $elementdata);	 	    
-	    # Save in ToolData object:
-	    $self->store($tooldataobj, $envname, $path);	    
+	    $path = $tsv->findvalue($envname, $elementdata);
+	    $self->store($tooldataobj, $envname, $path);
 	    }
-	 }
-      elsif (exists($ENV{$envname}))
-	 {
-	 # Nothing to do here:
-	 push(@$runtime, $envname); # FIX From Shahzad.
-	 next;
 	 }
       else
 	 {
 	 push(@$runtime, $envname);
 	 }
       }
-   # Check that the required libraries exist:
    $self->_lib_validate($tooldataobj);
-   # Now process the runtime settings:
    scramlogmsg("\n-------------------------------\n");
    foreach my $rtname (@$runtime)
       {
       my $type = 'RUNTIME';	 
       my $envdata = $tsv->environment($type, $rtname);
       my ($rttype,$realrtname) = split(':',$rtname);      
-      
+
       # Only validate paths:
       if ($rtname =~ /:/)
 	 {	
-	 # Handle single-occurrence variables first (i.e. VAR appears once
-	 # in array of hashes):
 	 if ($envdata != 0 && $#$envdata == 0) # One element only!
 	    {
 	    scramlogmsg("\nRuntime path settings for $realrtname:","\n\n");
-	    # We have an environment and only one data element:
-	    # Check the lookup DB:
-	    if ($tsv->checkDB($rtname))
-	       {
-	       scramlogmsg("\tValidating value for path $realrtname (found in tool DB):","\n");
-	       if ($tsv->validatepath())
-		  {
-		  # Save in TSV and store in ToolData object:
-		  $tsv->savevalue($rtname, $tsv->pathfromdb());
-		  $tooldataobj->runtime($rtname, [ $tsv->pathfromdb() ]);
-		  }
-	       else
-		  {
-		  $path = $tsv->findvalue($rtname, $envdata);	     	       
-		  # Save the value in ToolData object:
-		  $tooldataobj->runtime($rtname, [ $path ]);
-		  }
-	       }
-	    else
-	       {
-	       $path = $tsv->findvalue($rtname, $envdata);	     	       
-	       # Save in ToolData object:
-	       $tooldataobj->runtime($rtname, [ $path ]);
-	       }
+            $path = $tsv->findvalue($rtname, $envdata);	     	       
+            $tooldataobj->runtime($rtname, [ $path ]);
 	    }
 	 elsif ($envdata != 0 && $#$envdata > 0)
 	    {
@@ -844,7 +681,6 @@ sub find_settings()
 	    foreach my $elementdata (@$envdata)
 	       {
 	       $path = $tsv->findvalue($rtname, $elementdata);	 	    
-	       # Save in ToolData object:
 	       $tooldataobj->runtime($rtname, [ $path ]);
 	       }
 	    }
@@ -855,26 +691,22 @@ sub find_settings()
 	 }
       else
 	 {
-	 # Handle runtime variables:
 	 if ($envdata != 0 && $#$envdata == 0) # One element only!
 	    {
 	    my $value='';
-	    $tsv->checkdefaults($envdata, \$value);
+	    if ($tsv->checkdefaults($envdata, \$value)==0)
+	       {
+	       $tsv->promptuser($rtname,$value);
+	       }
 	    scramlogmsg("\n");
 	    
-	    # Chck to see if the value contains a variable that should be evaluated:
 	    if ($value =~ /$/)
 	       {
-	       # If so, find the value and substitute. This should work for all
-	       # occurrences of variables because by this point (and because the ordering
-	       # was established at the start) all other variables will have real values:
  	       my $dvalue = $tsv->_expandvars($value);
 	       $value = $dvalue;
 	       }
 	    
 	    scramlogmsg("Runtime variable ",$rtname," set to \"",$value,"\"\n");
-	    
-	    # Store the variable setting:
 	    $tooldataobj->runtime($rtname, [ $value ]);
 	    }
 	 else
@@ -885,169 +717,6 @@ sub find_settings()
       }
    
    scramlogmsg("\n");
-   }
-
-sub interactively_find_settings()
-   {
-   my $self=shift;
-   my ($tooldataobj, $environments, $ordering)=@_;
-   my $stringtoeval;
-   my $runtime=[];
-   my ($path, $dpath);
-   
-   use BuildSystem::ToolSettingValidator;
-   
-   my $tsv = BuildSystem::ToolSettingValidator->new($environments, $self->toolname(), $self->{interactive});
-   
-   foreach my $envname (@$ordering)
-      {
-      my $type = 'ENVIRONMENT';
-      my $envdata = $tsv->environment($type, $envname);
-
-      # Handle single-occurrence variables first (i.e. VAR appears once
-      # in array of hashes):
-      if ($envdata != 0 && $#$envdata == 0) # One element only!
-	 {
-	 print "\nFinding a value for $envname:","\n";
-	 print "\n";
-	 # We have an environment and only one data element:
-	 # Check the lookup DB:
-	 if ($tsv->checkDB($envname))
-	    {
-	    print "\tValidating value for $envname (found in tool DB):","\n";
-	    if ($tsv->validatepath())
-	       {
-	       # This is our default:
-	       $dpath = $tsv->pathfromdb();
-	       # Run promptuser() to see if this value can be kept
-	       # or should be changed:
-	       $path = $tsv->promptuser($envname, $dpath); 
-	       # Save in TSV and store in ToolData object:
-	       $tsv->savevalue($envname,$path);
-	       $self->store($tooldataobj, $envname, $path);
-	       }
-	    else
-	       {
-	       $path = $tsv->ifindvalue($envname, $envdata);
-	       # Save the value in ToolData object:
-	       $self->store($tooldataobj, $envname, $path);
-	       }
-	    }
-	 else
-	    {
-	    $dpath = $tsv->ifindvalue($envname, $envdata);
-	    # Save in ToolData object:
-	    $self->store($tooldataobj, $envname, $dpath);
-	    }
-	 }
-      elsif ($envdata != 0 && $#$envdata > 0)
-	 {
-	 print "\nFinding a value for $envname:","\n";
-	 print "\n";
-	 foreach my $elementdata (@$envdata)
-	    {
-	    $path = $tsv->ifindvalue($envname, $elementdata);
-	    # Save in ToolData object:
-	    $self->store($tooldataobj, $envname, $path);	    
-	    }
-	 }
-      elsif (exists($ENV{$envname}))
-	 {
-	 # Nothing to do here:
-	 next;
-	 }
-      else
-	 {
-	 push(@$runtime, $envname);
-	 }
-      }
-   
-   # Check that the required libraries exist:
-   $self->_lib_validate($tooldataobj);
-   
-   # Now process the runtime settings:
-   print "\n";
-   print "-------------------------------\n";
-   foreach my $rtname (@$runtime)
-      {
-      my $type = 'RUNTIME';	 
-      my $envdata = $tsv->environment($type, $rtname);
-      my ($rttype,$realrtname) = split(':',$rtname);      
-      
-      # Only validate paths:
-      if ($rtname =~ /:/)
-	 {	
-	 # Handle single-occurrence variables first (i.e. VAR appears once
-	 # in array of hashes):
-	 if ($envdata != 0 && $#$envdata == 0) # One element only!
-	    {
-	    print "\nRuntime path settings for $realrtname:","\n";
-	    print "\n";
-	    # We have an environment and only one data element:
-	    # Check the lookup DB:
-	    if ($tsv->checkDB($rtname))
-	       {
-	       print "\tValidating value for path $realrtname (found in tool DB):","\n";
-	       if ($tsv->validatepath())
-		  {
-		  $dpath = $tsv->pathfromdb();
-		  # Run promptuser() to see if this value can be kept
-		  # or should be changed:
-		  $path = $tsv->promptuser($rtname, $dpath);		  
-		  # Save in TSV and store in ToolData object:
-		  $tsv->savevalue($rtname, $path);
-		  $tooldataobj->runtime($rtname, [ $path ]);
-		  }
-	       else
-		  {
-		  $dpath = $tsv->ifindvalue($rtname, $envdata);
-		  # Save the value in ToolData object:
-		  $tooldataobj->runtime($rtname, [ $path ]);
-		  }
-	       }
-	    else
-	       {
-	       $path = $tsv->ifindvalue($rtname, $envdata);
-	       # Save in ToolData object:
-	       $tooldataobj->runtime($rtname, [ $path ]);
-	       }
-	    }
-	 elsif ($envdata != 0 && $#$envdata > 0)
-	    {
-	    print "\nRuntime path settings for $realrtname:","\n";
-	    print "\n";
-	    foreach my $elementdata (@$envdata)
-	       {
-	       $path = $tsv->ifindvalue($rtname, $elementdata);
-	       # Save in ToolData object:
-	       $tooldataobj->runtime($rtname, [ $path ]);
-	       }
-	    }
-	 else
-	    {
-	    next;
-	    }
-	 }
-      else
-	 {
-	 # Handle runtime variables:
-	 if ($envdata != 0 && $#$envdata == 0) # One element only!
-	    {
-	    my $dvalue='';
-	    $tsv->checkdefaults($envdata, \$dvalue);
-	    print "\n";
-	    my $value = $tsv->promptuserforvar($rtname, $dvalue);
-	    # Store the variable setting:
-	    $tooldataobj->runtime($rtname, [ $value ]);
-	    }
-	 else
-	    {
-	    next;
-	    }
-	 }
-      }
-   
-   print "\n";
    }
 
 sub store()

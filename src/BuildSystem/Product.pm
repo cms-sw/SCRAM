@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-07-27 11:49:59+0200
-# Revision: $Id: Product.pm,v 1.2.4.2 2007/11/08 15:25:27 muzaffar Exp $ 
+# Revision: $Id: Product.pm,v 1.6.4.1 2008/09/15 16:32:52 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -79,59 +79,8 @@ sub _files()
 
    if ($rfiles)
       {
-      # Here, we process the input file "string" and convert it from
-      # a comma-sep list/glob to array contents:
       $rfiles =~ s/,/ /g;
-      if ($rfiles =~ /[^\s]+\s+[^\s]+/)
-	 {
-	 push(@$files, split(/\s+/,$rfiles));
-	 }
-      elsif ($rfiles =~ /\*\..*/) # Globs. We use the paths from BuildFiles
-	 {                        # to figure out where the files are
-	 use File::Basename;
-	 # List of paths to try globs from in lib tags:
-	 my $pathlist=[ map { dirname($_) } @$pathstotry ];
-	 
-	 # The most likely location to search for files will be the longest
-	 # path (up to BuildFile). We apply a reverse sort to get longest
-	 # path first, then test this against the first element X of $rfiles (match to "X/"):
-	 foreach my $path (reverse sort @$pathlist)
-	    {
-	    if ($rfiles =~ m|(.*?)/\*\..*|)
-	       {
-	       # We have a file list like "dir/*.cc"; extract "dir":
-	       my $subdir=$1;
-	       if ( -d $path."/".$subdir)
-		  {
-		  my $filelocation=$path."/".$rfiles;
-		  map
-		     {
-		     # Take the basename of each file but then re-add
-		     # the matched subdir above:
-		     push(@$files, $subdir."/".basename($_));
-		     } glob($filelocation);
-		  }
-	       last;
-	       }
-	    else
-	       {
-	       # We just glob from the first path:
-	       my $filelocation=$path."/".$rfiles;
-	       map
-		  {
-		  push(@$files, basename($_));
-		  } glob($filelocation);
-	       
-	       last;
-	       }
-	    }
-	 }
-      else
-	 {
-	 # Split on whitespace and push onto array:
-	 push(@$files, split(" ",$rfiles));
-	 }
-      
+      foreach my $file (split(/\s+/,$rfiles)) {if ($file ne ""){push(@$files,$file);}}
       $self->{FILES} = $files;
       }
    else

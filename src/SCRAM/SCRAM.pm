@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.33 2007/12/14 09:04:10 muzaffar Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.34.2.3.2.8 2010/09/23 10:46:22 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -35,11 +35,8 @@ require 5.004;
 
 use Exporter;
 use SCRAM::Helper;
-use Utilities::Architecture;
 use Utilities::Verbose;
 use SCRAM::CMD;
-
-our ($SCRAM_VERSION) = "@SCRAM_VERSION@";
 
 @ISA=qw(Exporter Utilities::Verbose SCRAM::CMD);
 @EXPORT_OK=qw( );
@@ -62,24 +59,20 @@ sub new()
    my $class=ref($proto) || $proto;
    my $self=
       {
-      SCRAM_PREREQCHECK => undef,
       SCRAM_VERSIONCHECK => undef,
       SCRAM_ALLOWEDCMDS => undef,
-      SCRAM_ARCH => undef || $ENV{SCRAM_ARCH},
+      SCRAM_ARCH => undef,
       SCRAM_VERBOSE => 0 || $ENV{SCRAM_VERBOSE},
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
-      SCRAM_VERSION => $SCRAM_VERSION || undef,
-      SCRAM_CVSID => '$Id: SCRAM.pm,v 1.33 2007/12/14 09:04:10 muzaffar Exp $',
       SCRAM_TOOLMANAGER => undef,
-      SCRAM_HELPER => new Helper,
+      SCRAM_HELPER => new SCRAM::Helper,
       ISPROJECT => undef,
       };
-  
    bless $self,$class;
-   $ENV{SCRAM_VERSION} = $self->{SCRAM_VERSION};
+   $self->{force}=0;
+   $self->_initarch ();
    $ENV{SCRAM_BUILDFILE} = "BuildFile";
-   $self->_init();
    return $self;
    }
 
@@ -90,27 +83,23 @@ by new().
 
 =cut
 
-sub _init()
+sub init()
    {
    my $self=shift;
-   # Store available ommands:
+   $self->{force}=shift || 0;
    $self->commands();
-   # Set up the environment:
    $self->_initlocalarea();
-   $self->_initreleasearea();
    $self->_initenv();
-   # Check that we have everything to
-   # be able to run:
-   $self->prerequisites();
-   # Create new interface object:
-   $self->scramfunctions();
-   # See which version of SCRAM should be used. This will
-   # only switch to another version if inside a project area
-   # where scram_version is set:
    $self->versioncheck();
    return $self;
    }
 
+sub initx_()
+   {
+   my $self=shift;
+   $self->_initlocalarea();
+   $self->_initenv();
+   }
 =item   C<commands()>
 
 Returns a reference to a list of supported commands which are also
@@ -121,9 +110,9 @@ defined here. Sets $self->{SCRAM_ALLOWEDCMDS} in the $::scram object.
 sub commands()
    {
    my $self = shift;
-   my @env_commands = qw(version arch runtime config);
-   my @info_commands = qw(list db urlget); 
-   my @buildenv_commands = qw(project setup tool gui);
+   my @env_commands = qw(version arch runtime unsetenv);
+   my @info_commands = qw(list db); 
+   my @buildenv_commands = qw(project setup tool);
    my @build_commands=qw(build install remove);
    my @dev_cmds=qw();
 
@@ -159,7 +148,6 @@ sub execcommand()
    my $rval=0;
    my $status=1;
    my $cmdrun=0;
-   
    local @ARGV = @ARGS;
    # Add the "dbghook_" function here rather than via "showcommands"
    # since we don't want this to be public (it's only for debugging).
@@ -185,47 +173,18 @@ sub execcommand()
    return $rval;
    }
 
-=item   C<prerequisites()>
-
-Check for prerequisites to running SCRAM. Once the check is complete
-and is successful, set $self->{SCRAM_PREREQCHECK} = 1.
-Note that this function is run but is not really doing any checks due
-to site ambiguities.
-   
-=cut
-
-sub prerequisites()
-   {
-   my $self=shift;
-   $self->{SCRAM_PREREQCHECK} = 1;
-   return $self;
-   }
-
 =item   C<versioncheck(@ARGS)>
 
 Check that the appropriate version of SCRAM is being run and
 pass down all arguments to the new instance of $::scram.
-Once completed, $self->{SCRAM_VERSIONCHECK} is set to 1 and 
-$self->{SCRAM_VERSION} is set to the required version.
 
 =cut
 
 sub versioncheck() {
     my $self=shift;
-    # This routine checks for consistency in SCRAM versions. Only
-    # applies in a project area since outside we'll be using the
-    # current release anyway. If we're in a project we use the "scram_version"
-    # file in config directory:
     if ((!defined $self->{SCRAM_VERSIONCHECK}) && ($self->islocal())) {
-	my $version;
-	my $versionfile=$ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR}."/scram_version";
-	if ( -f $versionfile ) {
-	    open (VERSION, "<".$versionfile);
-	    $version=<VERSION>;
-	    chomp $version;
-	}
-	# Spawn the required version:
-	$self->scramfunctions()->spawnversion($version,@ARGV), if (defined ($version));
+	my $version=$self->versioninfile($ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR});
+	$self->spawnversion($version), if (defined ($version));
     }
     $self->{SCRAM_VERSIONCHECK} = 1;
     return $self;
@@ -242,28 +201,15 @@ Pass down all arguments to the new instance of $::scram.
 
 sub remote_versioncheck() {
     my $self=shift;
-    my $version;
     my ($remote_area)=shift || die "No remote area specified. Exit.\n";
-    local (@ARGV)=@_;
-    # Get the version from the project area:
-    $version = $remote_area->scramversion();
-    
+    my $version = $self->versioninfile($remote_area->location()."/".$remote_area->configurationdir());
     if (!defined($version)) {
-	# Try to get the version from the area config. dir:
-	my $versionfile=$remote_area->location()."/".$remote_area->configurationdir()."/scram_version";
-	
-	if ( -f $versionfile ) {
-	    open (VERSION, "<".$versionfile);
-	    $version=<VERSION>;
-	    chomp $version;
-	} else {
-	    $self->error("Unable to determine SCRAM version used to config. remote area.\n");
-	}
+      $self->error("Unable to determine SCRAM version used to config. remote area.\n");
     }
-    # Spawn the required version:
-    $self->scramfunctions()->spawnversion($version,@ARGV);    
+    $self->spawnversion($version);
     return $self;
 }
+
 
 =item   C<_initenv()>
 
@@ -276,85 +222,36 @@ required by the build system.
 sub _initenv()
    {
    my $self=shift;
-
    # Read the Environment file if inside a project:
-   $self->localarea()->copyenv(\%ENV), if ($self->islocal());
-
-   # Check and set architecture:
-   if (! defined $self->{SCRAM_ARCH})
+   if ($self->islocal())
       {
-      my $a = Architecture->new();
-      $self->architecture($a->arch());
-      $self->system_architecture($a->system_arch_stem());
-      $ENV{SCRAM_ARCH} = $self->architecture();
-      }
-   
-   # Set up some environment variables:
-   $ENV{SCRAM_TMP}="tmp";
-   $ENV{SCRAM_INTwork}=$ENV{SCRAM_TMP}."/".$ENV{SCRAM_ARCH};
-   $ENV{SCRAM_SOURCEDIR}="src";
-   $ENV{SCRAM_INTlog}="logs";
-   ($ENV{SCRAM_BASEDIR}=$ENV{SCRAM_HOME}) =~ s/(.*)\/.*/$1/;
-   $ENV{SCRAM_BASEDIR} =~ s!:$!:/! if $^O eq 'MSWin32';
-   $ENV{SCRAM_TOOL_HOME}=$ENV{SCRAM_HOME}."/src";
-   
-   # Need a lookup database. Try the user's environment first to override
-   # the value set at install time (in SCRAM_SITE.pm):
-   if (exists $ENV{SCRAM_USERLOOKUPDB} && -f "$ENV{SCRAM_USERLOOKUPDB}")
-      {
-      print "Using $ENV{SCRAM_USERLOOKUPDB} as the database.","\n", if ($ENV{SCRAM_DEBUG});
-      $ENV{SCRAM_LOOKUPDB}=$ENV{SCRAM_USERLOOKUPDB};
-      }
-   
-   # A fallback option:
-   if ( ! ( exists $ENV{SCRAM_LOOKUPDB} ) )
-      {
-      if ( -d "$ENV{SCRAM_BASEDIR}/scramdb/" )
-	 {
-	 $ENV{SCRAM_LOOKUPDB}="$ENV{SCRAM_BASEDIR}/scramdb/project.lookup";
-	 }
-      else
-	 {
-	 # Just store in user home directory:
-	 $ENV{SCRAM_LOOKUPDB}=$ENV{HOME}."/project.lookup";
-	 }
+      $self->localarea()->copyenv(\%ENV);
+      $ENV{SCRAM_TMP}="tmp";
+      $ENV{SCRAM_INTwork}=$ENV{SCRAM_TMP}."/".$ENV{SCRAM_ARCH};
+      $ENV{SCRAM_INTlog}="logs";
+      if(!exists $ENV{SCRAM_SOURCEDIR}){$ENV{SCRAM_SOURCEDIR}="src";}
+      if (exists $ENV{SCRAM_CONFIGDIR}){unshift @INC, $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};}
       }
    }
 
-=item   C<_loadscramdb()>
-
-Read the local SCRAM project database and populate $self->{SCRAM_PDB} to keep
-track of which external tools in the current configuration are managed by SCRAM.
-This is basically a lookup table from which the base directory of scram projects
-can be looked up: functions needing access to project caches can use the base
-dir to find these caches.
-
-=cut
-
-sub _loadscramdb()
+sub _initarch ()
    {
    my $self=shift;
-   # Read the scram database to keep track of which
-   # projects are scram-managed:
-   my @scramprojects = $self->getprojectsfromDB();
-   $self->{SCRAM_PDB}={};
-   
-   foreach my $project (@scramprojects)
+   if (! defined $self->{SCRAM_ARCH})
       {
-      my $parea=$self->scramfunctions()->scramprojectdb()->getarea($project->[0], $project->[1]);
-      if (defined ($parea) && $parea->location() ne '')
-	 {
-	 # Store the name of the project as lowercase to make lookups easier
-	 # during setup. When storing the individual project name/version entries, mangle the
-	 # version with the real name, separated by a :  for access to this data needed
-	 # when getting the area:
-	 $self->{SCRAM_PDB}->{lc($project->[0])}->{$project->[0].":".$project->[1]} = $parea->location(); 
+      my $arch=$ENV{SCRAM_ARCH} || "";
+      if ($arch=~/^\s*$/)
+         {
+         use Utilities::Architecture;
+	 my $a = Utilities::Architecture->new();
+	 $arch=$a->arch();
+	 $ENV{SCRAM_ARCH}=$arch;
 	 }
+      $self->architecture($arch);
       }
-   
-   return $self->{SCRAM_PDB};
+   return $ENV{SCRAM_ARCH};      
    }
-
+   
 =item   C<islocal()>
 
 Return true/false depending on whether the current directory
@@ -371,33 +268,29 @@ sub islocal()
 
    }
 
-=item   C<scramfunctions()>
-
-Provide access to a SCRAM::ScramFunctions object. A lot of
-core functionality is implemented (probably for historical
-reasons) in this package. Many commands are executed via calls
-like $self->scramfunctions()->X(). These include project
-bootstrapping and listing.
-
-=cut
-
-sub scramfunctions() {
-    my $self=shift;
-    
-    if ( ! defined $self->{functions} ) {
-	require SCRAM::ScramFunctions;
-	$self->{functions} = SCRAM::ScramFunctions->new();
-	$self->architecture($ENV{SCRAM_ARCH});
-	if ($ENV{SCRAM_VERSION} eq '') {
-	    # If SCRAM_VERSION isn't set, extract the version
-	    # from the source tree:
-	    $ENV{SCRAM_VERSION} = $self->{functions}->getversion();
-	}
-    } else {
-	return $self->{functions};
-    }
+sub installedProjects() 
+   {
+   my $self=shift;
+   my $nregexp=shift;
+   my $vregexp=shift;
+   my $projects=$self->scramprojectdb()->listall();
+   my %results=();
+   foreach my $type ("local","linked") {
+      if(!exists $projects->{$type}){next;}
+      foreach my $pr (@{$projects->{$type}}) {
+	 my $name=$$pr[0];
+	 if ($name!~/$nregexp/){next;}
+	 my $version=$$pr[1];
+	 if ($version!~/$vregexp/){next;}
+	 my $url=$$pr[3];
+         if ((-e $url) && (-d $url) && ($self->isregistered($url))){
+	    $results{$name}{$version}=$url;
+	 }
+      }
+   }
+   return %results;
 }
-
+   
 =item   C<_initlocalarea()>
 
 Initialise the local area. Once this function has been run, a
@@ -413,52 +306,49 @@ sub _initlocalarea() {
     
     if ( ! defined ($self->localarea()) ) {
 	require Configuration::ConfigArea;
-	$self->localarea(Configuration::ConfigArea->new());
-	
-	# Set LOCALTOP if we're inside project area:
-	$ENV{LOCALTOP} = $self->localarea()->location();
-	
-	if ( ! defined ($ENV{LOCALTOP}) ) {
-	    if ( $self->localarea()->bootstrapfromlocation() ) {
-		# We're not in a local area: 
-		$self->localarea(undef);
-	    } else {
-		$self->localarea()->archname($self->scramfunctions()->arch());
-	    }
-	} else {
-	    $self->localarea()->bootstrapfromlocation($ENV{LOCALTOP});
-	}
-	
-	# Now create some environment variables that need LOCALTOP:
-	if (defined ($ENV{LOCALTOP})) {
-	    ($ENV{THISDIR}=cwd) =~ s/^\Q$ENV{LOCALTOP}\L//;
-	    $ENV{THISDIR} =~ s/^\///;
-	    # Also set LOCALRT (soon obsolete) and BASE_PATH:
-	    $ENV{LOCALRT} = $ENV{LOCALTOP};
-	    $ENV{BASE_PATH} = $ENV{LOCALTOP};
-	    $self->projectname($self->localarea()->name());
-	    $self->projectversion($self->localarea()->version());
-	    $self->configversion($self->localarea()->toolboxversion());
-	    $self->islocal(1);
-	} else {
-	    # We're not in a project area. Some commands will not need to
-	    # be in an area to work so we just set a flag:
+	my $area = Configuration::ConfigArea->new($self->architecture());
+	my $loc = $area->location();
+	if ( ! defined $loc ) {
 	    $self->islocal(0);
+	} else {
+	    $ENV{LOCALTOP} = $loc;
+	    $area->bootstrapfromlocation($loc);
+	    ($ENV{THISDIR}=cwd) =~ s/^\Q$loc\L//;
+	    $ENV{THISDIR} =~ s/^\///;
+	    $ENV{BASE_PATH} = $loc;
+	    my $name=$area->name(); $version=$area->version();
+	    $self->projectname($name);
+	    $self->projectversion($version);
+	    $self->localarea($area);
+	    $self->islocal(1);
+	    my $rel=$area->releasetop();
+	    if (defined $rel) {
+	       my $pfile="$rel/".$area->admindir()."/".$ENV{SCRAM_ARCH}."/ProjectCache.db.gz";
+	       if (!-f $pfile) {
+		  my $vregexp=$version;
+		  $vregexp=~s/^(([^\d]*\d+_\d+)_).*$/$1/; my $relseries=$2;
+	          print STDERR "********** ERROR: Missing Release top ************\n",
+		               "  The release area \"$rel\"\n",
+		               "  for \"$name\" version \"$version\" is not available/usable.\n";
+		  my %res=$self->installedProjects("^$name\$","^${vregexp}.+");
+		  if (exists $res{$name}) {
+		     delete $res{$name}{$version};
+		     my @rels=keys %{$res{$name}};
+		     if (@rels>0) {
+			print STDERR "  In case this release has been deprecated, you can move your code to\n",
+			             "  one of the following release(s) of release series \"$relseries\".\n\n",
+			             "  ",join("\n  ",@rels),"\n";
+		     }
+		     else {
+		       print STDERR "  Sorry, there is no other release installed which you can use for this release series \"$relseries\".\n";
+		     }
+		     print STDERR "***********************************************\n";
+		  }
+	       }
+	    }
 	}
     }
 }
-
-=item   C<align()>
-
-Align the current area. Not even sure if this is ever called.
-
-=cut
-
-sub align
-   {
-   my $self=shift;   
-   $self->localarea()->align(); 
-   }
 
 =item   C<localarea()>
 
@@ -475,44 +365,6 @@ sub localarea()
       : $self->{localarea};        # retrieve
    }
 
-=item   C<_initreleasearea()>
-
-Create a Configuration::ConfigArea object for the release
-area of the current project area if the local area is a developer
-area.
-
-=cut
-
-sub _initreleasearea()
-   {
-   my $self=shift;
-
-   if ( ! defined $self->releasearea() )
-      {
-      require Configuration::ConfigArea;
-      $self->releasearea(Configuration::ConfigArea->new());
-      $self->releasearea()->bootstrapfromlocation($ENV{RELEASETOP});
-      }
-
-   return $self->releasearea();
-   }
-
-=item   C<releasearea()>
-
-Return the Configuration::ConfigArea object for the release
-area (if this area is a developer area). This is first set
-by a call to _initreleasearea().
-
-=cut
-
-sub releasearea()
-   {
-   my $self=shift;
-   
-   @_ ? $self->{releasearea} = shift # Modify or
-      : $self->{releasearea};        # retrieve
-   }
-
 =item   C<debuglevel()>
 
 Set or retrieve the debug level. Not yet used.
@@ -525,21 +377,6 @@ sub debuglevel()
 
    @_ ? $self->{SCRAM_DEBUG} = shift # Modify or
       : $self->{SCRAM_DEBUG};        # retrieve
-   }
-
-=item   C<cvsid()>
-
-Return the current CVS id string (which contains information
-on last commit).				  
-
-=cut
-
-sub cvsid()
-   {
-   my $self=shift;
-
-   @_ ? $self->{SCRAM_CVSID} = shift # Modify or
-      : $self->{SCRAM_CVSID};        # retrieve
    }
 
 =item   C<projectname()>
@@ -595,37 +432,6 @@ sub architecture()
       : $self->{SCRAM_ARCH};        # retrieve
    }
 
-=item   C<system_architecture()>
-
-Set/return the current SCRAM system architecture, e.g. B<slc3_ia32>.
-
-=cut
-
-sub system_architecture()
-   {
-   my $self=shift;
-
-   @_ ? $self->{SCRAM_SYSARCH} = shift # Modify or
-      : $self->{SCRAM_SYSARCH};        # retrieve
-   }
-
-=item   C<getprojectsfromDB()>
-
-Retrieve the list of installed projects from the local SCRAM
-project database (as determined from value of SCRAM_LOOKUPDB
-environment variable which was set for the current site when
-SCRAM was installed.)
-
-=cut
-
-sub getprojectsfromDB()
-   {
-   my $self=shift;
-
-   # Get list of projects from scram database and return them:
-   return ($self->scramfunctions()->scramprojectdb()->listall());
-   }
-
 =item   C<isregistered($area)>
 
 Return true or false depending on whether the SCRAM project area
@@ -640,10 +446,8 @@ only, while other architectures may not be released.
 sub isregistered()
    {
    my $self=shift;
-   my ($area) = @_;
-   my $archdir = $area->location()."/".$area->admindir()."/".$self->architecture();
-   my $registerfile = $archdir."/.installed";
-   # Check the area to see if .installed exists:
+   my $dir = shift;
+   my $registerfile = "${dir}/.SCRAM/$ENV{SCRAM_ARCH}/.installed";
    ( -f $registerfile) ? return 1 : return 0;
    }
 
@@ -684,29 +488,18 @@ Remove a project from the SCRAM database. Reverse the process of register_instal
 sub unregister_install()
    {
    my $self=shift;
-   my $area = $self->{localarea};
-   my $archdir = $area->location()."/".$area->admindir()."/".$self->architecture();
-   my $registerfile = $archdir."/.installed";
-   my $retval = 0;
-   
-   # Remove the register file:
+   my $dir = shift || return;
+   my $registerfile = "${dir}/.SCRAM/$ENV{SCRAM_ARCH}/.installed";
    if ( -f $registerfile)
       {
-      $retval = system("rm","-f",$registerfile);
+      unlink $registerfile;
       }
-   
-   return $retval;
+   return;
    }
 
 =item   C<toolmanager($location)>
 
 Reload the BuildSystem::ToolManager object from the tool cache file.
-If the cache file does not exist, it implies that the area has not yet
-been set up so a copy of whichever one exists is made and informs the
-user to run B<scram setup>.
-
-If this area has been cloned, adjustments must be made so that the cache
-is really local and refers to all settings of local area (admin dir etc.).
    
 =cut
 
@@ -716,85 +509,27 @@ sub toolmanager()
    my ($location)=@_;
    $location||=$self->localarea();
    
-   # This subroutine is used to reload the ToolManager object from file.
-   # If this file does not exist, it implies that the area has not yet been set
-   # up so we make a copy of whichever one exists and tell the user to run "scram setup":
-   if ( -r $location->toolcachename() )
+   if (!exists $self->{toolmanager})
       {
-      # Cache exists, so read it:
-      $self->info("Reading tool data from ToolCache.db.") if ($self->{SCRAM_DEBUG});
-      use Cache::CacheUtilities;
-      $toolmanager=&Cache::CacheUtilities::read($location->toolcachename());      
-
-      # If this area has been cloned, we must make some adjustments so that the cache
-      # is really local and refers to all settings of local area (admin dir etc.):
-      if ($ENV{RELEASETOP} && ! $toolmanager->cloned_tm())
-	 {
-	 $self->info("Cloning release-area ToolCache.db. Localising settings...") if ($self->{SCRAM_DEBUG});
-	 $toolmanager->clone($location);
-	 $toolmanager->writecache(); # Save the new cache
-	 }
-      
-      # We have a toolmanager in memory. We now check to see if the cachename (i.e. where we
-      # read the cache from) matches the location stored as CACHENAME in the tool manager
-      # object read from the cache file. If it doesn't match, it implies that this area has been
-      # moved: we therefore return to the behaviour of the old V0_xx scram versions which
-      # permitted areas to be moved without problems:
-      if ($location->toolcachename() ne $toolmanager->name())
-	 {
-	 $self->info("This area has been relocated: modifying ToolCache.db CACHENAME.") if ($self->{SCRAM_DEBUG});
-	 # Set the name to be correct:
-	 $toolmanager->name($location->toolcachename());
-	 $toolmanager->writecache(); # Save the new cache
-	 }
+      if ( -r $location->toolcachename() )
+         {
+         # Cache exists, so read it:
+         $self->info("Reading tool data from ToolCache.db.gz") if ($self->{SCRAM_DEBUG});
+         use Cache::CacheUtilities;
+         $self->{toolmanager}=&Cache::CacheUtilities::read($location->toolcachename());
+         }
+      else
+         {
+	 print STDERR "You are trying to build/setup tools for SCRAM_ARCH $ENV{SCRAM_ARCH}.\n",
+	       "while your project area is currently setup for following SCRAM_ARCH(s):\n";
+	 my $archs = $self->availablearch ($location->location());
+         if (scalar(@$archs)>0){print STDERR "\t",join("\n\t",@$archs),"\n";}
+         else{print STDERR "  No tools setup for any SCRAM_ARCH (seems like your area is curpted).\n";}
+	 print STDERR "Please make sure your SCRAM_ARCH environment variable is correct.\n";
+	 exit 1;
+         }
       }
-   else
-      {
-      my $found;
-      local $toolcachedir;
-      
-      # Path to cache dir in SCRAM area:
-      my $cachedir = $ENV{LOCALTOP}."/.SCRAM";
-      # Get a list of subdirs in this dir. There will be a subdir for
-      # each known architecture:
-      opendir(CACHEDIR, $cachedir) || die "SCRAM: $cachedir: cannot read: $!\n";
-      # Skip . and .. but include other dirs:
-      my @ARCHDIRS = map { "$cachedir/$_" } grep ($_ ne "." && $_ ne "..", readdir(CACHEDIR));
-      
-      # If we don't have our arch subdir, create it before copying:
-      if (! -d $cachedir."/".$ENV{SCRAM_ARCH})
-	 {
-	 mkdir($cachedir."/".$ENV{SCRAM_ARCH}, 0755) || die
-	    "SCRAM: Unable to create directory $cachedir: $!","\n";
-	 }
-      
-      # Run over the dirs and check for a cache:
-      foreach $toolcachedir (@ARCHDIRS)
-	 {
-	 # If there's a cache file, copy it:
-	 if ( -f $toolcachedir."/ToolCache.db" )
-	    {
-	    # If we found one, read it:
-	    $found=$toolcachedir."/ToolCache.db";
-	    use Cache::CacheUtilities;
-	    # Read, make arch-specific changes then write out:
-	    $toolmanager=&Cache::CacheUtilities::read($found);
-	    $toolmanager->arch_change_after_copy($ENV{SCRAM_ARCH}, $location->toolcachename());
-	    last;
-	    }
-	 else
-	    {
-	    next;
-	    }	 
-	 }
-      
-      if (!$found)
-	 {
-	 $self->scramerror("Unable to read a tool cache. Maybe the area is not yet set up?");
-	 }
-      }
-   
-   return $toolmanager;
+   return $self->{toolmanager};
    }
 
 =item   C<checklocal()>
@@ -806,7 +541,7 @@ Check that the current area is a project area and continue or exit otherwise.
 sub checklocal()
    {
    my $self=shift;
-   $self->scramfatal("Unable to locate the top of local release. Exiting."), if (! $self->islocal());   
+   $self->scramfatal("Unable to locate the top of local release. Please run this command from a SCRAM-based area."), if (! $self->islocal());   
    }
 
 =item   C<checkareatype()>
@@ -819,31 +554,114 @@ sub checkareatype()
    {
    my $self=shift;
    my ($areapath, $message)=@_;
-   # Simple check: see if templates exist:
-   my (@templates)=glob($areapath."/config/*.tmpl");
-   $self->scramfatal($message), unless ($#templates > -1)
+   my $version=$self->versioninfile($areapath."/".$ENV{SCRAM_CONFIGDIR});
+   if ($version=~/^V0/){$self->scramfatal($message);}
    }
 
-=item   C<missing_package($package)>
-   
-Print a message that the package $package is not available
-on the current system and exit. This is part of a check when
-loading Perl modules like Tk which might not be installed.
-   
-=cut
+sub scramprojectdb {
+	my $self=shift;
+        if ( ! defined $self->{scramprojectsdb} ) {
+          require SCRAM::ScramProjectDB;
+          $self->{scramprojectsdb}=SCRAM::ScramProjectDB->new();
+        }
+        return $self->{scramprojectsdb};
+}
 
-sub missing_package()
+sub versioninfile
    {
    my $self=shift;
-   my ($p)=@_;
-   print "The following Perl modules appear(s) to be missing\n";
-   print "on this machine:\n\n";
-   print " ".$p."\n";
-   print "\n";
-   print "For now, this command is disabled.\n";
-   print "\n";
-   exit(1);  
+   my $area=shift;
+   my $versionfile="${area}/scram_version";
+   my $version=undef;
+   if ( -f "${area}/scram_version" )
+      {
+      open (VERSION, "< ${area}/scram_version");
+      $version=<VERSION>;
+      close(VERSION);
+      chomp $version;
+      }
+   return $version;
    }
+
+sub spawnversion
+   {
+   my $self=shift;
+   my $version=shift;
+   my $rv=0;
+
+   if (defined $version)
+      {
+      my $relseries=$ENV{SCRAM_VERSION};
+      $relseries=~s/^(V\d+_\d+_)\d+.*$/$1/;
+      if ($version!~/^${relseries}\d+.*$/)
+	 {
+	 $ENV{SCRAM_VERSION}=$version;
+	 $self->verbose("Spawning SCRAM version $version");
+	 my $rv=system("scram", @$main::ORIG_ARGV)/256;
+	 exit $rv;
+	 }
+      }
+   else
+      {
+      $self->error("Undefined value for version requested");
+      $rv=1;
+      }
+   return $rv;
+   }
+   
+sub spawnarch
+   {
+   my $self=shift;
+   my $arch=shift;
+   my $rv=0;
+
+   if (defined $arch)
+      {
+      print "$arch vs $ENV{SCRAM_ARCH}\n";
+      if ($arch ne $ENV{SCRAM_ARCH})
+	 {
+	 $ENV{SCRAM_ARCH}=$arch;
+	 print "Spawn\n";
+	 $self->verbose("Spawning SCRAM arch $arch");
+	 my $rv=system("scram", @$main::ORIG_ARGV)/256;
+	 exit $rv;
+	 }
+      }
+   else
+      {
+      $self->error("Undefined value for arch requested");
+      $rv=1;
+      }
+   return $rv;
+   }
+
+sub availablearch
+   {
+   my $self=shift;
+   my $dir=shift || "$ENV{LOCALTOP}";
+   my $toolbox = "${dir}/$ENV{SCRAM_CONFIGDIR}/toolbox";
+   my $archs=[];
+   if (-d $toolbox)
+      {
+      my $dref;
+      opendir($dref,$toolbox) || die "Can not open directory for reading: $toolbox";
+      foreach my $dir (readdir ($dref)) 
+         {
+	 if ($dir=~/^\./){next;}
+	 if (-d "${toolbox}/${dir}/tools") {push @$archs,$dir;}
+	 }
+      closedir($dref);
+      }
+   return $archs;
+   }
+
+sub classverbose {
+	my $self=shift;
+	my $class=shift;
+	my $val=shift;
+
+	$ENV{"VERBOSE_".$class}=$val;
+}
 
 =item   C<msg(@text)>
    
@@ -956,7 +774,7 @@ Print a fatal error message string $message and exit.
 sub scramfatal()
    {
    my $self=shift;
-   print "SCRAM ",$self->fatal(@_),"\n";
+   print STDERR "SCRAM ",$self->fatal(@_),"\n";
    exit(1);
    }
 
@@ -979,7 +797,7 @@ sub classverbosity
       {
       print "Verbose mode for ",$class," switched ".$::bold."ON".$::normal."\n" ;
       # Set the verbosity via scram functions:
-      $self->scramfunctions()->classverbose($class,1);
+      $self->classverbose($class,1);
       }
    }
 
@@ -1022,18 +840,18 @@ sub usage()
    $usage.="\n";
    $usage.= "Help on individual commands is available through";
    $usage.="\n\n";
-   $usage.= "\tscram <command> -help";
+   $usage.= "\tscram <command> --help";
    $usage.="\n\n";
    $usage.="\nOptions:\n";
    $usage.="--------\n";
-   $usage.=sprintf("%-28s : %-55s\n","-help","Show this help page.");
-   $usage.=sprintf("%-28s : %-55s\n","-verbose <class> ",
+   $usage.=sprintf("%-28s : %-55s\n","--help","Show this help page.");
+   $usage.=sprintf("%-28s : %-55s\n","--verbose <class> ",
 		   "Activate the verbose function on the specified class or list of classes.");
-   $usage.=sprintf("%-28s : %-55s\n","-debug ","Activate the verbose function on all SCRAM classes.");
+   $usage.=sprintf("%-28s : %-55s\n","--debug ","Activate the verbose function on all SCRAM classes.");
    $usage.="\n";
-   $usage.=sprintf("%-28s : %-55s\n","-arch <architecture>",
+   $usage.=sprintf("%-28s : %-55s\n","--arch <architecture>",
 		   "Set the architecture ID to that specified.");
-   $usage.=sprintf("%-28s : %-55s\n","-noreturn","Pause after command execution rather than just exitting.");
+   $usage.=sprintf("%-28s : %-55s\n","--noreturn","Pause after command execution rather than just exiting.");
    $usage.="\n";
 
    return $usage;

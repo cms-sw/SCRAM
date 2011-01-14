@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-07-01 14:03:46+0200
-# Revision: $Id: TemplateInterface.pm,v 1.2.4.3 2007/11/08 15:25:27 muzaffar Exp $ 
+# Revision: $Id: TemplateInterface.pm,v 1.6.2.2.2.1 2008/06/18 10:29:04 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -52,12 +52,12 @@ sub new()
 
    if (!-f $makefile)
       {
-      if (!-f "$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/Makefile")
+      if (!-f "$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/SCRAM/GMake/Makefile")
          {
-	 die "Missing $ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/Makefile file.";
+	 die "Missing $ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/SCRAM/GMake/Makefile file.";
 	 }
       use File::Copy;
-      copy("$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/Makefile",$makefile) or die "Copy failed: $!";
+      copy("$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/SCRAM/GMake/Makefile",$makefile) or die "Copy failed: $!";
       utime 0,0,$makefile;
       }
 
@@ -71,10 +71,6 @@ sub _init()
    my $self=shift;
    my ($templatedir)=@_;
    
-   # Set the location where the templates may be found:
-   $self->template_dir($templatedir);
-   # Configure the template object:
-   $self->template_config();
    # Create the new Template object:
    $self->template_object();
    return $self;
@@ -83,57 +79,9 @@ sub _init()
 sub template_object()
    {
    my $self=shift;
-
-   # Instantiate a new Template object:
-   eval("use Template");
-
-   if ($@)
-      {
-      print "\nSCRAM Error: It appears that the module \"Template.pm\" is not installed.","\n";
-      print "             Please check your installaion. If you are an administrator,","\n";
-      print "             you can find the Perl Template Toolkit at www.cpan.org or at","\n";
-      print "             the web site of the author (Andy Wardley):","\n";
-      print "\n";
-      print "             www.template-toolkit.com","\n";
-      print "\n";
-      print "             You should install version 2.xx (2.13 or better).","\n";
-      print "\nscram-developers\@cern.ch","\n\n";
-      exit(1);
-      }
-   else
-      {
-      $self->{TEMPLATE_OBJECT} = Template->new($self->{TEMPLATE_CONFIG});
-      }
-
-   return $self;
-   }
-
-sub template_dir()
-   {
-   my $self=shift;
-   my ($templatedir)=@_;
-   my $dir = $ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR};
-   if ((exists $ENV{SCRAM_PROJECT_TEMPLATEDIR}) && 
-       ($ENV{SCRAM_PROJECT_TEMPLATEDIR} !~ /^\s*$/)) {
-       $dir = $ENV{SCRAM_PROJECT_TEMPLATEDIR};
-   }
-   $templatedir ||= $dir;
-   $self->{TEMPLATE_DIR} = $templatedir;
-   return $self;
-   }
-
-sub template_config()
-   {
-   my $self=shift;
-   # Set up Template opts:
-   $self->{TEMPLATE_CONFIG} =
-      {
-      INCLUDE_PATH => [ "$self->{TEMPLATE_DIR}","$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}" ],
-      PLUGIN_BASE  => [ qw(SCRAM::Plugins BuildSystem::Template::Plugins) ],
-      EVAL_PERL    => 1,
-      ABSOLUTE     => 1
-      };
+   require SCRAM::Plugins::BuildRules;
    
+   $self->{TEMPLATE_OBJECT} = SCRAM::Plugins::BuildRules->new();
    return $self;
    }
 
@@ -142,8 +90,7 @@ sub template_data()
    my $self=shift;
    my ($data) = @_;
 
-   # Set the things that we must set. The "data" key points
-   # to a DataCollector object. The "branch" data is a
+   # Set the things that we must set. The "branch" data is a
    # TreeItem object:
    $self->{TEMPLATE} = $data->template();
    # Add required data accessed by key:
@@ -172,16 +119,28 @@ sub run()
       $item->{MKDIR}{"$ENV{LOCALTOP}/$ENV{SCRAM_INTwork}/MakeData/DirCache"}=1;
       }
 
-   $self->{MAKEFILEFH} = FileHandle->new();
-   $self->{MAKEFILEFH}->open(">$file");
-   local *FH = $self->{MAKEFILEFH};
+   $self->{TEMPLATE_DATA}->{MAKEFILE} = $file;
+   $self->{TEMPLATE_DATA}->{MAKEFILEFH} = FileHandle->new();
+   $self->{TEMPLATE_DATA}->{MAKEFILEFH}->open(">$file");
    
+   #Change the interface for SCRAM V3 series for backward compatibility
+   #with V2 series we still need to keep this interface
    $self->{TEMPLATE_OBJECT}->process($self->{TEMPLATE},
 				     $self->{TEMPLATE_DATA},
-				     $self->{MAKEFILEFH} )
+				     $self->{TEMPLATE_DATA}->{MAKEFILEFH})
       || die "SCRAM: Template error --> ",$self->{TEMPLATE_OBJECT}->error;
    
-   $self->{MAKEFILEFH}->close();
+   $self->{TEMPLATE_DATA}->{MAKEFILEFH}->close();
+   my $file1 = $self->{TEMPLATE_DATA}->{MAKEFILE};
+   if ($file ne $file1)
+      {
+      if (!-s $file1){unlink $file1;}
+      if ($file1=~/\/DirCache\/[^\/]+$/)
+         {
+         use File::Basename;
+         $item->{MKDIR}{dirname($file1)}=1;
+         }
+      }
    }
 
 1;

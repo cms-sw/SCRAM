@@ -1,44 +1,5 @@
-=head1 NAME
-
-Configuration::BootStrapProject - File parsing utilities for boot files.
-
-=head1 SYNOPSIS
-
-	my $obj = Configuration::BootStrapProject->new([$area]);
-
-=head1 DESCRIPTION
-
-Package containing functions for parsing bootstrap files (project initialisation documents).
-   
-=head1 METHODS
-
-=over
-
-=cut
-
-=item C<new($cache,$installbase)>
-
-A new bootstrapper.
-
-=item C<boot(url[,$devareaname])>
-
-Boot up a new project and return the Configuration::ConfigArea.
-
-=back
-
-=head1 AUTHOR
-
-Originally written by Christopher Williams.
-
-=head1 MAINTAINER
-
-Shaun ASHBY
-
-=cut
-
 package Configuration::BootStrapProject;
 use ActiveDoc::SimpleURLDoc;
-use URL::URLhandler;
 use Utilities::Verbose;
 use SCRAM::MsgLog;
 require 5.004;
@@ -53,8 +14,6 @@ sub new()
    no strict 'refs';
    $self = defined $self ? $self
       : (bless {}, $class );
-   $self->{havesourcedir}=0;
-   $self->{cache}=shift;   
    $self->{baselocation}=shift;
    
    if ( @_ )
@@ -62,10 +21,8 @@ sub new()
       $self->{area}=shift;
       }
    
-   $self->{mydoctype}="Configuration::BootStrapProject";
-   $self->{mydocversion}="1.0";   
-   $self->{scramdoc} = ActiveDoc::SimpleURLDoc->new($self->{cache});
-   $self->{scramdoc}->newparse("bootstrap",$self->{mydoctype},'Subs');
+   $self->{scramdoc} = ActiveDoc::SimpleURLDoc->new();
+   $self->{scramdoc}->newparse("bootstrap","Configuration::BootStrapProject",'Subs');
    $self->{Arch}=1;
    push @{$self->{ARCHBLOCK}}, $self->{Arch};
    return $self;
@@ -75,26 +32,9 @@ sub boot()
    {
    my $self=shift;
    my $url=shift;	
-   my $filemode = 0644;
-   # Check that the boot file is XML (simplistic check: make sure file
-   # suffix is xml!):
-   if ($url !~ /xml$/) {
-       die __PACKAGE__.": Wrong boot file type (MUST be XML!)\n";
-   }
    
-   # -- override directory name
-   if ( @_ )
-      {
-      $self->{devareaname}=shift;
-      }
-   else
-      {
-      $self->{devareaname}="";
-      }
-   
-   my ($fullurl,$filename)=$self->{scramdoc}->urldownload($url);
-   chmod $filemode,$filename;
-   $self->{scramdoc}->filetoparse($filename);
+   $url=~s/^\s*file://;
+   $self->{scramdoc}->filetoparse($url);
    my $fhead='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><doc type="Configuration::BootStrapProject" version="1.0">';
    my $ftail='</doc>';
    $self->{scramdoc}->parse("bootstrap",$fhead,$ftail);
@@ -107,77 +47,76 @@ sub project()
    my ($xmlparser,$name,%attributes)=@_;
    my $name = $attributes{'name'};
    my $version = $attributes{'version'};
+   my $src=$attributes{'source'} || 'src';
    
    scramlogmsg("Creating New Project ".$name." Version ".$version."\n\n");
    
    use Configuration::ConfigArea;
-   $self->{area}=Configuration::ConfigArea->new();
+   $self->{area}=Configuration::ConfigArea->new($ENV{SCRAM_ARCH});
    
    $self->{area}->name($name);
    $self->{area}->version($version);
+   $self->{area}->sourcedir($src);
+   $ENV{SCRAM_SOURCEDIR} = $src;
    $self->{area}->setup($self->{baselocation});
-   
-   # new urlhandler based on area cache
-   $self->{scramdoc}->cache($self->{area}->cache());
    }
 
 sub project_()
    {
    my ($xmlparser,$name,%attributes)=@_;
-   $self->{area}->sourcedir('src');
-   $ENV{SCRAM_SOURCEDIR} = $self->{area}->sourcedir();
+   my $confdir = $self->{area}->location()."/".$self->{area}->configurationdir();
+   my $conf="${confdir}/toolbox/".$self->{area}->arch();
+   my $toolbox=$self->{toolbox};
+   if (-d $toolbox)
+      {
+      use Utilities::AddDir;
+      if (-d "${toolbox}/tools")
+         {
+	 Utilities::AddDir::copydirexp("${toolbox}/tools","${conf}/tools",'\.xml$');
+	 }
+      else
+         {
+         my $boot=$self->{scramdoc}->filetoparse();
+         die "Project creating error. Missing directory \"${toolbox}/tools\" in the toolbox. Please fix file \"$boo\" and set a valid toolbox directory.";
+         }
+      }
+   else
+      {
+      my $boot=$self->{scramdoc}->filetoparse();
+      die "Project creating error. Missing toolbox directory \"${toolbox}\". Please fix file \"$boot\" and set a valid toolbox directory.";
+      }
+   $self->{area}->configchksum($self->{area}->calchksum());
+   if (!-f "${confdir}/scram_version")
+      {
+      my $ref;
+      if (open($ref,">${confdir}/scram_version"))
+         {
+	 print $ref "$ENV{SCRAM_VERSION}\n";
+	 close($ref);
+	 }
+      else{die "ERROR: Can not open ${confdir}/scram_version file for writing.";}
+      }
    $self->{area}->save();
    }
 
 sub config()
    {
    my ($xmlparser,$name,%attributes)=@_;
-   # Set the project config dir variable here so that
-   # "projconfigdir" value can be used while bootstrapping:
    $ENV{SCRAM_CONFIGDIR} = $attributes{'dir'};
    $self->{area}->configurationdir($attributes{'dir'});
    }
 
+sub toolbox () {
+   my ($xmlparser,$name,%attributes)=@_;
+   my $dir = $attributes{'dir'};
+   $dir=~s/^\s*file://;
+   $self->{toolbox}=$dir;
+}
+
 sub download()
    {
    my ($xmlparser,$name,%attributes)=@_;
-   # -- download into top directory
-   my ($fullurl,$filename)=$self->{scramdoc}->urlget($attributes{'url'},
-						     $self->{area}->location()."/".$attributes{'name'});   
-   }
-
-sub requirementsdoc() {
-    my ($xmlparser,$name,%attributes)=@_;
-    my ($filename,$fullurl);
-    
-    if ( exists $attributes{'url'} ) {
-	# -- download into our cache
-	($fullurl,$filename)=$self->{scramdoc}->urlget($attributes{'url'});
-    } else {
-	$filename=$attributes{'name'};
-    }
-    
-    # Check that the requirements file is XML (simplistic check: make sure file
-    # suffix is xml!):
-    if ($filename !~ /xml$/) {	
-	# We have to use exit here because die() doesn't respond...I guess
-	# that SIG{__DIE__} has been trapped somewhere:
-	print __PACKAGE__.": Wrong requirements file type (MUST be XML!)\n";
-	exit(1);
-    }
-    
-    $self->{area}->requirementsdoc($filename);   
-}
-
-sub doc()
-   {
-   my ($xmlparser,$name,%attributes)=@_;
-   my $doctype = $attributes{'type'};
-
-   if ($doctype ne $self->{mydoctype})
-      {
-      warn "Configuration::BootStrapProject::boot: Unable to handle doc of type $doctype";
-      }
+   $self->{scramdoc}->urldownload ($attributes{'url'},$self->{area}->location()."/".$attributes{'name'});
    }
 
 sub AUTOLOAD()

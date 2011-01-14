@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-24 12:24:57+0200
-# Revision: $Id: TreeItem.pm,v 1.4.4.1 2007/11/08 15:25:27 muzaffar Exp $ 
+# Revision: $Id: TreeItem.pm,v 1.6.2.1 2008/02/15 14:58:01 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -66,9 +66,8 @@ sub class()
    # exactly as it appears in the ClassPath:
    if ($class)
       {
-      # Store template name. We add the standard suffix:
-      $self->template($class."_template.tmpl");
       $self->{CLASS} = uc($class);
+      $self->template($class);
       }
    else
       {
@@ -79,8 +78,15 @@ sub class()
 sub template()
    {
    my $self=shift;
-   @_ ? $self->{TEMPLATE} = shift
-      : $self->{TEMPLATE};
+   my ($template)=@_;
+   if ($template)
+      {
+      $self->{TEMPLATE} = $template;
+      }
+   else
+      {
+      return $self->{TEMPLATE};
+      }
    }
 
 sub classdir()
@@ -371,13 +377,6 @@ sub updateparentstatus()
    # Add the SAFESUBDIRS:
    my $safedir = [ 'src/'.$child ];
    $self->safesubdirs(@$safedir);
-   }
-
-sub template()
-   {
-   my $self=shift;
-   @_ ? $self->{TEMPLATE} = shift
-      : $self->{TEMPLATE};
    }
 
 sub safesubdirs()

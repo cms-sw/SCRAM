@@ -4,15 +4,13 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-04-29 16:07:07+0200
-# Revision: $Id: PluginCore.pm,v 1.2.4.1 2007/11/08 15:25:27 muzaffar Exp $ 
+# Revision: $Id: PluginCore.pm,v 1.4.2.1.2.2 2010/10/12 08:14:20 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
 #--------------------------------------------------------------------
 package BuildSystem::Template::Plugins::PluginCore;
 use vars qw( @ISA );
-use base qw(Template::Plugin);
-use Template::Plugin;
 use Exporter;
 @ISA=qw(Exporter);
 
@@ -157,20 +155,19 @@ sub allflags()
 	       push @{$self->{FLAG_CACHE}{$f}},($f eq "CPPDEFINES") ? "-D$fv":$fv;
 	       }
 	    }
-	 if ((exists $t->{content}{ARCH}) &&
-	     (exists $t->{content}{ARCH}{$ENV{SCRAM_ARCH}}) &&
-	     (exists $t->{content}{ARCH}{$ENV{SCRAM_ARCH}}{FLAGS}))
+	 }
+      my @archs=$self->getArchsForTag($t->{content},"FLAGS");
+      foreach my $arch (@archs)
+	 {
+	 foreach my $f (keys %{$t->{content}{ARCH}{$arch}{FLAGS}})
 	    {
-	    foreach my $f (keys %{$t->{content}{ARCH}{$ENV{SCRAM_ARCH}}{FLAGS}})
+	    if (!exists $self->{FLAG_CACHE}{$f})
 	       {
-	       if (!exists $self->{FLAG_CACHE}{$f})
-	          {
-	          $self->{FLAG_CACHE}{$f}=[];
-	          }
-	       foreach my $fv (@{$t->{content}{ARCH}{$ENV{SCRAM_ARCH}}{FLAGS}{$f}})
-	          {
-	          push @{$self->{FLAG_CACHE}{$f}},($f eq "CPPDEFINES") ? "-D$fv":$fv;
-	          }
+	       $self->{FLAG_CACHE}{$f}=[];
+	       }
+	    foreach my $fv (@{$t->{content}{ARCH}{$arch}{FLAGS}{$f}})
+	       {
+	       push @{$self->{FLAG_CACHE}{$f}},($f eq "CPPDEFINES") ? "-D$fv":$fv;
 	       }
 	    }
 	 }
@@ -210,10 +207,11 @@ sub value ()
 	       push @$ret,$d;
 	       }
             }
-         if ((exists  $t->{$ENV{SCRAM_ARCH}}) && (exists $t->{$ENV{SCRAM_ARCH}}{$tag}))
-            {
-            foreach my $d (@{$t->{$ENV{SCRAM_ARCH}}{$tag}})
-               {
+	 my @archs=$self->getArchsForTag($t,$tag);
+	 foreach my $arch (@archs)
+	    {
+            foreach my $d (@{$t->{ARCH}{$arch}{$tag}})
+	       {
 	       push @$ret,$d;
 	       }
 	    }
@@ -304,4 +302,21 @@ sub thisproductdata()
    $self->allflags();
    }
 
+sub getArchsForTag()
+   {
+   my ($self,$t,$tag)=@_;
+   my @xarch=();
+   if (exists $t->{ARCH})
+      {
+      my $sarch=$ENV{SCRAM_ARCH};
+      foreach my $arch (sort keys %{$t->{ARCH}})
+         {
+         if (($sarch=~/$arch/) && (exists $t->{ARCH}{$arch}{$tag}))
+            {
+            push @xarch,$arch;
+            }
+         }
+      }
+   return @xarch;
+   }
 1;

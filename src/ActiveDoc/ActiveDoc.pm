@@ -25,22 +25,7 @@ sub new()
    my $class=shift;
    my $self={};
    bless $self, $class;
-   $self->{Ostore}=shift;
-   $self->cache($self->{Ostore}->cache());
-   $self->{dbstore}=$self->{Ostore};
    return $self;
-   }
-
-sub url()
-   {
-   my $self=shift;
-   # get file & preprocess
-   if ( @_  )
-      {
-      $self->{origurl}=shift;
-      ($self->{url}, $self->{file})=$self->urlget($self->{origurl});
-      $self->filetoparse($self->{file});
-      } 
    }
 
 sub included_file()
@@ -55,25 +40,11 @@ sub include()
    {
    my $self=shift;
    my (%attributes)=@_;
-   my ($filename,$fullurl);
-   
-   if ( exists $attributes{'url'} )
-      {
-      # -- download into our cache
-      ($fullurl,$filename)=$self->urlget($attributes{'url'});
-      }
-   else
-      {
-      $filename=$attributes{'name'};
-      }
-   # Set the file name of the included file:
-   $self->included_file($filename);
+   $self->included_file($self->fullpath($attributes{'url'}));
    }
 
 sub include_()
    {
-   my $self=shift;
-
    }
 
 1;

@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 15:16:01+0200
-# Revision: $Id: BuildDataStorage.pm,v 1.21 2008/01/27 10:06:13 muzaffar Exp $ 
+# Revision: $Id: BuildDataStorage.pm,v 1.23.2.3.2.4 2009/10/06 15:26:51 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -47,72 +47,10 @@ sub new()
   # Somewhere to store the dependencies:
   $self->{DEPENDENCIES} = {};  # GLOBAL dependencies
   $self->{SKIPPEDDIRS} = {};   # Global skipped dirs
-  
-  # Initialize the Template Engine:
   $self->init_engine();
   
   return $self;
   }
-
-sub grapher()
-   {
-   my $self=shift;
-   my ($mode,$writeopt)=@_;
-   
-   if ($mode)
-      {
-      $mode =~ tr[A-Z][a-z];
-      # Check to see what the mode is:
-      if ($mode =~ /^g.*?/)
-	 {	 
-	 $self->{GRAPH_MODE} = 'GLOBAL';
-	 # GLOBAL package graphing:
-	 use BuildSystem::SCRAMGrapher;
-	 $self->{SCRAMGRAPHER} = BuildSystem::SCRAMGrapher->new();
-	 }
-      elsif ($mode =~ /^p.*?/)
-	 {
-	 # All other cases assume per package. This means that each package
-	 # is responsible for creating/destroying grapher objects and writing
-	 # out graphs, if required:
-	 $self->{GRAPH_MODE} = 'PACKAGE';
-	 }
-      else
-	 {
-	 print "SCRAM error: no mode (w=p,w=g) given for graphing utility!","\n";
-	 exit(1);
-	 }
-      
-      # Set write option:
-      $self->{GRAPH_WRITE} = $writeopt;
-      }
-   else
-      {
-      print "SCRAM error: no mode (w=p,w=g) given for graphing utility!","\n";
-      exit(1);
-      }
-   }
-
-sub global_graph_writer()
-   {
-   my $self=shift;
-   my $name='Project';   
-   # Only produce graphs with DOT if enabled. This routine is
-   # only used at Project level:
-   if (defined($self->{SCRAMGRAPHER}) && $self->{GRAPH_WRITE})
-      {
-      my $data; # Fake data - there isn't a DataCollector object
-      $self->{SCRAMGRAPHER}->graph_write($data, $name);
-      delete $self->{SCRAMGRAPHER};
-      }
-   else
-      {
-      print "SCRAM error: can't write graph!","\n";
-      exit(1);
-      }
-   
-   return;
-   }
 
 #### The methods ####
 sub datapath()
@@ -250,14 +188,31 @@ sub updateproductstore()
    }
 }
 
+sub getbf ()
+   {
+   my $self=shift;
+   my $dpath=shift;
+   my $bfile="";
+   if (exists $self->{BUILDTREE}->{$dpath})
+      {
+      my $item=$self->{BUILDTREE}->{$dpath};
+      if (defined $item)
+	 {
+	 my $bf = $item->metabf();
+	 if (scalar(@$bf)>0){$bfile=$bf->[0];}
+	 }
+      }
+   return $bfile;
+   }
+
 sub update()
    {
    my $self=shift;
-   my ($dircache, $toolmanager) = @_;
-   $self->{TOOLMANAGER} = $toolmanager;
-   
+   my ($dircache) = @_;
+
    my $newbf  = $dircache->get_data("ADDEDBF");
    my $newdir = $dircache->get_data("ADDEDDIR");
+   my $remdir = $dircache->get_data("REMOVEDDIR");
    use File::Path;
    my $mkpath = $ENV{LOCALTOP}."/".$ENV{SCRAM_INTwork}."/MakeData";
    my $mkpubpath = $ENV{LOCALTOP}."/.SCRAM/".$ENV{SCRAM_ARCH}."/MakeData";
@@ -266,8 +221,8 @@ sub update()
    mkpath("$mkpubpath/DirCache",0,0755);
    my %runeng = ();
    my $projinfo=undef;
-   eval ("use SCRAM::ProjectInfo");
-   if(!$@) {$projinfo = SCRAM::ProjectInfo->new();}
+   eval ("use SCRAM_ExtraBuildRule;");
+   if(!$@) {$projinfo = SCRAM_ExtraBuildRule->new();}
    if ($newbf)
       {
       foreach my $bf ("$ENV{SCRAM_BUILDFILE}.xml","$ENV{SCRAM_BUILDFILE}")
@@ -276,7 +231,7 @@ sub update()
 	    {
             my $treeitem = $self->updatedirbf($dircache,$ENV{SCRAM_SOURCEDIR},$ENV{SCRAM_CONFIGDIR}."/${bf}");
             $self->updateproductstore($treeitem);
-            $runeng{$ENV{SCRAM_SOURCEDIR}}=$treeitem;
+            $runeng{$ENV{SCRAM_SOURCEDIR}}=1;
             delete $newbf->{$ENV{SCRAM_CONFIGDIR}."/${bf}"};
 	    last;
 	    }
@@ -288,28 +243,27 @@ sub update()
          {
 	 if (!exists $newdir->{$path}) {next;}
 	 if ($path!~/^$ENV{SCRAM_SOURCEDIR}\/(.+)/){delete $newdir->{$path};next;}
+	 if ($path eq "$ENV{SCRAM_SOURCEDIR}/$ENV{SCRAM_SOURCEDIR}"){print "****WARNING: SCRAM does not support to have directory $ENV{LOCALTOP}/$ENV{SCRAM_SOURCEDIR}/$ENV{SCRAM_SOURCEDIR}.\n";next;}
 	 my $cinfo = $self->buildclass($path);
 	 if ($cinfo && $cinfo->[2] ne ""){$dircache->prune($path,0,$cinfo->[2]);}
 	 else
 	    {
 	    my $dpath = $self->datapath($path);
-	    my $pitem=undef;
-	    if (exists $self->{BUILDTREE}->{$dpath})
+	    if (exists $dircache->{PACKMAP}{$dpath})
 	       {
-	       $pitem=$self->{BUILDTREE}->{$dpath};
-	       if (defined $pitem)
-	          {
-	          my $bf = $pitem->metabf();
-	          if (scalar(@$bf)>0)
-	             {
-	             $bf=$bf->[0];
-		     if (!exists $newbf->{$bf})
-		        {
-		        delete $newdir->{$path};
-		        next;
-		        }
-                     }
-	          }
+	       my $map=$dircache->{PACKMAP}{$dpath};
+	       if (($remdir) && (exists $remdir->{$ENV{SCRAM_SOURCEDIR}."/${map}"}))
+		  {
+		  $bf=$self->getbf($map);
+		  if ($bf){$newbf||={};$newbf->{$bf}=1;}
+		  delete $newdir->{$path};
+		  next;
+		  }
+	       }
+	    else
+	       {
+	       $bf=$self->getbf($dpath);
+	       if (($bf ne "") && ($newbf) && (!exists $newbf->{$bf})){delete $newdir->{$path};next;}
 	       }
 	    my $item = $self->updatedirbf($dircache,$path,"",$cinfo);
 	    my $flag=0;
@@ -319,14 +273,26 @@ sub update()
                }
             else
                {
-               $flag=$projinfo->ispublic($item);
+               $flag=$projinfo->isPublic($item->class());
                }
-	    $runeng{$path}=$item;
+	    $runeng{$path}=1;
             if ($flag)
                {
                my $treeitem = $self->{BUILDTREE}->{$dpath};
-               $dircache->{PACKMAP}{$treeitem->parent()}=$dpath;
-               $item->publictype (1);
+	       my $parent=$treeitem->parent();
+	       my $bf = $self->getbf($parent);
+	       if ($bf)
+	       {
+	         $newbf||={};
+		 $newbf->{$bf}=1;
+		 if (!exists $runeng{$parent})
+		    {
+		    $runeng{$parent}=1;
+		    delete $self->{BUILDTREE}->{$parent}{RAWDATA};
+		    }
+	       }
+               $dircache->{PACKMAP}{$parent}=$dpath;
+	       $item->publictype (1);
                }
 	    }
 	 }
@@ -334,26 +300,29 @@ sub update()
       
    my %mkrebuild=();
    $mkrebuild{"${mkpath}/RmvDirCache"}=1;
-   my $remdir = $dircache->get_data("REMOVEDDIR");
    if ($remdir)
       {
       foreach  my $path (keys %{$remdir})
          {
 	 delete $remdir->{$path};
+	 my $dpath=$self->datapath($path);
+	 if (exists $self->{BUILDTREE}->{$dpath}){delete $self->{BUILDTREE}->{$dpath};}
+	 foreach my $map (keys %{$dircache->{PACKMAP}})
+	    {
+	    if ($dircache->{PACKMAP}{$map} eq $dpath)
+	       {
+	       delete $dircache->{PACKMAP}{$map};
+	       last;
+	       }
+	    }
 	 my $spath = $path; $spath =~ s|/|_|g;
 	 open(OFILE,">${mkpath}/RmvDirCache/${spath}.mk");
 	 print OFILE "REMOVED_DIRS += $path\n";
 	 close(OFILE);
 	 my $mpath = "${mkpath}/DirCache/${spath}.mk";
-	 if (!-f $mpath)
-	    {
-	    $mpath = "${mkpubpath}/DirCache/${spath}.mk";
-	    }
-	 if (-f $mpath)
-	    {
-	    unlink $mpath;
-	    $mkrebuild{dirname($mpath)}=1;
-	    }
+	 if (-f $mpath){unlink $mpath;$mkrebuild{dirname($mpath)}=1;}
+	 $mpath = "${mkpubpath}/DirCache/${spath}.mk";
+	 if (-f $mpath){unlink $mpath;$mkrebuild{dirname($mpath)}=1;}
 	 }
       }
       
@@ -362,10 +331,8 @@ sub update()
       foreach my $bf (keys %{$newbf})
          {
          my $dpath = $self->datapath($bf);
-	 if (exists $dircache->{PACKMAP}{$dpath})
-	    {
-	    $dpath = $dircache->{PACKMAP}{$dpath};
-	    }
+	 if (exists $dircache->{PACKMAP}{$dpath}){$dpath = $dircache->{PACKMAP}{$dpath};}
+	 if (!exists $self->{BUILDTREE}->{$dpath}){$dpath=$self->datapath($bf);}
 	 $self->scan($bf,$dpath);
 	 $self->{BUILDTREE}->{$dpath}->metabf($bf);
 	 $runeng{"$ENV{SCRAM_SOURCEDIR}/${dpath}"} = $self->{BUILDTREE}->{$dpath};
@@ -374,14 +341,16 @@ sub update()
       }
    foreach my $path (sort {$a cmp $b} keys %runeng)
       {
-      my $treeitem = $runeng{$path};
+      my $dpath=$self->datapath($path);
       delete $newdir->{$path};
+      if(!exists $self->{BUILDTREE}->{$dpath}){next;}
+      my $treeitem = $self->{BUILDTREE}->{$dpath};
       $self->run_engine($treeitem);
       if (exists $treeitem->{MKDIR})
          {
          foreach my $d (keys %{$treeitem->{MKDIR}})
             {
-            $d=~s/\/\//\//;
+            $d=~s/\/\//\//g;
             $mkrebuild{$d}=1;
             }
 	 delete $treeitem->{MKDIR};
@@ -403,9 +372,9 @@ sub scan()
    my $self=shift;
    my ($buildfile, $datapath) = @_;
    my $bfparse;
-   $bfparse=BuildSystem::BuildFile->new();
+   $bfparse=BuildSystem::BuildFile->new(1);
    # Execute the parse:
-   $bfparse->parse($buildfile);
+   if (-e  $buildfile) {$bfparse->parse($buildfile);}
    # See if there were skipped dirs:
    my $skipped = $bfparse->skippeddirs($datapath);   
    # Check to see if there was an info array for this location.
@@ -416,7 +385,6 @@ sub scan()
       {
       $self->skipdir($datapath,$skipped->[1]);
       }
-
    $self->storedata($datapath, $bfparse);
 
    return $self;
@@ -425,17 +393,19 @@ sub scan()
 sub init_engine()
    {
    my $self=shift;
-   # Create the interface to the template engine:
-   use BuildSystem::TemplateInterface;
-   # Pass in the config dir as the location where templates live:
-   $self->{TEMPLATE_ENGINE} = BuildSystem::TemplateInterface->new();
+   if (!exists $self->{TEMPLATE_ENGINE})
+      {
+      # Create the interface to the template engine:
+      use BuildSystem::TemplateInterface;
+      # Pass in the config dir as the location where templates live:
+      $self->{TEMPLATE_ENGINE} = BuildSystem::TemplateInterface->new();
+      }
    }
 
 sub run_engine()
    {
    my $self=shift;
    my ($templatedata)=@_;
-
    $self->{TEMPLATE_ENGINE}->template_data($templatedata);
    $self->{TEMPLATE_ENGINE}->run();
    return $self;
@@ -455,6 +425,7 @@ sub buildclass
    # Split every cache definition into an array of pairs, directory
    # name and class.  So ClassPath of type "+foo/+bar/src+library"
    # becomes [ [ "" "foo" ] [ "" "bar" ] [ "src" "library" ] ]
+
    my @CLASSPATHS=@{$self->{BUILDTREE}->{$ENV{SCRAM_SOURCEDIR}}->rawdata()->{content}->{CLASSPATH}};
    # This does not work, even though classpath() is a valid method and rawdata()
    # returns an object blessed into the correct type:
@@ -785,10 +756,9 @@ sub save()
    my $self=shift;
    # Delete unwanted stuff:
    delete $self->{DEPENDENCIES};
-   delete $self->{TOOLMANAGER};
    delete $self->{TEMPLATE_ENGINE};
    delete $self->{SCRAM_PROJECTS};
-   delete $self->{SCRAM_PROJECT_BASES};   
+   delete $self->{SCRAM_PROJECT_BASES};
    return $self;
    }
 

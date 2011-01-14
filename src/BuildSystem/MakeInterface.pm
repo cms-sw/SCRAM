@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2004-06-22 14:49:43+0200
-# Revision: $Id: MakeInterface.pm,v 1.5 2007/12/14 09:03:47 muzaffar Exp $ 
+# Revision: $Id: MakeInterface.pm,v 1.6.4.3 2008/12/11 09:38:09 muzaffar Exp $ 
 #
 # Copyright: 2004 (C) Shaun Ashby
 #
@@ -29,7 +29,7 @@ sub new()
   {
   my $proto=shift;
   my $class=ref($proto) || $proto;
-  my $self={ GMAKECMD => 'gmake', CMDOPTS => ' -r' };
+  my $self={ GMAKECMD => '${SCRAM_GMAKE_PATH}gmake', CMDOPTS => ' -r' };
   bless $self,$class;
   $|=1;
 
@@ -74,10 +74,9 @@ sub exec()
    my ($makefile)=@_;
    my $PID;
    my $makecmd=$self->{GMAKECMD}.$self->{CMDOPTS}." -f ".$makefile." ".join(" ",@ARGV);
-   
-   print "SCRAM: Starting ",$self->{GMAKECMD}," ....\n";
+
    # Try without forking:
-   exec "$makecmd" || die "SCRAM MakeInterface::exec(): Unable to exec()...$!","\n";
+   exec("$makecmd") || die "SCRAM MakeInterface::exec(): Unable to run gmake ...$!","\n";
    }
 
 1;
