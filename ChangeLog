@@ -1,3 +1,8 @@
+2011-09-05 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* Cache/Cache.pm: Only search valid directories which passes
+	[a-zA-Z0-9][a-zA-Z0-9-_]* filter. 
+
 2011-01-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 	
 	* SCRAM/Plugins/DocParser.pm: Allowed <!-- --> style comment

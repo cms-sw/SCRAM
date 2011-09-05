@@ -5,7 +5,7 @@
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 #         (with contribution from Lassi.Tuura@cern.ch)
 # Update: 2003-11-27 16:45:18+0100
-# Revision: $Id: Cache.pm,v 1.11 2011/01/14 17:36:42 muzaffar Exp $ 
+# Revision: $Id: Cache.pm,v 1.12 2011/09/05 09:01:19 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -170,7 +170,7 @@ sub checktree()
    # Otherwise use the cache as the list of items we need to change.
    my $cached = $self->{DIRCACHE}{$path};   
    my @items = ();
-   my $matchdir='[a-zA-Z0-9].+';
+   my $matchdir='[a-zA-Z0-9][a-zA-Z0-9-_]*';
 
    if (! -d _)
       {

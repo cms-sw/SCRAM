@@ -1,9 +1,11 @@
 
 			SCRAM Release Notes
 
-V2_2_X: 2011-01-14
+V2_2_3: 2011-09-05
 
 	* XML comment of type <!--   --> supported.
+	* Allow only valid directories names to be part of
+	packages/sub-systems
 
 V2_2_2: 2011-01-06
 
