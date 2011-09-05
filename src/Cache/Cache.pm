@@ -5,7 +5,7 @@
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 #         (with contribution from Lassi.Tuura@cern.ch)
 # Update: 2003-11-27 16:45:18+0100
-# Revision: $Id: Cache.pm,v 1.10.2.2.2.4 2010/07/28 15:34:12 muzaffar Exp $ 
+# Revision: $Id: Cache.pm,v 1.11 2011/01/14 17:36:42 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -82,11 +82,13 @@ sub getdir()
    {
    my $self=shift;
    my $path=shift;
+   my $ignore=shift || 'CVS|\\..*';
+   my $match=shift || ".+";
 
    opendir (DIR, $path) || die "$path: cannot read: $!\n";
    # Skip .admin and CVS subdirectories too.
    # Also skip files that look like backup files or files being modified with emacs:
-   my @items = map { "$path/$_" } grep ((-d "$path/$_") && ($_!~/^(CVS|\..*)$/),readdir(DIR));
+   my @items = map { "$path/$_" } grep ((-d "$path/$_") && ($_=~/^($match)$/) && ($_!~/^($ignore)$/),readdir(DIR));
    closedir (DIR);
    return @items;
    }
@@ -168,6 +170,7 @@ sub checktree()
    # Otherwise use the cache as the list of items we need to change.
    my $cached = $self->{DIRCACHE}{$path};   
    my @items = ();
+   my $matchdir='[a-zA-Z0-9].+';
 
    if (! -d _)
       {
@@ -178,7 +181,7 @@ sub checktree()
       {
       # When a directory is added, this block is activated
       $self->{ADDEDDIR}{$path}=1;
-      $self->{DIRCACHE}{$path} = [ (stat(_))[9], @items = $self->getdir($path) ];
+      $self->{DIRCACHE}{$path} = [ (stat(_))[9], @items = $self->getdir($path,'',$matchdir) ];
       $required = 1;
       $self->cachestatus(1);
       }
@@ -191,7 +194,7 @@ sub checktree()
       # update can be taken recursively from this dir:
       #$self->modified_parentdirs($path);
       # Current subdirs:
-      my %curdirs = map { $_ => 1 } $self->getdir($path);
+      my %curdirs = map { $_ => 1 } $self->getdir($path,'',$matchdir);
       my %olddirs = ();
       for (my $i = 1; $i <= $#$cached; $i++)
 	 {
