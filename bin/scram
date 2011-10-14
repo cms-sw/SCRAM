@@ -83,7 +83,7 @@ if (!$command)
    print $scram->usage();
    exit(1);
    }
-elsif($command=~/^(install\|remove)$/o){exit(0);}
+elsif($command=~/^(install|remove)$/o){exit(0);}
 $scram->init ($opts{SCRAM_FORCE});
 
 exit($scram->execcommand($command,@ARGV));
