@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-24 10:28:14+0200
-# Revision: $Id: CMD.pm,v 1.77.2.3.2.14 2010/12/07 10:15:31 muzaffar Exp $ 
+# Revision: $Id: CMD.pm,v 1.78 2011/01/14 17:36:43 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -54,8 +54,7 @@ sub arch()
       }
    else
       {
-      print $self->architecture(),"\n";
-      # Return nice value:
+      print $ENV{SCRAM_ARCH},"\n";
       return (0);
       }
    }
@@ -264,94 +263,6 @@ sub toolremove()
    return 0;
    }
 
-=item   C<install()>
-
-Install the current project in the local SCRAM project database so that it will
-be listed by C<scram list>.
-   
-=cut
-
-sub install()
-   {
-   my $self=shift;
-   my (@ARGS) = @_;
-   my $install_dir = "";
-   my %opts = ( SCRAM_FORCE => 0 );
-   my %options =
-      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('install'); exit(0) },
-       "force|f"  => sub { $opts{SCRAM_FORCE} = 1 },
-       "dir|d=s"  => sub { $install_dir = $_[1] } );
-
-   local @ARGV = @ARGS;
-   
-   Getopt::Long::config qw(default no_ignore_case require_order bundling);
-   
-   if (! Getopt::Long::GetOptions(\%opts, %options))
-      {
-      $self->scramfatal("Error parsing arguments. See \"scram install -help\" for usage info.");
-      }
-   else
-      {
-      # Check to see if we are in a local project area:
-      $self->checklocal();
-      # Check to make sure that the project is a SCRAM V1 project:
-      $self->checkareatype($self->localarea()->location(),"Area type mismatch. Trying to execute a SCRAM command in a V0 project area using a V1x version of SCRAM. Exiting.");
-      
-      # Install the project:
-      $self->scramprojectdb()->addarea($opts{SCRAM_FORCE},$self->localarea(),$install_dir);
-      $self->register_install();
-      return 0;
-      }
-   }
-
-=item   C<remove($project,$projectversion)>
-
-Remove project $project version $projectversion from the local
-SCRAM project database.
-
-=cut
-
-sub remove()
-   {
-   my $self=shift;
-   my (@ARGS) = @_;
-   my %opts = ( SCRAM_FORCE => 0 );
-   my %options =
-      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('remove'); exit(0) },
-       "force|f"  => sub { $opts{SCRAM_FORCE} = 1 } );
-
-   local @ARGV = @ARGS;
-   
-   Getopt::Long::config qw(default no_ignore_case require_order bundling);
-   
-   if (! Getopt::Long::GetOptions(\%opts, %options))
-      {
-      $self->scramfatal("Error parsing arguments. See \"scram remove -help\" for usage info.");
-      }
-   else
-      {
-      # Remove the project:
-      my $project = shift(@ARGV);
-      my $projectversion = shift(@ARGV);
-      
-      if ($project eq "" || $projectversion eq "")
-	 {
-	 $self->scramfatal("Error parsing arguments. See \"scram remove -help\" for usage info.");	 
-	 }
-      else
-	 { 
-	 my $dirs=$self->scramprojectdb()->removearea($opts{SCRAM_FORCE},$project,$projectversion);
-	 foreach my $dir (@$dirs)
-	    {
-	    $self->unregister_install($dir);
-	    }
-	 }
-      
-      # Return nice value:  
-      return 0;
-      }
-   }
-
 =item   C<version([ $version ])>
 
 Print the version of SCRAM. If $version argument is given, run $version of SCRAM.
@@ -416,41 +327,24 @@ sub list()
       my $pjversion = "Project Version";
       my $pjlocation = "Project Location";
       my $headstring = sprintf("| %-12s  | %-24s | %-33s |",$pjname,$pjversion,$pjlocation);
-      my @missingareas;
-      my $projectexists=0;
       my $linebold = "$::bold"."$::line"."$::normal";
-      
-      # First, test to see if there is a SCRAMDB:
-      $self->scramerror("No installation database available - perhaps no projects have been installed locally?"),
-      if ( ! -f $ENV{SCRAM_LOOKUPDB});
       
       # The project data:
       my $project = shift(@ARGV);
       my $projectversion = shift(@ARGV);
-      my $projects = $self->scramprojectdb()->listall();
-      foreach my $type ("local","linked")
-         {
-	 if(!exists $projects->{$type}){next;}
-         foreach my $pr (@{$projects->{$type}})
+      my $projects = $self->scramprojectdb()->listall($project,$projectversion);
+      foreach my $pr (sort keys %$projects)
+	 {
+	 foreach my $pv (sort keys %{$projects->{$pr}})
 	    {
-	    if (($project  ne "") && ($project ne $$pr[0])) {next;}
-	    if (($projectversion ne "") && ($projectversion ne $$pr[1])) {next;}
-	    my $url=$$pr[3];
-            if (!-e $url)
-	       {
-	       if ($type eq "local"){push(@missingareas,"\t$url\n");}
-	       }
-	    elsif (-d $url && $self->isregistered($url))
-	       {
-	       $projectexists=1;
-	       my $pstring = sprintf "  %-15s %-25s  \n%45s%-30s\n",$$pr[0],$$pr[1],"--> ",$::bold.$url.$::normal;
-	       $pstring = sprintf "%-15s %-25s %-50s\n",$$pr[0],$$pr[1],$url, if ($opts{SCRAM_LISTCOMPACT});
-	       push(@foundareas,$pstring);
-	       }
+	    my $url=$projects->{$pr}{$pv};
+	    my $pstring = sprintf "  %-15s %-25s  \n%45s%-30s\n",$pr,$pv,"--> ",$::bold.$url.$::normal;
+	    $pstring = sprintf "%-15s %-25s %-50s\n",$pr,$pv,$url, if ($opts{SCRAM_LISTCOMPACT});
+	    push(@foundareas,$pstring);
 	    }
 	 }
       
-      if (!$projectexists)
+      if (scalar(@foundareas)==0)
          {
 	 if ($projectversion ne "")
 	    {
@@ -492,14 +386,7 @@ sub list()
 	 
 	 print "\n\n","Projects available for platform >> ".$::bold."$ENV{SCRAM_ARCH}".$::normal." <<\n";
 	 print "\n";
-	 }
-      
-      # Error if there were missing areas:
-      if ((scalar(@missingareas)>0) && ($ENV{SCRAM_DEBUG}))
-         {
-         print ">> Following project area(s) is/are registered but not readable/available:\n\n";
-	 $self->scramerror("\n",@missingareas);
-	 }
+	 }      
       }
    
    # Otherwise return nicely:
@@ -534,13 +421,9 @@ sub db()
       }
    else
       {
-      # First, test to see if there is a SCRAMDB:
-      $self->scramerror("No installation database available - perhaps no projects have been installed locally?"),
-      if ( ! -f $ENV{SCRAM_LOOKUPDB});
-
       if ($opts{SCRAM_DB_LINK})
 	 {
-	 if ( -f $db )
+	 if ( -d $db )
 	    {
 	    if ($self->scramprojectdb()->link($db)==0)
 	       {
@@ -550,7 +433,7 @@ sub db()
 	    }
 	 else
 	    {
-	    $self->scramerror("Can not link to SCRAM-DB. No such file: $db");
+	    $self->scramerror("Can not link to SCRAM-DB. No such directory: $db");
 	    }
 	 }
       elsif ($opts{SCRAM_DB_UNLINK})
@@ -568,13 +451,10 @@ sub db()
 	 my $flag=0;
 	 foreach my $type ("local","linked")
 	    {
-	    if ((!exists $links->{$type}) || (scalar(@{$links->{$type}})==0)) { next;}
+	    if (scalar(@{$links->{$type}})==0) { next;}
 	    $flag=1;
 	    print "The following SCRAM databases are linked ";
-	    if ($type eq "local")
-	       {
-	       print "directly:\n";
-	       }
+	    if ($type eq "local"){print "directly:\n";}
 	    else {print "in-directly:\n";}
 	    foreach my $extdb (@{$links->{$type}})
 	       {
@@ -950,7 +830,7 @@ sub bootfromrelease() {
 	# Write the cached info:
 	$toolmanager->writecache();
 	
-        my $temp=$area->location()."/".$area->{admindir}."/".$area->arch();
+        my $temp=$area->location()."/".$area->{admindir}."/".$ENV{SCRAM_ARCH};
         if (-f "${temp}/MakeData/Tools.mk")
            {
 	   my $t1=(stat("${temp}/MakeData/Tools.mk"))[9];

@@ -18,7 +18,6 @@
 		SCRAM::SCRAM.pm
 		SCRAM::ScramProjectDB.pm
 		Utilities::AddDir.pm
-		Utilities::Architecture.pm
 		Utilities::Verbose.pm
 		);
 

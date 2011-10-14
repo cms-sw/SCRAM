@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-11-12 15:04:16+0100
-# Revision: $Id: ToolManager.pm,v 1.19.2.2.2.5 2010/12/02 15:57:31 muzaffar Exp $ 
+# Revision: $Id: ToolManager.pm,v 1.20 2011/01/14 17:36:42 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -40,7 +40,7 @@ sub init ()
    $self->{topdir}=$projectarea->location();
    $self->{configdir}=$self->{topdir}."/".$projectarea->configurationdir();
    $self->{archstore}=$projectarea->archdir();
-   $self->{toolcache}=$self->{configdir}."/toolbox/".$projectarea->arch()."/tools";
+   $self->{toolcache}=$self->{configdir}."/toolbox/$ENV{SCRAM_ARCH}/tools";
    $self->name($projectarea->toolcachename());
    $self->dirty();
    }

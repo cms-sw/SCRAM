@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.34.2.3.2.8 2010/09/23 10:46:22 muzaffar Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.35 2011/01/14 17:36:43 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -61,7 +61,6 @@ sub new()
       {
       SCRAM_VERSIONCHECK => undef,
       SCRAM_ALLOWEDCMDS => undef,
-      SCRAM_ARCH => undef,
       SCRAM_VERBOSE => 0 || $ENV{SCRAM_VERBOSE},
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
@@ -71,7 +70,7 @@ sub new()
       };
    bless $self,$class;
    $self->{force}=0;
-   $self->_initarch ();
+   $self->commands();
    $ENV{SCRAM_BUILDFILE} = "BuildFile";
    return $self;
    }
@@ -87,7 +86,6 @@ sub init()
    {
    my $self=shift;
    $self->{force}=shift || 0;
-   $self->commands();
    $self->_initlocalarea();
    $self->_initenv();
    $self->versioncheck();
@@ -113,7 +111,7 @@ sub commands()
    my @env_commands = qw(version arch runtime unsetenv);
    my @info_commands = qw(list db); 
    my @buildenv_commands = qw(project setup tool);
-   my @build_commands=qw(build install remove);
+   my @build_commands=qw(build);
    my @dev_cmds=qw();
 
    return ($self->{SCRAM_ALLOWEDCMDS} =
@@ -234,24 +232,6 @@ sub _initenv()
       }
    }
 
-sub _initarch ()
-   {
-   my $self=shift;
-   if (! defined $self->{SCRAM_ARCH})
-      {
-      my $arch=$ENV{SCRAM_ARCH} || "";
-      if ($arch=~/^\s*$/)
-         {
-         use Utilities::Architecture;
-	 my $a = Utilities::Architecture->new();
-	 $arch=$a->arch();
-	 $ENV{SCRAM_ARCH}=$arch;
-	 }
-      $self->architecture($arch);
-      }
-   return $ENV{SCRAM_ARCH};      
-   }
-   
 =item   C<islocal()>
 
 Return true/false depending on whether the current directory
@@ -268,29 +248,6 @@ sub islocal()
 
    }
 
-sub installedProjects() 
-   {
-   my $self=shift;
-   my $nregexp=shift;
-   my $vregexp=shift;
-   my $projects=$self->scramprojectdb()->listall();
-   my %results=();
-   foreach my $type ("local","linked") {
-      if(!exists $projects->{$type}){next;}
-      foreach my $pr (@{$projects->{$type}}) {
-	 my $name=$$pr[0];
-	 if ($name!~/$nregexp/){next;}
-	 my $version=$$pr[1];
-	 if ($version!~/$vregexp/){next;}
-	 my $url=$$pr[3];
-         if ((-e $url) && (-d $url) && ($self->isregistered($url))){
-	    $results{$name}{$version}=$url;
-	 }
-      }
-   }
-   return %results;
-}
-   
 =item   C<_initlocalarea()>
 
 Initialise the local area. Once this function has been run, a
@@ -306,7 +263,7 @@ sub _initlocalarea() {
     
     if ( ! defined ($self->localarea()) ) {
 	require Configuration::ConfigArea;
-	my $area = Configuration::ConfigArea->new($self->architecture());
+	my $area = Configuration::ConfigArea->new();
 	my $loc = $area->location();
 	if ( ! defined $loc ) {
 	    $self->islocal(0);
@@ -330,10 +287,10 @@ sub _initlocalarea() {
 	          print STDERR "********** ERROR: Missing Release top ************\n",
 		               "  The release area \"$rel\"\n",
 		               "  for \"$name\" version \"$version\" is not available/usable.\n";
-		  my %res=$self->installedProjects("^$name\$","^${vregexp}.+");
-		  if (exists $res{$name}) {
-		     delete $res{$name}{$version};
-		     my @rels=keys %{$res{$name}};
+		  my $res=$self->scramprojectdb()->listall("$name","${vregexp}.+");
+		  if (exists $res->{$name}) {
+		     delete $res->{$name}{$version};
+		     my @rels=keys %{$res->{$name}};
 		     if (@rels>0) {
 			print STDERR "  In case this release has been deprecated, you can move your code to\n",
 			             "  one of the following release(s) of release series \"$relseries\".\n\n",
@@ -416,85 +373,6 @@ sub configversion()
    my $self=shift;
    @_ ? $self->{SCRAM_CONFIGVERSION} = shift # Modify or
       : $self->{SCRAM_CONFIGVERSION};        # retrieve
-   }
-
-=item   C<architecture()>
-
-Set/return the current SCRAM architecture, e.g. B<slc3_ia32_gcc323>.
-
-=cut
-
-sub architecture()
-   {
-   my $self=shift;
-
-   @_ ? $self->{SCRAM_ARCH} = shift # Modify or
-      : $self->{SCRAM_ARCH};        # retrieve
-   }
-
-=item   C<isregistered($area)>
-
-Return true or false depending on whether the SCRAM project area
-$area is registered in the SCRAM database as having been installed.
-The status is set according to whether a file B<.installed> exists
-in the architecture-dependent directories under the admin dir of
-the project. This allows a project to be installed for one architecture
-only, while other architectures may not be released.
-   
-=cut
-
-sub isregistered()
-   {
-   my $self=shift;
-   my $dir = shift;
-   my $registerfile = "${dir}/.SCRAM/$ENV{SCRAM_ARCH}/.installed";
-   ( -f $registerfile) ? return 1 : return 0;
-   }
-
-=item   C<register_install()>
-
-Register that a project was really installed by creating a file B<.installed>
-in the project architecture directory. This can then be checked in addition to the
-architecture-dependent directories which are created automatically when building.
-
-=cut
-
-sub register_install()
-   {
-   my $self=shift;
-   # Register that a project was really installed by creating a file .installed
-   # in the project arch directory. This can then be checked in addition to the
-   # arch-dependent dirs which are created automatically when building:
-   my $area = $self->{localarea};
-   my $archdir = $area->location()."/".$area->admindir()."/".$self->architecture();
-   my $registerfile = $archdir."/.installed";
-
-   # The file should exist in the .SCRAM/<arch> directory. This is better than checking
-   # for product store directories:
-   open(INSTALLFILE, "> $registerfile");
-   print INSTALLFILE time()."\n";
-   close(INSTALLFILE);
-
-   my $filemode = 0444;
-   chmod $filemode, $registerfile;
-   }
-
-=item   C<unregister_install()>
-
-Remove a project from the SCRAM database. Reverse the process of register_install().
-
-=cut
-
-sub unregister_install()
-   {
-   my $self=shift;
-   my $dir = shift || return;
-   my $registerfile = "${dir}/.SCRAM/$ENV{SCRAM_ARCH}/.installed";
-   if ( -f $registerfile)
-      {
-      unlink $registerfile;
-      }
-   return;
    }
 
 =item   C<toolmanager($location)>
@@ -851,7 +729,6 @@ sub usage()
    $usage.="\n";
    $usage.=sprintf("%-28s : %-55s\n","--arch <architecture>",
 		   "Set the architecture ID to that specified.");
-   $usage.=sprintf("%-28s : %-55s\n","--noreturn","Pause after command execution rather than just exiting.");
    $usage.="\n";
 
    return $usage;

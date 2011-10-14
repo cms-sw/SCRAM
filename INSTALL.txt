@@ -1,4 +1,4 @@
 Following is/are the step(s) needed to install SCRAM.
 - Edit bin/scram script and replace 
-  * @SCRAM_LOOKUPDB_DIR@ with the path of SCRAM DB directory <path>/scramdb.
+  * @CMS_PATH@ with the CMS path. scram will look for @CMS_PATH@/etc/scramrc directory for extra configuration.
   * @SCRAM_VERSION@ with the SCRAM version string

@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-10-19 13:56:50+0200
-# Revision: $Id: Helper.pm,v 1.20.2.3.2.4 2010/09/23 10:46:22 muzaffar Exp $ 
+# Revision: $Id: Helper.pm,v 1.21 2011/01/14 17:36:43 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -224,54 +224,17 @@ sub db()
    $help.="\tlist operations, e.g.\n";
    $help.="\n";
    $help.="$::bold";
-   $help.="\tscram db --link $::normal /a/directory/path/project.lookup\n";
+   $help.="\tscram db --link $::normal /cmspath\n";
    $help.="\n";
    $help.="-u|--unlink\n"; 
    $help.="\tRemove a database from the link list. Note this does\n";
    $help.="\tnot remove the database, just the link to it in SCRAM.\n";
    $help.="\n";
    $help.="$::bold";
-   $help.="\tscram db --unlink $::normal /a/directory/path/project.lookup\n";
+   $help.="\tscram db --unlink $::normal /cmspath\n";
    $help.="\n";
    $help.="-s|--show\n"; 
    $help.="\tList the databases that are linked in.\n";
-   $help.="\n";
-
-   return $help;
-   }
-
-sub install()
-   {
-   my $self=shift;
-   my $help;
-   $help.="Description:\n";
-   $help.="\n";
-   $help.="\tInstalled this project so that other user can create developer area against it.\n";
-   $help.="\n";
-   $help.="Usage:\n";
-   $help.="$::bold";
-   $help.="\tscram install [-f]$::normal\n";
-   $help.="\n";
-   $help.="The -f flag can be used to force an installation of a project, overwriting any entries\n";
-   $help.="with the same project name and version (useful in batch processing).\n";
-   $help.="\n";
-
-   return $help;
-   }
-
-sub remove()
-   {
-   my $self=shift;
-   my $help;
-   $help.="Description:\n";
-   $help.="\n";
-   $help.="\tRemove a project entry from SCRAM database file (\"project.lookup\").\n";
-   $help.="Usage:\n";
-   $help.="$::bold";
-   $help.="\tscram remove [-f] <projectname> <projectversion>$::normal\n";
-   $help.="\n";   
-   $help.="The -f flag can be used to force removal of a project, not prompting the user for\n";
-   $help.="confirmation (useful in batch processing).\n";
    $help.="\n";
 
    return $help;

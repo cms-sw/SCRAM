@@ -65,7 +65,7 @@ sub project_()
    {
    my ($xmlparser,$name,%attributes)=@_;
    my $confdir = $self->{area}->location()."/".$self->{area}->configurationdir();
-   my $conf="${confdir}/toolbox/".$self->{area}->arch();
+   my $conf="${confdir}/toolbox/$ENV{SCRAM_ARCH}";
    my $toolbox=$self->{toolbox};
    if (-d $toolbox)
       {

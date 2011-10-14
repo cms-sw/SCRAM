@@ -11,7 +11,7 @@ sub new {
 	bless $self, $class;
         $self->{admindir}=".SCRAM";
 	$self->{configurationdir} = "config";
-	$self->archname(shift || $ENV{SCRAM_ARCH});
+	$self->archname($ENV{SCRAM_ARCH});
 	return $self;
 }
 
@@ -77,12 +77,12 @@ sub setup {
 	   {
 	   if ((!-defined $locarea) && (-f "${location}/${areaname}/".$self->admindir()."/Environment"))
 	      {
-	      $locarea=Configuration::ConfigArea->new($self->arch());
+	      $locarea=Configuration::ConfigArea->new();
 	      $locarea->bootstrapfromlocation("${location}/${areaname}");
 	      }
 	   if ((defined $locarea) && ($locarea->configchksum() != $self->configchksum()))
 	      {
-	      print "ERROR: Can not setup your current working area for SCRAM_ARCH:".$self->arch().".\n",
+	      print "ERROR: Can not setup your current working area for SCRAM_ARCH:$ENV{SCRAM_ARCH}.\n",
 	            "Your current development area ${location}/${areaname}\n",
 	            "is using a different ${areaname}/config then the one used for\n",
 		    $self->releasetop(),".\n";
@@ -143,14 +143,14 @@ sub location {
 
 	if ( @_ ) {
 	  $self->{location}=shift;
-	  $self->archname($self->{archname});
+	  $self->archname($ENV{SCRAM_ARCH});
 	}
 	elsif ( ! defined $self->{location} ) {
 	  # try and find the release location
 	  $self->{location}=$self->searchlocation();
 	  if (defined $self->{location})
 	     {
-	     $self->archname($self->{archname});
+	     $self->archname($ENV{SCRAM_ARCH});
 	     }
 	}
 	return  $self->{location};
@@ -190,12 +190,11 @@ sub searchlocation {
 sub archname {
 	my $self=shift;
 	if ( @_ ) {
-	  $self->{archname}=shift;
 	  if (defined $self->{location}) {
-	     $self->archdir($self->{location}."/".$self->{admindir}."/".$self->{archname});
+	     $self->archdir($self->{location}."/".$self->{admindir}."/".$ENV{SCRAM_ARCH});
 	  }
 	}
-	return $self->{archname};
+	return $ENV{SCRAM_ARCH};
 }
 
 sub archdir {
@@ -209,7 +208,7 @@ sub archdir {
 sub satellite {
 	my $self=shift;
 	my $relloc = $self->location();
-	my $sat=Configuration::ConfigArea->new($self->arch());
+	my $sat=Configuration::ConfigArea->new();
 	$sat->name($self->name());
 	$sat->version($self->version());
 	$sat->configurationdir($self->configurationdir());
@@ -233,7 +232,7 @@ sub satellite {
 	   {
 	   $sat->save ();
 	   }
-	Utilities::AddDir::copydir("${relconf}/toolbox/".$self->arch(),"${devconf}/toolbox/".$sat->arch());
+	Utilities::AddDir::copydir("${relconf}/toolbox/$ENV{SCRAM_ARCH}","${devconf}/toolbox/$ENV{SCRAM_ARCH}");
 	Utilities::AddDir::adddir ($sat->location()."/".$sat->sourcedir());
 	return $sat;
 }
@@ -268,7 +267,7 @@ sub copyenv {
 
 sub arch {
 	my $self=shift;
-	return $self->{archname};
+	return $ENV{SCRAM_ARCH};
 }
 
 sub save {
