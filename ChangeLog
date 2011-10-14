@@ -1,3 +1,28 @@
+2011-10-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+	* INSTALL.txt: updated install instructions.
+	* bin/scram: cleanup, no more local login for calculating
+	SCRAM_ARCH. Updated for DB less scram. install/remove
+	commands are no more needed.
+	* PackageList.pm: Cleanup, removed the deleted perl module.
+	* BuildSystem/ToolManager.pm: Architecture cleanup.
+	* Configuration/BootStrapProject.pm: Architecture cleanup.
+	* Configuration/ConfigArea.pm: Architecture cleanup.
+	* SCRAM/CMD.pm: Architecture cleanup, cleanup unneeded
+	commands (install/remove), DB less SCRAM updates.
+	* SCRAM/Helper.pm: Cleanup unneeded commands.
+	* SCRAM/SCRAM.pm: Architecture cleanup and DB less SCRAM
+	updates.
+	* SCRAM/ScramProjectDB.pm: New DB less SCRAM updates. Now
+	SCRAM configuration is read from <cmspath>/etc/scramrc area
+	e.g. links file under this can contain path of other SCRAM
+	areas projects/<PROJECT_NAME> file can contain the relative
+	path to search under <cmspath>/<SCRAM_ARCH> for install
+	projects (e.g. CMSSW file can have cms/cmssw/CMSSW_*).
+	* Utilities/AddDir.pm: Bug fix, copy all files except '.' and
+	'..'.
+	* SCRAM/SCRAM_SITE.pm, Utilities/Architecture.pm: Removed
+	unneeded perl modules.
+
 2011-09-05 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* Cache/Cache.pm: Only search valid directories which passes
