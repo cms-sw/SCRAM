@@ -88,7 +88,7 @@ sub copydir
       my $file;
       foreach $file ( @allfiles )
 	 {
-	 next if $file=~/^\.\.?/;
+	 next if $file=~/^\.\.?$/;
 	 if ( -d $src."/".$file )
 	    {
 	    copydir($src."/".$file,$dest."/".$file);
@@ -134,7 +134,7 @@ sub copydirwithskip
       my $file;
       foreach $file ( @allfiles )
 	 {
-	 next if $file=~/^\.\.?/;
+	 next if $file=~/^\.\.?$/;
 	 # Skip backup files and x~ files:
 	 next if $file =~ /.*\.bak$/;
 	 next if $file =~ /.*~$/;
@@ -193,7 +193,7 @@ sub copydirexp
       my $file;
       foreach $file ( @allfiles )
 	 {
-	 next if $file=~/^\.\.?/;
+	 next if $file=~/^\.\.?$/;
 	 if ( -d $src."/".$file )
 	    {
 	    copydirexp($src."/".$file,$dest."/".$file,$exp,$op);
