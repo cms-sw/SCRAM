@@ -145,8 +145,6 @@ sub _initDB ()
       close($ref);
     }
   }
-  if (!exists $self->{DBS}{uniq}{$scramdb}{CMSSW}){$self->{DBS}{uniq}{$scramdb}{CMSSW}{"cms/{cmssw,cmssw-patch}/CMSSW_*"}=1;}
-  if (!exists $self->{DBS}{uniq}{$scramdb}{CORAL}){$self->{DBS}{uniq}{$scramdb}{CORAL}{"cms/coral/CORAL_*"}=1;}
   if(open($ref, "${db}/links"))
   {
     while(my $line=<$ref>)
