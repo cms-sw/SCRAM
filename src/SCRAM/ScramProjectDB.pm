@@ -11,6 +11,7 @@ sub new()
   my $self={};
   bless $self, $class;
   $self->{scramrc}='etc/scramrc';
+  $self->{linkfile}='links.db';
   $ENV{SCRAM_LOOKUPDB}=&Utilities::AddDir::fixpath($ENV{SCRAM_LOOKUPDB});
   $self->_initDB();
   return $self;
@@ -104,7 +105,7 @@ sub _save ()
   my $self=shift;
   my $filename = $ENV{SCRAM_LOOKUPDB}."/".$self->{scramrc};
   &Utilities::AddDir::adddir($filename);
-  $filename.="/links";
+  $filename.="/".$self->{linkfile};
   my $fh;
   if (!open ( $fh, ">$filename" )){die "Can not open file for writing: $filename\n";}
   foreach my $db (@{$self->{LocalLinks}}){if ($db ne ""){print $fh "$db\n";}}
@@ -133,7 +134,7 @@ sub _initDB ()
   push @{$self->{DBS}{order}},$scramdb;
   my $db="${scramdb}/".$self->{scramrc};
   my $ref;
-  foreach my $f (glob("${db}/projects/*"))
+  foreach my $f (glob("${db}/*.map"))
   {
     if((-f $f) && (open($ref,$f))
     {
@@ -145,7 +146,7 @@ sub _initDB ()
       close($ref);
     }
   }
-  if(open($ref, "${db}/links"))
+  if(open($ref, "${db}/".$self->{linkfile}))
   {
     while(my $line=<$ref>)
     {
