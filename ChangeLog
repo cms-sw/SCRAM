@@ -1,4 +1,10 @@
+2011-10-17 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/ScramProjectDB.pm: Allow to chow patch and partial
+	build projects via "scram list" too.
+
 2011-10-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
 	* INSTALL.txt: updated install instructions.
 	* bin/scram: cleanup, no more local login for calculating
 	SCRAM_ARCH. Updated for DB less scram. install/remove

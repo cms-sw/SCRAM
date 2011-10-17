@@ -5,13 +5,15 @@ use File::Basename;
 require 5.004;
 @ISA=qw(Utilities::Verbose);
 
-sub new {
-	my $class=shift;
-	my $self={};
-	bless $self, $class;
-	$self->{scramrc}='etc/scramrc';
-	$self->_initDB();
-	return $self;
+sub new()
+{
+  my $class=shift;
+  my $self={};
+  bless $self, $class;
+  $self->{scramrc}='etc/scramrc';
+  $ENV{SCRAM_LOOKUPDB}=&Utilities::AddDir::fixpath($ENV{SCRAM_LOOKUPDB});
+  $self->_initDB();
+  return $self;
 }
 
 sub getarea ()
@@ -61,7 +63,7 @@ sub listall()
 sub link()
 {
   my ($self,$db)=@_;
-  $db=~s/^\s*file://; $db=~s/\s//g;
+  $db=~s/^\s*file://o; $db=~s/\s//go;
   if ($db eq ""){return 1;}
   $db=&Utilities::AddDir::fixpath($db);
   if ($db eq $ENV{SCRAM_LOOKUPDB}){return 1;}
@@ -78,7 +80,7 @@ sub link()
 sub unlink()
 {
   my ($self,$db)=@_;
-  $db=~s/^\s*file://; $db=~s/\s//g;
+  $db=~s/^\s*file://o; $db=~s/\s//go;
   if ($db eq ""){return 1;}
   $db=&Utilities::AddDir::fixpath($db);
   my $cnt=scalar(@{$self->{LocalLinks}});
@@ -100,7 +102,7 @@ sub unlink()
 sub _save ()
 {
   my $self=shift;
-  my $filename = &Utilities::AddDir::fixpath($ENV{SCRAM_LOOKUPDB})."/".$self->{scramrc};
+  my $filename = $ENV{SCRAM_LOOKUPDB}."/".$self->{scramrc};
   &Utilities::AddDir::adddir($filename);
   $filename.="/links";
   my $fh;
@@ -117,7 +119,7 @@ sub _initDB ()
   my $scramdb=shift;
   my $cache=shift || {};
   my $local=0;
-  my $localdb=&Utilities::AddDir::fixpath($ENV{SCRAM_LOOKUPDB});
+  my $localdb=$ENV{SCRAM_LOOKUPDB};
   if (!defined $scramdb)
   {
     $scramdb=$localdb;
@@ -131,37 +133,25 @@ sub _initDB ()
   push @{$self->{DBS}{order}},$scramdb;
   my $db="${scramdb}/".$self->{scramrc};
   my $ref;
-  foreach my $ff (glob("${db}/projects/*"))
+  foreach my $f (glob("${db}/projects/*"))
   {
-    my $uf=uc(basename($ff));
-    if ((exists $self->{DBS}{uniq}{$scramdb}{$uf}) || (!-f $ff)){next;}
-    if(open($ref,$ff))
+    if((-f $f) && (open($ref,$f))
     {
       while(my $line=<$ref>)
       {
-	chomp $line; $line=~s/\s//g;
-        if ($line ne ""){$self->{DBS}{uniq}{$scramdb}{$uf}=$line; last;}
+        chomp $line; $line=~s/\s//go;
+        if ($line=~/^([^=]+)=(.+)$/o){$self->{DBS}{uniq}{$scramdb}{uc($1)}{$2}=1; last;}
       }
       close($ref);
     }
   }
-  if ($local)
-  {
-    if (!exists $self->{DBS}{uniq}{$localdb}{CORAL}){$self->{DBS}{uniq}{$localdb}{CORAL}="cms/coral/CORAL_*";}
-    if (!exists $self->{DBS}{uniq}{$localdb}{CMSSW}){$self->{DBS}{uniq}{$localdb}{CMSSW}="cms/cmssw/CMSSW_*";}
-  }
-  else
-  {
-    foreach my $proj (keys %{$self->{DBS}{uniq}{$localdb}})
-    {
-      if (!exists $self->{DBS}{uniq}{$scramdb}{$proj}){$self->{DBS}{uniq}{$scramdb}{$proj}=$self->{DBS}{uniq}{$localdb}{$proj};}
-    }
-  }
+  if (!exists $self->{DBS}{uniq}{$scramdb}{CMSSW}){$self->{DBS}{uniq}{$scramdb}{CMSSW}{"cms/{cmssw,cmssw-patch}/CMSSW_*"}=1;}
+  if (!exists $self->{DBS}{uniq}{$scramdb}{CORAL}){$self->{DBS}{uniq}{$scramdb}{CORAL}{"cms/coral/CORAL_*"}=1;}
   if(open($ref, "${db}/links"))
   {
     while(my $line=<$ref>)
     {
-      chomp $line; $line=~s/\s//g;
+      chomp $line; $line=~s/\s//go;
       if (($line eq "") || (!-d $line)){next;}
       $line=&Utilities::AddDir::fixpath($line);
       $self->_initDB($line,$cache);
@@ -183,7 +173,7 @@ sub _findProjects()
     foreach my $p (keys %{$self->{DBS}{uniq}{$base}})
     {
       if ($p!~/^$proj$/){next;}
-      my $db="${base}/$ENV{SCRAM_ARCH}/".$self->{DBS}{uniq}{$base}{$p};
+      my $db="${base}/$ENV{SCRAM_ARCH}/".join(" ${base}/$ENV{SCRAM_ARCH}/",keys %{$self->{DBS}{uniq}{$base}{$p}});
       foreach my $fd (glob($db))
       {
         if (!-d $fd){next;}
