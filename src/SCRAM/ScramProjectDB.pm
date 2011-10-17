@@ -136,7 +136,7 @@ sub _initDB ()
   my $ref;
   foreach my $f (glob("${db}/*.map"))
   {
-    if((-f $f) && (open($ref,$f))
+    if((-f $f) && (open($ref,$f)))
     {
       while(my $line=<$ref>)
       {
