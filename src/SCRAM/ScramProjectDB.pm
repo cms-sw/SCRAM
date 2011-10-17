@@ -141,9 +141,25 @@ sub _initDB ()
       while(my $line=<$ref>)
       {
         chomp $line; $line=~s/\s//go;
-        if ($line=~/^([^=]+)=(.+)$/o){$self->{DBS}{uniq}{$scramdb}{uc($1)}{$2}=1; last;}
+        if ($line=~/^([^=]+)=(.+)$/o)
+	{
+	  my $proj=uc($1);
+	  my $mapto=$2;
+	  $mapto=~s/\$(\{|\(|)SCRAM_ARCH(\}|\)|)/$ENV{SCRAM_ARCH}/g;
+	  $self->{DBS}{uniq}{$scramdb}{$proj}{$mapto}=1;
+	}
       }
       close($ref);
+    }
+  }
+  if (!$local)
+  {
+    foreach my $proj (keys %{$self->{DBS}{uniq}{$localdb}})
+    {
+      if (!exists $self->{DBS}{uniq}{$scramdb}{$proj})
+      {
+        foreach my $path (keys %{$self->{DBS}{uniq}{$localdb}{$proj}}){$self->{DBS}{uniq}{$scramdb}{$proj}{$path}=1;}
+      }
     }
   }
   if(open($ref, "${db}/".$self->{linkfile}))
@@ -172,7 +188,7 @@ sub _findProjects()
     foreach my $p (keys %{$self->{DBS}{uniq}{$base}})
     {
       if ($p!~/^$proj$/){next;}
-      my $db="${base}/$ENV{SCRAM_ARCH}/".join(" ${base}/$ENV{SCRAM_ARCH}/",keys %{$self->{DBS}{uniq}{$base}{$p}});
+      my $db="${base}/".join(" ${base}/",keys %{$self->{DBS}{uniq}{$base}{$p}});
       foreach my $fd (glob($db))
       {
         if (!-d $fd){next;}
