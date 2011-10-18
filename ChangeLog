@@ -1,7 +1,8 @@
-2011-10-17 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+2011-10-18 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/ScramProjectDB.pm: Allow to chow patch and partial
-	build projects via "scram list" too.
+	build projects via "scram list" too. Make sure there are no
+	duplicate links in links.db.
 
 2011-10-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 

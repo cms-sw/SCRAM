@@ -164,11 +164,14 @@ sub _initDB ()
   }
   if(open($ref, "${db}/".$self->{linkfile}))
   {
+    my %uniq=();
     while(my $line=<$ref>)
     {
       chomp $line; $line=~s/\s//go;
       if (($line eq "") || (!-d $line)){next;}
       $line=&Utilities::AddDir::fixpath($line);
+      if (exists $uniq{$line}){next;}
+      $uniq{$line}=1;
       $self->_initDB($line,$cache);
       if ($local){push @{$self->{LocalLinks}},$line;}
     }
