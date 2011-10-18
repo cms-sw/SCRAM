@@ -3,9 +3,6 @@
 #____________________________________________________________________ 
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
-# Update: 2004-10-14 10:16:21+0200
-# Revision: $Id: ToolSettingValidator.pm,v 1.5.2.2.2.1 2010/09/23 10:46:22 muzaffar Exp $ 
-#
 # Copyright: 2004 (C) Shaun Ashby
 #
 #--------------------------------------------------------------------

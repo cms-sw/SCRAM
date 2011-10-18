@@ -4,9 +4,6 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 #         (with contribution from Lassi.Tuura@cern.ch)
-# Update: 2003-11-27 16:45:18+0100
-# Revision: $Id: Cache.pm,v 1.12 2011/09/05 09:01:19 muzaffar Exp $ 
-#
 # Copyright: 2003 (C) Shaun Ashby
 #
 #--------------------------------------------------------------------
