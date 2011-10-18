@@ -1,12 +1,12 @@
 
 			SCRAM Release Notes
 
-V2_2_X: 2011-10-14
+V2_2_4_pre1: 2011-10-18
 
 	* No more architecture name generation login in SCRAM. As we
 	always have SCRAM_ARCH set, so SCRAM now depend on this env
 	variable.
-	* No more project/lookup file to keep track of install proecjst.
+	* No more project.lookup file to keep track of install projects.
 	SCRAM now can look under <cmspath>/<arch> to find out the
 	installed projects. Extra SCRAM configuration for keeping tracks
 	of other SCRAM installation area are now done via

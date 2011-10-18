@@ -4,7 +4,7 @@
 #  
 # Author: Shaun Ashby <Shaun.Ashby@cern.ch>
 # Update: 2003-06-18 18:04:35+0200
-# Revision: $Id: SCRAM.pm,v 1.35 2011/01/14 17:36:43 muzaffar Exp $ 
+# Revision: $Id: SCRAM.pm,v 1.36 2011/10/14 14:11:42 muzaffar Exp $ 
 #
 # Copyright: 2003 (C) Shaun Ashby
 #
@@ -469,9 +469,12 @@ sub spawnversion
 
    if (defined $version)
       {
-      my $relseries=$ENV{SCRAM_VERSION};
-      $relseries=~s/^(V\d+_\d+_)\d+.*$/$1/;
-      if ($version!~/^${relseries}\d+.*$/)
+      $ENV{SCRAM_VERSION}=~/^V(\d+)_(\d+)_\d+.*$/o;
+      my $cmajor=$1; my $cminor=$2;
+      $version=~/^V(\d+)_(\d+)_\d+.*$/o;
+      my $nmajor=$1; my $nminor=$2;
+      if (($cmajor != $nmajor) ||
+          (($cmajor<3) && ($cminor != $nminor) && (($cmajor<2) || ($cminor<2) || ($nminor<2))))
 	 {
 	 $ENV{SCRAM_VERSION}=$version;
 	 $self->verbose("Spawning SCRAM version $version");
