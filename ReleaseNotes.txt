@@ -1,7 +1,7 @@
 
 			SCRAM Release Notes
 
-V2_2_4: 2011-10-25
+V2_2_4_pre1: 2011-10-25
 
 	* No more architecture name generation login in SCRAM. As we
 	always have SCRAM_ARCH set, so SCRAM now depend on this env
