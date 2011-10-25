@@ -1,6 +1,6 @@
 2011-10-18 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
-	* SCRAM/ScramProjectDB.pm: Allow to chow patch and partial
+	* SCRAM/ScramProjectDB.pm: Allow to show patch and partial
 	build projects via "scram list" too. Make sure there are no
 	duplicate links in links.db.
 
