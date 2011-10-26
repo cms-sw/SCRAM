@@ -103,7 +103,7 @@ sub unlink()
 sub _save ()
 {
   my $self=shift;
-  my $filename = $ENV{SCRAM_LOOKUPDB}."/".$self->{scramrc};
+  my $filename = $ENV{SCRAM_LOOKUPDB_WRITE}."/".$self->{scramrc};
   &Utilities::AddDir::adddir($filename);
   $filename.="/".$self->{linkfile};
   my $fh;

@@ -1,6 +1,10 @@
 
 			SCRAM Release Notes
 
+V2_2_4_pre2: 2011-10-26
+
+	* Seperate read/write paths for SCRAM links.db
+
 V2_2_4_pre1: 2011-10-25
 
 	* No more architecture name generation login in SCRAM. As we

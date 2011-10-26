@@ -21,6 +21,7 @@ use Getopt::Long ();
 #### EDIT THESE: SCRAM Installation Values #################
 $ENV{'SCRAM_VERSION'}='@SCRAM_VERSION@';
 my $dbPath = '@CMS_PATH@';
+my $dbPathWrite = '@CMS_PATH@';
 #### Core settings ####
 $main::bold = "";
 $main::normal = "";
@@ -37,6 +38,11 @@ if (!exists $ENV{SCRAM_LOOKUPDB})
    {
    if (exists $ENV{SCRAM_USERLOOKUPDB}){$dbPath = $ENV{SCRAM_USERLOOKUPDB};}
    $ENV{SCRAM_LOOKUPDB} = $dbPath;
+   }
+if (!exists $ENV{SCRAM_LOOKUPDB_WRITE})
+   {
+   if (exists $ENV{SCRAM_USERLOOKUPDB}){$dbPathWrite = $ENV{SCRAM_USERLOOKUPDB};}
+   $ENV{SCRAM_LOOKUPDB_WRITE} = $dbPathWrite;
    }
 
 # Test whether the output from SCRAM is being redirected, or

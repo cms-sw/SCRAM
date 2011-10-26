@@ -1,3 +1,8 @@
+2011-10-26 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* bin/scram, SCRAM/ScramProjectDB.pm: Allow seperate
+	read and write path for SCRAM link.db.
+
 2011-10-18 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/ScramProjectDB.pm: Allow to show patch and partial
