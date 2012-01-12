@@ -770,7 +770,8 @@ sub project()
       else
 	 {
 	 my $projectname = shift(@ARGV);
-	 my $projectversion = shift(@ARGV);	 
+	 my $projectversion = shift(@ARGV) || undef;	 
+	 if (!defined $projectversion){$projectversion=$projectname; $projectname=~s/_.*$//;}
 	 $self->bootfromrelease($projectname,$projectversion,$installdir,$installname,$symlinks);
 	 }     
       }
