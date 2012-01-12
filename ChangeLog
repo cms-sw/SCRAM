@@ -1,4 +1,4 @@
-2011-10-26 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+2012-01-12 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/CMD.pm: Allow to run "scram project <version>".
 
