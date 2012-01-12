@@ -1,5 +1,9 @@
 2011-10-26 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
+	* SCRAM/CMD.pm: Allow to run "scram project <version>".
+
+2011-10-26 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
 	* bin/scram, SCRAM/ScramProjectDB.pm: Allow seperate
 	read and write path for SCRAM link.db.
 

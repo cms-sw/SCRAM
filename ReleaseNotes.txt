@@ -1,6 +1,11 @@
 
 			SCRAM Release Notes
 
+V2_2_4_pre3: 2012-01-12
+
+	* scram project command now allows to run without project name e.g.
+	scramproject CMSSW_5_0_0
+
 V2_2_4_pre2: 2011-10-26
 
 	* Seperate read/write paths for SCRAM links.db
