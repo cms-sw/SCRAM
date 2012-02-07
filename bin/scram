@@ -31,6 +31,8 @@ $main::error = "";
 $main::good = "";
 $main::prompt="";
 $main::ORIG_ARGV=[];
+$main::ORIG_SCRAM_ARCH = $ENV{SCRAM_ARCH} || "";
+$main::FORCE_SCRAM_ARCH = "";
 push @$main::ORIG_ARGV,@ARGV;
 $|=1;
 
@@ -67,7 +69,7 @@ my %opts;
 my %options =
    ("verbose|v=s"	=> sub { $ENV{SCRAM_VERBOSE} = $ENV{SCRAM_DEBUG} = 1; $scram->classverbosity($_[1]) },
     "debug|d"		=> sub { $ENV{SCRAM_DEBUG} = 1; $scram->fullverbosity() },
-    "arch|a=s"		=> sub { $ENV{SCRAM_ARCH} = $_[1] },
+    "arch|a=s"		=> sub { $ENV{SCRAM_ARCH} = $_[1] ; $main::FORCE_SCRAM_ARCH = $_[1] },
     "force|f"           => sub { $opts{SCRAM_FORCE} = 1 }, # A force flag for commands that might need it
     "help|h"		=> sub { print $scram->usage(); exit(0) ;}
     );
