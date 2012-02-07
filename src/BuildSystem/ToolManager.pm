@@ -135,9 +135,9 @@ sub setupself()
    else
       {
       scramlogdump();
-      print "\n";
-      print "SCRAM: No file config/Self.xml...nothing to do.";
-      print "\n";
+      print STDERR "\n";
+      print STDERR "SCRAM: No file config/Self.xml...nothing to do.";
+      print STDERR "\n";
       return;
       }
    }
@@ -258,7 +258,7 @@ sub _toolsdata_scram()
    $cache=$self->{SETUP}{$tool}{$cache};
    if (!-d $cache)
       {
-      print "ERROR: Release area \"$cache\" for \"$tool\" is not available.\n";
+      print STDERR "ERROR: Release area \"$cache\" for \"$tool\" is not available.\n";
       return $order;
       }
    my $area=Configuration::ConfigArea->new();
@@ -266,7 +266,7 @@ sub _toolsdata_scram()
    my $cachefile=$area->toolcachename();
    if (!-f $cachefile)
       {
-      print "ERROR: Tools cache file for release area \"$cache\" is not available.\n";
+      print STDERR "ERROR: Tools cache file for release area \"$cache\" is not available.\n";
       return $order;
       }
    $cache=&Cache::CacheUtilities::read($cachefile);
