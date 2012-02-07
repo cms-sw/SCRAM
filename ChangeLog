@@ -1,3 +1,16 @@
+2012-02-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* bin/scram: Updated to have original SCRAM_ARCH value saved.
+	* BuildSystem/ToolManager.pm: Print errors on STDERR so the
+	eval `scram run -sh` can show them.
+	* Configuration/ConfigArea.pm, SCRAM/CMD.pm, SCRAM/SCRAM.pm:
+	Now scram automatically switch arch depending on area arch e.g.
+	if dev/release area has only one arch then scram will set
+	SCRAM_ARCH to match that instead of complaining.
+	* SCRAM/ScramProjectDB.pm: Regardless of SCRAM_ARCH, if release
+	is only available for one arch then do not complain and create
+	dev area for that arch.
+
 2012-01-12 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/CMD.pm: Allow to run "scram project <version>".
