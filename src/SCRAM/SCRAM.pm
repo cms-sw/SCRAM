@@ -257,16 +257,16 @@ calls to $self->localarea() can be used to access it.
 
 sub _initlocalarea() {
     my $self=shift;
-    
     if ( ! defined ($self->localarea()) ) {
 	require Configuration::ConfigArea;
-	my $area = Configuration::ConfigArea->new();
+	my $area = Configuration::ConfigArea->new($main::FORCE_SCRAM_ARCH);
 	my $loc = $area->location();
 	if ( ! defined $loc ) {
 	    $self->islocal(0);
 	} else {
 	    $ENV{LOCALTOP} = $loc;
 	    $area->bootstrapfromlocation($loc);
+	    $ENV{SCRAM_ARCH} = $area->{arch};
 	    ($ENV{THISDIR}=cwd) =~ s/^\Q$loc\L//;
 	    $ENV{THISDIR} =~ s/^\///;
 	    $ENV{BASE_PATH} = $loc;
@@ -285,9 +285,11 @@ sub _initlocalarea() {
 		               "  The release area \"$rel\"\n",
 		               "  for \"$name\" version \"$version\" is not available/usable.\n";
 		  my $res=$self->scramprojectdb()->listall("$name","${vregexp}.+");
-		  if (exists $res->{$name}) {
-		     delete $res->{$name}{$version};
-		     my @rels=keys %{$res->{$name}};
+		  if (scalar(@$res)>0) {
+		     my @rels = ();
+		     foreach my $item (@{$res}) {
+		       if ($item->[1] ne $version){push @rels, $item->[1];}
+		     }
 		     if (@rels>0) {
 			print STDERR "  In case this release has been deprecated, you can move your code to\n",
 			             "  one of the following release(s) of release series \"$relseries\".\n\n",
