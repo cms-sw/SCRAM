@@ -330,15 +330,14 @@ sub list()
       my $project = shift(@ARGV);
       my $projectversion = shift(@ARGV);
       my $projects = $self->scramprojectdb()->listall($project,$projectversion);
-      foreach my $pr (sort keys %$projects)
+      foreach my $item (@$projects)
 	 {
-	 foreach my $pv (sort keys %{$projects->{$pr}})
-	    {
-	    my $url=$projects->{$pr}{$pv};
-	    my $pstring = sprintf "  %-15s %-25s  \n%45s%-30s\n",$pr,$pv,"--> ",$::bold.$url.$::normal;
-	    $pstring = sprintf "%-15s %-25s %-50s\n",$pr,$pv,$url, if ($opts{SCRAM_LISTCOMPACT});
-	    push(@foundareas,$pstring);
-	    }
+	 my $pr =$item->[0];
+	 my $pv =$item->[1];
+	 my $url=$item->[2];
+	 my $pstring = sprintf "  %-15s %-25s  \n%45s%-30s\n",$pr,$pv,"--> ",$::bold.$url.$::normal;
+	 $pstring = sprintf "%-15s %-25s %-50s\n",$pr,$pv,$url, if ($opts{SCRAM_LISTCOMPACT});
+	 push(@foundareas,$pstring);
 	 }
       
       if (scalar(@foundareas)==0)
@@ -794,9 +793,20 @@ sub bootfromrelease() {
 	my $relarea=$self->scramprojectdb()->getarea($projectname,$projectversion);
 	if ((!defined $relarea) || (!-d $relarea->archdir()))
 	   {
-	   print STDERR "ERROR: Unable to find release area for \"$projectname\" version \"$projectversion\".\n",
-	                "       Please make sure you have used the correct name/version.\n",
-			"       You can run \"scram list $projectname\" to get the list of available versions.\n";
+           my $list = $self->scramprojectdb()->{listcache};
+	   my @archs=keys %$list;
+	   if (scalar(@archs)>1)
+	      {
+	      print STDERR "ERROR: Release \"$projectname\" version \"$projectversion\" is not available for arch $ENV{SCRAM_ARCH}.\n",
+	                   "\"$projectversion\" is currently available for following archs.\n",
+			   "Please set SCRAM_ARCH properly and re-run the command.\n    ",join("\n    ",@archs),"\n";
+	      }
+	   else
+	      {
+	      print STDERR "ERROR: Unable to find release area for \"$projectname\" version \"$projectversion\" for arch $ENV{SCRAM_ARCH}.\n",
+	                   "Please make sure you have used the correct name/version.\n",
+			   "You can run \"scram list $projectname\" to get the list of available versions.\n";
+	      }
 	   exit 1;
 	   }
 	if (-d "${installdir}/${iname}/".$relarea->admindir()."/$ENV{SCRAM_ARCH}")
@@ -994,26 +1004,6 @@ sub setupnewarch_()
    my $toolbox="$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/toolbox";
    if (!-d "${toolbox}/$ENV{SCRAM_ARCH}")
       {
-      if (!$self->{force})
-         {
-         my $archs = $self->availablearch ($ENV{LOCALTOP});
-         if (scalar(@$archs)>0)
-            {
-            print "Your project area is currently setup for following SCRAM_ARCH(s):\n";
-            print "\t",join("\n\t",@$archs),"\n";
-            }
-         else
-            {
-	    print "ERROR: Your current project area \"$ENV{LOCALTOP}\" seems to be curpted.\n",
-	          "SCRAM could not find any tools installed under $ENV{SCRAM_CONFIGDIR}/toolbox.\n";
-	    exit 1;
-	    }
-         print "Do you want to add setup for new SCRAM_ARCH: $ENV{SCRAM_ARCH} (y/n):";
-         if ( ! (<STDIN>=~/y/i ) )
-            {
-	    return 0;
-	    }
-         }
       use File::Basename;
       my $area=$self->localarea();
       my $loc = $area->location();
@@ -1190,6 +1180,13 @@ sub runtime()
 	 open($ref,"> ".$opts{SCRAM_RT_DUMP} ) || die $!,"\n";
 	 }
       $env->setenv($SCRAM_RT_SHELL,$ref);
+      if ($main::ORIG_SCRAM_ARCH ne $ENV{SCRAM_ARCH})
+      {
+        my $sd = $env->{shell}{$SCRAM_RT_SHELL};
+	my $cmd = $sd->{EXPORT}." SCRAM_ARCH".$sd->{EQUALS}."\"".$ENV{SCRAM_ARCH}."\";\n";
+	if ($ref){print $ref "$cmd";}
+	else{print STDOUT "$cmd";}
+      }
       if ($ref){close($ref);}
       }
    return 0;
