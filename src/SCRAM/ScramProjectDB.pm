@@ -12,6 +12,8 @@ sub new()
   bless $self, $class;
   $self->{scramrc}='etc/scramrc';
   $self->{linkfile}='links.db';
+  $self->{archs}{$ENV{SCRAM_ARCH}}=1;
+  $self->{listcache}= {};
   $ENV{SCRAM_LOOKUPDB}=&Utilities::AddDir::fixpath($ENV{SCRAM_LOOKUPDB});
   $self->_initDB();
   return $self;
@@ -22,21 +24,14 @@ sub getarea ()
   my $self=shift;
   my $name=shift;
   my $version=shift;
-  my $area=undef;
-  my $data=$self->_findProjects($name,$version,1);
-  if (exists $data->{$name}{$version})
-  {
-    require Configuration::ConfigArea;
-    $area=Configuration::ConfigArea->new();
-    my $location = $data->{$name}{$version};
-    if ($area->bootstrapfromlocation($location) == 1)
-    {
-      undef $area;
-      print STDERR "ERROR: Attempt to ressurect $name $version from $location unsuccessful\n";
-      print STDERR "ERROR: $location does not look like a valid release area.\n";
-    }
-  }
-  return $area;
+  my $arch = shift || $ENV{SCRAM_ARCH};
+  my $data = $self->_findProjects($name,$version,1,$arch);
+  if (scalar(@$data) == 1){ return $self->_getAreaObject($data->[0],$arch); }
+  my $list = $self->updatearchs($name,$version);
+  delete $list->{$arch};
+  my @archs = keys %{$list};
+  if (scalar(@archs)==1){return $self->_getAreaObject($list->{$archs[0]}[0], $archs[0]);}
+  return undef;
 }
 
 sub listlinks()
@@ -57,8 +52,19 @@ sub listlinks()
 
 sub listall()
 {
-  my $self=shift;
-  return $self->_findProjects(shift,shift,shift);
+  return _findProjects(@_);
+}
+
+sub updatearchs()
+{
+  my ($self,$name,$version)=@_;
+  $self->{listcache} = {};
+  foreach my $arch (keys %{$self->{archs}})
+  {
+    my $data = $self->_findProjects($name,$version,1,$arch);
+    if (scalar(@$data)==1){$self->{listcache}{$arch}=$data;}
+  }
+  return $self->{listcache};
 }
 
 sub link()
@@ -99,6 +105,20 @@ sub unlink()
 }
 
 ##################################################
+
+sub _getAreaObject ()
+{
+  my ($self,$data,$arch)=@_;
+  my $area=Configuration::ConfigArea->new($arch);
+  my $loc = $data->[2];
+  if ($area->bootstrapfromlocation($loc) == 1)
+  {
+    $area = undef;
+    print STDERR "ERROR: Attempt to ressurect ",$data->[0]," ",$data->[1]," from $loc unsuccessful\n";
+    print STDERR "ERROR: $loc does not look like a valid release area for SCRAM_ARCH $arch.\n";
+  }
+  return $area;
+}
 
 sub _save ()
 {
@@ -141,16 +161,14 @@ sub _initDB ()
       while(my $line=<$ref>)
       {
         chomp $line; $line=~s/\s//go;
-        if ($line=~/^([^=]+)=(.+)$/o)
-	{
-	  my $proj=uc($1);
-	  my $mapto=$2;
-	  $mapto=~s/\$(\{|\(|)SCRAM_ARCH(\}|\)|)/$ENV{SCRAM_ARCH}/g;
-	  $self->{DBS}{uniq}{$scramdb}{$proj}{$mapto}=1;
-	}
+        if ($line=~/^([^=]+)=(.+)$/o){$self->{DBS}{uniq}{$scramdb}{uc($1)}{$2}=1;}
       }
       close($ref);
     }
+  }
+  foreach my $f (glob("${db}/*.arch"))
+  {
+    if ($f=~/^${db}\/(.*)\.arch$/){$self->{archs}{$1}=1;}
   }
   if (!$local)
   {
@@ -185,28 +203,43 @@ sub _findProjects()
   my $proj=shift || '.+';
   my $ver=shift || '.+';
   my $exact=shift  || undef;
-  my $data={};
+  my $arch=shift || $ENV{SCRAM_ARCH};
+  my %data=();
+  my %uniq=();
   foreach my $base (@{$self->{DBS}{order}})
   {
     foreach my $p (keys %{$self->{DBS}{uniq}{$base}})
     {
       if ($p!~/^$proj$/){next;}
       my $db="${base}/".join(" ${base}/",keys %{$self->{DBS}{uniq}{$base}{$p}});
+      $db=~s/\$(\{|\(|)SCRAM_ARCH(\}|\)|)/$arch/g;
       foreach my $fd (glob($db))
       {
         if (!-d $fd){next;}
 	my $d=basename($fd);
 	if ($d=~/^$ver$/)
 	{
-	  if ($exact)
+	  if ($exact){return [[$p,$d,$fd]];}
+	  elsif(!exists $uniq{"$p:$d"})
 	  {
-	    $data->{$p}{$d}=$fd;
-	    return $data;
+	    $uniq{"$p:$d"}=1;
+	    my $m = (stat($fd))[9];
+	    $data{$m}{$p}{$d}=$fd;
 	  }
-	  elsif(!exists $data->{$p}{$d}){$data->{$p}{$d}=$fd;}
 	}
       }
     }
   }
-  return $data;
+  my $xdata = [];
+  foreach my $m (sort {$a <=> $b} keys %data)
+  {
+    foreach my $p (keys %{$data{$m}})
+    {
+      foreach my $v (keys %{$data{$m}{$p}})
+      {
+        push @$xdata, [$p,$v,$data{$m}{$p}{$v}];
+      }
+    }
+  }
+  return $xdata;
 }
