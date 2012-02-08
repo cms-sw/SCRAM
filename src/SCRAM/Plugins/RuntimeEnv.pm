@@ -363,7 +363,7 @@ sub runtime_ ()
     push @$otools,$tools->{'self'};
     if (exists $tools->{self}{FLAGS}{NO_EXTERNAL_RUNTIME})
     {
-      foreach my $x (@{$tools->{self}{FLAGS}{NO_EXTERNAL_RUNTIME}}){$self->{skip_runtime}{$x}=1;}
+      foreach my $x (@{$tools->{self}{FLAGS}{NO_EXTERNAL_RUNTIME}}){$x=&fixlibenv_($x); $self->{skip_runtime}{$x}=1;}
     }
     if(exists $tools->{self}{FLAGS}{SKIP_TOOLS_SYMLINK})
     {
@@ -403,20 +403,21 @@ sub toolenv_ ()
     {
       if ($trtvar =~ /^PATH:(.*?)$/)
       {
-	(! exists $self->{env}{rtstring}{path}{$1}) ? $self->{env}{rtstring}{path}{$1} = [] : undef;
+	my $x = &fixlibenv_($1);
+	(! exists $self->{env}{rtstring}{path}{$x}) ? $self->{env}{rtstring}{path}{$x} = [] : undef;
 	map
 	{
-	  if (($tname eq "gmake") && ($1 eq "PATH") && ($gmake eq "") && (-x $_."/gmake"))
+	  if (($tname eq "gmake") && ($x eq "PATH") && ($gmake eq "") && (-x $_."/gmake"))
 	  {
 	    $gmake=$_."/";
 	    $self->{env}{rtstring}{xenv}{SCRAM_GMAKE_PATH}=$gmake;
 	  }
-	  if ((!exists $self->{skip_runtime}{$1}) || (exists $self->{force_tools_env}{$tname}))
+	  if ((!exists $self->{skip_runtime}{$x}) || (exists $self->{force_tools_env}{$tname}))
 	  {
-	    if (! exists ($self->{env}{paths}{$1}{$_}))
+	    if (! exists ($self->{env}{paths}{$x}{$_}))
 	    {
-	      $self->{env}{paths}{$1}{$_} = 1 ;
-	      push(@{$self->{env}{rtstring}{path}{$1}},$_);
+	      $self->{env}{paths}{$x}{$_} = 1 ;
+	      push(@{$self->{env}{rtstring}{path}{$x}},$_);
 	    }
 	  }
 	} @$trtval; 
@@ -459,6 +460,13 @@ sub fixpathvar_ ()
   my $var=shift;
   my $sep=shift;
   ((exists $ENV{$var}) && ($ENV{$var} ne "")) ? return "$sep$ENV{$var}" : return "";
+}
+
+sub fixlibenv_ ()
+{
+  my $var=shift;
+  if ($ENV{SCRAM_ARCH}=~/^osx/){$var=~s/^LD_LIBRARY_PATH$/DYLD_FALLBACK_LIBRARY_PATH/;}
+  return $var;
 }
 
 1;
