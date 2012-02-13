@@ -31,6 +31,8 @@ sub new
    $self->{scramdoc}=ActiveDoc::SimpleDoc->new();
    $self->{scramdoc}->newparse("setup","BuildSystem::ToolParser",'Subs',undef,1);
    $self->{envorder}=[];
+   $self->{archs}=[];
+   $self->{archflag}=1;
 
    return $self;
    }
@@ -39,6 +41,7 @@ sub new
 sub tool()
    {
    my ($object,$name,%attributes)=@_;
+   if (!$self->{archflag}){return;}
    my $hashref = \%attributes;   
    # A way to distinguish the naming of different nested levels:
    $self->{levels}=['','tag','nexttag'];
@@ -69,6 +72,8 @@ sub tool()
 
 sub tool_()
    {
+   my ($object,$name,%attributes)=@_;
+   if (!$self->{archflag}){return;}
    delete $self->{levels};
    delete $self->{id};
    delete $self->{nested};
@@ -77,24 +82,28 @@ sub tool_()
 sub lib()
    {
    my ($object,$name,%attributes)=@_;
+   if (!$self->{archflag}){return;}
    push(@{$self->{"$self->{levels}->[$self->{nested}]".content}->{LIB}},$attributes{'name'});   
    }
 
 sub info()
    {
    my ($object,$name,%attributes)=@_;
+   if (!$self->{archflag}){return;}
    $self->{"$self->{levels}->[$self->{nested}]".content}->{INFO} = \%attributes;
    }
 
 sub use()
    {
    my ($object,$name,%attributes)=@_;
+   if (!$self->{archflag}){return;}
    push(@{$self->{"$self->{levels}->[$self->{nested}]".content}->{USE}},$attributes{'name'});
    }
 
 sub runtime()
    {
    my ($object,$name,%attributes)=@_;
+   if (!$self->{archflag}){return;}
    my $hashref = \%attributes;   
    my $envname;
    # Check to see if we have a "type" arg. If so, we use this to create the key:
@@ -131,6 +140,7 @@ sub runtime()
 sub flags()
    {
    my ($object,$name,%attributes)=@_;
+   if (!$self->{archflag}){return;}
    # Extract the flag name and its value:
    my ($flagname,$flagvaluestring) = each %attributes;
    $flagname =~ tr/[a-z]/[A-Z]/; # Keep flag name uppercase
@@ -168,28 +178,23 @@ sub flags()
 
 sub client()
    {
+   my ($object,$name,%attributes)=@_;
+   if (!$self->{archflag}){return;}
    $self->pushlevel();
    }
 
 sub client_()
    {
-   if ($self->{isarch} == 1)
-      {
-      # If we already have an architecture tag, we must write to tagcontent hash:
-      $self->{tagcontent}->{CLIENT}=$self->{nexttagcontent};
-      delete $self->{nexttagcontent};
-      }
-   else
-      {
-      $self->{content}->{CLIENT}=$self->{tagcontent};
-      }
-   
+   my ($object,$name,%attributes)=@_;
+   if (!$self->{archflag}){return;}
+   $self->{content}->{CLIENT}=$self->{tagcontent};
    $self->poplevel();
    }
 
 sub environment()
    {
    my ($object,$name,%attributes)=@_;
+   if (!$self->{archflag}){return;}
    my $hashref = \%attributes;
    # Save a copy of the name of this environment:
    my $envname=$$hashref{'name'};
@@ -217,57 +222,20 @@ sub environment()
       }
    }
 
-sub makefile()
-   {
-   my ($object,$name,%attributes)=@_;
-   }
-
-sub makefile_()
-   {
-   my ($object,$name,$cdata)=@_;
-   push(@{$self->{"$self->{levels}->[$self->{nested}]".content}->{MAKEFILE}},
-	join("\n",@$cdata));
-   }
-
 sub architecture()
    {
    my ($object,$name,%attributes)=@_;
-   $self->pushlevel(\%attributes,1); # Set nested to 1;
+   my $flag=$self->{archflag};
+   push @{$self->{archs}},$flag;
+   my $arch=$attributes{name};
+   if (($flag) && ($ENV{SCRAM_ARCH}!~/$arch/)){$self->{archflag}=0;}
    }
 
 sub architecture_()
    {
-   # Need to be able to cope with multiple arch blocks with same arch string:
-   if (exists ($self->{content}->{ARCH}->{$self->{id}->{'name'}}))
-      {
-      # Already have an architecture tag for this arch:
-      while (my ($k,$v) = each %{$self->{tagcontent}})
-	 {
-	 # If this tag (e.g. LIB, USE, MAKEFILE) already exists and (as we know
-	 # it should be) its data is an ARRAY, push it to the store:
-	 if (exists ($self->{content}->{ARCH}->{$self->{id}->{'name'}}->{$k}) && 
-	     ref($v) eq 'ARRAY')
-	    {
-	    push(@{$self->{content}->{ARCH}->{$self->{id}->{'name'}}->{$k}},@$v);
-	    }
-	 else
-	    {
-	    # Otherwise (for HASH data) we just store it. Note that, because we do
-	    # not loop over the HASH content and check for already existsing keys,
-	    # if two arch blocks with same arch name define the same tag (e.g, ENV),
-	    # the last occurrence will be kept (i.e. the two values won't be added
-	    # to one ENV hash: //FIXME for later....)
-	    $self->{content}->{ARCH}->{$self->{id}->{'name'}}->{$k} = $v;
-	    }
-	 }
-      }
-   else
-      {
-      $self->{content}->{ARCH}->{$self->{id}->{'name'}}=$self->{tagcontent};
-      }
-   
-   delete $self->{isarch};
-   $self->poplevel();
+   my ($object,$name,%attributes)=@_;
+   $self->{archflag}=pop @{$self->{archs}};
+   return;
    }
 	 
 sub parse
@@ -286,40 +254,19 @@ sub parse
 sub pushlevel
    {
    my $self = shift;
-   my ($info, $nextlevel)=@_;
+   my ($info)=@_;
    
    $self->{id} = $info if (defined $info);
-
-   # Check to see if last tag was arch: if so, ceate new level:
-   if ($self->{isarch} == 1)
-      {
-      $self->{nested} = 2;
-      $self->{nexttagcontent}={};
-      }
-   else
-      {
-      $self->{nested} = 1;
-      $self->{tagcontent}={};
-      }
-
-   # Set something which says "last starter tag was ARCH":
-   if ($nextlevel)
-      {
-      $self->{isarch} = 1;
-      }
+   $self->{nested} = 1;
+   $self->{tagcontent}={};
    }
 
 sub poplevel
    {
    my $self = shift;
-   
-   # Drop level of nesting by one:
-   $self->{nested}--;
-
-   if ($self->{isarch} != 1)
-      {
-      delete $self->{tagcontent};
-      }
+   delete $self->{id};
+   delete $self->{tagcontent};
+   $self->{nested} = 0;
    }
 
 sub rmenvdata

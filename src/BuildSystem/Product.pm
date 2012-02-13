@@ -106,13 +106,6 @@ sub include
    return $self->{content}->{INCLUDE};
    }
 
-sub libtype
-   {
-   my $self=shift;
-   # Return an array of required lib types:
-   return $self->{content}->{LIBTYPE};
-   }
-
 sub flags
    {
    my $self=shift;
@@ -132,24 +125,6 @@ sub makefile
    my $self=shift;
    # Return an array of makefile stubs:
    return $self->{content}->{MAKEFILE};
-   }
-
-sub archspecific
-   {
-   my $self=shift;
-   
-   # Check to see if there is arch-dependent data. If so, return it:
-   if ((my $nkeys=keys %{$self->{content}->{ARCH}}) > 0)
-      {
-      while (my ($k,$v) = each %{$self->{content}->{ARCH}})
-	 {
-	 if ( $ENV{SCRAM_ARCH} =~ /$k.*/ )
-	    {
-	    return $self->{content}->{ARCH}->{$k};
-	    }
-	 }
-      }
-   return "";
    }
 
 sub use

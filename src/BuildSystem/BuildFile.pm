@@ -33,6 +33,8 @@ sub new()
    $self->{content} = {};
    $self->{scramdoc}=ActiveDoc::SimpleDoc->new();
    $self->{scramdoc}->newparse("builder",__PACKAGE__,'Subs',shift);
+   $self->{archs}=[];
+   $self->{archflag}=1;
    return $self;
    }
 
@@ -56,7 +58,7 @@ sub classpath()
       {
       return $self->{content}->{CLASSPATH};
       }
-   
+   if (!$self->{archflag}){return;}
    $self->{nested} == 1 ? push(@{$self->{tagcontent}->{CLASSPATH}}, $attributes{'path'})
       : push(@{$self->{content}->{CLASSPATH}}, $attributes{'path'});
    }
@@ -70,7 +72,7 @@ sub productstore()
       # Return an array of ProductStore hashes:
       return $self->{content}->{PRODUCTSTORE};
       }
-   
+   if (!$self->{archflag}){return;}
    $self->{nested} == 1 ? push(@{$self->{tagcontent}->{PRODUCTSTORE}}, \%attributes)
       : push(@{$self->{content}->{PRODUCTSTORE}}, \%attributes) ;
    }
@@ -85,6 +87,7 @@ sub include()
 sub include_path()
    {
    my ($object,$name,%attributes)=@_;
+   if (!$self->{archflag}){return;}
    $self->{nested} == 1 ? push(@{$self->{tagcontent}->{INCLUDE}}, $attributes{'path'})
       : push(@{$self->{content}->{INCLUDE}}, $attributes{'path'});
    }
@@ -101,6 +104,7 @@ sub use()
       }
    else
       {
+      if (!$self->{archflag}){return;}
       my ($name,%attributes)=@_;
       $self->{DEPENDENCIES}->{$attributes{'name'}} = 1;
       $self->{nested} == 1 ? push(@{$self->{tagcontent}->{USE}}, $attributes{'name'})
@@ -111,22 +115,29 @@ sub use()
 sub architecture()
    {
    my ($object,$name,%attributes)=@_;
-   $self->pushlevel(\%attributes); # Set nested to 1;
+   my $flag=$self->{archflag};
+   push @{$self->{archs}},$flag;
+   my $arch=$attributes{name};
+   if (($flag) && ($ENV{SCRAM_ARCH}!~/$arch/)){$self->{archflag}=0;}
    }
 
 sub architecture_()
    {
-   $self->{content}->{ARCH}->{$self->{id}->{'name'}}=$self->{tagcontent};
-   $self->poplevel();
+   my ($object,$name,%attributes)=@_;
+   $self->{archflag}=pop @{$self->{archs}};
    }
 
 sub export()
    {
+   my ($object,$name,%attributes)=@_;
+   if (!$self->{archflag}){return;}
    $self->pushlevel(); # Set nested to 1;
    }
 
 sub export_()
    {
+   my ($object,$name,%attributes)=@_;
+   if (!$self->{archflag}){return;}
    $self->{content}->{EXPORT} = $self->{tagcontent};
    $self->poplevel();
    }
@@ -140,7 +151,7 @@ sub lib()
       # Return an array of required libs:
       return $self->{content}->{LIB};      
       }
-   
+   if (!$self->{archflag}){return;}
    my $libname;
    
    if (exists($attributes{'position'}))
@@ -164,43 +175,6 @@ sub lib()
       : push(@{$self->{content}->{LIB}}, $libname);
    }
 
-sub libtype()
-   {
-   my ($object,$name,%attributes)=@_;
-   # The getter part:
-   if (ref($object) eq __PACKAGE__)
-      {
-      # Return an array of required libs:
-      return $self->{content}->{LIBTYPE};      
-      }
-
-   $self->{nested} == 1 ? push(@{$self->{tagcontent}->{LIBTYPE}}, $attributes{'type'})
-      : push(@{$self->{content}->{LIBTYPE}}, $attributes{'type'});
-   }
-
-sub skip()
-   {
-   my ($object,$name,%attributes)=@_;
-   $self->{nested} == 1 ? $self->{tagcontent}->{SKIPPEDDIRS} = [ 1 ]
-      : $self->{content}->{SKIPPEDDIRS} = [ 1 ];
-   }
-
-sub skip_message()
-   {
-   my ($object,$name,@message) = @_;
-   # Save any message text between <skip> tags:
-   if ($#message > -1)
-      {
-      $self->{nested} == 1 ? push(@{$self->{tagcontent}->{SKIPPEDDIRS}}, [ @message ])
-	 : push(@{$self->{content}->{SKIPPEDDIRS}}, [ @message ]);
-      }
-   }
-
-sub skip_()
-   {
-   my ($object,$name)=@_;
-   }
-
 sub makefile()
    {
    my ($object,$name,%attributes)=@_;
@@ -214,6 +188,7 @@ sub makefile()
 sub makefile_()
    {
    my ($object,$name,$cdata)=@_;
+   if (!$self->{archflag}){return;}
    $self->{nested} == 1 ? push(@{$self->{tagcontent}->{MAKEFILE}}, join("\n",@$cdata))
       : push(@{$self->{content}->{MAKEFILE}}, join("\n",@$cdata));
    }
@@ -227,7 +202,7 @@ sub flags()
       # Return an array of ProductStore hashes:
       return $self->{content}->{FLAGS};
       }
-   
+   if (!$self->{archflag}){return;}
    # Extract the flag name and its value:
    my ($flagname,$flagvaluestring) = each %attributes;
    $flagname =~ tr/[a-z]/[A-Z]/; # Keep flag name uppercase
@@ -267,32 +242,17 @@ sub allflags()
    return $self->{content}->{FLAGS};
    }
 
-sub archspecific()
-   {
-   my $self=shift;
-   
-   # Check to see if there is arch-dependent data. If so, return it:
-   if ((my $nkeys=keys %{$self->{content}->{ARCH}}) > 0)
-      {
-      while (my ($k,$v) = each %{$self->{content}->{ARCH}})
-	 {
-	 if ( $ENV{SCRAM_ARCH} =~ /$k.*/ )
-	    {
-	    return $self->{content}->{ARCH}->{$k};
-	    }
-	 }
-      }
-   return "";
-   }
-
 sub bin()
    {
    my ($object,$name,%attributes) = @_;
+   if (!$self->{archflag}){return;}
    $self->pushlevel(\%attributes);# Set nested to 1;
    }
 
 sub bin_()
    {
+   my ($object,$name,%attributes) = @_;
+   if (!$self->{archflag}){return;}
    # Need unique name for the binary (always use name of product). Either use "name"
    # given, or use "file" value minus the ending:
    if (exists ($self->{id}->{'name'}))
@@ -312,11 +272,14 @@ sub bin_()
 sub library()
    {
    my ($object,$name,%attributes) = @_;
+   if (!$self->{archflag}){return;}
    $self->pushlevel(\%attributes);# Set nested to 1;
    }
 
 sub library_()
    {
+   my ($object,$name,%attributes) = @_;
+   if (!$self->{archflag}){return;}
    # Need unique name for the library (always use name of product). Either use "name"
    # given, or use "file" value minus the ending:
    if (exists ($self->{id}->{'name'}))

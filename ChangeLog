@@ -1,7 +1,9 @@
 2012-02-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
-	* CRAM/ScramProjectDB.pm, SCRAM/Helper.pm, SCRAM/CMD.pm:
+	* SCRAM/ScramProjectDB.pm, SCRAM/Helper.pm, SCRAM/CMD.pm:
 	New option -e to show only projects which actually exist.
+	* BuildSystem/BuildFile.pm, BuildSystem/Product.pm,
+	BuildSystem/ToolParser.pm: Allow multiple/nasted arch sections
 
 2012-02-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
