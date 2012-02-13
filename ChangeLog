@@ -1,3 +1,8 @@
+2012-02-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* CRAM/ScramProjectDB.pm, SCRAM/Helper.pm, SCRAM/CMD.pm:
+	New option -e to show only projects which actually exist.
+
 2012-02-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* bin/scram: Updated to have original SCRAM_ARCH value saved.
