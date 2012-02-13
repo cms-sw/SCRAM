@@ -304,10 +304,12 @@ sub list()
    {
    my $self=shift;
    my (@ARGS) = @_;
+   delete $ENV{SCRAM_VALID_PROJECTS};
    my %opts;
    my %options =
-      ("help|h"	 => sub { $self->{SCRAM_HELPER}->help('list'); exit(0) },
-       "compact|c" => sub { $opts{SCRAM_LISTCOMPACT} = 1 } );
+      ("help|h"	   => sub { $self->{SCRAM_HELPER}->help('list'); exit(0) },
+       "compact|c" => sub { $opts{SCRAM_LISTCOMPACT} = 1 },
+       "exists|e"  => sub { $ENV{SCRAM_VALID_PROJECTS} = 1 } );
    
    local @ARGV = @ARGS;
    

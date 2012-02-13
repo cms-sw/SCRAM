@@ -191,8 +191,9 @@ sub list()
    $help.="\tlocal SCRAM database (see \"scram install help\").\n";
    $help.="Usage:\n";
    $help.="$::bold";
-   $help.="\tscram list [-c] [-h] [<projectname>]$::normal\n";
+   $help.="\tscram list [-e] -c] [-h] [<projectname>]$::normal\n";
    $help.="\n";
+   $help.="Use the -e option to list the available valid (not empty) projects and versions\n";
    $help.="Use the -c option to list the available projects and versions installed in the local\n";
    $help.="SCRAM database without fancy formatting or header strings.\n";
    $help.="The project name, version and installation directory are printed on STDOUT, separated\n";

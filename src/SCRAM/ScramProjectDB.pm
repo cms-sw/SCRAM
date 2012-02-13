@@ -216,6 +216,7 @@ sub _findProjects()
       foreach my $fd (glob($db))
       {
         if (!-d $fd){next;}
+	if ((exists $ENV{SCRAM_VALID_PROJECTS}) && (!-d "${fd}/.SCRAM/${arch}")){next;}
 	my $d=basename($fd);
 	if ($d=~/^$ver$/)
 	{
