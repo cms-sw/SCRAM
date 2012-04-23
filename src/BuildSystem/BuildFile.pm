@@ -152,24 +152,7 @@ sub lib()
       return $self->{content}->{LIB};      
       }
    if (!$self->{archflag}){return;}
-   my $libname;
-   
-   if (exists($attributes{'position'}))
-      {
-      if ($attributes{'position'} eq 'first')
-	 {
-	 $libname = "F:".$attributes{'name'};
-	 }
-      else
-	 {
-	 # There was a position entry but it didn't make sense:
-	 $libname = $attributes{'name'};
-	 }
-      }
-   else
-      {
-      $libname = $attributes{'name'};
-      }
+   my $libname = $attributes{'name'};
    # We have a libname, add it to the list:
    $self->{nested} == 1 ? push(@{$self->{tagcontent}->{LIB}}, $libname)
       : push(@{$self->{content}->{LIB}}, $libname);
