@@ -331,7 +331,9 @@ sub list()
       # The project data:
       my $project = shift(@ARGV);
       my $projectversion = shift(@ARGV);
-      my $projects = $self->scramprojectdb()->listall($project,$projectversion);
+      my $scramdb = $self->scramprojectdb();
+      if (!exists $scramdb->{archs}{$ENV{SCRAM_ARCH}}){return 1;}
+      my $projects = $scramdb->listall($project,$projectversion);
       foreach my $item (@$projects)
 	 {
 	 my $pr =$item->[0];
@@ -792,10 +794,12 @@ sub bootfromrelease() {
     my ($projectname,$projectversion,$installdir,$installname,$symlinks) = @_;
     my $iname=$installname || $projectversion;
     if ($projectname && $projectversion) {
-	my $relarea=$self->scramprojectdb()->getarea($projectname,$projectversion);
+	my $scramdb = $self->scramprojectdb();
+	if (!exists $scramdb->{archs}{$ENV{SCRAM_ARCH}}){exit 1;}
+	my $relarea=$scramdb->getarea($projectname,$projectversion);
 	if ((!defined $relarea) || (!-d $relarea->archdir()))
 	   {
-           my $list = $self->scramprojectdb()->{listcache};
+           my $list = $scramdb->{listcache};
 	   my @archs=keys %$list;
 	   if (scalar(@archs)>1)
 	      {
@@ -811,6 +815,7 @@ sub bootfromrelease() {
 	      }
 	   exit 1;
 	   }
+	$ENV{SCRAM_ARCH} = $relarea->archname();
 	if (-d "${installdir}/${iname}/".$relarea->admindir()."/$ENV{SCRAM_ARCH}")
 	   {
 	   print STDERR "WARNING: There already exists ${installdir}/${iname} area for SCRAM_ARCH $ENV{SCRAM_ARCH}.\n";

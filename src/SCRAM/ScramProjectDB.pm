@@ -166,10 +166,6 @@ sub _initDB ()
       close($ref);
     }
   }
-  foreach my $f (glob("${db}/*.arch"))
-  {
-    if ($f=~/^${db}\/(.*)\.arch$/){$self->{archs}{$1}=1;}
-  }
   if (!$local)
   {
     foreach my $proj (keys %{$self->{DBS}{uniq}{$localdb}})
@@ -178,6 +174,18 @@ sub _initDB ()
       {
         foreach my $path (keys %{$self->{DBS}{uniq}{$localdb}{$proj}}){$self->{DBS}{uniq}{$scramdb}{$proj}{$path}=1;}
       }
+    }
+  }
+  else
+  {
+    foreach my $f (glob("${db}/*.arch"))
+    {
+      if ($f=~/^${db}\/(.*)\.arch$/){$self->{archs}{$1}=1;}
+    }
+    if (!-e "${localdb}/$ENV{SCRAM_ARCH}/etc/default-scramv1-version")
+    {
+      delete $self->{archs}{$ENV{SCRAM_ARCH}};
+      print STDERR "ERROR: SCRAM is not istalled for $ENV{SCRAM_ARCH} architecture on your site.\n";
     }
   }
   if(open($ref, "${db}/".$self->{linkfile}))
@@ -206,6 +214,8 @@ sub _findProjects()
   my $arch=shift || $ENV{SCRAM_ARCH};
   my %data=();
   my %uniq=();
+  my $xdata = [];
+  if (!exists $self->{archs}{$arch}){return $xdata;}
   foreach my $base (@{$self->{DBS}{order}})
   {
     foreach my $p (keys %{$self->{DBS}{uniq}{$base}})
@@ -231,7 +241,6 @@ sub _findProjects()
       }
     }
   }
-  my $xdata = [];
   foreach my $m (sort {$a <=> $b} keys %data)
   {
     foreach my $p (keys %{$data{$m}})
