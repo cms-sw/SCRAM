@@ -1,3 +1,11 @@
+2012-04-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugins/RuntimeEnv.pm: Convert LD_LIBRARY_PATH
+	to DYLD_FALLBACK_LIBRARY_PATH for osx SCRAM_ARCHs.
+	* BuildSystem/ToolData.pm: Do not duplicate LIBDIR/INCLUDE
+	paths in dev area if path value does not depend on release
+	location.
+
 2012-02-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/ScramProjectDB.pm, SCRAM/Helper.pm, SCRAM/CMD.pm:

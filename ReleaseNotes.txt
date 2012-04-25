@@ -1,6 +1,19 @@
 
 			SCRAM Release Notes
 
+V2_2_4_pre4: 2012-04-25
+
+	* Allow nasted <architecture></architecture> blocks in tool files
+	and BuildFiles.
+	* "scram list" command now only shows projects for local SCRAM_ARCHs.
+	A new -e option is available which shows only valid projects i.e.
+	which contain valid .SCRAM/$SCRAM_ARCH.
+	* Automatically create a scram-based dev area if project is only
+	available for one SCRAM_ARCH regardless of current SCRAM_ARCH.
+	* Print error messages in to STDERR to avoid 'eval' processing.
+	* SCRAM now converts all LD_LIBRARY_PATH variables to DYLD_FALLBACK_LIBRARY_PATH
+	for osx SCRAM_ARCHs.
+
 V2_2_4_pre3: 2012-01-12
 
 	* scram project command now allows to run without project name e.g.
