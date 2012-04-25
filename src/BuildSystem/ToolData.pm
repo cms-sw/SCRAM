@@ -323,8 +323,9 @@ sub addreleasetoself()
       {
       # Convert LOCAL to RELEASE top, quoting the LOCALTOP
       # value in case funny characters have been used (e.g. ++):
-      $libdir =~ s/\Q$ENV{LOCALTOP}\E/$ENV{RELEASETOP}/g;
-      push(@$relldir, $libdir);
+      my $xlibdir = $libdir;
+      $xlibdir =~ s/\Q$ENV{LOCALTOP}\E/$ENV{RELEASETOP}/g;
+      if ($xlibdir ne $libdir){push(@$relldir, $xlibdir);}
       }
    
    # Add the new libdirs to our object:
@@ -334,8 +335,9 @@ sub addreleasetoself()
       {
       # Convert LOCAL to RELEASE top, quoting the LOCALTOP
       # value in case funny characters have been used (e.g. ++):
-      $incdir =~ s/\Q$ENV{LOCALTOP}\E/$ENV{RELEASETOP}/g;
-      push(@$relinc, $incdir);
+      my $xincdir = $incdir;
+      $xincdir =~ s/\Q$ENV{LOCALTOP}\E/$ENV{RELEASETOP}/g;
+      if ($xincdir ne $incdir){push(@$relinc, $xincdir);}
       }
    
    # Add the new libdirs to our object:
@@ -359,8 +361,9 @@ sub addreleasetoself()
 	    # Process the values for this path:
 	    foreach my $rtpath (@PATHS)
 	       {
-	       $rtpath =~ s/\Q$ENV{LOCALTOP}\E/$ENV{RELEASETOP}/g;
-	       push(@$RELPATHS,$rtpath);
+	       my $x=$rtpath;
+	       $x =~ s/\Q$ENV{LOCALTOP}\E/$ENV{RELEASETOP}/g;
+	       if ($x ne $rtpath){push(@$RELPATHS,$x);}
 	       }
 	    
 	    # Add the new settings:
