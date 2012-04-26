@@ -1,7 +1,7 @@
 
 			SCRAM Release Notes
 
-V2_2_4_pre4: 2012-04-25
+V2_2_4_pre4: 2012-04-26
 
 	* Allow nasted <architecture></architecture> blocks in tool files
 	and BuildFiles.

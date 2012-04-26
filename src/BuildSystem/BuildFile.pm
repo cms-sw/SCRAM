@@ -33,8 +33,6 @@ sub new()
    $self->{content} = {};
    $self->{scramdoc}=ActiveDoc::SimpleDoc->new();
    $self->{scramdoc}->newparse("builder",__PACKAGE__,'Subs',shift);
-   $self->{archs}=[];
-   $self->{archflag}=1;
    return $self;
    }
 
@@ -45,9 +43,13 @@ sub parse()
    my $fhead='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><doc type="BuildSystem::BuildFile" version="1.0">';
    my $ftail='</doc>';
    $self->{scramdoc}->filetoparse($filename);
+   $self->{archs}=[];
+   $self->{archflag}=1;
    $self->{scramdoc}->parse("builder",$fhead,$ftail);
    # We're done with the SimpleDoc object so delete it:
    delete $self->{scramdoc};
+   delete $self->{archs};
+   delete $self->{archflag};
    }
 
 sub classpath()

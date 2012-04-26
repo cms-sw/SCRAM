@@ -31,9 +31,6 @@ sub new
    $self->{scramdoc}=ActiveDoc::SimpleDoc->new();
    $self->{scramdoc}->newparse("setup","BuildSystem::ToolParser",'Subs',undef,1);
    $self->{envorder}=[];
-   $self->{archs}=[];
-   $self->{archflag}=1;
-
    return $self;
    }
 
@@ -246,8 +243,12 @@ sub parse
    $self->verbose("Setup Parse");
    my $fhead='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><doc type="BuildSystem::ToolParser" version="1.0">';
    my $ftail='</doc>';
+   $self->{archs}=[];
+   $self->{archflag}=1;
    $self->{scramdoc}->parse("setup",$fhead,$ftail);
    delete $self->{scramdoc};
+   delete $self->{archs};
+   delete $self->{archflag};
    return $self;
    }
 
