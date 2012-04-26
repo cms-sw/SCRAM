@@ -12,7 +12,7 @@ sub new()
   bless $self, $class;
   $self->{scramrc}='etc/scramrc';
   $self->{linkfile}='links.db';
-  $self->{archs}{$ENV{SCRAM_ARCH}}=1;
+  $self->{archs}={};
   $self->{listcache}= {};
   $ENV{SCRAM_LOOKUPDB}=&Utilities::AddDir::fixpath($ENV{SCRAM_LOOKUPDB});
   $self->_initDB();
@@ -178,13 +178,12 @@ sub _initDB ()
   }
   else
   {
-    foreach my $f (glob("${db}/*.arch"))
+    foreach my $f (glob("${localdb}/*/etc/default-scramv1-version"))
     {
-      if ($f=~/^${db}\/(.*)\.arch$/){$self->{archs}{$1}=1;}
+      if ($f=~/^${localdb}\/([^\/]+)\/etc\/default-scramv1-version$/){$self->{archs}{$1}=1;}
     }
-    if (!-e "${localdb}/$ENV{SCRAM_ARCH}/etc/default-scramv1-version")
+    if (! exists $self->{archs}{$ENV{SCRAM_ARCH}})
     {
-      delete $self->{archs}{$ENV{SCRAM_ARCH}};
       print STDERR "ERROR: SCRAM is not istalled for $ENV{SCRAM_ARCH} architecture on your site.\n";
     }
   }

@@ -2,6 +2,9 @@
 
 	* BuildSystem/BuildFile.pm, BuildSystem/ToolParser.pm:
 	Do not save un necessary items in ProjectCache.db
+	* SCRAM/ScramProjectDB.pm: Make use of <path>/*/etc/default-scramv1-version
+	to find out the installed arch instead of a un necessary
+	<path>/etc/scramrc/*.arch files.
 
 2012-04-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
