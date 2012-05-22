@@ -1,6 +1,12 @@
 
 			SCRAM Release Notes
 
+V2_2_4_pre5: 2012-05-07
+
+	* If a project is available for multiple archs but not for SCRAM_ARCH
+	then scram now can ask tag collector the default/production arch for
+	that project and then automatically create dev area for that.
+
 V2_2_4_pre4: 2012-04-26
 
 	* Allow nasted <architecture></architecture> blocks in tool files

@@ -1,3 +1,11 @@
+2012-05-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* CMD.pm: Command-line option --all added for "scram list"
+	to see all available projects for all archs.
+	* CMD.pm: "scram project" now can optionally talk to tag collector
+	to get the production arch for a release. This helps creating dev
+	area if project is available for multiple SCRAM_ARCHs
+
 2012-04-26 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* BuildSystem/BuildFile.pm, BuildSystem/ToolParser.pm:

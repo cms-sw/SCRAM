@@ -24,14 +24,35 @@ sub getarea ()
   my $self=shift;
   my $name=shift;
   my $version=shift;
-  my $arch = shift || $ENV{SCRAM_ARCH};
+  my $arch = $ENV{SCRAM_ARCH};
   my $data = $self->_findProjects($name,$version,1,$arch);
-  if (scalar(@$data) == 1){ return $self->_getAreaObject($data->[0],$arch); }
-  my $list = $self->updatearchs($name,$version);
-  delete $list->{$arch};
-  my @archs = keys %{$list};
-  if (scalar(@archs)==1){return $self->_getAreaObject($list->{$archs[0]}[0], $archs[0]);}
-  return undef;
+  my $selarch=undef;
+  if (scalar(@{$data->{$arch}}) == 1) { $selarch=$arch;}
+  elsif ($main::FORCE_SCRAM_ARCH eq "")
+  {
+    $data = $self->updatearchs($name,$version,{$arch});
+    my @archs = keys %{$data};
+    if (scalar(@archs)==1){$selarch=$archs[0];}
+    elsif(scalar(@archs)>1){$selarch=$self->productionArch($name,$version);}
+  }
+  my $area=undef;
+  if ((defined $selarch) and (exists $data->{$selarch})){$area=$self->getAreaObject($data->{$selarch}[0], $selarch);}
+  return $area;
+}
+
+sub productionArch()
+{
+  my ($self,$project,$version)=@_;
+  my $module="SCRAM::Plugins::".uc($project);
+  my $arch=undef;
+  eval {
+    eval "use $module";
+    if($@) {return $arch;}
+    my $tc=$module->new();
+    my @archs=$tc->releaseArchs($version,1);
+    if (scalar(@archs)==1){$arch=$archs[0];}
+  };
+  return $arch;
 }
 
 sub listlinks()
@@ -52,17 +73,28 @@ sub listlinks()
 
 sub listall()
 {
-  return _findProjects(@_);
+  my ($self,$proj,$ver,$valid,$all)=@_;
+  my $xdata = $self->_findProjects($proj,$ver,undef,$ENV{SCRAM_ARCH},$valid);
+  if ($all)
+  {
+    foreach my $arch (keys %{$self->{archs}})
+    {
+      if ($arch eq $ENV{SCRAM_ARCH}){next;}
+      $xdata = $self->_findProjects($proj,$ver,undef,$arch,$valid,$xdata);
+    }
+  }
+  return $xdata;
 }
 
 sub updatearchs()
 {
-  my ($self,$name,$version)=@_;
+  my ($self,$name,$version,$skiparch)=@_;
   $self->{listcache} = {};
   foreach my $arch (keys %{$self->{archs}})
   {
+    if (exists $skiparch->{$arch}){next;}
     my $data = $self->_findProjects($name,$version,1,$arch);
-    if (scalar(@$data)==1){$self->{listcache}{$arch}=$data;}
+    if (scalar(@{$data->{$arch}})==1){$self->{listcache}{$arch}=$data->{$arch};}
   }
   return $self->{listcache};
 }
@@ -104,9 +136,7 @@ sub unlink()
   return 1;
 }
 
-##################################################
-
-sub _getAreaObject ()
+sub getAreaObject ()
 {
   my ($self,$data,$arch)=@_;
   my $area=Configuration::ConfigArea->new($arch);
@@ -119,6 +149,8 @@ sub _getAreaObject ()
   }
   return $area;
 }
+
+##################################################
 
 sub _save ()
 {
@@ -178,7 +210,8 @@ sub _initDB ()
   }
   else
   {
-    foreach my $f (glob("${localdb}/*/etc/default-scramv1-version"))
+    my $varch=$ENV{SCRAM_ARCH}; $varch=~s/_gcc\d+.*$//;
+    foreach my $f (glob("${localdb}/${varch}_*/etc/default-scramv1-version"))
     {
       if ($f=~/^${localdb}\/([^\/]+)\/etc\/default-scramv1-version$/){$self->{archs}{$1}=1;}
     }
@@ -211,9 +244,11 @@ sub _findProjects()
   my $ver=shift || '.+';
   my $exact=shift  || undef;
   my $arch=shift || $ENV{SCRAM_ARCH};
+  my $valid=shift || 0;
+  my $xdata=shift || {};
   my %data=();
   my %uniq=();
-  my $xdata = [];
+  $xdata->{$arch} = [];
   if (!exists $self->{archs}{$arch}){return $xdata;}
   foreach my $base (@{$self->{DBS}{order}})
   {
@@ -225,11 +260,11 @@ sub _findProjects()
       foreach my $fd (glob($db))
       {
         if (!-d $fd){next;}
-	if ((exists $ENV{SCRAM_VALID_PROJECTS}) && (!-d "${fd}/.SCRAM/${arch}")){next;}
+	if (($valid) && (!-d "${fd}/.SCRAM/${arch}/MakeData")){next;}
 	my $d=basename($fd);
 	if ($d=~/^$ver$/)
 	{
-	  if ($exact){return [[$p,$d,$fd]];}
+	  if ($exact){push @{$xdata->{$arch}}, [$p,$d,$fd]; return $xdata;}
 	  elsif(!exists $uniq{"$p:$d"})
 	  {
 	    $uniq{"$p:$d"}=1;
@@ -246,7 +281,7 @@ sub _findProjects()
     {
       foreach my $v (keys %{$data{$m}{$p}})
       {
-        push @$xdata, [$p,$v,$data{$m}{$p}{$v}];
+        push @{$xdata->{$arch}}, [$p,$v,$data{$m}{$p}{$v}];
       }
     }
   }

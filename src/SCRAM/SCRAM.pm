@@ -285,9 +285,9 @@ sub _initlocalarea() {
 		               "  The release area \"$rel\"\n",
 		               "  for \"$name\" version \"$version\" is not available/usable.\n";
 		  my $res=$self->scramprojectdb()->listall("$name","${vregexp}.+");
-		  if (scalar(@$res)>0) {
+		  if (scalar(@{$res->{$ENV{SCRAM_ARCH}}})>0) {
 		     my @rels = ();
-		     foreach my $item (@{$res}) {
+		     foreach my $item (@{$res->{$ENV{SCRAM_ARCH}}}) {
 		       if ($item->[1] ne $version){push @rels, $item->[1];}
 		     }
 		     if (@rels>0) {

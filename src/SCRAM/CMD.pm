@@ -304,12 +304,12 @@ sub list()
    {
    my $self=shift;
    my (@ARGS) = @_;
-   delete $ENV{SCRAM_VALID_PROJECTS};
    my %opts;
    my %options =
       ("help|h"	   => sub { $self->{SCRAM_HELPER}->help('list'); exit(0) },
        "compact|c" => sub { $opts{SCRAM_LISTCOMPACT} = 1 },
-       "exists|e"  => sub { $ENV{SCRAM_VALID_PROJECTS} = 1 } );
+       "all|a"     => sub { $opts{SCRAM_LISTALL} = 1 },
+       "exists|e"  => sub { $opts{SCRAM_VALID_PROJECTS} = 1 } );
    
    local @ARGV = @ARGS;
    
@@ -333,60 +333,55 @@ sub list()
       my $projectversion = shift(@ARGV);
       my $scramdb = $self->scramprojectdb();
       if (!exists $scramdb->{archs}{$ENV{SCRAM_ARCH}}){return 1;}
-      my $projects = $scramdb->listall($project,$projectversion);
-      foreach my $item (@$projects)
-	 {
-	 my $pr =$item->[0];
-	 my $pv =$item->[1];
-	 my $url=$item->[2];
-	 my $pstring = sprintf "  %-15s %-25s  \n%45s%-30s\n",$pr,$pv,"--> ",$::bold.$url.$::normal;
-	 $pstring = sprintf "%-15s %-25s %-50s\n",$pr,$pv,$url, if ($opts{SCRAM_LISTCOMPACT});
-	 push(@foundareas,$pstring);
-	 }
+      my $projects = $scramdb->listall($project,$projectversion,$opts{SCRAM_VALID_PROJECTS},$opts{SCRAM_LISTALL});
+      foreach my $arch (keys %$projects) {
+         my @foundareas=();
+         foreach my $item (@{$projects->{$arch}})
+	    {
+	    my $pr =$item->[0];
+	    my $pv =$item->[1];
+	    my $url=$item->[2];
+	    my $pstring = sprintf "  %-15s %-25s  \n%45s%-30s\n",$pr,$pv,"--> ",$::bold.$url.$::normal;
+	    $pstring = sprintf "%-15s %-25s %-50s\n",$pr,$pv,$url, if ($opts{SCRAM_LISTCOMPACT});
+	    push(@foundareas,$pstring);
+	    }
       
-      if (scalar(@foundareas)==0)
-         {
-	 if ($projectversion ne "")
+	 if (!$opts{SCRAM_LISTCOMPACT})
 	    {
-	    print STDERR "Project $project version $projectversion is not installed yet for $ENV{SCRAM_ARCH}.\n";
-	    print STDERR "You can run \"scram list $project\" to see the available versions.\n";
-	    $self->scramerror(">>>> No SCRAM project $project version $version available. <<<<");
+	    print "\n","Listing installed projects available for platform >> ".$::bold."$arch".$::normal." <<\n\n";
 	    }
-	 elsif ($project ne "")
-	    {
-	    print STDERR "No version of project $project is not installed yet for $ENV{SCRAM_ARCH}.\n";
-	    print STDERR "You can run \"scram list\" to see the available projects and their versions.\n";
-	    $self->scramerror(">>>> No SCRAM project $project available. <<<<");
+         if (scalar(@foundareas)==0)
+            {
+	    if ($projectversion ne "")
+	       {
+	       $self->scramwarning(">>>> No SCRAM project $project version $projectversion available for $arch. <<<<");
+	       print STDERR "You can run \"scram list $project\" to see the available versions.\n";
+	       }
+	    elsif ($project ne "")
+	       {
+	       $self->scramwarning(">>>> No SCRAM project $project available for $arch. <<<<");
+	       print STDERR "You can run \"scram list\" to see the available projects and their versions.\n";
+	       }
+	    else
+	       {
+	       $self->scramwarning(">>>> There are no SCRAM project yet installed for $arch. <<<<");
+	       }
+	       next;
 	    }
-	 else
-	    {
-	    $self->scramerror(">>>> There are no SCRAM project yet installed.! <<<<");
-	    }
-	 }
       
-      if ($opts{SCRAM_LISTCOMPACT})
-	 {
-	 foreach $p (@foundareas)
+         if ($opts{SCRAM_LISTCOMPACT})
 	    {
-	    print $p;
+	    foreach $p (@foundareas){print $p;}
 	    }
-	 }
-      else
-	 {
-	 # Otherwise, dump the info:
-	 print "\n","Listing installed projects....","\n\n";
-	 print $linebold,"\n";
-	 print $headstring."\n";
-	 print $linebold,"\n\n";
-	 
-	 foreach $p (@foundareas)
+         else
 	    {
-	    print $p;
+	    print $linebold,"\n";
+	    print $headstring."\n";
+	    print $linebold,"\n\n";
+	    foreach $p (@foundareas){print $p;}
+	    print "\n";
 	    }
-	 
-	 print "\n\n","Projects available for platform >> ".$::bold."$ENV{SCRAM_ARCH}".$::normal." <<\n";
-	 print "\n";
-	 }      
+         }
       }
    
    # Otherwise return nicely:
@@ -773,9 +768,14 @@ sub project()
       else
 	 {
 	 my $projectname = shift(@ARGV);
-	 my $projectversion = shift(@ARGV) || undef;	 
-	 if (!defined $projectversion){$projectversion=$projectname; $projectname=~s/_.*$//;}
-	 $self->bootfromrelease($projectname,$projectversion,$installdir,$installname,$symlinks);
+	 my $projectversion = shift(@ARGV) || undef;
+	 my $projPath=undef;
+	 if (!defined $projectversion)
+	 {
+	   if (-d $projectname){$projPath=$projectname; $projectname=dirname($projPath);}
+	   $projectversion=$projectname; $projectname=~s/_.*$//;
+	 }
+	 $self->bootfromrelease($projectname,$projectversion,$installdir,$installname,$symlinks,$projPath);
 	 }     
       }
    
@@ -791,12 +791,15 @@ Function to create a developer area from an existing release (only used locally)
 
 sub bootfromrelease() {
     my $self=shift;
-    my ($projectname,$projectversion,$installdir,$installname,$symlinks) = @_;
+    my ($projectname,$projectversion,$installdir,$installname,$symlinks,$projPath) = @_;
     my $iname=$installname || $projectversion;
     if ($projectname && $projectversion) {
 	my $scramdb = $self->scramprojectdb();
 	if (!exists $scramdb->{archs}{$ENV{SCRAM_ARCH}}){exit 1;}
-	my $relarea=$scramdb->getarea($projectname,$projectversion);
+	my $relarea=undef;
+	if ($projPath)
+	{$relarea=$scramdb->getAreaObject([$projectname,$projectversion, $projPath], undef);}
+	else{$relarea=$scramdb->getarea($projectname,$projectversion);}
 	if ((!defined $relarea) || (!-d $relarea->archdir()))
 	   {
            my $list = $scramdb->{listcache};
