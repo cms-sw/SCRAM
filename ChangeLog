@@ -1,3 +1,8 @@
+2012-05-23 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/ScramProjectDB.pm: Check for .SCRAM/arch/timestamps/self file
+	for a valid release area.
+
 2012-05-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* CMD.pm: Command-line option --all added for "scram list"

@@ -260,7 +260,7 @@ sub _findProjects()
       foreach my $fd (glob($db))
       {
         if (!-d $fd){next;}
-	if (($valid) && (!-d "${fd}/.SCRAM/${arch}/MakeData")){next;}
+	if (($valid) && (!-d "${fd}/.SCRAM/${arch}/timestamps/self")){next;}
 	my $d=basename($fd);
 	if ($d=~/^$ver$/)
 	{
