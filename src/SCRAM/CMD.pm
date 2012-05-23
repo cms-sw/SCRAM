@@ -772,7 +772,7 @@ sub project()
 	 my $projPath=undef;
 	 if (!defined $projectversion)
 	 {
-	   if (-d $projectname){$projPath=$projectname; $projectname=dirname($projPath);}
+	   if ((-d $projectname) && ($projectname=~/^\//o)){$projPath=$projectname; $projectname=dirname($projPath);}
 	   $projectversion=$projectname; $projectname=~s/_.*$//;
 	 }
 	 $self->bootfromrelease($projectname,$projectversion,$installdir,$installname,$symlinks,$projPath);

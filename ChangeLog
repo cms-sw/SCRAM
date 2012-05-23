@@ -3,7 +3,9 @@
 	* SCRAM/ScramProjectDB.pm: Check for .SCRAM/arch/timestamps/self file
 	for a valid release area.
 	* SCRAM/ScramProjectDB.pm: bug fix, .SCRAM/arch/timestamps/self is
-        file not directory. This effected "scram list -e" output
+        file not directory. This effected "scram list -e" output.
+	* SCRAM/CMD.pm: Bug fix, for "scram p <path>" if <path> should be an
+	absolute.
 
 2012-05-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 

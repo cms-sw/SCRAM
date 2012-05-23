@@ -5,6 +5,8 @@ V2_2_4_pre6: 2012-05-23
 
 	* Bug fix: .SCRAM/arch/timestamps/self is file not directory. This
 	effected "scram list -e" output.
+	* For "scram p <release-path>", <release-path> should be an absoluet
+	path.
 
 V2_2_4_pre5: 2012-05-23
 
