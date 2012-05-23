@@ -1,7 +1,12 @@
 
 			SCRAM Release Notes
 
-V2_2_4_pre5: 2012-05-07
+V2_2_4_pre6: 2012-05-23
+
+	* Bug fix: .SCRAM/arch/timestamps/self is file not directory. This
+	effected "scram list -e" output.
+
+V2_2_4_pre5: 2012-05-23
 
 	* If a project is available for multiple archs but not for SCRAM_ARCH
 	then scram now can ask tag collector the default/production arch for
