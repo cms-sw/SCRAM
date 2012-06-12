@@ -1,10 +1,15 @@
+2012-06-12 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugins/DocParser.pm: Bug fix, properly parse <!-- -->
+	style xml comments.
+
 2012-05-23 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/ScramProjectDB.pm: Check for .SCRAM/arch/timestamps/self file
 	for a valid release area.
 	* SCRAM/ScramProjectDB.pm: bug fix, .SCRAM/arch/timestamps/self is
         file not directory. This effected "scram list -e" output.
-	* SCRAM/CMD.pm: Bug fix, for "scram p <path>" if <path> should be an
+	* SCRAM/CMD.pm: Bug fix, for "scram p <path>". <path> should be an
 	absolute.
 
 2012-05-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>

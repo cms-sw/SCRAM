@@ -79,7 +79,6 @@ sub process_()
       my $tagline=$1; $input=$2;
       if($tagline=~/^\s*$/){$self->parseError_("Empty tag found.\n",1);return 0;}
       elsif($tagline=~/^\?xml\s*/){$self->{input}=$input;}
-      elsif($tagline=~/^!--/){$self->{input}=$input;}
       else
       {
         my $tag={};
@@ -263,16 +262,43 @@ sub read_()
   my $self=shift;
   while(1)
   {
-    my $line=shift @{$self->{data}};
-    if(!defined $line){return 0;}
-    $self->{linenum}++;
-    if ($line!~/^\s*#/)
+    my $line=$self->removeCommnet_($self->readLine_());
+    if (!defined $line){return 0;}
+    if ($line=~/^\s*$/o){next;}
+    $self->{input}.=$line;
+    return 1;
+  }
+}
+
+sub readLine_()
+{
+  my ($self)=@_;
+  my $line=shift @{$self->{data}};
+  if(defined $line){$self->{linenum}++;}
+  return $line;
+}
+
+sub removeCommnet_()
+{
+  my ($self,$line)=@_;
+  my $preline="";
+  if(!defined $line){return $line;}
+  if ($line=~/^\s*#/o){$line="";}
+  elsif ($line=~/(.*)<\s*!--\s*(.*)$/o)
+  {
+    $preline=$1; $line=$2;
+    while(1)
     {
-      $self->{input}.=$line; 
-      return 1;
+      if ($line=~/^.*\s*--\s*>\s*(.*)$/o){$line=$self->removeCommnet_($1); last;}
+      else
+      {
+        $line=$self->readLine_();
+        if (!defined $line){$self->parseError_("Missing '-->' i.e. closing tag for comment.\n"); last;}
+      }
     }
   }
-  return 0;
+  if (defined $line){$line="${preline}${line}";}
+  return $line;
 }
 
 1;

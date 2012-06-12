@@ -1,6 +1,10 @@
 
 			SCRAM Release Notes
 
+V2_2_4_pre7: 2012-06-12
+
+	* Bug fix: Properly parse <!-- --> type comments in BuildFile.xml.
+
 V2_2_4_pre6: 2012-05-23
 
 	* Bug fix: .SCRAM/arch/timestamps/self is file not directory. This
