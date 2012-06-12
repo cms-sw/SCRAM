@@ -2,6 +2,7 @@
 
 	* SCRAM/Plugins/DocParser.pm: Bug fix, properly parse <!-- -->
 	style xml comments.
+	* BuildSystem/ToolManager.pm: Remove obsolete compiler section.
 
 2012-05-23 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 

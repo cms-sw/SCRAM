@@ -71,17 +71,6 @@ sub coresetup()
    # Next, set up the tool:
    my $store = $toolparser->processrawtool();
 
-   # Check to see if this tool is a compiler. If so, store it.
-   # Also store the language that this compiler supprots, and a
-   # compiler name (e.g. gcc323) which, in conjunction with a stem
-   # architecture name like slc3_ia32_, can be used to build a complete arch string:
-   if ($store->scram_compiler() == 1)
-      {
-      my @supported_language = $store->flags("SCRAM_LANGUAGE_TYPE");
-      my @compilername = $store->flags("SCRAM_COMPILER_NAME");
-      $self->scram_compiler($supported_language[0],$toolname,$compilername[0]);
-      }
-   
    # Store the ToolData object in the cache:   
    $self->storeincache($toolname,$store);
    my $srcfile=Utilities::AddDir::fixpath($toolfile);
@@ -300,14 +289,6 @@ sub remove_tool()
    {
    my $self=shift;
    my ($toolname)=@_;
-   my $tool = $self->{SETUP}{$toolname};
-   if ($tool->scram_compiler() == 1)
-      {
-      while (my ($langtype, $ctool) = each %{$self->{SCRAM_COMPILER}})
-         {
-	 if ($toolname eq $ctool->[0]){delete $self->{SCRAM_COMPILER}->{$langtype};}
-	 }
-      }
    delete $self->{SETUP}{$toolname};
    print "Deleting $toolname from cache.","\n";
    $self->updatetooltimestamp (undef, $toolname);
@@ -335,25 +316,6 @@ sub scram_projects()
       }
    
    return $scram_projects;
-   }
-
-sub scram_compiler()
-   {
-   my $self=shift;
-   my ($langtype, $toolname, $compilername)=@_;
-
-   if ($langtype)
-      {
-      # Store the compiler info according to supported
-      # language types.
-      #
-      # ---------------------- e.g C++      cxxcompiler    gcc323
-      $self->{SCRAM_COMPILER}->{$langtype}=[ $toolname, $compilername ];
-      }
-   else
-      {
-      return $self->{SCRAM_COMPILER};
-      }
    }
 
 sub updatetooltimestamp ()

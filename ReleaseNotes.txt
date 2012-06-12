@@ -1,6 +1,10 @@
 
 			SCRAM Release Notes
 
+V2_2_4_preX: 2012-06-12
+
+	* Bug fix: Remove obsolete compiler selection code.
+
 V2_2_4_pre7: 2012-06-12
 
 	* Bug fix: Properly parse <!-- --> type comments in BuildFile.xml.
