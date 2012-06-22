@@ -1,4 +1,4 @@
-2012-06-12 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+2012-06-22 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/Plugins/DocParser.pm: Bug fix, properly parse <!-- -->
 	style xml comments.
