@@ -1,3 +1,8 @@
+2012-10-16 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* BuildSystem/Template/Plugins/PluginCore.pm: Add utility functions
+	to add default product is missing.
+
 2012-06-22 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/Plugins/DocParser.pm: Bug fix, properly parse <!-- -->

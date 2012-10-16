@@ -81,6 +81,12 @@ sub name()
    return $self->{_BRANCH}->name();
    }
 
+sub parent()
+   {
+   my $self=shift;
+   return $self->{_BRANCH}->parent();
+   }
+
 sub publictype()
    {
    my $self=shift;
@@ -285,6 +291,23 @@ sub buildproducts()
    {
    my $self=shift;
    return $self->{_META}->{content}{BUILDPRODUCTS};
+   }
+   
+sub hasbuildproducts()
+   {
+   my $self=shift;
+   return exists $self->{_META}->{content}{BUILDPRODUCTS};
+   }
+   
+sub addbuildproduct()
+   {
+   my ($self,$name,$files,$type,$typename)=@_;
+   use BuildSystem::Product;
+   my $product = BuildSystem::Product->new();
+   $product->name($name);
+   $product->type($type);
+   $product->_files($files);
+   $self->{_META}->{content}{BUILDPRODUCTS}->{$typename}->{$name} = $product;
    }
 
 # Set the data for current product object:
