@@ -1,5 +1,7 @@
 
 			SCRAM Release Notes
+V2_2_4_pre8: 2012-10-19
+	* Allow to generate single default plugin from plugins directory.
 
 V2_2_4_pre7: 2012-06-22
 
