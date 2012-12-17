@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_4_pre9: 2012-12-17
+	* Remove dependency on Compress::Zlib.
+	* Set LOCALTOP at the tme of project area creation.
+
 V2_2_4_pre8: 2012-10-19
 	* Allow to generate single default plugin from plugins directory.
 

@@ -894,6 +894,7 @@ sub bootnewproject()
    # Need an autotoolssetup object:
    $ENV{'SCRAM_PROJECTDIR'} = $area->location();
    $ENV{'SCRAM_PROJECTVERSION'} = $area->version();
+   $ENV{'LOCALTOP'} = $ENV{'SCRAM_PROJECTDIR'};
    
    # Now set up selected tools:
    scramlogmsg("Setting up tools in project area","\n");

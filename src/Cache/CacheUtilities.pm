@@ -2,9 +2,7 @@ package Cache::CacheUtilities;
 require 5.004;
 use Data::Dumper;
 BEGIN {
-  eval "use Compress::Zlib qw(gzopen);";
-  if ($@){$Cache::CacheUtilities::zipUntility="GZip";}
-  else{$Cache::CacheUtilities::zipUntility="CompressZLib";}
+  $Cache::CacheUtilities::zipUntility="GZip";
   $Data::Dumper::Varname='cache';
 }
 
@@ -47,7 +45,7 @@ sub write()
    return;
    }
    
-###### Using gzip in case    Compress::Zlib failed #################
+###### Using gzip #################
 sub readGZip()
 {
    my $file = shift;
@@ -77,33 +75,5 @@ sub writeGZip()
    else{die "Can not open file for reading using \"gzip\": $file\n";}
    return 1;
 }
-
-###### Using Compress::Zlib #################
-sub readCompressZLib()
-   {
-   my $file = shift;
-   my $data = shift;
-   if (my $gz = gzopen($file, "rb"))
-      {
-      my $buf;
-      while ($gz->gzread($buf,1024*1024) > 0){${$data}.=$buf;}
-      $gz->gzclose();
-      }
-   else{die "Can not open file \"$file\" for reading: $!\n";}
-   return;
-   }
-   
-sub writeCompressZLib()
-   {
-   my ($cache,$file) = @_;
-   my $gz = gzopen($file, "wb");
-   if ($gz)
-      {
-      $gz->gzwrite($cache);
-      $gz->gzclose();
-      return 1;
-      }
-   return 0;
-   }
 
 1;
