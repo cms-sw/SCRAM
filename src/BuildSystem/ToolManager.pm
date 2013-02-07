@@ -30,6 +30,36 @@ sub new
    return $self;
    }
 
+sub initpathvars()
+   {
+   my $self=shift;
+   if (!exists $ENV{SCRAM_PATH_VARIABLES})
+      {
+      my %pathvars=("PATH", 1, "LD_LIBRARY_PATH", 1, "DYLD_LIBRARY_PATH", 1, "DYLD_FALLBACK_LIBRARY_PATH", 1, "PYTHONPATH", 1);
+      my $p = $self->_parsetool($self->{configdir}."/Self.xml");
+      if ((exists $p->{content}) && (exists $p->{content}{CLIENT}) && (exists $p->{content}{CLIENT}{FLAGS}))
+         {
+         if (exists $p->{content}{CLIENT}{FLAGS}{REM_PATH_VARIABLES})
+            {
+            foreach my $f (@{$p->{content}{CLIENT}{FLAGS}{REM_PATH_VARIABLES}})
+               {
+               delete $pathvars{$f};
+               }
+            }
+         if (exists $p->{content}{CLIENT}{FLAGS}{PATH_VARIABLES})
+            {
+            foreach my $f (@{$p->{content}{CLIENT}{FLAGS}{PATH_VARIABLES}})
+               {
+               $pathvars{$f}=1;
+               }
+            }
+         }
+      my $paths = join("|",keys %pathvars);
+      if ($paths){$paths = "^($paths)\$";}
+      $ENV{SCRAM_PATH_VARIABLES}=$paths;
+      }
+   }
+
 sub init ()
    {
    my $self=shift;
@@ -39,6 +69,7 @@ sub init ()
    $self->{archstore}=$projectarea->archdir();
    $self->{toolcache}=$self->{configdir}."/toolbox/$ENV{SCRAM_ARCH}/tools";
    $self->name($projectarea->toolcachename());
+   $self->initpathvars();
    $self->dirty();
    }
   
@@ -60,16 +91,11 @@ sub coresetup()
    my $self=shift;
    my ($toolfile) = @_;
    
-   my $toolparser = BuildSystem::ToolParser->new();
-   $toolparser->filehead('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><doc type="BuildSystem::ToolDoc" version="1.0">');
-   $toolparser->filetail('</doc>');
-   $toolparser->parse($toolfile);
+   my $toolparser = $self->_parsetool($toolfile);
+   my $store = $toolparser->processrawtool();
    my $toolname = $toolparser->toolname();
    my $toolversion = $toolparser->toolversion();
    scramlogmsg("\n",$::bold."Setting up ",$toolname," version ",$toolversion,":  ".$::normal,"\n");
-   
-   # Next, set up the tool:
-   my $store = $toolparser->processrawtool();
 
    # Store the ToolData object in the cache:   
    $self->storeincache($toolname,$store);
@@ -102,14 +128,8 @@ sub setupself()
       {
       scramlogmsg("\n",$::bold."Setting up SELF:".$::normal,"\n");
       # Self file exists so process it:
-      $selfparser = BuildSystem::ToolParser->new();
-      $selfparser->filehead ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><doc type="BuildSystem::ToolDoc" version="1.0">');
-      $selfparser->filehead ('</doc>');
-      $selfparser->parse($filename);
-
-      # Next, set up the tool:
-      $store = $selfparser->processrawtool();
-
+      my $selfparser = $self->_parsetool($filename);
+      my $store = $selfparser->processrawtool();
       # If we are in a developer area, also add RELEASETOP paths:
       if (exists($ENV{RELEASETOP}))
 	 {
@@ -204,6 +224,16 @@ sub toolsdata()
 	 }
       }
    return $data;
+   }
+
+sub _parsetool()
+   {
+   my ($self,$filename)=@_;
+   my $p = BuildSystem::ToolParser->new();
+   $p->filehead ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><doc type="BuildSystem::ToolDoc" version="1.0">');
+   $p->filetail ('</doc>');
+   $p->parse($filename);
+   return $p;
    }
 
 sub _toolsdata()

@@ -102,7 +102,12 @@ sub runtime()
    my ($object,$name,%attributes)=@_;
    if (!$self->{archflag}){return;}
    my $hashref = \%attributes;   
-   my $envname;
+   my $envname = $hashref->{'name'}; $envname=~s/\s//g;
+   my $pvar = $ENV{SCRAM_PATH_VARIABLES};
+   if (($pvar) && ($envname=~/$pvar/))
+      {
+      if (!exists ($hashref->{'type'})){$hashref->{'type'}="path";}
+      }
    # Check to see if we have a "type" arg. If so, we use this to create the key:
    if (exists ($hashref->{'type'}))
       {
@@ -110,11 +115,7 @@ sub runtime()
       # Make the type uppercase:
       $type =~ tr/[a-z]/[A-Z]/;
       # Rename the environment as "<type>:<env name>":
-      $envname = $type.":".$$hashref{'name'};
-      }
-   else
-      {
-      $envname = $$hashref{'name'};
+      $envname = $type.":".$envname;
       }
    
    # Delete name entry so hash is more tidy
@@ -140,7 +141,7 @@ sub flags()
    if (!$self->{archflag}){return;}
    # Extract the flag name and its value:
    my ($flagname,$flagvaluestring) = each %attributes;
-   $flagname =~ tr/[a-z]/[A-Z]/; # Keep flag name uppercase
+   $flagname=~s/\s//g; $flagname =~ tr/[a-z]/[A-Z]/; # Keep flag name uppercase
    chomp($flagvaluestring);
    # Split the value on whitespace so we can push all
    # individual flags into an array:
@@ -194,11 +195,17 @@ sub environment()
    if (!$self->{archflag}){return;}
    my $hashref = \%attributes;
    # Save a copy of the name of this environment:
-   my $envname=$$hashref{'name'};
-   delete $$hashref{'name'}; # Delete name entry so hash is more tidy
+   my $envname=$hashref->{'name'}; $envname=~s/\s//g;
+   delete $hashref->{'name'}; # Delete name entry so hash is more tidy
    # Before we save $hashref we need to know if there are already
    # any env tags with the same name. If there are, we must save all
    # data to an aray of hashes:
+   my $pvar = $ENV{SCRAM_PATH_VARIABLES};
+   if (($pvar) && ($envname=~/$pvar/))
+      {
+      print STDERR "****WARNING: \"$envname\" is not allowed in client environment, it can override runtime environmnet.\nMay be you want to add it as <runtime/>, please fix \"",$self->{content}->{TOOLNAME},"\" tool definition.\n";
+      return;
+      }
    if (exists ($self->{"$self->{levels}->[$self->{nested}]".content}->{ENVIRONMENT}->{$envname}))
       {
       push(@{$self->{"$self->{levels}->[$self->{nested}]".content}->{ENVIRONMENT}->{$envname}},$hashref);

@@ -394,6 +394,7 @@ sub toolmanager()
          $self->info("Reading tool data from ToolCache.db.gz") if ($self->{SCRAM_DEBUG});
          use Cache::CacheUtilities;
          $self->{toolmanager}=&Cache::CacheUtilities::read($location->toolcachename());
+         $self->{toolmanager}->initpathvars();
          }
       else
          {
