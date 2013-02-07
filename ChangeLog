@@ -5,6 +5,7 @@
 	and PYTHONPATH as path type variables for tool definition.
 	- Do not allow to set the above variables for <client><environment/></client>
 	as this can override runtime environment. 
+	* bin/chktool: New tool added to test a tool definition.
 
 2012-12-17 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
