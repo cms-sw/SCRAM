@@ -1,3 +1,8 @@
+2013-02-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* BuildSystem/ToolParser.pm,BuildSystem/ToolManager.pm,bin/chktool:
+	Avoid using SCRAM_PATH_VARIABLES environment variable.
+
 2013-02-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* BuildSystem/ToolManager.pm, BuildSystem/ToolParser.pm, SCRAM/SCRAM.pm:

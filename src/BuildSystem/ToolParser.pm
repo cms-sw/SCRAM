@@ -25,7 +25,7 @@ sub new
    $self={};
    
    bless $self,$class;
-   
+   $self->{path_variables}=shift || "";
    $self->{content} = {};
    $self->{nested} = 0;
    $self->{scramdoc}=ActiveDoc::SimpleDoc->new();
@@ -103,7 +103,7 @@ sub runtime()
    if (!$self->{archflag}){return;}
    my $hashref = \%attributes;   
    my $envname = $hashref->{'name'}; $envname=~s/\s//g;
-   my $pvar = $ENV{SCRAM_PATH_VARIABLES};
+   my $pvar = $self->{path_variables};
    if (($pvar) && ($envname=~/$pvar/))
       {
       if (!exists ($hashref->{'type'})){$hashref->{'type'}="path";}
@@ -200,7 +200,7 @@ sub environment()
    # Before we save $hashref we need to know if there are already
    # any env tags with the same name. If there are, we must save all
    # data to an aray of hashes:
-   my $pvar = $ENV{SCRAM_PATH_VARIABLES};
+   my $pvar = $self->{path_variables};
    if (($pvar) && ($envname=~/$pvar/))
       {
       print STDERR "****WARNING: \"$envname\" is not allowed in client environment, it can override runtime environmnet.\nMay be you want to add it as <runtime/>, please fix \"",$self->{content}->{TOOLNAME},"\" tool definition.\n";

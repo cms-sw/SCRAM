@@ -33,7 +33,7 @@ sub new
 sub initpathvars()
    {
    my $self=shift;
-   if (!exists $ENV{SCRAM_PATH_VARIABLES})
+   if (!exists $self->{internal}{path_variables})
       {
       my %pathvars=("PATH", 1, "LD_LIBRARY_PATH", 1, "DYLD_LIBRARY_PATH", 1, "DYLD_FALLBACK_LIBRARY_PATH", 1, "PYTHONPATH", 1);
       my $p = $self->_parsetool($self->{configdir}."/Self.xml");
@@ -56,7 +56,7 @@ sub initpathvars()
          }
       my $paths = join("|",keys %pathvars);
       if ($paths){$paths = "^($paths)\$";}
-      $ENV{SCRAM_PATH_VARIABLES}=$paths;
+      $self->{internal}{path_variables}=$paths;
       }
    }
 
@@ -229,7 +229,7 @@ sub toolsdata()
 sub _parsetool()
    {
    my ($self,$filename)=@_;
-   my $p = BuildSystem::ToolParser->new();
+   my $p = BuildSystem::ToolParser->new($self->{internal}{path_variables});
    $p->filehead ('<?xml version="1.0" encoding="UTF-8" standalone="yes"?><doc type="BuildSystem::ToolDoc" version="1.0">');
    $p->filetail ('</doc>');
    $p->parse($filename);
