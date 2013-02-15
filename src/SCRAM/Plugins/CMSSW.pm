@@ -27,7 +27,7 @@ sub _getTcData()
     my $out=`which wget 2>&1`;
     if ($? != 0){$cmd='curl -L -k --stderr /dev/null ';}
     $self->{getcmd}=$cmd;
-    $self->{baseurl}="https://cmstags.cern.ch/tc";
+    $self->{baseurl}="https://cmstags.cern.ch/tc/public";
   }
   my @archs=();
   my $cmd=$self->{getcmd}." '".$self->{baseurl}."/$url'";
