@@ -1,3 +1,8 @@
+2013-03-12 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugins/DocParser.pm: Catch all error thrown while parsing the
+	tool files.
+	
 2013-02-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* BuildSystem/ToolParser.pm,BuildSystem/ToolManager.pm,bin/chktool:

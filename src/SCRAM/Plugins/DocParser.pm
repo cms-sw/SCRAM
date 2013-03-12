@@ -128,11 +128,13 @@ sub handleEvents_()
     if($type == 1)
     {
       eval{$self->{pkg}->$name($name,%{$tag->{attrib}});};
+      if ($@){die "$@\n";}
     }
     elsif($type == 2)
     {
       my $name_="${name}_";
       eval{$self->{pkg}->$name_($name,$tag->{cdata});};
+      if ($@){die "$@\n";}
     }
   }
 }
