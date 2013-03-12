@@ -42,7 +42,7 @@ sub calchksum {
 	   {
 	   my $ref;
 	   open ($ref, "${dir}/config_tag");
-	   $version=<$ref>;
+	   $sum=<$ref>;
 	   close($ref);
            chomp $sum;
 	   }
