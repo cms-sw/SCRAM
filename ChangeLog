@@ -2,6 +2,8 @@
 
 	* SCRAM/Plugins/DocParser.pm: Catch all error thrown while parsing the
 	tool files.
+	* Configuration/ConfigArea.pm: Use config/config_tag file to have the
+	config tag and use this tag as config checksum.
 	
 2013-02-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 

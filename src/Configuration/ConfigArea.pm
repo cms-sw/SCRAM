@@ -37,10 +37,22 @@ sub symlinks {
 sub calchksum {
         my $self=shift;
 	my $dir=$self->location()."/".$self->configurationdir();
-        push @INC,$dir;
-	require SCRAM::Plugins::ProjectChkSum;
-	my $sum=&SCRAM::Plugins::ProjectChkSum::chksum($dir);
-	pop @INC;
+	my $sum="";
+	if (-f "${dir}/config_tag")
+	   {
+	   my $ref;
+	   open ($ref, "${dir}/config_tag");
+	   $version=<$ref>;
+	   close($ref);
+           chomp $sum;
+	   }
+	else
+	   {
+	   push @INC,$dir;
+	   require SCRAM::Plugins::ProjectChkSum;
+	   $sum=&SCRAM::Plugins::ProjectChkSum::chksum($dir);
+	   pop @INC;
+	   }
 	return $sum;
 }
 

@@ -4,6 +4,8 @@ V2_2_5_pre1: 2013-03-12
 
 	* Bug fix: Fail and dump the error message at the project bootstrap
 	time.
+	* Use config tag as checksum instead of doing checksum of all files
+	in config directory.
 
 V2_2_4: 2013-02-07
 	* Bug fix: Do not allow PATH, LD_LIBRARY_PATH, DYLD_LIBRARY_PATH,
