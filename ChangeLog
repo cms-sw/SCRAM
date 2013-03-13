@@ -1,3 +1,8 @@
+2013-03-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* Copy tool files first in to dev area to make sure their timestamp
+	is earlier then the timestamp files in .SCRAM/<arch>/timestamp dir.
+
 2013-03-12 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/Plugins/DocParser.pm: Catch all error thrown while parsing the

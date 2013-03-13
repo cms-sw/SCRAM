@@ -231,24 +231,24 @@ sub satellite {
 	$sat->releasetop($relloc);
 	$sat->configchksum($self->configchksum());
 	$sat->setup(@_);
-        $self->copywithskip($self->archdir(),$sat->archdir(),["InstalledTools","ProjectCache.db.gz","RuntimeCache.db.gz","DirCache.db.gz","MakeData/DirCache","MakeData/DirCache.mk","MakeData/src.mk"]);
-	$envfile = $sat->archdir()."/Environment";
-	open ( $fh, "> $envfile" ) or  $sat->error("Cannot Open \"$envfile\" file to Save\n $!"); 
-	print $fh "RELEASETOP=$relloc\n";
-	close($fh);
 	my $devconf = $sat->location()."/".$sat->configurationdir();
 	my $relconf = $self->location()."/".$self->configurationdir();
 	if (!-d $devconf)
 	   {
            $self->copywithskip($relconf,$devconf,['toolbox']);
 	   }
+	Utilities::AddDir::copydir("${relconf}/toolbox/".$self->{arch},"${devconf}/toolbox/".$self->{arch});
+	Utilities::AddDir::adddir ($sat->location()."/".$sat->sourcedir());
+        $self->copywithskip($self->archdir(),$sat->archdir(),["InstalledTools","ProjectCache.db.gz","RuntimeCache.db.gz","DirCache.db.gz","MakeData/DirCache","MakeData/DirCache.mk","MakeData/src.mk"]);
+	my $envfile = $sat->archdir()."/Environment";
+	open ( $fh, "> $envfile" ) or  $sat->error("Cannot Open \"$envfile\" file to Save\n $!"); 
+	print $fh "RELEASETOP=$relloc\n";
+	close($fh);
 	$envfile = $sat->location()."/".$self->{admindir}."/Environment";
 	if (! -f $envfile)
 	   {
 	   $sat->save ();
 	   }
-	Utilities::AddDir::copydir("${relconf}/toolbox/".$self->{arch},"${devconf}/toolbox/".$self->{arch});
-	Utilities::AddDir::adddir ($sat->location()."/".$sat->sourcedir());
 	return $sat;
 }
 
