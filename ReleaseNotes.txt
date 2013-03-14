@@ -9,6 +9,8 @@ V2_2_5_pre1: 2013-03-14
 	* Fix timestamp of tools file issue
 	* More fixed for arch independent SCRAM
 	* Use writable SCRAM DB paths for "scram db" command.
+	* Bug fix when creating dev area using a release path e.g.
+	scram project <release-path>
 
 V2_2_4: 2013-02-07
 	* Bug fix: Do not allow PATH, LD_LIBRARY_PATH, DYLD_LIBRARY_PATH,

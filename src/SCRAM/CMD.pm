@@ -776,10 +776,16 @@ sub project()
 	 my $projectversion = shift(@ARGV) || undef;
 	 my $projPath=undef;
 	 if (!defined $projectversion)
-	 {
-	   if ((-d $projectname) && ($projectname=~/^\//o)){$projPath=$projectname; $projectname=dirname($projPath);}
-	   $projectversion=$projectname; $projectname=~s/_.*$//;
-	 }
+	    {
+	    if ((-d $projectname) && ($projectname=~/^\//o))
+	       {
+	       require Configuration::ConfigArea;
+	       $projPath = Configuration::ConfigArea->new()->searchlocation($projectname);
+	       if (!defined $projPath){$self->scramerror("Not a valid scram-based release area: $projectname");}
+	       $projectname=basename($projPath);
+	       }
+	    $projectversion=$projectname; $projectname=~s/_.*$//;
+	    }
 	 $self->bootfromrelease($projectname,$projectversion,$installdir,$installname,$symlinks,$projPath);
 	 }     
       }

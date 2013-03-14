@@ -9,6 +9,7 @@
 	* SCRAM/CMD.pm: For "scram db" command use writeable DB path.
 	* bin/scram: Override writable SCRAM DB path too is SCRAM_USERLOOKUPDB
 	is set.
+	* SCRAM/CMD.pm: Bug fix, use basename instead of dirname to get the project version
 
 2013-03-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
