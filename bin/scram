@@ -38,7 +38,11 @@ $|=1;
 
 if (!exists $ENV{SCRAM_LOOKUPDB})
    {
-   if (exists $ENV{SCRAM_USERLOOKUPDB}){$dbPath = $ENV{SCRAM_USERLOOKUPDB};}
+   if (exists $ENV{SCRAM_USERLOOKUPDB})
+      {
+      $dbPath = $ENV{SCRAM_USERLOOKUPDB};
+      $dbPathWrite = $dbPath;
+      }
    $ENV{SCRAM_LOOKUPDB} = $dbPath;
    }
 if (!exists $ENV{SCRAM_LOOKUPDB_WRITE})

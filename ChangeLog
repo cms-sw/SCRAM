@@ -7,6 +7,8 @@
 	* SCRAM/CMD.pm: As SCRAM is now arch independenct, so do not stop
 	is if scram is not available an arch.
 	* SCRAM/CMD.pm: For "scram db" command use writeable DB path.
+	* bin/scram: Override writable SCRAM DB path too is SCRAM_USERLOOKUPDB
+	is set.
 
 2013-03-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
