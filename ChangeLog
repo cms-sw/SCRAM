@@ -1,3 +1,13 @@
+2013-03-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/ScramProjectDB.pm: Search for all available arch from all the
+	scram dbs linked in too.
+        * SCRAM/CMD.pm: When requesting to create a dev area, if release is
+	not available for current SCRAM_ARCH then show a warning mesage.
+	* SCRAM/CMD.pm: As SCRAM is now arch independenct, so do not stop
+	is if scram is not available an arch.
+	* SCRAM/CMD.pm: For "scram db" command use writeable DB path.
+
 2013-03-13 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* Copy tool files first in to dev area to make sure their timestamp

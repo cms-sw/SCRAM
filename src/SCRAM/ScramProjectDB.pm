@@ -208,17 +208,10 @@ sub _initDB ()
       }
     }
   }
-  else
+  my $varch=$ENV{SCRAM_ARCH}; $varch=~s/_gcc\d+.*$//;
+  foreach my $f (glob("${scramdb}/${varch}_*/cms/cms-common"))
   {
-    my $varch=$ENV{SCRAM_ARCH}; $varch=~s/_gcc\d+.*$//;
-    foreach my $f (glob("${localdb}/${varch}_*/etc/default-scramv1-version"))
-    {
-      if ($f=~/^${localdb}\/([^\/]+)\/etc\/default-scramv1-version$/){$self->{archs}{$1}=1;}
-    }
-    if (! exists $self->{archs}{$ENV{SCRAM_ARCH}})
-    {
-      print STDERR "ERROR: SCRAM is not istalled for $ENV{SCRAM_ARCH} architecture on your site.\n";
-    }
+    if ($f=~/^${scramdb}\/([^\/]+)\/cms\/cms-common$/){$self->{archs}{$1}=1;}
   }
   if(open($ref, "${db}/".$self->{linkfile}))
   {

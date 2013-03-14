@@ -332,7 +332,11 @@ sub list()
       my $project = shift(@ARGV);
       my $projectversion = shift(@ARGV);
       my $scramdb = $self->scramprojectdb();
-      if (!exists $scramdb->{archs}{$ENV{SCRAM_ARCH}}){return 1;}
+      if ((! exists $opts{SCRAM_LISTALL}) && (!exists $scramdb->{archs}{$ENV{SCRAM_ARCH}}))
+         {
+         $self->scramwarning(">>>> There are no SCRAM project yet installed for $ENV{SCRAM_ARCH}. <<<<");
+         return 1;
+         }
       my $projects = $scramdb->listall($project,$projectversion,$opts{SCRAM_VALID_PROJECTS},$opts{SCRAM_LISTALL});
       foreach my $arch (keys %$projects) {
          my @foundareas=();
@@ -416,6 +420,7 @@ sub db()
       }
    else
       {
+      $ENV{SCRAM_LOOKUPDB} = $ENV{SCRAM_LOOKUPDB_WRITE};
       if ($opts{SCRAM_DB_LINK})
 	 {
 	 if ( -d $db )
@@ -795,7 +800,6 @@ sub bootfromrelease() {
     my $iname=$installname || $projectversion;
     if ($projectname && $projectversion) {
 	my $scramdb = $self->scramprojectdb();
-	if (!exists $scramdb->{archs}{$ENV{SCRAM_ARCH}}){exit 1;}
 	my $relarea=undef;
 	if ($projPath)
 	{$relarea=$scramdb->getAreaObject([$projectname,$projectversion, $projPath], undef);}
@@ -818,6 +822,7 @@ sub bootfromrelease() {
 	      }
 	   exit 1;
 	   }
+	my $xarch = $ENV{SCRAM_ARCH};
 	$ENV{SCRAM_ARCH} = $relarea->archname();
 	if (-d "${installdir}/${iname}/".$relarea->admindir()."/$ENV{SCRAM_ARCH}")
 	   {
@@ -861,6 +866,11 @@ sub bootfromrelease() {
 	
 	scramlogmsg("\n\nInstallation procedure complete.\n");
 	scramlogmsg("Developer area located at:\n\n\t\t".$area->location()."\n\n");
+	if ($xarch ne $ENV{SCRAM_ARCH}) 
+	   {
+	   print "WARNING: Release $projectversion is not available for architecture $xarch.\n";
+	   print "         Developer's area is created for available architecture $ENV{SCRAM_ARCH}.\n";
+	   }
     } else {
 	$self->scramfatal("Insufficient arguments: see \"scram project -help\" for usage info.");
     }
