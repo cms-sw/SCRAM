@@ -14,6 +14,7 @@ sub new()
   $self->{linkfile}='links.db';
   $self->{archs}={};
   $self->{listcache}= {};
+  $self->{projects}={};
   $ENV{SCRAM_LOOKUPDB}=&Utilities::AddDir::fixpath($ENV{SCRAM_LOOKUPDB});
   $self->_initDB();
   return $self;
@@ -27,7 +28,7 @@ sub getarea ()
   my $arch = $ENV{SCRAM_ARCH};
   my $data = $self->_findProjects($name,$version,1,$arch);
   my $selarch=undef;
-  if (scalar(@{$data->{$arch}}) == 1) { $selarch=$arch;}
+  if ((exists $data->{$arch}) && (scalar(@{$data->{$arch}}) == 1)) { $selarch=$arch;}
   elsif ($main::FORCE_SCRAM_ARCH eq "")
   {
     $data = $self->updatearchs($name,$version,{$arch});
@@ -74,10 +75,11 @@ sub listlinks()
 sub listall()
 {
   my ($self,$proj,$ver,$valid,$all)=@_;
-  my $xdata = $self->_findProjects($proj,$ver,undef,$ENV{SCRAM_ARCH},$valid);
-  if ($all)
+  my $arch = $ENV{SCRAM_ARCH};
+  my $xdata = $self->_findProjects($proj,$ver,undef,$arch,$valid);
+  if ($all || ((!exists $xdata->{$arch}) && ($main::FORCE_SCRAM_ARCH eq "")))
   {
-    foreach my $arch (keys %{$self->{archs}})
+    foreach $arch (keys %{$self->{archs}})
     {
       if ($arch eq $ENV{SCRAM_ARCH}){next;}
       $xdata = $self->_findProjects($proj,$ver,undef,$arch,$valid,$xdata);
@@ -94,7 +96,7 @@ sub updatearchs()
   {
     if (exists $skiparch->{$arch}){next;}
     my $data = $self->_findProjects($name,$version,1,$arch);
-    if (scalar(@{$data->{$arch}})==1){$self->{listcache}{$arch}=$data->{$arch};}
+    if ((exists $data->{$arch}) && (scalar(@{$data->{$arch}})==1)){$self->{listcache}{$arch}=$data->{$arch};}
   }
   return $self->{listcache};
 }
@@ -150,6 +152,11 @@ sub getAreaObject ()
   return $area;
 }
 
+sub hasProject ()
+{
+  my ($self, $proj)=@_;
+  return exists $self->{projects}{uc($proj)};
+}
 ##################################################
 
 sub _save ()
@@ -193,7 +200,11 @@ sub _initDB ()
       while(my $line=<$ref>)
       {
         chomp $line; $line=~s/\s//go;
-        if ($line=~/^([^=]+)=(.+)$/o){$self->{DBS}{uniq}{$scramdb}{uc($1)}{$2}=1;}
+        if ($line=~/^([^=]+)=(.+)$/o)
+	{
+	  $self->{projects}{uc($1)}=1;
+	  $self->{DBS}{uniq}{$scramdb}{uc($1)}{$2}=1;
+	}
       }
       close($ref);
     }
@@ -208,7 +219,7 @@ sub _initDB ()
       }
     }
   }
-  my $varch=$ENV{SCRAM_ARCH}; $varch=~s/_gcc\d+.*$//;
+  my $varch=$ENV{SCRAM_ARCH}; $varch=~s/_[^_]+$//;
   foreach my $f (glob("${scramdb}/${varch}_*/cms/cms-common"))
   {
     if ($f=~/^${scramdb}\/([^\/]+)\/cms\/cms-common$/){$self->{archs}{$1}=1;}
@@ -241,8 +252,8 @@ sub _findProjects()
   my $xdata=shift || {};
   my %data=();
   my %uniq=();
-  $xdata->{$arch} = [];
   if (!exists $self->{archs}{$arch}){return $xdata;}
+  $xdata->{$arch} = [];
   foreach my $base (@{$self->{DBS}{order}})
   {
     foreach my $p (keys %{$self->{DBS}{uniq}{$base}})
@@ -255,10 +266,13 @@ sub _findProjects()
         if (!-d $fd){next;}
 	if (($valid) && (!-f "${fd}/.SCRAM/${arch}/timestamps/self")){next;}
 	my $d=basename($fd);
-	if ($d=~/^$ver$/)
+	if ($exact)
 	{
-	  if ($exact){push @{$xdata->{$arch}}, [$p,$d,$fd]; return $xdata;}
-	  elsif(!exists $uniq{"$p:$d"})
+	  if ($d eq $ver){push @{$xdata->{$arch}}, [$p,$d,$fd]; return $xdata;}
+	}
+	elsif ($d=~/$ver/)
+	{
+	  if(!exists $uniq{"$p:$d"})
 	  {
 	    $uniq{"$p:$d"}=1;
 	    my $m = (stat($fd))[9];
@@ -278,5 +292,6 @@ sub _findProjects()
       }
     }
   }
+  if (scalar(@{$xdata->{$arch}})==0){delete $xdata->{$arch};}
   return $xdata;
 }

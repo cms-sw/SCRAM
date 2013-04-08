@@ -1,3 +1,10 @@
+2013-04-08 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/CMD.pm: "scram list <version>" can now match all available versions which
+        match <version>. If no version is matched for $SCRAM_ARCH then other archs are
+	also search. If SCRAM_ARCH is forced via command-line e.g. "scram -a <arch> list <ver>"
+	then <ver> is only searched for <arch>.
+
 2013-03-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/ScramProjectDB.pm: Search for all available arch from all the

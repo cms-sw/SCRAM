@@ -1,5 +1,13 @@
 
 			SCRAM Release Notes
+V2_2_5_pre2: 2013-04-08
+
+	* "scram list <version>" can now match all available versions which match
+	<version>. If no version is matched for $SCRAM_ARCH then other archs are
+	also search.
+	* If SCRAM_ARCH is forced via command-line e.g. "scram -a <arch> list <ver>"
+	then <ver> is only searched for <arch>.
+
 V2_2_5_pre1: 2013-03-14
 
 	* Bug fix: Fail and dump the error message at the project bootstrap

@@ -322,73 +322,57 @@ sub list()
       }
    else
       {
-      my $pjname = "Project Name";
-      my $pjversion = "Project Version";
-      my $pjlocation = "Project Location";
-      my $headstring = sprintf("| %-12s  | %-24s | %-33s |",$pjname,$pjversion,$pjlocation);
-      my $linebold = "$::bold"."$::line"."$::normal";
-      
       # The project data:
+      my $scramdb = $self->scramprojectdb();
       my $project = shift(@ARGV);
       my $projectversion = shift(@ARGV);
-      my $scramdb = $self->scramprojectdb();
-      if ((! exists $opts{SCRAM_LISTALL}) && (!exists $scramdb->{archs}{$ENV{SCRAM_ARCH}}))
+      if ($projectversion eq "")
          {
-         $self->scramwarning(">>>> There are no SCRAM project yet installed for $ENV{SCRAM_ARCH}. <<<<");
-         return 1;
+         $projectversion=$project;
+         $project=~s/_.*//;
+         if (!$scramdb->hasProject($project)){$project="";}
          }
-      my $projects = $scramdb->listall($project,$projectversion,$opts{SCRAM_VALID_PROJECTS},$opts{SCRAM_LISTALL});
-      foreach my $arch (keys %$projects) {
-         my @foundareas=();
-         foreach my $item (@{$projects->{$arch}})
-	    {
-	    my $pr =$item->[0];
-	    my $pv =$item->[1];
-	    my $url=$item->[2];
-	    my $pstring = sprintf "  %-15s %-25s  \n%45s%-30s\n",$pr,$pv,"--> ",$::bold.$url.$::normal;
-	    $pstring = sprintf "%-15s %-25s %-50s\n",$pr,$pv,$url, if ($opts{SCRAM_LISTCOMPACT});
-	    push(@foundareas,$pstring);
-	    }
-      
-	 if (!$opts{SCRAM_LISTCOMPACT})
-	    {
-	    print "\n","Listing installed projects available for platform >> ".$::bold."$arch".$::normal." <<\n\n";
-	    }
-         if (scalar(@foundareas)==0)
+      my $projects = $scramdb->listall(uc($project),$projectversion,$opts{SCRAM_VALID_PROJECTS},$opts{SCRAM_LISTALL});
+      if (scalar(keys %$projects)==0)
+         {
+         my $arch_msg="";
+         if ($main::FORCE_SCRAM_ARCH ne ""){$arch_msg=" for architecture $ENV{SCRAM_ARCH}";}
+         if ($projectversion ne "")
             {
-	    if ($projectversion ne "")
-	       {
-	       $self->scramwarning(">>>> No SCRAM project $project version $projectversion available for $arch. <<<<");
-	       print STDERR "You can run \"scram list $project\" to see the available versions.\n";
-	       }
-	    elsif ($project ne "")
-	       {
-	       $self->scramwarning(">>>> No SCRAM project $project available for $arch. <<<<");
-	       print STDERR "You can run \"scram list\" to see the available projects and their versions.\n";
-	       }
-	    else
-	       {
-	       $self->scramwarning(">>>> There are no SCRAM project yet installed for $arch. <<<<");
-	       }
-	       next;
-	    }
-      
-         if ($opts{SCRAM_LISTCOMPACT})
-	    {
-	    foreach $p (@foundareas){print $p;}
-	    }
+            $self->scramwarning(">>>> No SCRAM project $project version $projectversion available$arch_msg. <<<<");
+            print STDERR "You can run \"scram list $project\" to see the available versions.\n";
+            }
+         elsif ($project ne "")
+            {
+            $self->scramwarning(">>>> No SCRAM project $project available$arch_msg. <<<<");
+            print STDERR "You can run \"scram list\" to see the available projects and their versions.\n";
+            }
          else
-	    {
-	    print $linebold,"\n";
-	    print $headstring."\n";
-	    print $linebold,"\n\n";
-	    foreach $p (@foundareas){print $p;}
-	    print "\n";
-	    }
+            {
+            $self->scramwarning(">>>> There are no SCRAM project yet installed$arch_msg. <<<<");
+            }
+         exit(1);
+         }
+
+      my $headstring = sprintf("| %-12s  | %-24s | %-33s |","Project Name","Project Version","Project Location");
+      my $linebold = "$::bold"."$::line"."$::normal";
+      foreach my $arch (sort keys %$projects) {
+         if (!$opts{SCRAM_LISTCOMPACT})
+            {
+            print "\n","Listing installed projects available for platform >> ".$::bold."$arch".$::normal." <<\n\n";
+            print $linebold,"\n";
+            print $headstring."\n";
+            print $linebold,"\n\n";
+            }
+         foreach my $item (@{$projects->{$arch}})
+            {
+            my $pstring = "";
+            if ($opts{SCRAM_LISTCOMPACT}){$pstring = sprintf "%-15s %-25s %-50s",$item->[0],$item->[1],$item->[2];}
+            else{$pstring = sprintf "  %-15s %-25s  \n%45s%-30s",$item->[0],$item->[1],"--> ",$::bold.$item->[2].$::normal;}
+            print "$pstring\n";
+            }
          }
       }
-   
-   # Otherwise return nicely:
    return 0;
    }
 
@@ -786,7 +770,7 @@ sub project()
 	       }
 	    $projectversion=$projectname; $projectname=~s/_.*$//;
 	    }
-	 $self->bootfromrelease($projectname,$projectversion,$installdir,$installname,$symlinks,$projPath);
+	 $self->bootfromrelease(uc($projectname),$projectversion,$installdir,$installname,$symlinks,$projPath);
 	 }     
       }
    
