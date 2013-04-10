@@ -490,32 +490,6 @@ sub spawnversion
    return $rv;
    }
    
-sub spawnarch
-   {
-   my $self=shift;
-   my $arch=shift;
-   my $rv=0;
-
-   if (defined $arch)
-      {
-      print "$arch vs $ENV{SCRAM_ARCH}\n";
-      if ($arch ne $ENV{SCRAM_ARCH})
-	 {
-	 $ENV{SCRAM_ARCH}=$arch;
-	 print "Spawn\n";
-	 $self->verbose("Spawning SCRAM arch $arch");
-	 my $rv=system("scram", @$main::ORIG_ARGV)/256;
-	 exit $rv;
-	 }
-      }
-   else
-      {
-      $self->error("Undefined value for arch requested");
-      $rv=1;
-      }
-   return $rv;
-   }
-
 sub availablearch
    {
    my $self=shift;

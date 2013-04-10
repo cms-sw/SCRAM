@@ -4,6 +4,14 @@
         match <version>. If no version is matched for $SCRAM_ARCH then other archs are
 	also search. If SCRAM_ARCH is forced via command-line e.g. "scram -a <arch> list <ver>"
 	then <ver> is only searched for <arch>.
+	* BuildSystem/MakeInterface.pm: Cleanup gmake options. Every non-recognized
+	option is passed to gamke.
+	SCRAM/CMD.pm: Dropped --xmlb|-x "scram build" option. this was never used
+	and now we only read xml BuildFiles.
+	* SCRAM/Helper.pm: Updated "scram build" help message.
+	* SCRAM/SCRAM.pm: Dropped unused spawnarch() function. This was used in
+	old days to re-run scram for a different SCRAM_ARCH but there is no need
+	for it any more.
 
 2013-03-14 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 

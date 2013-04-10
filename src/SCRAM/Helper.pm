@@ -390,14 +390,14 @@ sub build()
    $help.="--fast               skip checking the cache and go straight to building.\n";
    $help.="--convertxml         convert any non-xml BuildFile in to BuildFile.xml.\n";
    $help.="\n";
-   $help.="Make option flags can be passed to gmake at build-time: the supported options are\n";
-   $help.="\n -n               print the commands that would be executed but do not run them\n";
-   $help.=" --printdir       print the working directory before and after entering it\n";
-   $help.=" --printdb        print the data base of rules after scanning makefiles, then build as normal\n";
-   $help.=" -j <n>           the number of processes to run simultaneously\n";
-   $help.=" -k               continue for as long as possible after an error\n";
-   $help.=" -s               do not print any output\n";                
-   $help.=" -d               run gmake in debug mode\n\n";      
+   $help.="Make option flags can be passed to gmake at build-time e.g.\n\n";
+   $help.=" --just-print|--dry-run|-n  Print the commands that would be executed but do not run them\n";
+   $help.=" --print-directory|-w       Print the working directory before and after entering it\n";
+   $help.=" --print-data-base|-p       Print the data base of rules after scanning makefiles, then build as normal\n";
+   $help.=" -j [<n>]                   The number of processes to run simultaneously\n";
+   $help.=" -k                         Continue for as long as possible after an error\n";
+   $help.=" -s                         Do not print any output\n";                
+   $help.=" -d                         Run gmake in debug mode\n\n";      
    $help.="\n";
 
    return $help;

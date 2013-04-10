@@ -495,8 +495,7 @@ sub build()
        "testrun|t"  => sub { $opts{SCRAM_TEST} = 1 },
        "reset|r"    => sub { if ($cachereset==0){ $cachereset=1; print "Resetting caches","\n"; system("rm","-rf",$builddatastore,"${workingdir}/MakeData/DirCache* ${workingdir}/MakeData/ExtraBuilsRules")}},
        "fast|f"     => sub { print "Skipping cache scan...","\n"; $fast=1 },
-       "convertxml|c"  => sub { $convertxml =1 },
-       "xmlb|x"     => sub {$ENV{SCRAM_XMLBUILDFILES} = 1; print "SCRAM: Will read XML versions of your BuildFiles.","\n" } );
+       "convertxml|c"  => sub { $convertxml =1 } );
    
    local (@ARGV) = @_;
 
