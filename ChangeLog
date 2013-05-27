@@ -1,3 +1,8 @@
+2013-05-27 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/Plugins/RuntimeEnv.pm: For project tool e.g. cmssw, convert any
+	DYLD_LIBRARY_PATH in to LD_LIBRARY_PATH.
+
 2013-04-08 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/CMD.pm: "scram list <version>" can now match all available versions which

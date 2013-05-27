@@ -1,5 +1,13 @@
 
 			SCRAM Release Notes
+V2_2_5_pre3: 2013-05-27
+
+	* Allow all non-recognized optioned to be passed to gmake.
+	* Cleanup: remove some unsed code e.g. spawnarch and conver BuildFiles
+	to xml version.
+	* Bug fix for patch releases: Properly add base release library directory
+	in to DYLD_FALLBACK_LIBRARY_PATH
+
 V2_2_5_pre2: 2013-04-08
 
 	* "scram list <version>" can now match all available versions which match

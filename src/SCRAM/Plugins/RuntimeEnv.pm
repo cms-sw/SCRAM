@@ -397,13 +397,17 @@ sub toolenv_ ()
   my $tname=$tool->toolname();
   my $toolrt = $tool->runtime();
   my $gmake="";
+  my $projTool=0;
+  if ($tname eq lc($ENV{SCRAM_PROJECTNAME})){$projTool=1;}
   if (defined ($toolrt))
   {
     while (my ($trtvar, $trtval) = each %{$toolrt})
     {
       if ($trtvar =~ /^PATH:(.*?)$/)
       {
-	my $x = &fixlibenv_($1);
+	my $x=$1;
+	if ($projTool && ($ENV{SCRAM_ARCH}=~/^osx/) && ($x eq "DYLD_LIBRARY_PATH")){$x="LD_LIBRARY_PATH";}
+	$x = &fixlibenv_($x);
 	(! exists $self->{env}{rtstring}{path}{$x}) ? $self->{env}{rtstring}{path}{$x} = [] : undef;
 	map
 	{
