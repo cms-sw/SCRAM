@@ -300,10 +300,9 @@ sub _setAreaArch {
     if (!exists $self->{archs})
     {
       $self->{archs}=[];
-      my $toolbox = $self->{location}.'/'.$self->{configurationdir}.'/toolbox';
-      foreach my $arch (glob("${toolbox}/*")) {
+      foreach my $arch (glob($self->{location}.'/'.$self->{configurationdir}.'/toolbox/*')) {
         if (-d "${arch}/tools") {
-          $arch=~s/^$toolbox\///;
+	  $arch=~s/^.*\/([^\/]+)$/$1/o;
 	  push @{$self->{archs}},$arch;
         }
       }
