@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_5_pre4: 2013-07-26
+
+	* Bug fix: Allow having + char in path.
+
 V2_2_5_pre3: 2013-05-27
 
 	* Allow all non-recognized optioned to be passed to gmake.

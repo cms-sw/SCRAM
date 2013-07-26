@@ -1,3 +1,8 @@
+2013-07-26 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* Configuration/ConfigArea.pm: Fixed logic for searching the arch of a release
+	area. This allows to have + char in path.
+
 2013-05-27 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/Plugins/RuntimeEnv.pm: For project tool e.g. cmssw, convert any
