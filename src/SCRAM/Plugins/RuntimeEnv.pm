@@ -103,7 +103,7 @@ sub setenv()
         $ENV{$var} = $val;
 	next;
       }
-      if (exists $oenv->{$var})
+      if (($var ne "PATH") && (exists $oenv->{$var}))
       {
         my $v=$oenv->{$var};
 	if ($val eq $v){next;}

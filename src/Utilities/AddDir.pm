@@ -226,6 +226,7 @@ sub getfileslist ()
    my $dir=shift;
    my $data=shift || [];
    my $base=shift || $dir;
+   my $breq=quotemeta($base);
    my $ref;
    opendir($ref,$dir) || die "ERROR: Can not open directory for reading: $dir";
    foreach my $f (readdir($ref))
@@ -235,7 +236,7 @@ sub getfileslist ()
       if (-d $f){&getfileslist($f,$data,$base);}
       else
          {
-	 $f=~s/^$base\///;
+	 $f=~s/^$breq\///;
          push @$data,$f;
          }
       }

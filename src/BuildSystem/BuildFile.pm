@@ -45,8 +45,10 @@ sub parse()
    $self->{scramdoc}->filetoparse($filename);
    $self->{archs}=[];
    $self->{archflag}=1;
+   $self->{filetoparse}=$filename;
    $self->{scramdoc}->parse("builder",$fhead,$ftail);
    # We're done with the SimpleDoc object so delete it:
+   delete $self->{filetoparse};
    delete $self->{scramdoc};
    delete $self->{archs};
    delete $self->{archflag};
@@ -288,6 +290,13 @@ sub productcollector()
    # Create a new Product object for storage of data:
    use BuildSystem::Product;
    my $product = BuildSystem::Product->new();
+   my @err=();
+   foreach my $attrib (sort keys %{$self->{id}})
+   {
+     if ($attrib!~/^(file|name)$/){push @err,"Unknown attribute $attrib found.";}
+   }
+   if (!exists $self->{id}->{'file'}){push @err,"Missing file='files' attribute";}
+   if (scalar(@err)>0){$self->{tagcontent}->{ERRORS}=\@err;}
    # Store the name:
    $product->name($name);
    $product->type($typeshort);

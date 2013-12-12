@@ -27,8 +27,12 @@ sub exec()
    {
    my $self=shift;
    my ($makefile)=@_;
-   my $makecmd=$self->{GMAKECMD}.$self->{CMDOPTS}." -f ".$makefile." ".join(" ",@ARGV);
-   exec("$makecmd") || die "SCRAM MakeInterface::exec(): Unable to run gmake ...$!","\n";
+   my $arg="";
+   foreach my $a (@ARGV){$arg.=" '$a'";}
+   my $makecmd=$self->{GMAKECMD}.$self->{CMDOPTS}." -f $makefile $arg";
+   my $errfile=$ENV{SCRAM_INTwork}."/build_error";
+   unlink($errfile);
+   exec("($makecmd && [ ! -e $errfile ]) || (err=\$?; echo gmake: \\*\\*\\* [There are compilation/build errors. Please see the detail log above.] Error \$err && exit \$err)") || die "SCRAM MakeInterface::exec(): Unable to run gmake ...$!","\n";
    }
 
 1;

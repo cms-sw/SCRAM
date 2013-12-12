@@ -1,5 +1,13 @@
 
 			SCRAM Release Notes
+V2_2_5_pre5: 2013-12-11
+
+	* Force set PATH environment for scram runtime (no need to run rehash)
+	* SCRAM now complains if 'file' attribute is missing in test/BuildFile.xml
+	* Always exit with non-zero code if there are build errors (even if -k is
+	used). Also print an error message at the end to remind that there were
+	compilaton errors.
+
 V2_2_5_pre4: 2013-07-26
 
 	* Bug fix: Allow having + char in path.

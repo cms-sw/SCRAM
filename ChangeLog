@@ -1,3 +1,14 @@
+2013-12-11 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* BuildSystem/BuildFile.pm: Print error messages for unknown attributes
+	or missing files attribute for test/plugsin BuildFiles.
+	* BuildSystem/MakeInterface.pm: Exit with non-zero code even with -k option.
+	At the end of build print an error message to show that there were some build
+	errors.
+	* SCRAM/Plugins/RuntimeEnv.pm: For scram runtime command, always set PATH which
+	forces the shell to discard it cache and re-search for binaries again. This will
+	avoid running rehash (tcsh) or force setting PATH (bash).
+
 2013-07-26 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* Configuration/ConfigArea.pm: Fixed logic for searching the arch of a release
