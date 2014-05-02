@@ -1,3 +1,9 @@
+2014-05-02 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/ScramProjectDB.pm: Prefer domainname-links.db over links.db.
+	* Plugins/CMSSW.pm: Use https://cmssdt.cern.ch/SDT/releases.map instead of
+	Tag Collector to get the release archs.
+
 2013-12-11 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* BuildSystem/BuildFile.pm: Print error messages for unknown attributes
