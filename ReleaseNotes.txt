@@ -1,5 +1,10 @@
 
 			SCRAM Release Notes
+V2_2_5_pre6: 2014-05-02
+
+	* Use new release.map for getting release archs
+	* Use of site specific links.db file.
+
 V2_2_5_pre5: 2013-12-11
 
 	* Force set PATH environment for scram runtime (no need to run rehash)

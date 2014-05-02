@@ -15,6 +15,12 @@ sub new()
   $self->{archs}={};
   $self->{listcache}= {};
   $self->{projects}={};
+  $self->{domain}='';
+  eval {
+    eval "use Net::Domain qw(hostdomain);";
+    if(!$@){$self->{domain}=hostdomain();}
+  };
+  $self->verbose("domain is set to '".$self->{domain}."'");
   $ENV{SCRAM_LOOKUPDB}=&Utilities::AddDir::fixpath($ENV{SCRAM_LOOKUPDB});
   $self->_initDB();
   return $self;
@@ -164,7 +170,7 @@ sub _save ()
   my $self=shift;
   my $filename = $ENV{SCRAM_LOOKUPDB_WRITE}."/".$self->{scramrc};
   &Utilities::AddDir::adddir($filename);
-  $filename.="/".$self->{linkfile};
+  $filename = $self->_getLinkDBFile($filename);
   my $fh;
   if (!open ( $fh, ">$filename" )){die "Can not open file for writing: $filename\n";}
   foreach my $db (@{$self->{LocalLinks}}){if ($db ne ""){print $fh "$db\n";}}
@@ -224,7 +230,7 @@ sub _initDB ()
   {
     if ($f=~/^${scramdb}\/([^\/]+)\/cms\/cms-common$/){$self->{archs}{$1}=1;}
   }
-  if(open($ref, "${db}/".$self->{linkfile}))
+  if(open($ref, $self->_getLinkDBFile($db)))
   {
     my %uniq=();
     while(my $line=<$ref>)
@@ -295,3 +301,13 @@ sub _findProjects()
   if (scalar(@{$xdata->{$arch}})==0){delete $xdata->{$arch};}
   return $xdata;
 }
+
+sub _getLinkDBFile()
+{
+  my ($self,$dir)=@_;
+  my $linkdb=$self->{domain}."-".$self->{linkfile};
+  if (!-e "${dir}/${linkdb}"){$linkdb=$self->{linkfile};}
+  return "${dir}/${linkdb}";
+}
+
+1;
