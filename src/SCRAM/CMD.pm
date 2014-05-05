@@ -489,10 +489,12 @@ sub build()
    # Getopt variables:
    my %opts = ( SCRAM_TEST => 0 ); # test mode: don't run make;
    my $convertxml = 0;
+   my $ignore_arch = 0;
    my %options =
       ("help|h"     => sub { $self->{SCRAM_HELPER}->help('build'); exit(0) },
        "verbose|v"  => sub { $ENV{SCRAM_BUILDVERBOSE} = 1 },
        "testrun|t"  => sub { $opts{SCRAM_TEST} = 1 },
+       "ignore-arch"  => sub { $ignore_arch = 1 },
        "reset|r"    => sub { if ($cachereset==0){ $cachereset=1; print "Resetting caches","\n"; system("rm","-rf",$builddatastore,"${workingdir}/MakeData/DirCache* ${workingdir}/MakeData/ExtraBuilsRules")}},
        "fast|f"     => sub { print "Skipping cache scan...","\n"; $fast=1 },
        "convertxml|c"  => sub { $convertxml =1 } );
@@ -618,6 +620,23 @@ sub build()
       if ( -f $ENV{SCRAM_INTwork}."/Makefile")
 	 {
 	 $cacheobject=();$buildstoreobject=();
+	 my $chkarch = "${wrkdir}/chkarch";
+	 if ($ignore_arch && (-e $chkarch))
+	    {
+	    if (! unlink($chkarch))
+	       {
+	       $self->scramerror("Could not delete $chkarch: $!");
+	       }
+	    }
+	 if (-e $chkarch)
+	    {
+	    my $os = $self->cmsos();
+	    if ($ENV{SCRAM_ARCH}!~/^$os/)
+	       {
+	       $self->scramerror("You are trying to compile/build for architecture $ENV{SCRAM_ARCH} on ".uc($os)." OS which might not work.\n".
+	                         "If you know this SCRAM_ARCH/OS combination works then please first run 'scram build --ignore-arch'.");
+	       }
+	    }
 	 my $returnval = $MAKER->exec($ENV{SCRAM_INTwork}."/Makefile"),
 	 if (! $opts{SCRAM_TEST});
 	 print "MAKE not actually run: test build mode!","\n",if ($opts{SCRAM_TEST});
@@ -625,7 +644,7 @@ sub build()
 	 }
       else
 	 {
-	 $self->scramerror("SCRAM: No Makefile in working dir. \nPlease delete .SCRAM/".
+	 $self->scramerror("No Makefile in working dir. \nPlease delete .SCRAM/".
 	                   $ENV{SCRAM_ARCH}."/ProjectCache.db.gz then rebuild.");
 	 exit(1);
 	 }
@@ -728,7 +747,6 @@ sub project()
       ("help|h"   => sub { $self->{SCRAM_HELPER}->help('project'); exit(0) },
        "dir|d=s"  => sub { $opts{SCRAM_INSTALL_DIR} = 1; $installdir = $_[1] },
        "name|n=s" => sub { $opts{SCRAM_INSTALL_NAME} = 1; $installname = $_[1] },
-       "file|f=s" => sub { print STDERR "****WARNING: obsolete command-line argument '-f'\n" },
        "log|l"    => sub { scramloginteractive(1); },
        "symlinks|s"=> sub { $symlinks=1; },
        "boot|b=s" => sub { $opts{SCRAM_BOOTSTRAPFILE_NAME} = 1; $bootstrapfile = 'file:'.$_[1]; $bootfile = $_[1] },
@@ -859,6 +877,16 @@ sub bootfromrelease() {
 	   {
 	   print "WARNING: Release $projectversion is not available for architecture $xarch.\n";
 	   print "         Developer's area is created for available architecture $ENV{SCRAM_ARCH}.\n";
+	   }
+	my $os = $self->cmsos();
+	if ($ENV{SCRAM_ARCH}!~/^$os/)
+	   {
+	   print "WARNING: Developer's area is created for architecture $ENV{SCRAM_ARCH} while your current OS is ",uc($os),".\n";
+	   }
+	$os = $scramdb->productionArch($projectname,$projectversion);
+	if ((defined $os) && ($ENV{SCRAM_ARCH} ne $os))
+	   {
+	   print "WARNING: Developer's area is created for non-production architecture $ENV{SCRAM_ARCH}. Production architecture for this release is $os.\n";
 	   }
     } else {
 	$self->scramfatal("Insufficient arguments: see \"scram project -help\" for usage info.");

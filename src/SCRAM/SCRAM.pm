@@ -510,6 +510,12 @@ sub availablearch
    return $archs;
    }
 
+sub cmsos {
+  my $os=`$main::installPath/common/cmsos`; chomp $os;
+  $os=~s/_.*$//;
+  return $os;
+}
+
 sub classverbose {
 	my $self=shift;
 	my $class=shift;

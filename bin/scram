@@ -22,6 +22,7 @@ use Getopt::Long ();
 $ENV{'SCRAM_VERSION'}='@SCRAM_VERSION@';
 my $dbPath = '@CMS_PATH@';
 my $dbPathWrite = '@CMS_PATH@';
+$main::installPath='@CMS_PATH@';
 #### Core settings ####
 $main::bold = "";
 $main::normal = "";
