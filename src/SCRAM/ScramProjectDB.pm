@@ -20,7 +20,7 @@ sub new()
     eval "use Net::Domain qw(hostdomain);";
     if(!$@){$self->{domain}=hostdomain();}
   };
-  $self->verbose("domain is set to '".$self->{domain}."'");
+  $self->verbose("Site domain is set to '".$self->{domain}."'");
   $ENV{SCRAM_LOOKUPDB}=&Utilities::AddDir::fixpath($ENV{SCRAM_LOOKUPDB});
   $self->_initDB();
   return $self;
@@ -307,6 +307,7 @@ sub _getLinkDBFile()
   my ($self,$dir)=@_;
   my $linkdb=$self->{domain}."-".$self->{linkfile};
   if (!-e "${dir}/${linkdb}"){$linkdb=$self->{linkfile};}
+  $self->verbose("Reading SCRAM DB at ${dir}/${linkdb}");
   return "${dir}/${linkdb}";
 }
 
