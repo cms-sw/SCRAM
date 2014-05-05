@@ -1,3 +1,13 @@
+2014-05-05 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/SCRAM.pm: Use $CMS_PATH/common/cmsos to find out the OS
+	* SCRAM/CMD.pm: Printout warning message if
+	  - developer area is created for a non-production arch
+	  - developer area arch and OS does not match
+	* SCRAM/CMD.pm: ARCH/OS mismatch check added for "scram build"
+	  - Do not allow to build/compile if ARCH and OS mismatch
+	  - "scram build --ignore-arch" to remove the mismatch restriction.
+
 2014-05-02 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/ScramProjectDB.pm: Prefer domainname-links.db over links.db.

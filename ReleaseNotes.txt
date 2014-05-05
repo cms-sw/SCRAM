@@ -1,9 +1,13 @@
 
 			SCRAM Release Notes
-V2_2_5_pre6: 2014-05-02
+V2_2_5_pre6: 2014-05-05
 
 	* Use new release.map for getting release archs
 	* Use of site specific links.db file.
+	* "scram project" command now warns users about non-production archs and
+	arch & OS mismatch
+	* By default "scram build" command does not allow to compile if arch & os
+	mismatch.
 
 V2_2_5_pre5: 2013-12-11
 

@@ -244,6 +244,9 @@ sub satellite {
 	open ( $fh, "> $envfile" ) or  $sat->error("Cannot Open \"$envfile\" file to Save\n $!"); 
 	print $fh "RELEASETOP=$relloc\n";
 	close($fh);
+	my $chkarch = $sat->archdir()."/chkarch";
+	open ( $fh, "> $chkarch" ) or  $sat->error("Cannot Open \"$chkarch\" file to Save\n $!");
+	close($fh);
 	$envfile = $sat->location()."/".$self->{admindir}."/Environment";
 	if (! -f $envfile)
 	   {
