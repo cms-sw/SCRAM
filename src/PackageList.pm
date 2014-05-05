@@ -1,24 +1,24 @@
 @PackageList=qw(
-		Cache::Cache.pm
-		Cache::CacheUtilities.pm
-		ActiveDoc::ActiveDoc.pm
-		ActiveDoc::Parse.pm
-		ActiveDoc::SimpleDoc.pm
-		ActiveDoc::SimpleURLDoc.pm
-		BuildSystem::BuildFile.pm
-		BuildSystem::ToolCache.pm
-		BuildSystem::ToolData.pm
-		BuildSystem::ToolManager.pm
-		BuildSystem::ToolParser.pm
-		BuildSystem::Template::Plugins::PluginCore.pm
-		Configuration::BootStrapProject.pm
-		Configuration::ConfigArea.pm
-		SCRAM::CMD.pm
-		SCRAM::Helper.pm
-		SCRAM::SCRAM.pm
-		SCRAM::ScramProjectDB.pm
-		Utilities::AddDir.pm
-		Utilities::Verbose.pm
+		Cache::Cache
+		Cache::CacheUtilities
+		ActiveDoc::ActiveDoc
+		ActiveDoc::Parse
+		ActiveDoc::SimpleDoc
+		ActiveDoc::SimpleURLDoc
+		BuildSystem::BuildFile
+		BuildSystem::ToolCache
+		BuildSystem::ToolData
+		BuildSystem::ToolManager
+		BuildSystem::ToolParser
+		BuildSystem::Template::Plugins::PluginCore
+		Configuration::BootStrapProject
+		Configuration::ConfigArea
+		SCRAM::CMD
+		SCRAM::Helper
+		SCRAM::SCRAM
+		SCRAM::ScramProjectDB
+		Utilities::AddDir
+		Utilities::Verbose
 		);
 
 1;
