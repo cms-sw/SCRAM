@@ -1,24 +1,2 @@
-@PackageList=qw(
-		Cache::Cache
-		Cache::CacheUtilities
-		ActiveDoc::ActiveDoc
-		ActiveDoc::Parse
-		ActiveDoc::SimpleDoc
-		ActiveDoc::SimpleURLDoc
-		BuildSystem::BuildFile
-		BuildSystem::ToolCache
-		BuildSystem::ToolData
-		BuildSystem::ToolManager
-		BuildSystem::ToolParser
-		BuildSystem::Template::Plugins::PluginCore
-		Configuration::BootStrapProject
-		Configuration::ConfigArea
-		SCRAM::CMD
-		SCRAM::Helper
-		SCRAM::SCRAM
-		SCRAM::ScramProjectDB
-		Utilities::AddDir
-		Utilities::Verbose
-		);
-
+@PackageList=qw();
 1;
