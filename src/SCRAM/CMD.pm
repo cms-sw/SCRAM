@@ -633,7 +633,7 @@ sub build()
 	    my $os = $self->cmsos();
 	    if ($ENV{SCRAM_ARCH}!~/^$os/)
 	       {
-	       $self->scramerror("You are trying to compile/build for architecture $ENV{SCRAM_ARCH} on ".uc($os)." OS which might not work.\n".
+	       $self->scramwarning("You are trying to compile/build for architecture $ENV{SCRAM_ARCH} on ".uc($os)." OS which might not work.\n".
 	                         "If you know this SCRAM_ARCH/OS combination works then please first run 'scram build --ignore-arch'.");
 	       }
 	    }
