@@ -729,11 +729,8 @@ sub project()
    my ($installdir, $installname);
    my ($bootfile,$bootstrapfile);
    my $symlinks=0;
-   my %opts = (
-	       SCRAM_INSTALL_DIR => 0,
-	       SCRAM_INSTALL_NAME => 0,
-	       SCRAM_BOOTSTRAPFILE_NAME => 0
-	       );
+   my %opts = ();
+   my $force=0;
    # Here are the options for the project command. We need to support changing the location
    # of the new installation and cloning a release (and possibly giving it a new name).
    # So the -dir option is used to give a directory as the installation dir (if unused, cwd is the default).
@@ -745,11 +742,12 @@ sub project()
    scramloginteractive(0);
    my %options =
       ("help|h"   => sub { $self->{SCRAM_HELPER}->help('project'); exit(0) },
-       "dir|d=s"  => sub { $opts{SCRAM_INSTALL_DIR} = 1; $installdir = $_[1] },
-       "name|n=s" => sub { $opts{SCRAM_INSTALL_NAME} = 1; $installname = $_[1] },
+       "force|f"  => sub { $force = 1; },
+       "dir|d=s"  => sub { $installdir = $_[1] },
+       "name|n=s" => sub { $installname = $_[1] },
        "log|l"    => sub { scramloginteractive(1); },
        "symlinks|s"=> sub { $symlinks=1; },
-       "boot|b=s" => sub { $opts{SCRAM_BOOTSTRAPFILE_NAME} = 1; $bootstrapfile = 'file:'.$_[1]; $bootfile = $_[1] },
+       "boot|b=s" => sub { $bootstrapfile = 'file:'.$_[1]; $bootfile = $_[1] },
        "update|u" => sub { $self->scramerror("Command-line argument \"--update\" is no more supported."); }
        );
 
@@ -767,7 +765,7 @@ sub project()
       $installdir ||= cwd(); # Current working dir unless set above
       
       # Check to see which type of boot we should do or whether we should do an update:
-      if ($opts{SCRAM_BOOTSTRAPFILE_NAME})
+      if (defined $bootstrapfile)
 	 {
 	 $self->bootnewproject($bootstrapfile,$installdir);
 	 }
@@ -787,7 +785,7 @@ sub project()
 	       }
 	    $projectversion=$projectname; $projectname=~s/_.*$//;
 	    }
-	 $self->bootfromrelease(uc($projectname),$projectversion,$installdir,$installname,$symlinks,$projPath);
+	 $self->bootfromrelease(uc($projectname),$projectversion,$installdir,$installname,$symlinks,$projPath,$force);
 	 }     
       }
    
@@ -803,14 +801,14 @@ Function to create a developer area from an existing release (only used locally)
 
 sub bootfromrelease() {
     my $self=shift;
-    my ($projectname,$projectversion,$installdir,$installname,$symlinks,$projPath) = @_;
+    my ($projectname,$projectversion,$installdir,$installname,$symlinks,$projPath,$force) = @_;
     my $iname=$installname || $projectversion;
     if ($projectname && $projectversion) {
 	my $scramdb = $self->scramprojectdb();
 	my $relarea=undef;
 	if ($projPath)
 	{$relarea=$scramdb->getAreaObject([$projectname,$projectversion, $projPath], undef);}
-	else{$relarea=$scramdb->getarea($projectname,$projectversion);}
+	else{$relarea=$scramdb->getarea($projectname,$projectversion,$force);}
 	if ((!defined $relarea) || (!-d $relarea->archdir()))
 	   {
            my $list = $scramdb->{listcache};
@@ -883,10 +881,13 @@ sub bootfromrelease() {
 	   {
 	   print "WARNING: Developer's area is created for architecture $ENV{SCRAM_ARCH} while your current OS is ",uc($os),".\n";
 	   }
-	$os = $scramdb->productionArch($projectname,$projectversion);
-	if ((defined $os) && ($ENV{SCRAM_ARCH} ne $os))
+	if (! $force)
 	   {
-	   print "WARNING: Developer's area is created for non-production architecture $ENV{SCRAM_ARCH}. Production architecture for this release is $os.\n";
+	   $os = $scramdb->productionArch($projectname,$projectversion);
+	   if ((defined $os) && ($ENV{SCRAM_ARCH} ne $os))
+	      {
+	      print "WARNING: Developer's area is created for non-production architecture $ENV{SCRAM_ARCH}. Production architecture for this release is $os.\n";
+	      }
 	   }
     } else {
 	$self->scramfatal("Insufficient arguments: see \"scram project -help\" for usage info.");

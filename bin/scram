@@ -75,7 +75,7 @@ my %options =
    ("verbose|v=s"	=> sub { $ENV{SCRAM_VERBOSE} = $ENV{SCRAM_DEBUG} = 1; $scram->classverbosity($_[1]) },
     "debug|d"		=> sub { $ENV{SCRAM_DEBUG} = 1; $scram->fullverbosity() },
     "arch|a=s"		=> sub { $ENV{SCRAM_ARCH} = $_[1] ; $main::FORCE_SCRAM_ARCH = $_[1] },
-    "force|f"           => sub { $opts{SCRAM_FORCE} = 1 }, # A force flag for commands that might need it
+    "force|f"           => sub { },
     "help|h"		=> sub { print $scram->usage(); exit(0) ;}
     );
 
@@ -97,6 +97,6 @@ if (!$command)
    exit(1);
    }
 elsif($command=~/^(install|remove)$/o){exit(0);}
-$scram->init ($opts{SCRAM_FORCE});
+$scram->init ();
 
 exit($scram->execcommand($command,@ARGV));

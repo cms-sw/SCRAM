@@ -31,6 +31,7 @@ sub getarea ()
   my $self=shift;
   my $name=shift;
   my $version=shift;
+  my $force=shift;
   my $arch = $ENV{SCRAM_ARCH};
   my $data = $self->_findProjects($name,$version,1,$arch);
   my $selarch=undef;
@@ -40,7 +41,7 @@ sub getarea ()
     $data = $self->updatearchs($name,$version,{$arch});
     my @archs = keys %{$data};
     if (scalar(@archs)==1){$selarch=$archs[0];}
-    elsif(scalar(@archs)>1){$selarch=$self->productionArch($name,$version);}
+    elsif((scalar(@archs)>1) && (!$force)){$selarch=$self->productionArch($name,$version);}
   }
   my $area=undef;
   if ((defined $selarch) and (exists $data->{$selarch})){$area=$self->getAreaObject($data->{$selarch}[0], $selarch);}

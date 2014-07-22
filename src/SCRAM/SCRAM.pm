@@ -66,7 +66,6 @@ sub new()
       ISPROJECT => undef,
       };
    bless $self,$class;
-   $self->{force}=0;
    $self->commands();
    $ENV{SCRAM_BUILDFILE} = "BuildFile";
    return $self;
@@ -82,7 +81,6 @@ by new().
 sub init()
    {
    my $self=shift;
-   $self->{force}=shift || 0;
    $self->_initlocalarea();
    $self->_initenv();
    $self->versioncheck();
@@ -709,7 +707,6 @@ sub usage()
    $usage.=sprintf("%-28s : %-55s\n","--verbose <class> ",
 		   "Activate the verbose function on the specified class or list of classes.");
    $usage.=sprintf("%-28s : %-55s\n","--debug ","Activate the verbose function on all SCRAM classes.");
-   $usage.="\n";
    $usage.=sprintf("%-28s : %-55s\n","--arch <architecture>",
 		   "Set the architecture ID to that specified.");
    $usage.="\n";
