@@ -45,6 +45,8 @@ sub parse()
    $self->{scramdoc}->filetoparse($filename);
    $self->{archs}=[];
    $self->{archflag}=1;
+   $self->{rels}=[];
+   $self->{relsflag}=1;
    $self->{filetoparse}=$filename;
    $self->{scramdoc}->parse("builder",$fhead,$ftail);
    # We're done with the SimpleDoc object so delete it:
@@ -52,6 +54,8 @@ sub parse()
    delete $self->{scramdoc};
    delete $self->{archs};
    delete $self->{archflag};
+   delete $self->{rels};
+   delete $self->{relsflag};
    }
 
 sub classpath()
@@ -62,7 +66,7 @@ sub classpath()
       {
       return $self->{content}->{CLASSPATH};
       }
-   if (!$self->{archflag}){return;}
+   if (!$self->_isvalid()){return;}
    $self->{nested} == 1 ? push(@{$self->{tagcontent}->{CLASSPATH}}, $attributes{'path'})
       : push(@{$self->{content}->{CLASSPATH}}, $attributes{'path'});
    }
@@ -76,7 +80,7 @@ sub productstore()
       # Return an array of ProductStore hashes:
       return $self->{content}->{PRODUCTSTORE};
       }
-   if (!$self->{archflag}){return;}
+   if (!$self->_isvalid()){return;}
    $self->{nested} == 1 ? push(@{$self->{tagcontent}->{PRODUCTSTORE}}, \%attributes)
       : push(@{$self->{content}->{PRODUCTSTORE}}, \%attributes) ;
    }
@@ -91,7 +95,7 @@ sub include()
 sub include_path()
    {
    my ($object,$name,%attributes)=@_;
-   if (!$self->{archflag}){return;}
+   if (!$self->_isvalid()){return;}
    $self->{nested} == 1 ? push(@{$self->{tagcontent}->{INCLUDE}}, $attributes{'path'})
       : push(@{$self->{content}->{INCLUDE}}, $attributes{'path'});
    }
@@ -108,7 +112,7 @@ sub use()
       }
    else
       {
-      if (!$self->{archflag}){return;}
+      if (!$self->_isvalid()){return;}
       my ($name,%attributes)=@_;
       $self->{DEPENDENCIES}->{$attributes{'name'}} = 1;
       $self->{nested} == 1 ? push(@{$self->{tagcontent}->{USE}}, $attributes{'name'})
@@ -131,17 +135,32 @@ sub architecture_()
    $self->{archflag}=pop @{$self->{archs}};
    }
 
+sub release()
+   {
+   my ($object,$name,%attributes)=@_;
+   my $flag=$self->{relsflag};
+   push @{$self->{rels}},$flag;
+   my $ver=$attributes{name};
+   if (($flag) && ($ENV{SCRAM_PROJECTVERSION}!~/$ver/)){$self->{relsflag}=0;}
+   }
+
+sub release_()
+   {
+   my ($object,$name,%attributes)=@_;
+   $self->{relsflag}=pop @{$self->{rels}};
+   }
+
 sub export()
    {
    my ($object,$name,%attributes)=@_;
-   if (!$self->{archflag}){return;}
+   if (!$self->_isvalid()){return;}
    $self->pushlevel(); # Set nested to 1;
    }
 
 sub export_()
    {
    my ($object,$name,%attributes)=@_;
-   if (!$self->{archflag}){return;}
+   if (!$self->_isvalid()){return;}
    $self->{content}->{EXPORT} = $self->{tagcontent};
    $self->poplevel();
    }
@@ -155,7 +174,7 @@ sub lib()
       # Return an array of required libs:
       return $self->{content}->{LIB};      
       }
-   if (!$self->{archflag}){return;}
+   if (!$self->_isvalid()){return;}
    my $libname = $attributes{'name'};
    # We have a libname, add it to the list:
    $self->{nested} == 1 ? push(@{$self->{tagcontent}->{LIB}}, $libname)
@@ -175,7 +194,7 @@ sub makefile()
 sub makefile_()
    {
    my ($object,$name,$cdata)=@_;
-   if (!$self->{archflag}){return;}
+   if (!$self->_isvalid()){return;}
    $self->{nested} == 1 ? push(@{$self->{tagcontent}->{MAKEFILE}}, join("\n",@$cdata))
       : push(@{$self->{content}->{MAKEFILE}}, join("\n",@$cdata));
    }
@@ -189,7 +208,7 @@ sub flags()
       # Return an array of ProductStore hashes:
       return $self->{content}->{FLAGS};
       }
-   if (!$self->{archflag}){return;}
+   if (!$self->_isvalid()){return;}
    # Extract the flag name and its value:
    my ($flagname,$flagvaluestring) = each %attributes;
    $flagname =~ tr/[a-z]/[A-Z]/; # Keep flag name uppercase
@@ -232,14 +251,14 @@ sub allflags()
 sub bin()
    {
    my ($object,$name,%attributes) = @_;
-   if (!$self->{archflag}){return;}
+   if (!$self->_isvalid()){return;}
    $self->pushlevel(\%attributes);# Set nested to 1;
    }
 
 sub bin_()
    {
    my ($object,$name,%attributes) = @_;
-   if (!$self->{archflag}){return;}
+   if (!$self->_isvalid()){return;}
    # Need unique name for the binary (always use name of product). Either use "name"
    # given, or use "file" value minus the ending:
    if (exists ($self->{id}->{'name'}))
@@ -259,14 +278,14 @@ sub bin_()
 sub library()
    {
    my ($object,$name,%attributes) = @_;
-   if (!$self->{archflag}){return;}
+   if (!$self->_isvalid()){return;}
    $self->pushlevel(\%attributes);# Set nested to 1;
    }
 
 sub library_()
    {
    my ($object,$name,%attributes) = @_;
-   if (!$self->{archflag}){return;}
+   if (!$self->_isvalid()){return;}
    # Need unique name for the library (always use name of product). Either use "name"
    # given, or use "file" value minus the ending:
    if (exists ($self->{id}->{'name'}))
@@ -436,6 +455,12 @@ sub clean()
    return $self;
    }
 
+sub _isvalid()
+   {
+   if ((!$self->{archflag}) || (!$self->{relsflag})){return 0;}
+   return 1;
+   }
+   
 sub AUTOLOAD()
    {
    my ($xmlparser,$name,%attributes)=@_;
