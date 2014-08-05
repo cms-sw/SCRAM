@@ -38,7 +38,7 @@ sub new
 sub tool()
    {
    my ($object,$name,%attributes)=@_;
-   if (!$self->{archflag}){return;}
+   if (!$self->{scramdoc}->_isvalid()){return;}
    my $hashref = \%attributes;   
    # A way to distinguish the naming of different nested levels:
    $self->{levels}=['','tag','nexttag'];
@@ -70,7 +70,7 @@ sub tool()
 sub tool_()
    {
    my ($object,$name,%attributes)=@_;
-   if (!$self->{archflag}){return;}
+   if (!$self->{scramdoc}->_isvalid()){return;}
    delete $self->{levels};
    delete $self->{id};
    delete $self->{nested};
@@ -79,28 +79,28 @@ sub tool_()
 sub lib()
    {
    my ($object,$name,%attributes)=@_;
-   if (!$self->{archflag}){return;}
+   if (!$self->{scramdoc}->_isvalid()){return;}
    push(@{$self->{"$self->{levels}->[$self->{nested}]".content}->{LIB}},$attributes{'name'});   
    }
 
 sub info()
    {
    my ($object,$name,%attributes)=@_;
-   if (!$self->{archflag}){return;}
+   if (!$self->{scramdoc}->_isvalid()){return;}
    $self->{"$self->{levels}->[$self->{nested}]".content}->{INFO} = \%attributes;
    }
 
 sub use()
    {
    my ($object,$name,%attributes)=@_;
-   if (!$self->{archflag}){return;}
+   if (!$self->{scramdoc}->_isvalid()){return;}
    push(@{$self->{"$self->{levels}->[$self->{nested}]".content}->{USE}},$attributes{'name'});
    }
 
 sub runtime()
    {
    my ($object,$name,%attributes)=@_;
-   if (!$self->{archflag}){return;}
+   if (!$self->{scramdoc}->_isvalid()){return;}
    my $hashref = \%attributes;   
    my $envname = $hashref->{'name'}; $envname=~s/\s//g;
    my $pvar = $self->{path_variables};
@@ -138,7 +138,7 @@ sub runtime()
 sub flags()
    {
    my ($object,$name,%attributes)=@_;
-   if (!$self->{archflag}){return;}
+   if (!$self->{scramdoc}->_isvalid()){return;}
    # Extract the flag name and its value:
    my ($flagname,$flagvaluestring) = each %attributes;
    $flagname=~s/\s//g; $flagname =~ tr/[a-z]/[A-Z]/; # Keep flag name uppercase
@@ -177,14 +177,14 @@ sub flags()
 sub client()
    {
    my ($object,$name,%attributes)=@_;
-   if (!$self->{archflag}){return;}
+   if (!$self->{scramdoc}->_isvalid()){return;}
    $self->pushlevel();
    }
 
 sub client_()
    {
    my ($object,$name,%attributes)=@_;
-   if (!$self->{archflag}){return;}
+   if (!$self->{scramdoc}->_isvalid()){return;}
    $self->{content}->{CLIENT}=$self->{tagcontent};
    $self->poplevel();
    }
@@ -192,7 +192,7 @@ sub client_()
 sub environment()
    {
    my ($object,$name,%attributes)=@_;
-   if (!$self->{archflag}){return;}
+   if (!$self->{scramdoc}->_isvalid()){return;}
    my $hashref = \%attributes;
    # Save a copy of the name of this environment:
    my $envname=$hashref->{'name'}; $envname=~s/\s//g;
@@ -226,22 +226,6 @@ sub environment()
       }
    }
 
-sub architecture()
-   {
-   my ($object,$name,%attributes)=@_;
-   my $flag=$self->{archflag};
-   push @{$self->{archs}},$flag;
-   my $arch=$attributes{name};
-   if (($flag) && ($ENV{SCRAM_ARCH}!~/$arch/)){$self->{archflag}=0;}
-   }
-
-sub architecture_()
-   {
-   my ($object,$name,%attributes)=@_;
-   $self->{archflag}=pop @{$self->{archs}};
-   return;
-   }
-	 
 sub parse
    {
    my $self=shift;
@@ -250,12 +234,8 @@ sub parse
    $self->verbose("Setup Parse");
    my $fhead='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><doc type="BuildSystem::ToolParser" version="1.0">';
    my $ftail='</doc>';
-   $self->{archs}=[];
-   $self->{archflag}=1;
    $self->{scramdoc}->parse("setup",$fhead,$ftail);
    delete $self->{scramdoc};
-   delete $self->{archs};
-   delete $self->{archflag};
    return $self;
    }
 
@@ -778,8 +758,8 @@ sub AUTOLOAD()
    {
    my ($xmlparser,$name,%attributes)=@_;
    return if $AUTOLOAD =~ /::DESTROY$/;
-   my $name=$AUTOLOAD;
-   $name =~ s/.*://;
+   my $xname=$AUTOLOAD; $xname =~ s/.*://;
+   $self->{scramdoc}->$xname($name,%attributes);
    }
 
 1;

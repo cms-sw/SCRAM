@@ -36,7 +36,16 @@ sub new()
    my $class=shift;
    $self={};
    bless $self, $class;
+   $self->addfilter("architecture",$ENV{SCRAM_ARCH});
    return $self;
+   }
+
+sub addfilter()
+   {
+   my ($self,$filter,$val)=@_;
+   $self->{support_filters}{$filter}=$val;
+   $self->{$filter}=[];
+   $self->{"${filter}_value"}=1;
    }
 
 sub filenameref()
@@ -210,6 +219,48 @@ sub doc()
 sub doc_()
    {
    my $self=shift;
+   }
+
+# -- Default for supported filters
+sub _isvalid()
+   {
+   foreach my $flag (keys %{$self->{support_filters}}){if ($self->{"${flag}_value"}==0){return 0;}}
+   return 1;
+   }
+
+sub _checkfilter()
+   {
+   my ($object,$name,%attributes)=@_;
+   my $flag=$self->{"${name}_value"};
+   push @{$self->{$name}},$flag;
+   my $filter=$attributes{name};
+   if ($flag)
+      {
+      my $val = $self->{support_filters}{$name};
+      if ($filter=~/^[!](.+)$/)
+         {
+         $filter=$1;
+         if ($val=~/$filter/){$self->{"${name}_value"}=0;}
+         }
+      elsif ($val!~/$filter/){$self->{"${name}_value"}=0;}
+      }
+   }
+
+sub _endfilter()
+   {
+   my ($object,$name,%attributes)=@_;
+   $self->{"${name}_value"}=pop @{$self->{$name}};
+   }
+
+sub AUTOLOAD()
+   {
+   my ($xmlparser,$name,%attributes)=@_;
+   return if $AUTOLOAD =~ /::DESTROY$/;
+   if (exists $self->{support_filters}{$name})
+      {
+      if ($AUTOLOAD=~/_$/){$self->_endfilter($name,%attributes);}
+      else{$self->_checkfilter($name,%attributes);}
+      }
    }
 
 1;
