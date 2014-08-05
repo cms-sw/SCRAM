@@ -1,5 +1,22 @@
 
 			SCRAM Release Notes
+V2_2_5_pre9: 2014-08-05
+
+	* Fix cmsenv errors by sending verbose::errors to stderr.
+	* --force|-f Command-line option for "scram project" to avoid reading
+	releases.map file from web.
+	* New <release|compiler> tag for BuildFiles.
+	* Get IBs production arch from releases.map file.
+
+V2_2_5_pre8: 2014-05-07
+
+	* Change SCRAM_ARCH/OS mismatch error to warning to allow creation of
+	slc6 releases on slc5 machines for production jobs.
+
+V2_2_5_pre7: 2014-05-06
+
+	* Cleanup perl modules list.
+
 V2_2_5_pre6: 2014-05-05
 
 	* Use new release.map for getting release archs

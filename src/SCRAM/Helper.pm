@@ -271,13 +271,11 @@ sub project()
    $help.="\n";
    $help.="\n";
    $help.="$::bold";
-   $help.="database label$::normal\tLabels can be assigned to installed releases of projects for easy\n";
-   $help.="access (See \"scram install\" command). If you specify a label you must also specify\n";
-   $help.="a project version. This command is normally used to create cloned developer areas.\n";
-   $help.="\n";
-   $help.="$::bold";
    $help.="-b <file>$::normal\tA bootstrap file on an accessible file system. This command would\n";
    $help.="be used to create a project area from scratch on a laptop.\n";
+   $help.="\n";
+   $help.="$::bold";
+   $help.="-f$::normal\tForce creation of developer area without checking for production architecture.\n";
    $help.="\n";
    $help.="** Examples **\n";
    $help.="\n";

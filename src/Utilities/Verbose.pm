@@ -74,7 +74,7 @@ sub error {
 	my $self=shift;
 	my $string=shift;
 
-	print $string."\n";
+	print STDERR $string."\n";
 	exit 1;
 }
 
