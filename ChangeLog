@@ -1,3 +1,16 @@
+2014-08-05 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* bin/scram: Drop unused scram --force|-f support.
+	* BuildSystem/BuildFile.pm: New BuildFile tags release and
+	compiler added e.g. <release name="regexp"></release>
+	* SCRAM/CMD.pm, SCRAM/Helper.pm, SCRAM/SCRAM.pm, SCRAM/ScramProjectDB.pm:
+	Added --force|-f flag for "scram project" command to disable checking
+	for production architecture for a release.
+	* Utilities/Verbose.pm: Send verbose errors.
+	* CMSSW.pm: Look for state=IB in releases.map file for IBs
+	default/production arch.
+	 
+
 2014-05-05 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/SCRAM.pm: Use $CMS_PATH/common/cmsos to find out the OS
