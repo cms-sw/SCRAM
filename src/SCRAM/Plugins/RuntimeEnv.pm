@@ -21,6 +21,13 @@ sub runtimebuildenv()
   my $self=shift;
   $self->save("RTBOURNE");
   $self->setenv ("RTBOURNE");
+  if (exists $self->{env}{rtstring}{RTBOURNE})
+  {
+    foreach my $v (keys %{$self->{env}{rtstring}{RTBOURNE}})
+    {
+      $ENV{$v}=$self->{env}{rtstring}{RTBOURNE}{$v};
+    }
+  }
   return 0;
 }
 
@@ -368,6 +375,10 @@ sub runtime_ ()
     if(exists $tools->{self}{FLAGS}{SKIP_TOOLS_SYMLINK})
     {
       foreach my $t (@{$tools->{self}{FLAGS}{SKIP_TOOLS_SYMLINK}}){$self->{force_tools_env}{lc($t)}=1;}
+    }
+    if (exists $tools->{self}{FLAGS}{DEFAULT_COMPILER})
+    {
+      $self->{env}{rtstring}{RTBOURNE}{DEFAULT_COMPILER}=$tools->{self}{FLAGS}{DEFAULT_COMPILER}[0];
     }
   }
   my @compilertools=();
