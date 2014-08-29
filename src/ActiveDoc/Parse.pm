@@ -110,7 +110,7 @@ sub getfilestring_()
      $filestring = join("", <IN>);
      close (IN) or die __PACKAGE__.": Cannot read file $file: $!\n";
    }
-   $filestring = $self->filehead().$filestring.$self->filetail();
+   $filestring = $self->filehead()."\n".$filestring."\n".$self->filetail();
    # Strip spaces at the beginning and end of the line:
    $filestring =~ s/^\s+//g;
    $filestring =~ s/\s+$//g;
