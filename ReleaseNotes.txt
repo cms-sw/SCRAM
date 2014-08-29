@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_5: 2014-08-29
+
+	* Fix BuildFile parser to ingore comment using # at first line.
+
 V2_2_5_pre9: 2014-08-05
 
 	* Fix cmsenv errors by sending verbose::errors to stderr.
