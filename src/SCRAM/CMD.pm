@@ -248,7 +248,8 @@ sub toolremove()
       {
       print "Removing tool ",$toolname," from current project area configuration.","\n";
       # Remove the entry from our setup tools list:
-      $self->toolmanager()->remove_tool($toolname);	 
+      $self->toolmanager()->remove_tool($toolname);
+      $self->update_external_symlinks_(1);
       }
    else
       {
@@ -1154,12 +1155,7 @@ sub setup()
       # Write to the tool cache and exit:
       my $dirty=$toolmanager->isdirty() || $toolmanager->istooldirty();
       $toolmanager->writecache();
-      if (($dirty) &&
-          (-x "$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/SCRAM/linkexternal.pl"))
-         {
-	 print "Updating symlinks under external/$ENV{SCRAM_ARCH}\n";
-	 system("cd $ENV{LOCALTOP}; $ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/SCRAM/linkexternal.pl  --arch $ENV{SCRAM_ARCH}");
-	 }
+      $self->update_external_symlinks_($dirty);
       }
    
    # Return nice value: 
@@ -1269,6 +1265,17 @@ sub unsetenv()
       $env->unsetenv($SCRAM_RT_SHELL);
       }
    return 0;
+   }
+
+sub update_external_symlinks_()
+   {
+   my ($self,$dirty)=@_;
+   if (($dirty) &&
+       (-x "$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/SCRAM/linkexternal.pl"))
+      {
+      print "Updating symlinks under external/$ENV{SCRAM_ARCH}\n";
+      system("cd $ENV{LOCALTOP}; $ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/SCRAM/linkexternal.pl  --arch $ENV{SCRAM_ARCH}");
+      }
    }
 
 #### End of CMD.pm ####
