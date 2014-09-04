@@ -1,3 +1,10 @@
+2014-09-03 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* BuildSystem/ToolManager.pm, BuildSystem/ToolCache.pm: Do not setup local tool
+	if the tool's definition is not changed w.r.t the tool in the release area.
+	pass --force|-f option to "scram setup" force the local tool setup.
+	* SCRAM/CMD.pm: Update symlinks under external/<arch> if a local tool is setup.
+
 2014-08-29 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	ActiveDoc/Parse.pm: Make sure that scram also ignore the comment at first line.

@@ -1,5 +1,10 @@
 
 			SCRAM Release Notes
+V2_2_6_pre1: 2014-09-04
+
+	* Do not setup external tools and symlinks if their definition
+	do not change w.r.t. release.
+
 V2_2_5: 2014-08-29
 
 	* Fix BuildFile parser to ingore comment using # at first line.
