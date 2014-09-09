@@ -49,6 +49,19 @@ sub isdirty()
    return $dirty;
    }
    
+sub tooldirty()
+   {
+   my $self = shift;
+   $self->{internal}{tooldirty}=1;
+   }
+
+sub istooldirty()
+   {
+   my $self = shift;
+   my $dirty = $self->{internal}{tooldirty} || 0;
+   return $dirty;
+   }
+
 sub writecache()
    {
    my $self=shift;

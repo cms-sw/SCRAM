@@ -94,11 +94,10 @@ sub coresetup()
    my $toolparser = $self->_parsetool($toolfile);
    my $store = $toolparser->processrawtool();
    my $toolname = $toolparser->toolname();
-   my $toolversion = $toolparser->toolversion();
+   my $toolversion = $toolparser->toolversion() || "UNKNOWN";
    scramlogmsg("\n",$::bold."Setting up ",$toolname," version ",$toolversion,":  ".$::normal,"\n");
 
    # Store the ToolData object in the cache:   
-   $self->storeincache($toolname,$store);
    my $srcfile=Utilities::AddDir::fixpath($toolfile);
    my $desfile=Utilities::AddDir::fixpath($self->{toolcache}."/selected/${toolname}.xml");
    use File::Copy;
@@ -113,6 +112,7 @@ sub coresetup()
       if (-e $desfile) { unlink($desfile);}
       symlink("../available/${toolname}.xml",$desfile); 
       }
+   $self->storeincache($toolname,$store);
    scramlogclean();
    return $self;
    }
@@ -348,6 +348,22 @@ sub scram_projects()
    return $scram_projects;
    }
 
+sub _tool_changed_wrt_release ()
+   {
+   my ($self,$toolname)=@_;
+   if ((exists $ENV{SCRAM_FORCE}) || (!exists $ENV{RELEASETOP}) || ($ENV{RELEASETOP} eq "")){return 1;}
+   my $tfile = "$ENV{SCRAM_CONFIGDIR}/toolbox/$ENV{SCRAM_ARCH}/tools/selected/${toolname}.xml";
+   my $diff;
+   my $changed=0;
+   if ((-e "$ENV{RELEASETOP}/${tfile}") && (open($diff,"diff $ENV{LOCALTOP}/${tfile} $ENV{RELEASETOP}/${tfile} |")))
+      {
+      while (my $buf=<$diff>){$changed=1;last;}
+      close($diff);
+      }
+   else {$changed=1;}
+   return $changed;
+   }
+
 sub updatetooltimestamp ()
    {
    my $self=shift;
@@ -364,14 +380,32 @@ sub updatetooltimestamp ()
       {
       my $instdir = $self->{archstore}."/InstalledTools";
       my $tfile = "${instdir}/${toolname}";
-      if ((!defined $obj) && (-f $tfile)) {unlink $tfile;}
-      elsif ((defined $obj) && (!-f $tfile))
+      my $flag=0;
+      if (!defined $obj)
          {
-         Utilities::AddDir::adddir($instdir);
-	 my $ref;
-         open($ref,">$tfile");
-         close($ref);
-	 }
+         if (-f $tfile) {$flag=-1;}
+         }
+      else
+         {
+         my $chg = $self->_tool_changed_wrt_release ($toolname);
+         if ($chg)
+            {
+            if (!-f $tfile){$flag=1;}
+            }
+         elsif (-f $tfile){$flag=-1;}
+         }
+      if ($flag!=0)
+         {
+         $self->tooldirty();
+         if ($flag>0)
+            {
+            Utilities::AddDir::adddir($instdir);
+            my $ref;
+            open($ref,">$tfile");
+            close($ref);
+            }
+         else {unlink $tfile;}
+         }
       }
    if ((!$samevalues) || (!-f $stampfile))
       {
