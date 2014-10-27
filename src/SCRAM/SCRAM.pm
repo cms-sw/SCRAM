@@ -31,7 +31,6 @@ package SCRAM::SCRAM;
 require 5.004;
 
 use Exporter;
-use SCRAM::Helper;
 use Utilities::Verbose;
 use SCRAM::CMD;
 
@@ -62,7 +61,6 @@ sub new()
       SCRAM_BUILDVERBOSE => 0 || $ENV{SCRAM_BUILDVERBOSE},
       SCRAM_DEBUG => 0 || $ENV{SCRAM_DEBUG},
       SCRAM_TOOLMANAGER => undef,
-      SCRAM_HELPER => new SCRAM::Helper,
       ISPROJECT => undef,
       };
    bless $self,$class;
@@ -103,7 +101,7 @@ defined here. Sets $self->{SCRAM_ALLOWEDCMDS} in the $::scram object.
 sub commands()
    {
    my $self = shift;
-   my @env_commands = qw(version arch runtime unsetenv);
+   my @env_commands = qw(version arch runtime unsetenv config);
    my @info_commands = qw(list db); 
    my @buildenv_commands = qw(project setup tool);
    my @build_commands=qw(build);
@@ -123,7 +121,7 @@ $self->{SCRAM_ALLOWEDCMDS}) element in the $::scram object.
 sub showcommands()
    {
    my $self=shift;
-   return @{$self->{SCRAM_ALLOWEDCMDS}};
+   return sort @{$self->{SCRAM_ALLOWEDCMDS}};
    }
 
 =item   C<execcommand($cmd, @ARGS)>
@@ -138,32 +136,31 @@ sub execcommand()
    {
    my $self = shift;
    my ($cmd,@ARGS) = @_;
-   my $rval=0;
-   my $status=1;
-   my $cmdrun=0;
-   local @ARGV = @ARGS;
-   # Add the "dbghook_" function here rather than via "showcommands"
-   # since we don't want this to be public (it's only for debugging).
-   # dbghook_ is just a hook subroutine to test command routines
-   # called inside it:
-   map
+   my @cmds = ();
+   foreach my $c (@{$self->{SCRAM_ALLOWEDCMDS}}){if ($c eq $cmd){push @cmds,$c; last;}}
+   if (scalar(@cmds)==0)
       {
-      if ( $_ =~ /^$cmd/i)
-	 {
-	 $status=0; # Command found so OK;
-	 $rval = $self->$_(@ARGV), unless ($cmdrun == 1); # Only run the first matched command;
-	 $cmdrun=1;
-	 }
-      } $self->showcommands(),"dbghook_";
-   
-   # Print usage and exit if no command matched:
-   if ($status)
-      {
-      print $self->usage();
-      $rval = 1;
+      foreach my $c (@{$self->{SCRAM_ALLOWEDCMDS}}){if ($c=~/^$cmd/){push @cmds,$c;}}
+      my $l=scalar(@cmds);
+      if ($l!=1)
+         {
+         if ($l>1) {print STDERR "ERROR: $l commands matched '$cmd': $::bold",join(", ",@cmds),"$::normal \n";}
+         else{print STDERR $self->usage();}
+         return 1;
+         }
       }
-   
-   return $rval;
+
+   $cmd = $cmds[0];
+   local @ARGV = ();
+   my $help=0;
+   while(my $a=shift @ARGS)
+      {
+      my $ax=$a; $ax=~s/^-(-|)//;
+      if ("help"=~/^$ax/){ exec("man scram"); }
+      else{push @ARGV,$a;}
+      }
+
+   return $self->$cmd(@ARGV);
    }
 
 =item   C<versioncheck(@ARGS)>
@@ -688,29 +685,13 @@ sub usage()
    {
    my $self=shift;
    my $usage;
-   
-   $usage.="*************************************************************************\n";
+   $usage.="***************************************************\n";
    $usage.="SCRAM HELP ------------- Recognised Commands\n";
-   $usage.="*************************************************************************\n";
+   $usage.="***************************************************\n";
    $usage.="\n";
-
    map { $usage.="\t$::bold scram ".$_."$::normal\n"  } $self->showcommands();
-   
    $usage.="\n";
-   $usage.= "Help on individual commands is available through";
-   $usage.="\n\n";
-   $usage.= "\tscram <command> --help";
-   $usage.="\n\n";
-   $usage.="\nOptions:\n";
-   $usage.="--------\n";
-   $usage.=sprintf("%-28s : %-55s\n","--help","Show this help page.");
-   $usage.=sprintf("%-28s : %-55s\n","--verbose <class> ",
-		   "Activate the verbose function on the specified class or list of classes.");
-   $usage.=sprintf("%-28s : %-55s\n","--debug ","Activate the verbose function on all SCRAM classes.");
-   $usage.=sprintf("%-28s : %-55s\n","--arch <architecture>",
-		   "Set the architecture ID to that specified.");
-   $usage.="\n";
-
+   $usage.= "See scram manual pages for detail documentation about these commands.\n";
    return $usage;
    }
 

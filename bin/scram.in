@@ -16,6 +16,7 @@ BEGIN
    }
 
 use SCRAM::SCRAM;
+use SCRAM::SiteConfig;
 use Getopt::Long ();
 
 #### EDIT THESE: SCRAM Installation Values #################
@@ -76,7 +77,7 @@ my %options =
     "debug|d"		=> sub { $ENV{SCRAM_DEBUG} = 1; $scram->fullverbosity() },
     "arch|a=s"		=> sub { $ENV{SCRAM_ARCH} = $_[1] ; $main::FORCE_SCRAM_ARCH = $_[1] },
     "force|f"           => sub { },
-    "help|h"		=> sub { print $scram->usage(); exit(0) ;}
+    "help|h"		=> sub { exec("man scram"); }
     );
 
 # Get the options using Getopt:
@@ -84,7 +85,7 @@ Getopt::Long::config qw(default no_ignore_case require_order bundling);
 
 if (! Getopt::Long::GetOptions(\%opts, %options))
    {
-   $scram->scramfatal("Error parsing arguments. See \"scram help\" for usage info.");
+   $scram->scramfatal("Error parsing arguments. See \"scram --help\" for usage info.");
    exit(1);
    }
 
@@ -97,6 +98,7 @@ if (!$command)
    exit(1);
    }
 elsif($command=~/^(install|remove)$/o){exit(0);}
+$main::SITE = SCRAM::SiteConfig->new();
 $scram->init ();
 
 exit($scram->execcommand($command,@ARGV));

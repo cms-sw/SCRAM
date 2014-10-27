@@ -35,6 +35,7 @@ sub getarea ()
   my $arch = $ENV{SCRAM_ARCH};
   my $data = $self->_findProjects($name,$version,1,$arch);
   my $selarch=undef;
+  delete $self->{deprecated};
   if ((exists $data->{$arch}) && (scalar(@{$data->{$arch}}) == 1)) { $selarch=$arch;}
   elsif ($main::FORCE_SCRAM_ARCH eq "")
   {
@@ -44,23 +45,68 @@ sub getarea ()
     elsif((scalar(@archs)>1) && (!$force)){$selarch=$self->productionArch($name,$version);}
   }
   my $area=undef;
-  if ((defined $selarch) and (exists $data->{$selarch})){$area=$self->getAreaObject($data->{$selarch}[0], $selarch);}
+  if ((defined $selarch) and (exists $data->{$selarch}))
+  {
+    if (!$force)
+    {
+      my $tc = $self->getProjectModule($name);
+      if (defined $tc)
+      {
+        $self->{deprecated}=int($tc->getDeprecatedDate($version,$selarch));
+        my $dep=$self->{deprecated};
+        if ($dep>0)
+        {
+          my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+          $mon+=1;
+          $year+=1900;
+          if ($mon<10){$mon="0${mon}";}
+          if ($mday<10){$mday="0${mday}";}
+          if (($dep-int("${year}${mon}${mday}"))<=0){$self->{deprecated}=0;}
+          else
+          {
+            $dep=~/^(\d\d\d\d)(\d\d)(\d\d)$/o;
+            print STDERR "WARNING: Release $version will be deprecated on ${3}/${2}/${1}.\n",
+                         "         It is better to use a newer version.\n";
+          }
+        }
+        if ($self->{deprecated}==0)
+        {
+          print STDERR "ERROR: Project \"$name\" version \"$version\" has been deprecated.\n",
+                       "       Please use a different non-deprecated release.\n";
+          return $area;
+        }
+      }
+    }
+    $area=$self->getAreaObject($data->{$selarch}[0], $selarch);
+  }
   return $area;
 }
 
 sub productionArch()
 {
   my ($self,$project,$version)=@_;
-  my $module="SCRAM::Plugins::".uc($project);
-  my $arch=undef;
-  eval {
-    eval "use $module";
-    if($@) {return $arch;}
-    my $tc=$module->new();
+  my $tc = $self->getProjectModule($project);
+  if (defined $tc)
+  {
     my @archs=$tc->releaseArchs($version,1);
-    if (scalar(@archs)==1){$arch=$archs[0];}
-  };
-  return $arch;
+    if (scalar(@archs)==1){return $archs[0];}
+  }
+  return undef;
+}
+
+sub getProjectModule()
+{
+  my ($self,$project)=@_;
+  if (!exists $self->{project_module})
+  {
+    $self->{project_module}=undef;
+    my $module="SCRAM::Plugins::".uc($project);
+    eval {
+      eval "use $module";
+      if(! $@) {$self->{project_module}=$module->new();}
+    };
+  }
+  return $self->{project_module};
 }
 
 sub listlinks()

@@ -1,5 +1,18 @@
 
 			SCRAM Release Notes
+V2_2_6_pre2: 2014-10-27
+
+	* Release deprecation checks.
+	* 'scram config' new command to set site specific parameters e.g.
+	release-checks=1 to disable release checks i.e. do not download
+	releases.map file from internet.
+	* New scram man pages added. All the individual scram commands'
+	help messages have been replaced with 'man scram'.
+	* New build proceedure using gmake ; gamke install. One need to set
+	Base installation path (e.g. $CMS_PATH): INSTALL_BASE=<path> 
+	SCRAM Installation prefix (e.g. $CMS_PATH/<arch>/lcg..): PREFIX=<path>
+	SCRAM version to be reported by scram version command: VERSION=<version>
+
 V2_2_6_pre1: 2014-09-04
 
 	* Do not setup external tools and symlinks if their definition
