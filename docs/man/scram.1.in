@@ -189,6 +189,10 @@ Supported site configuration parameters are
 .B release-checks=1|0|yes|no
 Enable/disable release checks e.g. production architectures, deprecated releases.
 This avoids accessing releases information from internet. Default value is 1.
+.TP 3
+.B release-checks-timeout=[3-9]|[1-9][0-9]+
+Time in seconds after which a request to get release information should be timed
+out (min. value 3s). Default value is 10s.
 .RE
 .RE
 .\##############################################################################
