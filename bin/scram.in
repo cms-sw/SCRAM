@@ -12,6 +12,7 @@ BEGIN
    $installdir=dirname($installdir);
    $ENV{'SCRAM_TOOL_HOME'}="${installdir}/src";
    $ENV{'SCRAM'}=$0;
+   $ENV{'MANPATH'}="${installdir}/docs/man:$ENV{MANPATH}";
    unshift @INC,"$installdir", "${installdir}/src";
    }
 
