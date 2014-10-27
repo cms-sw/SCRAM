@@ -1,3 +1,20 @@
+2014-10-27 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* Makefile: Newly added makefile for building and installing SCRAM
+	* docs: Added scram manual pages
+	* SCRAM/Helper.pm: Drop scram helpers module and use man scram as
+	replacement.
+	* SCRAM/SiteConfig.pm: New module to configure scram for sites e.g.
+	disabling accessing release information via internet.
+	* SCRAM/SCRAM.pm, SCRAM/CMD.pm: New 'scram config <key>[=<value>]'
+	command to show/set site specific parameters; check for deprecated
+	releases and refuse to create dev area is a release has been deprecated
+	SCRAM/Plugin/CMSSW.pm: Code cleanup; release deprecated checks; do not 
+	access releases.map file from internet is release-checks (site
+	specific) parameter is set.
+	* SCRAM/ScramProjectDB.pm: Do not create dev area if release is
+	deprecated.
+
 2014-09-03 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* BuildSystem/ToolManager.pm, BuildSystem/ToolCache.pm: Do not setup local tool

@@ -35,25 +35,22 @@ Print the current SCRAM_ARCH to STDOUT.
 
 sub arch()
    {
+   print $ENV{SCRAM_ARCH},"\n";
+   return (0);
+   }
+
+sub config()
+   {
    my $self=shift;
-   my (@ARGS) = @_;
-   my %opts;
-   my %options =
-      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('arch'); exit(0) } );
-   
-   local @ARGV = @ARGS;
-   
-   Getopt::Long::config qw(default no_ignore_case require_order bundling);
-   
-   if (! Getopt::Long::GetOptions(\%opts, %options))
-      {
-      $self->scramfatal("Error parsing arguments. See \"scram arch -help\" for usage info.");
-      }
-   else
-      {
-      print $ENV{SCRAM_ARCH},"\n";
-      return (0);
-      }
+   my $val = undef;
+   my $key = shift(@_) || "";
+   if ($key eq ""){return $main::SITE->dump();}
+   ($key,$val)=split("=",$key,2);
+   if (defined $val){return $main::SITE->set($key,$val);}
+   $val=$main::SITE->get($key);
+   if (!defined $val){return(1);}
+   $main::SITE->dump($key);
+   return (0);
    }
 
 sub tool()
@@ -62,46 +59,32 @@ sub tool()
    my (@ARGS) = @_;
    local @ARGV = @ARGS;
    my $rval=0;
-   my %opts;
-   my %options =
-      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('tool'); exit(0) } );
-   
-   Getopt::Long::config qw(default no_ignore_case require_order bundling);
-   
-   if (! Getopt::Long::GetOptions(\%opts, %options))
+   my $cmd = shift(@ARGV);
+
+   if (!$cmd)
       {
       $self->scramfatal("Error parsing arguments. See \"scram tool -help\" for usage info.");
       }
-   else
+      
+   $cmd =~ tr/A-Z/a-z/; # Make sure we have lower case
+   my $status=1;
+      
+   map
       {
-      my $cmd = shift(@ARGV);
+      if ( $_ =~ /^$cmd/i)
+         {
+	 my $subcmd="tool".$_;
+	 $status=0; # Command found so OK;
+	 $rval = $self->$subcmd(@ARGV);
+	 }
+      } qw( list info tag remove);
 
-      if (!$cmd)
-	 {
-	 $self->scramfatal("Error parsing arguments. See \"scram tool -help\" for usage info.");
-	 }
-      
-      $cmd =~ tr/A-Z/a-z/; # Make sure we have lower case
-      my $status=1;
-      
-      map
-	 {
-	 if ( $_ =~ /^$cmd/i)
-	    {
-	    my $subcmd="tool".$_;
-	    $status=0; # Command found so OK;
-	    $rval = $self->$subcmd(@ARGV);
-	    }
-	 } qw( list info tag remove);
-      
-      # Print help and exit if no command matched:
-      if ($status)
-	 {
-	 $self->scramfatal("Unknown command argument. See \"scram tool -help\" for usage info.");
-	 $rval = 1;
-	 }
+   # Print help and exit if no command matched:
+   if ($status)
+      {
+      $self->scramfatal("Unknown command argument. See \"scram tool -help\" for usage info.");
+      $rval = 1;
       }
-   
    # Return nice value:
    return $rval;
    }
@@ -270,27 +253,7 @@ Install locally if it is not already available.
 
 sub version()
    {
-   my $self=shift;
-   my (@ARGS) = @_;
-   my %opts;
-   my %options =
-      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('version'); exit(0) });
-   
-   local @ARGV = @ARGS;
-   
-   Getopt::Long::config qw(default no_ignore_case require_order bundling);
-   
-   if (! Getopt::Long::GetOptions(\%opts, %options))
-      {
-      $self->scramfatal("Error parsing arguments. See \"scram version -help\" for usage info.");
-      exit(1);
-      }
-   else
-      {
-      print $ENV{SCRAM_VERSION},"\n";
-      }
-   
-   # Return nice value: 
+   print $ENV{SCRAM_VERSION},"\n";
    return 0;
    }
 
@@ -307,8 +270,7 @@ sub list()
    my (@ARGS) = @_;
    my %opts;
    my %options =
-      ("help|h"	   => sub { $self->{SCRAM_HELPER}->help('list'); exit(0) },
-       "compact|c" => sub { $opts{SCRAM_LISTCOMPACT} = 1 },
+      ("compact|c" => sub { $opts{SCRAM_LISTCOMPACT} = 1 },
        "all|a"     => sub { $opts{SCRAM_LISTALL} = 1 },
        "exists|e"  => sub { $opts{SCRAM_VALID_PROJECTS} = 1 } );
    
@@ -390,8 +352,7 @@ sub db()
    my $db="";
    my %opts = ( SCRAM_DB_SHOW => 0, SCRAM_DB_LINK => 0, SCRAM_DB_UNLINK => 0 );
    my %options =
-      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('db'); exit(0) },
-       "show|s"   => sub { $opts{SCRAM_DB_SHOW} = 1 },
+      ("show|s"   => sub { $opts{SCRAM_DB_SHOW} = 1 },
        "link|l=s"   => sub { $opts{SCRAM_DB_LINK} = 1; $db = $_[1] },
        "unlink|u=s" => sub { $opts{SCRAM_DB_UNLINK} = 1; $db = $_[1] } );
    
@@ -492,8 +453,7 @@ sub build()
    my $convertxml = 0;
    my $ignore_arch = 0;
    my %options =
-      ("help|h"     => sub { $self->{SCRAM_HELPER}->help('build'); exit(0) },
-       "verbose|v"  => sub { $ENV{SCRAM_BUILDVERBOSE} = 1 },
+      ("verbose|v"  => sub { $ENV{SCRAM_BUILDVERBOSE} = 1 },
        "testrun|t"  => sub { $opts{SCRAM_TEST} = 1 },
        "ignore-arch"  => sub { $ignore_arch = 1 },
        "reset|r"    => sub { if ($cachereset==0){ $cachereset=1; print "Resetting caches","\n"; system("rm","-rf",$builddatastore,"${workingdir}/MakeData/DirCache* ${workingdir}/MakeData/ExtraBuilsRules")}},
@@ -742,8 +702,7 @@ sub project()
    #
    scramloginteractive(0);
    my %options =
-      ("help|h"   => sub { $self->{SCRAM_HELPER}->help('project'); exit(0) },
-       "force|f"  => sub { $force = 1; },
+      ("force|f"  => sub { $force = 1; },
        "dir|d=s"  => sub { $installdir = $_[1] },
        "name|n=s" => sub { $installname = $_[1] },
        "log|l"    => sub { scramloginteractive(1); },
@@ -812,19 +771,20 @@ sub bootfromrelease() {
 	else{$relarea=$scramdb->getarea($projectname,$projectversion,$force);}
 	if ((!defined $relarea) || (!-d $relarea->archdir()))
 	   {
-           my $list = $scramdb->{listcache};
+	   if ((exists $scramdb->{deprecated}) && ($scramdb->{deprecated}==0)){exit 1;}
+	   my $list = $scramdb->{listcache};
 	   my @archs=keys %$list;
 	   if (scalar(@archs)>1)
 	      {
-	      print STDERR "ERROR: Release \"$projectname\" version \"$projectversion\" is not available for arch $ENV{SCRAM_ARCH}.\n",
-	                   "\"$projectversion\" is currently available for following archs.\n",
-			   "Please set SCRAM_ARCH properly and re-run the command.\n    ",join("\n    ",@archs),"\n";
+	      print STDERR "ERROR: Project \"$projectname\" version \"$projectversion\" is not available for arch $ENV{SCRAM_ARCH}.\n",
+	                   "       \"$projectversion\" is currently available for following archs.\n",
+			   "       Please set SCRAM_ARCH properly and re-run the command.\n    ",join("\n    ",@archs),"\n";
 	      }
 	   else
 	      {
 	      print STDERR "ERROR: Unable to find release area for \"$projectname\" version \"$projectversion\" for arch $ENV{SCRAM_ARCH}.\n",
-	                   "Please make sure you have used the correct name/version.\n",
-			   "You can run \"scram list $projectname\" to get the list of available versions.\n";
+	                   "       Please make sure you have used the correct name/version.\n",
+			   "       You can run \"scram list $projectname\" to get the list of available versions.\n";
 	      }
 	   exit 1;
 	   }
@@ -1067,8 +1027,7 @@ sub setup()
    my (@ARGS) = @_;
    my %opts;
    my %options =
-      ("help|h"	=> sub { $self->{SCRAM_HELPER}->help('setup'); exit(0) },
-       "force|f" => sub { $ENV{SCRAM_FORCE}=1 },
+      ("force|f" => sub { $ENV{SCRAM_FORCE}=1 },
        "interactive|i" => sub { print STDERR "****WARNING: obsolete command-line argument '-i'\n"});
    
    local @ARGV = @ARGS;
@@ -1180,8 +1139,7 @@ sub runtime()
    #
    my %opts = ( SCRAM_RT_DUMP => "" );
    my %options =
-      ("help"	=> sub { $self->{SCRAM_HELPER}->help('runtime'); exit(0) },
-       "sh"     => sub { $SCRAM_RT_SHELL = 'BOURNE' },
+      ("sh"     => sub { $SCRAM_RT_SHELL = 'BOURNE' },
        "csh"    => sub { $SCRAM_RT_SHELL = 'TCSH'  },
        "win"    => sub { $SCRAM_RT_SHELL = 'CYGWIN' },
        "dump=s" => sub { $opts{SCRAM_RT_DUMP} = $_[1] } );
@@ -1241,8 +1199,7 @@ sub unsetenv()
    my $SCRAM_RT_SHELL="";
    my %opts = ();
    my %options =
-      ("help"	=> sub { $self->{SCRAM_HELPER}->help('unsetenv'); exit(0) },
-       "sh"     => sub { $SCRAM_RT_SHELL = 'BOURNE' },
+      ("sh"     => sub { $SCRAM_RT_SHELL = 'BOURNE' },
        "csh"    => sub { $SCRAM_RT_SHELL = 'TCSH'  },
        "win"    => sub { $SCRAM_RT_SHELL = 'CYGWIN' });
    
