@@ -235,11 +235,15 @@ sub satellite {
 	my $relconf = $self->location()."/".$self->configurationdir();
 	if (!-d $devconf)
 	   {
-           $self->copywithskip($relconf,$devconf,['toolbox']);
+	   Utilities::AddDir::copydir($relconf,$devconf);
 	   }
-	Utilities::AddDir::copydir("${relconf}/toolbox/".$self->{arch},"${devconf}/toolbox/".$self->{arch});
+	else {
+	   Utilities::AddDir::adddir("${devconf}/toolbox");
+	   Utilities::AddDir::copydir("${relconf}/toolbox/".$self->{arch},"${devconf}/toolbox/");
+	   }
 	Utilities::AddDir::adddir ($sat->location()."/".$sat->sourcedir());
-        $self->copywithskip($self->archdir(),$sat->archdir(),["InstalledTools","ProjectCache.db.gz","RuntimeCache.db.gz","DirCache.db.gz","MakeData/DirCache","MakeData/DirCache.mk","MakeData/src.mk"]);
+	Utilities::AddDir::copyfile($self->archdir()."/ToolCache.db.gz", $sat->archdir()."/");
+	Utilities::AddDir::copydir($self->archdir()."/timestamps", $sat->archdir()."/");
 	my $envfile = $sat->archdir()."/Environment";
 	open ( $fh, "> $envfile" ) or  $sat->error("Cannot Open \"$envfile\" file to Save\n $!"); 
 	print $fh "RELEASETOP=$relloc\n";
@@ -253,25 +257,6 @@ sub satellite {
 	   $sat->save ();
 	   }
 	return $sat;
-}
-
-sub copywithskip {
-	my $self=shift;
-	my $src=shift;
-	my $des=shift;
-	my $filetoskip=shift || [];
-	my $rv=1;
-	if ( $src ne $des )
-	   {
-	   if ( -d $src ) 
-	      {
-              my $fs=[];
-              foreach my $f (@$filetoskip) {push @$fs,"${src}/${f}";}
-              Utilities::AddDir::copydirwithskip($src,$des,$fs);
-	      $rv=0;
-	     }
-	   }
-	return $rv;
 }
 
 sub copyenv {

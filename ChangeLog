@@ -1,3 +1,10 @@
+2014-11-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* Use system cp for copying directories to avoid couple of extra stats
+	on the file system.
+	* Do not copy un-necessary stuff from release in to dev area.
+	* Document/man pages updated for scram control flags.
+
 2014-10-27 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* Makefile: Newly added makefile for building and installing SCRAM
