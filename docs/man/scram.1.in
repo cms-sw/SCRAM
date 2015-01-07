@@ -10,7 +10,7 @@ and management processes for software development. It resolves the issues of
 configuration definition, build, project organization and run-time environment.
 It was designed with a focus on supporting a distributed, multi-project
 development work-model
-.\##############################################################################
+.##############################################################################
 .SH OPTIONS
 .TP 3
 -a, --arch <arch>
@@ -33,15 +33,15 @@ To show the help message for the selected command e.g.
 .RE
 .TP 0
 .B COMMANDS
-.\##############################################################################
-.\COMMAND: scram arch
+.##############################################################################
+.COMMAND: scram arch
 .TP 3
 .B arch
 Show the current architecture flag. If this command is run from a SCRAM-based
 release/developer area then it shows the architecture for which that release
 was created otherwise shows out the SCRAM_ARCH environment variable value.
-.\##############################################################################
-.\COMMAND: scram build
+.##############################################################################
+.COMMAND: scram build
 .TP 3
 .B build [options] [gmake-options] [<targets>]
 Build the productions (shared libraries, plugins, executables and tests) for the
@@ -165,8 +165,8 @@ Shows the value of a variable used by the game e.g.
 shows the default flags used by the CXX compilers
 .RE
 .RE
-.\##############################################################################
-.\COMMAND: scram config
+.##############################################################################
+.COMMAND: scram config
 .TP 3
 .B config [<parameter[=value]
 Show/Set site specific parameters.Running it without any argument shows all
@@ -195,8 +195,8 @@ Time in seconds after which a request to get release information should be timed
 out (min. value 3s). Default value is 10s.
 .RE
 .RE
-.\##############################################################################
-.\COMMAND: scram db
+.##############################################################################
+.COMMAND: scram db
 .TP 3
 .B db --show|--link <path>|--unlink <path>
 Show, link/add or unlink/remove additional SCRAM db. By adding an external
@@ -216,8 +216,8 @@ Show all the external databases linked in to your SCRAM db.
 -u, --unlink <path>
 Unlink/Remove an already linked external db <path> from the local scram db.
 .RE
-.\##############################################################################
-.\COMMAND: scram list
+.##############################################################################
+.COMMAND: scram list
 .TP 3
 .B list [options] [<project_name>] [<version>]
 Show available SCRAM-based projects for the selected SCRAM_ARCH.
@@ -246,8 +246,8 @@ Name of the project for which SCRAM should display the available versions.
 .B Optional:
 To Show only those installed versions which contain <version>
 .RE
-.\##############################################################################
-.\COMMAND: scram project
+.##############################################################################
+.COMMAND: scram project
 .TP 3
 .B project [options] <-boot bootstrap_file> | <project_name version> | <release_path>
 Creates a project developer area based on a release area or a release area using
@@ -304,8 +304,8 @@ Creates a developer area based on an already available release <version>.
 <release_path>
 Creates a developer area based on <release_path> release area.
 .RE
-.\##############################################################################
-.\COMMAND: scram runtime
+.##############################################################################
+.COMMAND: scram runtime
 .TP 3
 .B runtime -csh|-sh|-win [--dump <file>]
 Shows the list of shell commands needed to set the runtime environment for the
@@ -329,8 +329,8 @@ Show runtime commands for cygwin.
 .B Optional:
 Save the runtime environment in a <file> for the selected shell.
 .RE
-.\##############################################################################
-.\COMMAND: scram setup
+.##############################################################################
+.COMMAND: scram setup
 .TP 3
 .B setup [<toolname>|<toolfile>.xml]
 Setup/add an external tool to be used by the project. All selected tools
@@ -353,32 +353,32 @@ Name of the external tool which is already by the scram. A corresponding
 Full path of the toolfile. SCRAM will make a copy of <toolfile>.xml in to
 config/toolbox/$SCRAM_ARCH/tools for future use.
 .RE
-.\##############################################################################
-.\COMMAND: scram tool
+.##############################################################################
+.COMMAND: scram tool
 .TP 3
 .B tool
 This command consists of many sub-commands which deals with externals tools. This
 command needs to be run from a release or developer area.
-.\##############################################################################
-.\COMMAND: scram tool list
+.##############################################################################
+.COMMAND: scram tool list
 .TP 3
 .B tool list
 Shows the list of all selected tools names and their versions.
-.\##############################################################################
-.\COMMAND: scram tool info
+.##############################################################################
+.COMMAND: scram tool info
 .TP 3
 .B tool info <toolname>
 Shows the current tool definition for tool <toolname>.
-.\##############################################################################
-.\COMMAND: scram tool remove
+.##############################################################################
+.COMMAND: scram tool remove
 .TP 3
 .B tool remove <toolname>
 Makes the tool <toolname> unavailable. SCRAM moves the tools definition file
 from config/toolbox/$SCRAM_ARCH/tools/selected/<toolname>.xml to
 config/toolbox/$SCRAM_ARCH/tools/available directory. So if one needs to select
 this tool again then just run 'scram setup <toolname>' command.
-.\##############################################################################
-.\COMMAND: scram tool tag
+.##############################################################################
+.COMMAND: scram tool tag
 .TP 3
 .B tool tag <toolname> <tag_name>
 Shows the value of a variable(tag_name) for the <toolname> e.g.
@@ -390,8 +390,8 @@ Shows the value of a variable(tag_name) for the <toolname> e.g.
 .RS 3
 shows the c++ compiler's path.
 .RE
-.\##############################################################################
-.\COMMAND: scram unsetenv
+.##############################################################################
+.COMMAND: scram unsetenv
 .TP 3
 .B unsetenv -csh|-sh|-win
 Shows the list of shell commands needed to unset the runtime environment set
@@ -411,14 +411,14 @@ Show unset commands for sh/bash/zsh shell.
 -win
 Show unset commands for cygwin.
 .RE
-.\##############################################################################
-.\COMMAND: scram version
+.##############################################################################
+.COMMAND: scram version
 .TP 3
 .B version
 Show default version of SCRAM. If this command is run from a SCRAM-based
 release/developer area then it shows the latest available version of SCRAM available
 for that release.
-.\##############################################################################
+.##############################################################################
 .SH SCRAM FLAGS
 SCRAM-based projects' build rules provided via cmssw-config support many
 compilation/control flags. Scope of build/compilation flag are defined
@@ -426,7 +426,7 @@ by the place they are defined in. e.g.
 .RS 3
 .TP 3
 .B Project level flags
-Any flag defined/provided via fllowing are used for all build products of the project
+Any flag defined/provided via following are used for all build products of the project
 .RS 3
 .B - top-level config/BuildFile.xml
 .RE
@@ -434,7 +434,7 @@ Any flag defined/provided via fllowing are used for all build products of the pr
 .B - compiler's tools files (e.g. gcc-cxxcompiler.xml, gcc-cxxcompiler.xml and gcc-f77compiler.xml)
 .RE
 .RS 3
-.B - via command-line USER_<flag>
+.B - via command-line USER_<flag>/SCRAM_<flag>
 .RE
 .TP 3
 .B Tool level flags
@@ -479,34 +479,22 @@ Only for compilation/build in the release area environment.
 Only for compilation/build user development area.
 .RE
 .RE
-.\##############################################################################
+.##############################################################################
 .SH SCRAM BUILD FLAGS
 SCRAM sets variuos flags to be used by different compilers (e.g CXX, C
 and Fortran)
 .TP 3
-.B [CXX|C|F]FLAGS
+.B [<class|type>_][REM_]<CXX|C|F>FLAGS
 Compilation flags for CXX/C/Fortran compilers.
-.RS 3
-USER, USER_REM, <class|type>, <class|type>_REM and REM flags supported.
-.RE
 .TP 3
-.B CPPFLAGS
+.B [<class|type>_][REM_]CPPFLAGS
 Pre-processor flags for pre-processing.
-.RS 3
-USER, USER_REM, <class|type>, <class|type>_REM and REM flags supported.
-.RE
 .TP 3
-.B CPPDEFINES
+.B [<class|type>_][REM_]CPPDEFINES
 Pre-processor macros, SCRAM adds -D for each of these flags.
-.RS 3
-USER, USER_REM, <class|type>, <class|type>_REM and REM flags supported.
-.RE
 .TP 3
-.B LDFLAGS
+.B [<class|type>_][REM_]LDFLAGS
 Link flags for linking shared libraries or building executables.
-.RS 3
-USER, USER_REM, <class|type>, <class|type>_REM and REM flags supported.
-.RE
 .TP 3
 .B [CXX|C|F]OPTIMISEDFLAGS
 Optiomization flags for CXX/C/Fortran
@@ -514,41 +502,23 @@ Optiomization flags for CXX/C/Fortran
 .B [CXX|C|F]CXXSHAREDOBJECTFLAGS
 Shared object flags for CXX/C/Fortran
 .TP 3
-.B CUDA_FLAGS
+.B [REM_]CUDA_FLAGS
 Compilation flags for CUDA compiler.
-.RS 3
-USER, USER_REM and REM flags supported.
-.RE
 .TP 3
-.B CUDA_CFLAGS
+.B [REM_]CUDA_CFLAGS
 Compilation flags for CUDA compiler which should passes via --compiler-options.
-.RS 3
-USER, USER_REM and REM flags supported.
-.RE
 .TP 3
-.B [EDM|CAPABILITIES]_[CPPFLAGS|CXXFLAGS|CFLAGS]
+.B [<class>_][REM_]<EDM|CAPABILITIES>_<CPPFLAGS|CXXFLAGS|CFLAGS>
 Compilation flags for EDM/Capabilities Plugin compilation
-.RS 3
-<class>, <class>_REM and REM flag supported.
-.RE
 .TP 3
-.B EDM_LDFLAGS
+.B [<class>_][REM_]EDM_LDFLAGS
 Link flags for EDM Plugin linking.
-.RS 3
-<class>, <class>_REM and REM flag supported.
-.RE
 .TP 3
-.B LCGDICT_LDFLAGS
+.B [REM_]LCGDICT_LDFLAGS
 Link flags for EDM Capabilities Plugin linking.
-.RS 3
-Only REM flag supported.
-.RE
 .TP 3
-.B [LCG|ROOT]DICT_[CPPFLAGS|CXXFLAGS]
+.B [<class>_][REM_]<LCG|ROOT>DICT_<CPPFLAGS|CXXFLAGS>
 Compilation flags to compile generated lcg/root dictionary files.
-.RS 3
-<class>, <class>_REM and REM flag supported.
-.RE
 .TP 3
 .B LD_UNIT
 Flags used for the generation of big object file for big plugins.
@@ -556,7 +526,7 @@ Flags used for the generation of big object file for big plugins.
 .B MISSING_SYMBOL_FLAGS
 Link flags used for linking to make sure there are no missing symbols.
 .TP 3
-.B [USER[_REM]][BIGOBJ[_REM]]_[CPPFLAGS|CXXFLAGS|CFLAGS|FFLAGS|LDFLAGS]
+.B BIGOBJ_[REM_]<CPPFLAGS|CXXFLAGS|CFLAGS|FFLAGS|LDFLAGS>
 Various compilation/link flags for Big Plugins.
 .TP 3
 .B GENREFLEX_ARGS
@@ -637,10 +607,6 @@ config/BuildFile.xml.
 Default checkers to be enbabled for LLVM Static Analysis. Effective only in
 config/BuildFile.xml.
 .TP 3
-.B USER_LLVM_CHECKERS
-Used defined extra checkers to be enabled for LLVM Static Analysis (for command-line
-use only).
-.TP 3
 .B <library name="<name>" file="<files>">[dependencies/flags]</library>
 To generate a shared library from a <packages>/[plugins|test|bin] directory.
 .RS 3 
@@ -677,3 +643,40 @@ Default compiler is set via config/Self.xml file.
 .RS 3
 Nasted compiler blocks are allowed.
 .RE
+.##############################################################################
+.SS CONTROL FLAGS (via environment)
+There are few environment flags that can control SCRAM e.g.
+.TP 3
+.B USER_[BIGOBJ_][REM_]<CPPFLAGS|CXXFLAGS|CFLAGS|FFLAGS|LDFLAGS>
+Various user defined compilation/link flags.
+.TP 3
+.B USER_LLVM_CHECKERS
+Used defined extra checkers to be enabled for LLVM Static Analysis.
+.TP 3
+.B SCRAM_USERLOOKUPDB=<path>
+To instruct SCRAM to use <path> as its database and look for projects under this directory.
+.TP 3
+.B RUN_LLVM_ANALYZER_ON_ALL=yes
+To run llvm analyzer on generated code too. By default it does not run on generated code.
+.TP 3
+.B BUILD_LOG=yes
+To redirect the "scram build -j n" output to log files for each product.
+.TP 3
+.B SCRAM_NOEDMWRITECONFIG=1
+No to run EDM Write Config script after the edmplugin build.
+.TP 3
+.B SCRAM_IGNORE_PACKAGES=<packages>
+Do not build <packages>
+.TP 3
+.B SCRAM_IGNORE_SUBDIRS=<sub-dirs>
+Do not build <sub-dirs> of each package e.g. one can set it to test to avoid building
+test executables/plugins.
+.TP 3
+.B SKIP_UNITTESTS=<tests>
+Do not run these <tests> when "scram build runtests|unittests" is run.
+.TP 3
+.B SCRAM_NOSYMCHECK=1
+Do not run any extra shared library missing symbols checks.
+.TP 3
+.B SCRAM_TEST_RUNNER_PREFIX=<command>
+Prefix each unittest with <command> before running.

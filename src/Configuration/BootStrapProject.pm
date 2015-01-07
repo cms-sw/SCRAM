@@ -72,7 +72,9 @@ sub project_()
       use Utilities::AddDir;
       if (-d "${toolbox}/tools")
          {
-	 Utilities::AddDir::copydirexp("${toolbox}/tools","${conf}/tools",'\.xml$');
+	 Utilities::AddDir::adddir("${conf}/tools");
+	 Utilities::AddDir::copydir("${toolbox}/tools/selected","${conf}/tools/");
+	 Utilities::AddDir::copydir("${toolbox}/tools/available","${conf}/tools/");
 	 }
       else
          {

@@ -1,5 +1,11 @@
 
 			SCRAM Release Notes
+V2_2_6_pre3: 2014-11-14
+
+	* Documentation updated for various SCRAM Control flags.
+	* Use system cp command for copying the files which is
+	bit faster than then the perl copy.
+
 V2_2_6_pre2: 2014-10-27
 
 	* Release deprecation checks.

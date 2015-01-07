@@ -28,12 +28,11 @@ sub urldownload()
    my $des=shift;
    $des=~s/^\s*file://;
    use Utilities::AddDir;
+   use File::Basename;
+   Utilities::AddDir::adddir(dirname($des));
    if (-f $src)
       {
-      use File::Basename;
-      use File::Copy;
-      Utilities::AddDir::adddir(dirname($des));
-      copy($src,$des);
+      Utilities::AddDir::copyfile($src,$des);
       }
    elsif (-d $src)
       {

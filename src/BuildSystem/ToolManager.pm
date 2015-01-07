@@ -78,7 +78,7 @@ sub setupalltools()
    my $self = shift;
    my @selected=();
    my $tooldir=$self->{toolcache}."/selected";
-   foreach my $tool (@{&getfileslist($tooldir)})
+   foreach my $tool (@{&Utilities::AddDir::getfileslist($tooldir)})
       {
       if ($tool=~/^(.+)\.xml$/) {push @selected,$1;}
       }
