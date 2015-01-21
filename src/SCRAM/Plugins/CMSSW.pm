@@ -7,6 +7,11 @@ sub new()
    my $class=shift;
    my $self={};
    bless $self, $class;
+   if (! $main::interactive)
+   {
+     print STDERR "WARNING: In non-interactive mode release checks e.g. deprecated releases, production architectures are disabled.\n";
+     $self->{data}=[];
+   }
    return $self;
 }
 

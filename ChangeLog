@@ -1,3 +1,8 @@
+2015-01-21 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* In non-interactive mode do not read the releases.map file and
+	ignore all release checks.
+
 2014-11-25 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* Use system cp for copying directories to avoid couple of extra stats

@@ -16,6 +16,7 @@ sub new()
   $self->{listcache}= {};
   $self->{projects}={};
   $self->{domain}='';
+  $self->{prodarch}={};
   eval {
     eval "use Net::Domain qw(hostdomain);";
     if(!$@){$self->{domain}=hostdomain();}
@@ -42,7 +43,7 @@ sub getarea ()
     $data = $self->updatearchs($name,$version,{$arch});
     my @archs = keys %{$data};
     if (scalar(@archs)==1){$selarch=$archs[0];}
-    elsif((scalar(@archs)>1) && (!$force)){$selarch=$self->productionArch($name,$version);}
+    elsif((scalar(@archs)>1) && (!$force)){$selarch=$self->productionArch($name,$version,$data->{$archs[0]}[0][2]);}
   }
   my $area=undef;
   if ((defined $selarch) and (exists $data->{$selarch}))
@@ -84,14 +85,29 @@ sub getarea ()
 
 sub productionArch()
 {
-  my ($self,$project,$version)=@_;
-  my $tc = $self->getProjectModule($project);
-  if (defined $tc)
+  my ($self,$project,$version,$release)=@_;
+  my $rel_id="${project}:${version}";
+  if (exists $self->{prodarch}{$rel_id}){return $self->{prodarch}{$rel_id};}
+  my @archs=();
+  if (defined $release)
   {
-    my @archs=$tc->releaseArchs($version,1);
-    if (scalar(@archs)==1){return $archs[0];}
+    my $ref;
+    if (open($ref,"${release}/.SCRAM/production_arch"))
+    {
+      my $a=<$ref>; chomp $a;
+      close($ref);
+      if ($a){push @archs,$a;}
+    }
   }
-  return undef;
+  if (scalar(@archs)==0)
+  {
+    my $tc = $self->getProjectModule($project);
+    if (defined $tc){@archs=$tc->releaseArchs($version,1);}
+  }
+  my $arch=undef;
+  if (scalar(@archs)==1){$arch=$archs[0];}
+  $self->{prodarch}{$rel_id}=$arch;
+  return $arch;
 }
 
 sub getProjectModule()

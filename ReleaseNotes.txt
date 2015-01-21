@@ -1,5 +1,10 @@
 
 			SCRAM Release Notes
+V2_2_6_pre4: 2015-01-21
+
+	* Release checks e.g. deprecated releases, production
+	architectures are disabled for non-interactive mode.
+
 V2_2_6_pre3: 2014-11-14
 
 	* Documentation updated for various SCRAM Control flags.
