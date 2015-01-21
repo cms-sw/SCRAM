@@ -844,7 +844,7 @@ sub bootfromrelease() {
 	   }
 	if (! $force)
 	   {
-	   $os = $scramdb->productionArch($projectname,$projectversion);
+	   $os = $scramdb->productionArch($projectname,$projectversion, $relarea->location());
 	   if ((defined $os) && ($ENV{SCRAM_ARCH} ne $os))
 	      {
 	      print "WARNING: Developer's area is created for non-production architecture $ENV{SCRAM_ARCH}. Production architecture for this release is $os.\n";

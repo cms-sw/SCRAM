@@ -36,6 +36,7 @@ $main::prompt="";
 $main::ORIG_ARGV=[];
 $main::ORIG_SCRAM_ARCH = $ENV{SCRAM_ARCH} || "";
 $main::FORCE_SCRAM_ARCH = "";
+$main::interactive=0;
 push @$main::ORIG_ARGV,@ARGV;
 $|=1;
 
@@ -59,6 +60,7 @@ if (!exists $ENV{SCRAM_LOOKUPDB_WRITE})
 # STDOUT is redirected to a file or piped):
 if ( -t STDIN && -t STDOUT && $^O !~ /MSWin32|cygwin/ )
    {
+   $interactive=1;
    $bold = "\033[1m";
    $normal = "\033[0m";
    $prompt = "\033[0;32;1m";
