@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_6_pre5: 2015-06-18
+
+	* New filter ifversion added for toolfiles.
+
 V2_2_6_pre4: 2015-01-21
 
 	* Release checks e.g. deprecated releases, production

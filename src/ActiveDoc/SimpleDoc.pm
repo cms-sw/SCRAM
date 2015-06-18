@@ -48,6 +48,17 @@ sub addfilter()
    $self->{"${filter}_value"}=1;
    }
 
+sub removefilter()
+   {
+   my ($self,$filter)=@_;
+   if (exists $self->{$filter})
+      {
+      delete $self->{support_filters}{$filter};
+      delete $self->{$filter};
+      delete $self->{"${filter}_value"};
+      }
+   }
+
 sub filenameref()
    {
    my $self=shift;
