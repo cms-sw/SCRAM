@@ -1,3 +1,12 @@
+2015-06-18 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* New filter 'ifversion' supported for toolfiles. Conditional
+	flags can be set/remove based on a tool version e.g. in root 6 tool
+        file one can have the following to disable capabilities 
+	<ifversion name="^[6-9]\.">
+          <flag NO_CAPABILITIES="yes"/>
+        </ifversion>
+
 2015-01-21 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* In non-interactive mode do not read the releases.map file and
