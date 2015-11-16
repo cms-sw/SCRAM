@@ -46,7 +46,6 @@ sub tool()
 
    $self->{content}->{TOOLNAME}=$$hashref{'name'};
    $self->{content}->{TOOLVERSION}=$$hashref{'version'};
-   $self->{scramdoc}->addfilter("ifversion",$$hashref{'version'});
    
    if (exists ($$hashref{'type'}))
       {
@@ -72,7 +71,6 @@ sub tool_()
    {
    my ($object,$name,%attributes)=@_;
    if (!$self->{scramdoc}->_isvalid()){return;}
-   $self->{scramdoc}->removefilter("ifversion");
    delete $self->{levels};
    delete $self->{id};
    delete $self->{nested};
@@ -236,7 +234,6 @@ sub parse
    $self->verbose("Setup Parse");
    my $fhead='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><doc type="BuildSystem::ToolParser" version="1.0">';
    my $ftail='</doc>';
-   $self->{scramdoc}->removefilter("ifversion");
    $self->{scramdoc}->parse("setup",$fhead,$ftail);
    delete $self->{scramdoc};
    return $self;
