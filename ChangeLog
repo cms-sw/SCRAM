@@ -1,6 +1,8 @@
 2016-08-10 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* Add back the makefile tag for tools.
+	* Always put <install-path>/overrides/bin (if exists) as the first
+	directory in PATH.
 
 2015-06-18 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 

@@ -336,6 +336,19 @@ sub init_ ()
 	 }
       };
 }
+
+sub update_overrides_()
+{
+  my $self=shift;
+  if ((exists $self->{env}{rtstring}{path}) && (exists $self->{env}{rtstring}{path}{PATH}))
+  {
+    my $override = $main::installPath . "/overrides/bin";
+    if (-e $override)
+    {
+      unshift @{$self->{env}{rtstring}{path}{PATH}}, $override;
+    }
+  }
+}
    
 sub runtime_ ()
 {
@@ -353,6 +366,7 @@ sub runtime_ ()
     {
       use Cache::CacheUtilities;
       $self->{env}{rtstring}=&Cache::CacheUtilities::read($cache);
+      $self->update_overrides_();
       return $self->{env}{rtstring};
     }
   }
@@ -397,6 +411,7 @@ sub runtime_ ()
     use Cache::CacheUtilities;
     &Cache::CacheUtilities::write($self->{env}{rtstring},$cache);
   }
+  $self->update_overrides_();
   return $self->{env}{rtstring};
 }
    
