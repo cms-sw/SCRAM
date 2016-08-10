@@ -176,6 +176,18 @@ sub flags()
       }
    }
 
+sub makefile()
+   {
+   my ($object,$name,%attributes)=@_;
+   }
+
+sub makefile_()
+   {
+   my ($object,$name,$cdata)=@_;
+   if (!$self->{scramdoc}->_isvalid()){return;}
+   push(@{$self->{"$self->{levels}->[$self->{nested}]".content}->{MAKEFILE}},join("\n",@$cdata));
+   }
+
 sub client()
    {
    my ($object,$name,%attributes)=@_;

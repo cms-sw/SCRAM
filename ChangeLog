@@ -1,3 +1,7 @@
+2016-08-10 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* Add back the makefile tag for tools.
+
 2015-06-18 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* New filter 'ifversion' supported for toolfiles. Conditional
