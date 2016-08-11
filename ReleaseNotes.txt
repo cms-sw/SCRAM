@@ -3,7 +3,7 @@
 V2_2_6_pre6: 2016-08-10
 
 	* Support makefile tag in toolfile definition.
-	* Always add install-path/overrides/bin as first directory in PATH 
+	* Always add install-path/share/overrides/bin as first directory in PATH 
 
 V2_2_6_pre5: 2015-06-18
 

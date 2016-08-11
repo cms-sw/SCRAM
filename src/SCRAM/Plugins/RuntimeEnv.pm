@@ -342,7 +342,7 @@ sub update_overrides_()
   my $self=shift;
   if ((exists $self->{env}{rtstring}{path}) && (exists $self->{env}{rtstring}{path}{PATH}))
   {
-    my $override = $main::installPath . "/overrides/bin";
+    my $override = $main::installPath . "/share/overrides/bin";
     if (-e $override)
     {
       unshift @{$self->{env}{rtstring}{path}{PATH}}, $override;
