@@ -1,3 +1,7 @@
+2016-09-01 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* Pass scram version too for releases.map file
+
 2016-08-29 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* For accounting pursoe, include release and arch with wget

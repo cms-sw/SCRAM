@@ -51,7 +51,7 @@ sub getData()
     $self->{data}=[];
     if (lc($main::SITE->get("release-checks"))=~/^(1|yes|y)$/)
     {
-      my $url="https://cmssdt.cern.ch/SDT/releases.map?release=${version}&architecture=".$ENV{SCRAM_ARCH};
+      my $url="https://cmssdt.cern.ch/SDT/releases.map?release=${version}&architecture=".$ENV{SCRAM_ARCH}."&scram=".$ENV{SCRAM_VERSION};
       my $cmd='wget  --no-check-certificate -nv -o /dev/null -O- ';
       my $out=`which wget 2>&1`;
       if ($? != 0){$cmd='curl -L -k --stderr /dev/null ';}
