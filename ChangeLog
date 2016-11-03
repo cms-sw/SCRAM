@@ -1,3 +1,7 @@
+2016-11-03 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* Send Releasetop information to cmssdt too.
+
 2016-09-01 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* Pass scram version too for releases.map file

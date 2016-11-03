@@ -17,10 +17,10 @@ sub new()
 
 sub releaseArchs()
 {
-  my ($self,$version,$default)=@_;
+  my ($self,$version,$default,$reldir)=@_;
   my $prod=";prodarch=";
   if ($default){$prod=";prodarch=1;";}
-  my $data = $self->getData($version);
+  my $data = $self->getData($version,$reldir);
   my @archs=();
   my $xarch=undef;
   foreach my $l (@$data)
@@ -45,13 +45,13 @@ sub releaseArchs()
 
 sub getData()
 {
-  my ($self,$version)=@_;
+  my ($self,$version,$reldir)=@_;
   if (!exists $self->{data})
   {
     $self->{data}=[];
     if (lc($main::SITE->get("release-checks"))=~/^(1|yes|y)$/)
     {
-      my $url="https://cmssdt.cern.ch/SDT/releases.map?release=${version}&architecture=".$ENV{SCRAM_ARCH}."&scram=".$ENV{SCRAM_VERSION};
+      my $url="https://cmssdt.cern.ch/SDT/releases.map?release=${version}&architecture=".$ENV{SCRAM_ARCH}."&scram=".$ENV{SCRAM_VERSION}."&releasetop=${reldir}";
       my $cmd='wget  --no-check-certificate -nv -o /dev/null -O- ';
       my $out=`which wget 2>&1`;
       if ($? != 0){$cmd='curl -L -k --stderr /dev/null ';}
@@ -83,8 +83,8 @@ sub getData()
 
 sub getDeprecatedDate ()
 {
-  my ($self,$version,$arch)=@_;
-  my $data = $self->getData($version);
+  my ($self,$version,$arch,$reldir)=@_;
+  my $data = $self->getData($version, $reldir);
   foreach my $l (@$data)
   {
     if (($l!~/;label=$version;/) || ($l!~/architecture=$arch;/)){next;}

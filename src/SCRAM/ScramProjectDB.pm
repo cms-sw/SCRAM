@@ -53,7 +53,7 @@ sub getarea ()
       my $tc = $self->getProjectModule($name);
       if (defined $tc)
       {
-        $self->{deprecated}=int($tc->getDeprecatedDate($version,$selarch));
+        $self->{deprecated}=int($tc->getDeprecatedDate($version,$selarch,$data->{$selarch}[0][2]));
         my $dep=$self->{deprecated};
         if ($dep>0)
         {
@@ -102,7 +102,7 @@ sub productionArch()
   if (scalar(@archs)==0)
   {
     my $tc = $self->getProjectModule($project);
-    if (defined $tc){@archs=$tc->releaseArchs($version,1);}
+    if (defined $tc){@archs=$tc->releaseArchs($version,1, $release);}
   }
   my $arch=undef;
   if (scalar(@archs)==1){$arch=$archs[0];}

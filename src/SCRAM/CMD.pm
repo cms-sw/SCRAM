@@ -850,6 +850,8 @@ sub bootfromrelease() {
 	      print "WARNING: Developer's area is created for non-production architecture $ENV{SCRAM_ARCH}. Production architecture for this release is $os.\n";
 	      }
 	   }
+        my $tc = $scramdb->getProjectModule($projectname);
+        if (defined $tc) { $tc->getData($projectversion, $ENV{RELEASETOP}); }
     } else {
 	$self->scramfatal("Insufficient arguments: see \"scram project -help\" for usage info.");
     }
