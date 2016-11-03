@@ -1,8 +1,12 @@
 
 			SCRAM Release Notes
+V2_2_6: 2016-11-03
+
+	* For accounting purpsoe, include release top information with releases.map call.
+
 V2_2_6_pre8: 2016-09-01
 
-	* For accounting pursoe, include scram version with wget releases.map call.
+	* For accounting purpsoe, include scram version with wget releases.map call.
 
 V2_2_6_pre7: 2016-08-29
 
