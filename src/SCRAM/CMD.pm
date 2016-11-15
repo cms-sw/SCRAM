@@ -852,6 +852,12 @@ sub bootfromrelease() {
 	   }
         my $tc = $scramdb->getProjectModule($projectname);
         if (defined $tc) { $tc->getData($projectversion, $ENV{RELEASETOP}); }
+        if ( $ENV{'SCRAM_TOOL_HOME'} =~ /^\/afs\/cern\.ch\// )
+           {
+           print "****************************** WARNING ******************************\n";
+           print "You are using CMSSW from CERN AFS space. Please note that, by the start of 2017, new CMSSW releases shall only be available via CVMFS.\n";
+           print "See the announcement https://hypernews.cern.ch/HyperNews/CMS/get/swDevelopment/3374.html \n";
+           }
     } else {
 	$self->scramfatal("Insufficient arguments: see \"scram project -help\" for usage info.");
     }
