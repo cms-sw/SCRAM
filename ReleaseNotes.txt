@@ -1,5 +1,10 @@
 
 			SCRAM Release Notes
+V2_2_7_pre0: 2016-11-15
+
+	* Add warning from CERN AFS usage
+	* New test/BuildFile tag test to run unit tests.
+
 V2_2_6: 2016-11-03
 
 	* For accounting purpsoe, include release top information with releases.map call.

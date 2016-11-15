@@ -1,3 +1,10 @@
+2016-11-15 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* Added Warning about getting releases from AFS
+	* New unit test tag <test name="name" command="command-to-run"/>
+	BuildFile tag supported to run unit tests without compilaing any
+	executable.
+
 2016-11-03 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* Send Releasetop information to cmssdt too.
