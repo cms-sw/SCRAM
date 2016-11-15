@@ -211,6 +211,22 @@ sub allflags()
    return $self->{content}->{FLAGS};
    }
 
+sub test()
+   {
+   my ($object,$name,%attributes) = @_;
+   if (!$self->{scramdoc}->_isvalid()){return;}
+   $self->pushlevel(\%attributes);
+   }
+
+sub test_()
+   {
+   my ($object,$name,%attributes) = @_;
+   if (!$self->{scramdoc}->_isvalid()){return;}
+   $name = $self->{id}->{'name'};
+   $self->productcollector($name,'test','BIN');
+   $self->poplevel();
+   }
+
 sub bin()
    {
    my ($object,$name,%attributes) = @_;
@@ -230,7 +246,7 @@ sub bin_()
       }
    else
       {
-      ($name) = ($self->{id}->{'file'} =~ /(.*)?\..*$/);
+      ($name) = ($self->{id}->{'file'} =~ /(.*)?\..*$/o);
       }
 
    # Store the data:
@@ -257,7 +273,7 @@ sub library_()
       }
    else
       {
-      ($name) = ($self->{id}->{'file'} =~ /(.*)?\..*$/);
+      ($name) = ($self->{id}->{'file'} =~ /(.*)?\..*$/o);
       }
 
    # Store the data:
@@ -275,16 +291,29 @@ sub productcollector()
    my @err=();
    foreach my $attrib (sort keys %{$self->{id}})
    {
-     if ($attrib!~/^(file|name)$/){push @err,"Unknown attribute $attrib found.";}
+     if ($typeshort ne "test")
+     {
+       if ($attrib!~/^(file|name)$/o){push @err,"Unknown attribute $attrib found.";}
+     }
+     else
+     {
+       if ($attrib!~/^(command|name)$/o){push @err,"Unknown attribute $attrib found.";}
+     }
    }
-   if (!exists $self->{id}->{'file'}){push @err,"Missing file='files' attribute";}
-   if (scalar(@err)>0){$self->{tagcontent}->{ERRORS}=\@err;}
-   # Store the name:
    $product->name($name);
-   $product->type($typeshort);
-   # Store the files. Take the BuildFile path as the initial path for
-   # expanding source file globs:
-   $product->_files($self->{id}->{'file'},[ $self->{scramdoc}->filetoparse() ]);
+   if ($typeshort ne "test")
+   {
+     if (!exists $self->{id}->{'file'}){push @err,"Missing file='files' attribute";}
+     $product->type($typeshort);
+     $product->_files($self->{id}->{'file'},[ $self->{scramdoc}->filetoparse() ]); 
+   }
+   else
+   {
+     if (!exists $self->{id}->{'command'}){push @err,"Missing command='command to run' attribute";}
+     $product->type("bin");
+     $product->_command($self->{id}->{'command'});
+   }
+   if (scalar(@err)>0){$self->{tagcontent}->{ERRORS}=\@err;}
    # Store the data content:
    $product->_data($self->{tagcontent});
    # And store in a hash (all build products in same place):

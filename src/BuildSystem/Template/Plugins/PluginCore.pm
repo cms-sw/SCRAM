@@ -107,6 +107,13 @@ sub productfiles()
       : return "";
    }
 
+sub command ()
+   {
+   my $self=shift;
+   ((defined $self->{_THISCOREPRODUCT}) && (defined $self->{_THISCOREPRODUCT}{COMMAND})) ? return $self->{_THISCOREPRODUCT}{COMMAND}
+      : return "";
+   }
+
 sub producttype()
    {
    my $self=shift;

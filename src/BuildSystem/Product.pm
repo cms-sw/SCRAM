@@ -86,6 +86,18 @@ sub _files()
       }
    }
 
+sub _command()
+   {
+   my ($self, $cmd)=@_;
+   $self->{COMMAND}=$cmd;
+   }
+
+sub command()
+   {
+   my $self=shift;
+   return $self->{COMMAND};
+   }
+
 sub files()
    {
    my $self=shift;
