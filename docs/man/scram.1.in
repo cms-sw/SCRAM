@@ -622,6 +622,9 @@ unless explicitly turned off by <flags EDM_PLUGIN="0"/>
 .B <bin name="<name>" file="<files>">[dependencies/flags]</bin>
 To generate an executable/test executable from a <packages>/[plugins|test|bin] directory.
 .TP 3
+.B <test name="<name>" command="<command-to-run>">[dependencies/flags]</test>
+To run the command for the test in <package>/test directory.
+.TP 3
 .B <architecture name="[!]<regexp>"/></architecture>
 Any flag/dependency within an architecture block will apply if regexp matches
 SCRAM_ARCH. If first charactor of regexp is '!' then flags/dependency will apply
