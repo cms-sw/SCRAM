@@ -1,5 +1,10 @@
 
 			SCRAM Release Notes
+V2_2_7_pre2: 2017-08-07
+
+	* Allow to directly set scram base project env without creating a dev area.
+	  eval `scram runtime -sh /full/path/to/release/directory`
+
 V2_2_7_pre1: 2016-11-16
 
 	* Add warning from CERN AFS usage

@@ -1152,8 +1152,6 @@ sub runtime()
        "win"    => sub { $SCRAM_RT_SHELL = 'CYGWIN' },
        "dump=s" => sub { $opts{SCRAM_RT_DUMP} = $_[1] } );
    
-   local @ARGV = @ARGS;
-   
    Getopt::Long::config qw(default no_ignore_case require_order);
    
    if (! Getopt::Long::GetOptions(\%opts, %options))
@@ -1162,6 +1160,12 @@ sub runtime()
       }
    else
       {
+      local @ARGV;
+      foreach my $a (@ARGS)
+        {
+        if (($a=~/^\//) && (-d $a)) {chdir $a; $self->{localarea}=undef; $self->initx_();}
+        else{push @ARGV,$a;}
+        }
       # Check to see if we are in a local project area:
       $self->checklocal();
 

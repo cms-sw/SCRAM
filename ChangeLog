@@ -1,3 +1,10 @@
+2017-08-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/CMD.pm: Allow to setup project environment by providing the
+	project path on command-line e.g.
+	  scram runtime -csh /full/path/of/release
+	  scram runtime -sh  /full/path/of/release
+
 2016-11-15 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* Added Warning about getting releases from AFS
