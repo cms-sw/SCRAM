@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_7_pre3: 2017-08-11
+
+	* Fix 'scram build help' to show build rules help
+
 V2_2_7_pre2: 2017-08-07
 
 	* Allow to directly set scram base project env without creating a dev area.

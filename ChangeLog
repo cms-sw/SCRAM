@@ -1,3 +1,9 @@
+2017-08-11 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/SCRAM.pm: Show build help when 'scram build help' comamnd
+	is run from within a scram-based project area otherwise show the
+	scram man page.
+
 2017-08-07 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/CMD.pm: Allow to setup project environment by providing the

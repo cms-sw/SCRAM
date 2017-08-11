@@ -156,7 +156,7 @@ sub execcommand()
    while(my $a=shift @ARGS)
       {
       my $ax=$a; $ax=~s/^-(-|)//;
-      if ("help"=~/^$ax/){ exec("man scram"); }
+      if (("help"=~/^$ax/) && (($a ne $ax) || (! $self->islocal()))){ exec("man scram"); }
       else{push @ARGV,$a;}
       }
 
