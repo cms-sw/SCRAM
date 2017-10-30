@@ -1,3 +1,8 @@
+2017-10-30 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* ActiveDoc/SimpleDoc.pm: Add release and compiler filters for tools too.
+	This allow to add/set flags and env based on release name.
+
 2017-08-11 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* SCRAM/SCRAM.pm: Show build help when 'scram build help' comamnd
