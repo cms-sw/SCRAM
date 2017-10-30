@@ -37,6 +37,8 @@ sub new()
    $self={};
    bless $self, $class;
    $self->addfilter("architecture",$ENV{SCRAM_ARCH});
+   if (exists $ENV{SCRAM_PROJECTVERSION}){$self->addfilter("release",$ENV{SCRAM_PROJECTVERSION});}
+   if (exists $ENV{DEFAULT_COMPILER}){$self->addfilter("compiler",$ENV{DEFAULT_COMPILER});}
    return $self;
    }
 
