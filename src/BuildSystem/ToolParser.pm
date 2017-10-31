@@ -82,7 +82,15 @@ sub lib()
    {
    my ($object,$name,%attributes)=@_;
    if (!$self->{scramdoc}->_isvalid()){return;}
-   push(@{$self->{"$self->{levels}->[$self->{nested}]".content}->{LIB}},$attributes{'name'});   
+   my $type="LIB";
+   if (exists $attributes{'type'}){$type=uc($attributes{'type'})."_LIB";}
+   my $content = $self->{levels}->[$self->{nested}]."content";
+   push(@{$self->{$content}->{$type}},$attributes{'name'});
+   if ($type ne "LIB")
+     {
+     if (!exists $self->{$content}->{LIBTYPES}){$self->{$content}->{LIBTYPES}={};}
+     $self->{$content}->{LIBTYPES}->{$type}=1;
+     }
    }
 
 sub info()
@@ -529,11 +537,14 @@ sub processrawtool()
       }
 
    # Libs and tool dependencise:
-   foreach my $tag (qw( LIB USE ))
+   my @xtags = keys %{$self->getrawdata('LIBTYPES')};
+   $tooldataobj->tool_tag_value('LIBTYPES',\@xtags);
+   push(@xtags,('LIB','USE'));
+   foreach my $tag (@xtags)
       {
       my $bdata = $self->getrawdata($tag);
       my $subname = lc($tag);
-      $tooldataobj->$subname($bdata), if ($#$bdata != -1);
+      $tooldataobj->tool_tag_value($tag, $bdata), if ($#$bdata != -1);
       }
 
    # Also check to see if this tool is a scram-managed project. If

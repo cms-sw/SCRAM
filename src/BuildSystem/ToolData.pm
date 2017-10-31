@@ -45,6 +45,14 @@ sub toolversion()
       : $self->{TOOLVERSION};
    }
 
+sub tool_tag_value()
+   {
+   my $self=shift;
+   my $tag=shift;
+   @_ ? push(@{$self->{$tag}},@{$_[0]})
+      : @{$self->{$tag}};
+   }
+
 sub lib()
    {
    my $self=shift;
@@ -56,7 +64,7 @@ sub lib()
 sub include()
    {
    my $self=shift;
-   # Add libs to array:
+   # Add include to array:
    @_ ? push(@{$self->{INCLUDE}},@{$_[0]})
       : @{$self->{INCLUDE}};
    }
