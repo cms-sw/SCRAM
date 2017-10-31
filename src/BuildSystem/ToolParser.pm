@@ -537,13 +537,18 @@ sub processrawtool()
       }
 
    # Libs and tool dependencise:
-   my @xtags = keys %{$self->getrawdata('LIBTYPES')};
-   $tooldataobj->tool_tag_value('LIBTYPES',\@xtags);
-   push(@xtags,('LIB','USE'));
-   foreach my $tag (@xtags)
+   foreach my $tag (qw( LIB USE ))
       {
       my $bdata = $self->getrawdata($tag);
       my $subname = lc($tag);
+      $tooldataobj->$subname($bdata), if ($#$bdata != -1);
+      }
+
+   my @xtags = keys %{$self->getrawdata('LIBTYPES')};
+   $tooldataobj->tool_tag_value('LIBTYPES',\@xtags);
+   foreach my $tag (@xtags)
+      {
+      my $bdata = $self->getrawdata($tag);
       $tooldataobj->tool_tag_value($tag, $bdata), if ($#$bdata != -1);
       }
 
