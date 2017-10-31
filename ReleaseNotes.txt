@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_7_pre5: 2017-10-31
+
+	* Support added for type attribute for lib tag in toolfiles
+
 V2_2_7_pre4: 2017-10-30
 
 	* Add release and compiler filters for tool files.
