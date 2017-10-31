@@ -1,3 +1,8 @@
+2017-10-31 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* BuildSystem/ToolParser.pm, BuildSystem/ToolData.pm: allow toolfiles to have
+	<lib name="lname" type="libtype"/> to specify the lib type.
+
 2017-10-30 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* ActiveDoc/SimpleDoc.pm: Add release and compiler filters for tools too.
