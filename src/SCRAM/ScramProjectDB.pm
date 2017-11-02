@@ -218,6 +218,7 @@ sub getAreaObject ()
     print STDERR "ERROR: Attempt to ressurect ",$data->[0]," ",$data->[1]," from $loc unsuccessful\n";
     print STDERR "ERROR: $loc does not look like a valid release area for SCRAM_ARCH $arch.\n";
   }
+  elsif (defined $data->[3]){$area->{basedir}=$data->[3];}
   return $area;
 }
 
@@ -337,7 +338,7 @@ sub _findProjects()
 	my $d=basename($fd);
 	if ($exact)
 	{
-	  if ($d eq $ver){push @{$xdata->{$arch}}, [$p,$d,$fd]; return $xdata;}
+	  if ($d eq $ver){push @{$xdata->{$arch}}, [$p,$d,$fd,$base]; return $xdata;}
 	}
 	elsif ($d=~/$ver/)
 	{
@@ -345,7 +346,7 @@ sub _findProjects()
 	  {
 	    $uniq{"$p:$d"}=1;
 	    my $m = (stat($fd))[9];
-	    $data{$m}{$p}{$d}=$fd;
+	    $data{$m}{$p}{$d}=[$fd,$base];
 	  }
 	}
       }
@@ -357,7 +358,7 @@ sub _findProjects()
     {
       foreach my $v (keys %{$data{$m}{$p}})
       {
-        push @{$xdata->{$arch}}, [$p,$v,$data{$m}{$p}{$v}];
+        push @{$xdata->{$arch}}, [$p,$v,$data{$m}{$p}{$v}[0], $data{$m}{$p}{$v}[1]];
       }
     }
   }

@@ -2,6 +2,13 @@
 
 	* BuildSystem/ToolParser.pm, BuildSystem/ToolData.pm: allow toolfiles to have
 	<lib name="lname" type="libtype"/> to specify the lib type.
+2017-11-02 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* SCRAM/ScramProjectDB.pm: Keep trackof release base directory
+	* SCRAM/CMD.pm: Create config/scram_basedir if release base directory is
+	available. This help getting the latest SCRAM from release base directory
+	(e.g. /cvmfs/cms-ib.cern.ch) instead of default scram installation (e.g
+	/cvmfs/cms.cern.ch).
 
 2017-10-30 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 

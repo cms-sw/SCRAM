@@ -1,5 +1,10 @@
 
 			SCRAM Release Notes
+V2_2_7_pre6: 2017-11-
+
+	* Added config/scram_basedir which allow scram wrapper script to use the
+	correct scram installation instead of default.
+
 V2_2_7_pre5: 2017-10-31
 
 	* Support added for type attribute for lib tag in toolfiles

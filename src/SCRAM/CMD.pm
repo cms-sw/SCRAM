@@ -767,7 +767,7 @@ sub bootfromrelease() {
 	my $scramdb = $self->scramprojectdb();
 	my $relarea=undef;
 	if ($projPath)
-	{$relarea=$scramdb->getAreaObject([$projectname,$projectversion, $projPath], undef);}
+	{$relarea=$scramdb->getAreaObject([$projectname,$projectversion, $projPath, undef], undef);}
 	else{$relarea=$scramdb->getarea($projectname,$projectversion,$force);}
 	if ((!defined $relarea) || (!-d $relarea->archdir()))
 	   {
@@ -812,7 +812,15 @@ sub bootfromrelease() {
 	# Read the top-level BuildFile and create the required storage dirs. Do
 	# this before setting up self:
 	$self->create_productstores($area->location(),$symlinks);
-
+        if (exists $relarea->{basedir})
+           {
+           my $basedir_file;
+           if (open($basedir_file, "> ".$area->location()."/".$area->{configurationdir}."/scram_basedir"))
+              {
+              print $basedir_file $relarea->{basedir};
+              close($basedir_file);
+              }
+           }
 	my $toolmanager = $self->toolmanager($area);
 	$toolmanager->update ($area);
 
