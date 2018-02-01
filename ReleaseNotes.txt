@@ -1,5 +1,5 @@
 
-			SCRAM Release Notes
+			SCRAM Release Notes  
 V2_2_7_pre6: 2017-11-
 
 	* Added config/scram_basedir which allow scram wrapper script to use the
