@@ -2,7 +2,9 @@
 			SCRAM Release Notes
 V2_2_7_pre7: 2018-02-20
 
-	* Fix issue with LD_PRELOAD durring scram build.
+	* Fix issue with LD_PRELOAD durring scram build. This happens when scram
+	unset the existing env and any system calls before resetting the env. If
+	LD_PRELOAD remains set in between then two events then system calls fails.
 
 V2_2_7_pre6: 2017-11-02
 
