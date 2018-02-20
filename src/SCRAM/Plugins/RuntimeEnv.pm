@@ -19,7 +19,16 @@ sub new()
 sub runtimebuildenv()
 {
   my $self=shift;
+  my %save_env = ();
+  foreach my $k ("LD_PRELOAD"){
+    if (exists $ENV{$k})
+    {
+      $save_env{$k}=$ENV{$k};
+      delete $ENV{$k};
+    }
+  }
   $self->save("RTBOURNE");
+  foreach my $k (keys %{save_env}){$ENV{$k}=$save_env{$k};}
   $self->setenv ("RTBOURNE");
   if (exists $self->{env}{rtstring}{RTBOURNE})
   {

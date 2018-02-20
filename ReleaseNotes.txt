@@ -1,6 +1,10 @@
 
 			SCRAM Release Notes
-V2_2_7_pre6: 2017-11-
+V2_2_7_pre7: 2018-02-20
+
+	* Fix issue with LD_PRELOAD durring scram build.
+
+V2_2_7_pre6: 2017-11-02
 
 	* Added config/scram_basedir which allow scram wrapper script to use the
 	correct scram installation instead of default.

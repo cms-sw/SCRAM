@@ -1,3 +1,11 @@
+2018-02-20 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* /Plugins/RuntimeEnv.pm: Allow to unset some envionment variables during
+	scram build e.g. LD_PRELOAD. This is needed as during 'scram build' scram
+	unsets existing env and then reset it to the current project version.
+	During these two events if LD_PRELOAD remains set then any system call
+	made by scram fails.
+
 2017-10-31 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* BuildSystem/ToolParser.pm, BuildSystem/ToolData.pm: allow toolfiles to have
