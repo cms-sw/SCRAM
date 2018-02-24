@@ -37,8 +37,16 @@ sub new()
    $self={};
    bless $self, $class;
    $self->addfilter("architecture",$ENV{SCRAM_ARCH});
-   if (exists $ENV{SCRAM_PROJECTVERSION}){$self->addfilter("release",$ENV{SCRAM_PROJECTVERSION});}
-   if (exists $ENV{DEFAULT_COMPILER}){$self->addfilter("compiler",$ENV{DEFAULT_COMPILER});}
+   if (exists $ENV{SCRAM_PROJECTVERSION}){
+     $self->addfilter("release",$ENV{SCRAM_PROJECTVERSION});
+     $self->addfilter("compiler",$ENV{DEFAULT_COMPILER});
+     $self->addfilter("ifrelease",$ENV{SCRAM_PROJECTVERSION});
+     $self->addfilter("ifcompiler",$ENV{DEFAULT_COMPILER});
+     $self->addfilter("ifcxx11_abi",$ENV{SCRAM_CXX11_ABI});
+     $self->addfilter("ifproject",$ENV{SCRAM_PROJECTNAME});
+     $self->addfilter("ifconfig",$ENV{SCRAM_CONFIGCHKSUM});
+     $self->addfilter("ifscram",$ENV{SCRAM_VERSION});
+   }
    return $self;
    }
 
@@ -246,16 +254,24 @@ sub _checkfilter()
    my ($object,$name,%attributes)=@_;
    my $flag=$self->{"${name}_value"};
    push @{$self->{$name}},$flag;
-   my $filter=$attributes{name};
+   my $filter="";
+   my $exact=0;
+   if (exists $attributes{value}){$filter=$attributes{value};$exact=1;}
+   elsif (exists $attributes{match}){$filter=$attributes{match};}
+   else{$filter=$attributes{name};}
    if ($flag)
       {
       my $val = $self->{support_filters}{$name};
       if ($filter=~/^[!](.+)$/)
          {
          $filter=$1;
-         if ($val=~/$filter/){$self->{"${name}_value"}=0;}
+         if (($exact==1) && ($val eq $filter)){$self->{"${name}_value"}=0;}
+         if (($exact==0) && ($val=~/$filter/)){$self->{"${name}_value"}=0;}
          }
-      elsif ($val!~/$filter/){$self->{"${name}_value"}=0;}
+      else{
+        if (($exact==1) && ($val ne $filter)){$self->{"${name}_value"}=0;}
+        elsif (($exact==0) && ($val!~/$filter/)){$self->{"${name}_value"}=0;}
+        }
       }
    }
 

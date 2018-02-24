@@ -1,6 +1,12 @@
+2018-02-24 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* ActiveDoc/SimpleDoc.pm: Added ifrelease, ifproject, ifcompiler,
+	ifcxx11_abi, ifconfig and ifscram filters with new attributes match
+	(to match a regexp) and value (to match eaxct value).
+
 2018-02-20 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
-	* /Plugins/RuntimeEnv.pm: Allow to unset some envionment variables during
+	* Plugins/RuntimeEnv.pm: Allow to unset some envionment variables during
 	scram build e.g. LD_PRELOAD. This is needed as during 'scram build' scram
 	unsets existing env and then reset it to the current project version.
 	During these two events if LD_PRELOAD remains set then any system call
