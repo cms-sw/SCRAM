@@ -446,7 +446,7 @@ Any flags defined in the BuildFile.xml is used by the product(s) defined in that
 BuildFile.xml
 
 .RE
-Some flags (<class>[_REM]_<flag) can be configured based on their product class
+Some flags (<class>[_REM]_<flag>) can be configured based on their product class
 e.g. available classes are
 .RS 3
 .B LIBRARY
@@ -591,6 +591,14 @@ This flag is only valid in <package>/test/BuildFile.xml
 The command to run the test via "scram build runtests"
 This flag is only valid in <package>/test/BuildFile.xml
 .TP 3
+.B SETENV=<env_var>=<value>
+This sets the environment variable before running the unit test.
+This flag is only valid in <package>/test/BuildFile.xml
+.TP 3
+.B SETENV_SCRIPT=<scrpit-to-source>
+This sources the script to set environment before running the unit test.
+This flag is only valid in <package>/test/BuildFile.xml
+.TP 3
 .B PRE_TEST=<test>
 Tests which should be run first before run this test.
 This flag is only valid in <package>/test/BuildFile.xml
@@ -606,6 +614,10 @@ config/BuildFile.xml.
 .B LLVM_CHECKERS
 Default checkers to be enbabled for LLVM Static Analysis. Effective only in
 config/BuildFile.xml.
+.TP 3
+.B <include_path path="<dir>"/>
+To add -I<dir> during compilation. <dir> could be full path or relative to the
+BuildFile.xml.
 .TP 3
 .B <library name="<name>" file="<files>">[dependencies/flags]</library>
 To generate a shared library from a <packages>/[plugins|test|bin] directory.
@@ -624,27 +636,31 @@ To generate an executable/test executable from a <packages>/[plugins|test|bin] d
 .TP 3
 .B <test name="<name>" command="<command-to-run>">[dependencies/flags]</test>
 To run the command for the test in <package>/test directory.
-.TP 3
-.B <architecture name="[!]<regexp>"/></architecture>
-Any flag/dependency within an architecture block will apply if regexp matches
-SCRAM_ARCH. If first charactor of regexp is '!' then flags/dependency will apply
-if rexexp does not match SCRAM_ARCH.
-.RS 3
-
-Nasted architecture blocks are allowed.
-.RE
 
 .TP 3
-.B <compiler name="[!]<regexp>"/></compiler>
-Any flag/dependency within compiler tag will apply if regexp matches the default
-compiler. If first charactor of regexp is '!' then flags/dependency will apply
-if regexp does not match the default compiler.
-.RS 3
-
-Default compiler is set via config/Self.xml file.
+.B <<condition> name="[!]<regexp>"/></<condition>>
+.RE
+.B <if<condition> name|match="[!]<regexp>"/></if<condition>>
+.RE
+.B <if<condition> value="[!]<value>"/></if<condition>>
 .RE
 .RS 3
-Nasted compiler blocks are allowed.
+Any flag/dependency within these tags will apply if regexp/value match the
+condition. If first charactor of regexp/value is '!' then flags/dependency
+will apply if regexp/value doe not match.
+.RS 3
+
+Valid conditions are
+  architecture: SCRAM_ARCH environment variable
+  compiler : Default compiler from config/Self.xml
+  release: SCRAM_PROJECTVERSION environment variable
+  project: SCRAM_PROJECTNAME environment variable
+  scram: SCRAM_VERSION environment variable
+  config: SCRAM_CONFIGCHKSUM environment variable
+  cxx11_abi: SCRAM_CXX11_ABI environment variable
+.RE
+.RS 3
+Nasted conditions blocks are allowed.
 .RE
 .##############################################################################
 .SS CONTROL FLAGS (via environment)
