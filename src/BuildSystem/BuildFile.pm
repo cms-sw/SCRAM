@@ -26,6 +26,7 @@ sub new()
    ###############################################################
    {
    my $proto=shift;
+   my $flags=shift || undef;
    my $class=ref($proto) || $proto;
    $self={};
    bless $self,$class;
@@ -35,6 +36,14 @@ sub new()
    $self->{scramdoc}->newparse("builder",__PACKAGE__,'Subs',shift);
    $self->{scramdoc}->addfilter("release",$ENV{SCRAM_PROJECTVERSION});
    $self->{scramdoc}->addfilter("compiler",$ENV{DEFAULT_COMPILER});
+   if ((defined $flags) && (exists $flags->{BUILDFILE_CONDITIONS}))
+   {
+     for my $f (@{$flags->{BUILDFILE_CONDITIONS}})
+     {
+       my @d=split(/:/,$f);
+       $self->addfilter($d[0],$ENV{$d[1]});
+     }
+   }
    return $self;
    }
 

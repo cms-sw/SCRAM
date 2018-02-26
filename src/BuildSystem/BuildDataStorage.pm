@@ -234,6 +234,14 @@ sub update()
 	    }
 	 }
       }
+   $self->{TOPLEVEL_FLAGS} = {};
+   if ((exists $self->{BUILDTREE}->{$ENV{SCRAM_SOURCEDIR}}) &&
+       (exists $self->{BUILDTREE}->{$ENV{SCRAM_SOURCEDIR}}->{RAWDATA}) &&
+       (exists $self->{BUILDTREE}->{$ENV{SCRAM_SOURCEDIR}}->{RAWDATA}->{content}) &&
+       (exists $self->{BUILDTREE}->{$ENV{SCRAM_SOURCEDIR}}->{RAWDATA}->{content}->{FLAGS}))
+      {
+      $self->{TOPLEVEL_FLAGS}=$self->{BUILDTREE}->{$ENV{SCRAM_SOURCEDIR}}->{RAWDATA}->{content}->{FLAGS};
+      }
    if ($newdir)
       {
       foreach my $path (keys %{$newdir})
@@ -369,7 +377,7 @@ sub scan()
    my $self=shift;
    my ($buildfile, $datapath) = @_;
    my $bfparse;
-   $bfparse=BuildSystem::BuildFile->new(1);
+   $bfparse=BuildSystem::BuildFile->new($self->{TOPLEVEL_FLAGS},1);
    # Execute the parse:
    if (-e  $buildfile) {$bfparse->parse($buildfile);}
    # See if there were skipped dirs:
@@ -756,6 +764,7 @@ sub save()
    delete $self->{TEMPLATE_ENGINE};
    delete $self->{SCRAM_PROJECTS};
    delete $self->{SCRAM_PROJECT_BASES};
+   delete $self->{TOPLEVEL_FLAGS};
    return $self;
    }
 
