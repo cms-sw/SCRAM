@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_7_pre9: 2018-02-26
+
+	* Support for new filter via project configuration.
+
 V2_2_7_pre8: 2018-02-24
 
 	* New filters for to check for release version, projectname, scram

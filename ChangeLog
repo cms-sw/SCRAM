@@ -1,3 +1,9 @@
+2018-02-26 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
+
+	* BuildSystem/BuildFile.pm: Allow project to add new filters via
+	config/BuildFile.xml by providing
+	<flags BUILDFILE_CONDITIONS="ifcondition:ENV_VARIABLE"/>
+
 2018-02-24 Shahzad Muzaffar  <Shahzad.Muzaffar@cern.ch>
 
 	* ActiveDoc/SimpleDoc.pm: Added ifrelease, ifproject, ifcompiler,
