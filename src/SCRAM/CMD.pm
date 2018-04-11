@@ -860,6 +860,11 @@ sub bootfromrelease() {
 	   }
         my $tc = $scramdb->getProjectModule($projectname);
         if (defined $tc) { $tc->getData($projectversion, $ENV{RELEASETOP}); }
+        if (! exists $ENV{SCRAM_IGNORE_PROJECT_HOOK})
+           {
+           my $proj_hook = $area->location()."/".$area->{configurationdir}."/SCRAM/hooks/project-hook";
+           if (-x $proj_hook){system($proj_hook);}
+           }
         if ( $ENV{'SCRAM_TOOL_HOME'} =~ /^\/afs\/cern\.ch\// )
            {
            print "****************************** WARNING ******************************\n";

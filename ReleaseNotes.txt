@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_7: 2018-04-11
+
+	* SCRAM HOOKS for runtime and project added.
+
 V2_2_7_pre9: 2018-02-26
 
 	* Support for new filter via project configuration.

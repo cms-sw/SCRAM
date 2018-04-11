@@ -11,7 +11,7 @@ sub new()
    $self->{scram}=$scram;
    if(exists $ENV{SCRAM_RTBOURNE_SET}){$self->{recursive}=1;}
    else{$self->{recursive}=0;}
-   $self->{optiona_paths}={};
+   $self->{optional_paths}={};
    $self->init_();
    return $self;
 }
@@ -165,7 +165,7 @@ sub save()
     {
       if ($name=~/^(.+?)_SRTOPT_(.+)$/)
       {
-        if (exists $self->{optiona_paths}{$1}){$opt{$2}{$1}=1;}
+        if (exists $self->{optional_paths}{$1}){$opt{$2}{$1}=1;}
         next;
       }
       my $btype="_SCRAMRT";
@@ -225,8 +225,8 @@ sub save()
 sub optional_env ()
 {
   my $self=shift;
-  $self->{optiona_paths}={};
-  foreach my $t (@_){$self->{optiona_paths}{uc($t)}=1;}
+  $self->{optional_paths}={};
+  foreach my $t (@_){$self->{optional_paths}{uc($t)}=1;}
 }
 
 sub unsetenv()
@@ -357,6 +357,58 @@ sub update_overrides_()
       unshift @{$self->{env}{rtstring}{path}{PATH}}, $override;
     }
   }
+  if (! exists $self->{OENV}{"SCRAM_IGNORE_RUNTIME_HOOK"}){$self->runtime_hooks_();}
+}
+
+sub runtime_hooks_()
+{
+  my $self=shift;
+  my $area = $self->{scram}->localarea();
+  my $hook=$area->location()."/".$area->configurationdir()."/SCRAM/hooks/runtime-hook";
+  if (! -x $hook){return;}
+  my $out=`$hook 2>&1`;
+  foreach my $line (split("\n",$out))
+  {
+    if ($line!~/^runtime:((path:(append|prepend|remove):[a-zA-Z0-9-_]+)|(variable:[a-zA-Z0-9-_]+))=/io){print STDERR "$line\n"; next;}
+    my @vals = split("=",$line,2);
+    my @items = split(":",$vals[0]);
+    my $vtype = lc($items[1]);
+    if ($vtype eq "path")
+    {
+      if(! exists $self->{env}{rtstring}{path}){$self->{env}{rtstring}{path}={};}
+      my $c = $self->{env}{rtstring}{path};
+      $vtype=lc($items[2]);
+      my $evar = $items[3];
+      if (($vtype ne "remove") && (! exists $c->{$evar})){$c->{$evar}=[];}
+      foreach my $d (split(":",$vals[1]))
+      {
+        $d=~s/\s//g;
+        if($d eq ""){next;}
+        if ($vtype eq "append"){push(@{$c->{$evar}},$d);}
+        elsif ($vtype eq "prepend"){unshift @{$c->{$evar}}, $d;}
+        elsif ($vtype eq "remove")
+        {
+          my $npath=[];
+          foreach my $x (@{$c->{$evar}})
+          {
+            if ($x eq $d){next;}
+            push(@$npath,$x);
+          }
+          $c->{$evar}=$npath;
+        }
+      }
+    }
+    elsif ($vtype eq "variable")
+    {
+      if (! exists $self->{env}{rtstring}{variables}){$self->{env}{rtstring}{variables}=[];}
+      my $c = $self->{env}{rtstring}{variables};
+      my $vindex = 0;
+      my $evar = $items[2];
+      if (exists $self->{env}{variables}{$evar}){$vindex = $self->{env}{variables}{$evar};}
+      else{$vindex = scalar(@{$c});}
+      $c->[$vindex]{$evar}=[$vals[1]];
+    }
+  }
 }
    
 sub runtime_ ()
@@ -465,7 +517,7 @@ sub toolenv_ ()
       {
 	if (! exists ($self->{env}{variables}{$trtvar}))
 	{
-	  $self->{env}{variables}{$trtvar} = 1;
+	  $self->{env}{variables}{$trtvar} = $vindex;
 	  $self->{env}{rtstring}{variables}[$vindex++]{$trtvar}=$trtval;
 	}
       }
