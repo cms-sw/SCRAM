@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_8_pre1: 2018-04-12
+	* Use -j<maxcpu> if -j0 or -j without any args are passed to scram
+	build.
+
 V2_2_7: 2018-04-11
 
 	* SCRAM HOOKS for runtime and project added.
