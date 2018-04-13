@@ -363,10 +363,15 @@ sub update_overrides_()
 sub runtime_hooks_()
 {
   my $self=shift;
+  my $debug=0;
+  if (exists $self->{OENV}{SCRAM_HOOKS_DEBUG}){$debug=1;}
   my $area = $self->{scram}->localarea();
   my $hook=$area->location()."/".$area->configurationdir()."/SCRAM/hooks/runtime-hook";
+  if($debug){print STDERR "SCRAM_HOOK: $hook\n";}
   if (! -x $hook){return;}
+  if ($debug){print STDERR "SCRAM_HOOK: Found\n";}
   my $out=`$hook 2>&1`;
+  if ($debug){print STDERR "SCRAN_HOOK: $out";}
   foreach my $line (split("\n",$out))
   {
     if ($line!~/^runtime:((path:(append|prepend|remove):[a-zA-Z0-9-_]+)|(variable:[a-zA-Z0-9-_]+))=/io){print STDERR "$line\n"; next;}
