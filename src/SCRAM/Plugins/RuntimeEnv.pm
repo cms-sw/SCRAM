@@ -491,6 +491,7 @@ sub toolenv_ ()
   my $gmake="";
   my $projTool=0;
   if ($tname eq lc($ENV{SCRAM_PROJECTNAME})){$projTool=1;}
+  if (($tname ne "self") && ($tool->flags("SKIP_TOOL_SYMLINKS") ne "")){$self->{force_tools_env}{$tname}=1;}
   if (defined ($toolrt))
   {
     while (my ($trtvar, $trtval) = each %{$toolrt})

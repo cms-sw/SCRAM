@@ -1,3 +1,8 @@
+2018-05-23 Shahzad Muzaffar  <@smuzaffar>
+
+	* SCRAM/Plugins/RuntimeEnv.pm: Make sure to set env for tools
+	with skip_tool_symlinks flags.
+
 2018-04-12 Shahzad Muzaffar  <@smuzaffar>
 
 	* BuildSystem/MakeInterface.pm: Use max cpu available if -j0, --jobs=0
