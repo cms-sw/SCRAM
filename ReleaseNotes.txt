@@ -1,6 +1,6 @@
 
 			SCRAM Release Notes
-V2_2_8_pre2: 2018-05-23
+V2_2_8_pre3: 2018-05-23
 	* Fix Runtime env for tools with skip tool symlinks.
 
 V2_2_8_pre1: 2018-04-12
