@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_8_pre4: 2018-05-28
+	* Allow to set/remove compilation flags to individual files e.g
+	<flags CXXFLAGS="-Wno-error=format-overflow" file="xyz.cc"/>
+
 V2_2_8_pre3: 2018-05-23
 	* Fix Runtime env for tools with skip tool symlinks.
 

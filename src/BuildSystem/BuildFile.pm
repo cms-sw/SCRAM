@@ -182,8 +182,11 @@ sub flags()
       }
    if (!$self->{scramdoc}->_isvalid()){return;}
    # Extract the flag name and its value:
+   my $file="";
+   if (exists $attributes{'file'}){$file="FILE".$attributes{'file'}."_"; delete $attributes{'file'};}
    my ($flagname,$flagvaluestring) = each %attributes;
    $flagname =~ tr/[a-z]/[A-Z]/; # Keep flag name uppercase
+   $flagname="${file}${flagname}";
    chomp($flagvaluestring);
    my @flagvalues = ( $flagvaluestring );
    # Is current tag within another tag block?

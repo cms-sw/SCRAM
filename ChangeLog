@@ -1,3 +1,8 @@
+2018-05-28 Shahzad Muzaffar  <@smuzaffar>
+
+	* BuildSystem/BuildFile.pm: Allow file="filename" attribute for
+	<flags> tag.
+
 2018-05-23 Shahzad Muzaffar  <@smuzaffar>
 
 	* SCRAM/Plugins/RuntimeEnv.pm: Make sure to set env for tools
