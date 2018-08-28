@@ -808,6 +808,7 @@ sub bootfromrelease() {
 	$self->checkareatype($ENV{RELEASETOP},"Project release area SCRAM version mismatch: current is V1, area is V0. Exiting.");
 	$area = $relarea->satellite($installdir,$installname,$symlinks,$self->localarea());
 	chdir ($area->location());
+        $self->localarea(undef);
 	$self->initx_();
 	# Read the top-level BuildFile and create the required storage dirs. Do
 	# this before setting up self:
