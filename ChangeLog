@@ -1,3 +1,10 @@
+2018-08-28 Shahzad Muzaffar  <@smuzaffar>
+
+	* SCRAM/Plugins/DocParser.pm: Allow '.', '-', '_' chars as Buildfile
+	tag's attibute
+	* SCRAM/CMD.pm: Unset the localarea while creating a new dev area. This
+	is bug fix when one creates dev area with in dev area.
+
 2018-05-28 Shahzad Muzaffar  <@smuzaffar>
 
 	* BuildSystem/BuildFile.pm: Allow file="filename" attribute for

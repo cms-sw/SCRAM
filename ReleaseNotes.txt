@@ -1,5 +1,10 @@
 
 			SCRAM Release Notes
+V2_2_8_pre5: 2018-08-28
+
+	* Allow some special chars for BuildFile tag's attibutes
+	* Bug fix while creating a new dev area within an existing dev area.
+
 V2_2_8_pre4: 2018-05-28
 	* Allow to set/remove compilation flags to individual files e.g
 	<flags CXXFLAGS="-Wno-error=format-overflow" file="xyz.cc"/>
