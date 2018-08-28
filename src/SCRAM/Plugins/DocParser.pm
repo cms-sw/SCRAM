@@ -200,9 +200,9 @@ sub validAttrib_()
   my $self=shift;
   my $k=shift;
   my $res=1;
-  if($k!~/^[a-zA-Z][a-zA-Z0-9_]{2,}$/)
+  if($k!~/^[a-zA-Z][a-zA-Z0-9_.-]{2,}$/)
   {
-    $self->parseError_("Wrong attribute \"$k\". It should start with an alphabet character, should be at least 3 character long and should have only alphanumeric plus \"_\" charachters\n");
+    $self->parseError_("Wrong attribute \"$k\". It should start with an alphabet character, should be at least 3 character long and should have only alphanumeric plus '.', '-', '_' charachters\n");
     $res=0;
   }
   return $res;
