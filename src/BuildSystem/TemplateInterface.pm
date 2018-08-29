@@ -46,7 +46,6 @@ sub new()
 
    # The filehandle for the generated Makefile:
    my $makefile="$ENV{LOCALTOP}/$ENV{SCRAM_INTwork}/Makefile";
-
    if (!-f $makefile)
       {
       if (!-f "$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/SCRAM/GMake/Makefile")
@@ -55,7 +54,7 @@ sub new()
 	 }
       use File::Copy;
       copy("$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/SCRAM/GMake/Makefile",$makefile) or die "Copy failed: $!";
-      utime 0,0,$makefile;
+      utime 1,1,$makefile;
       }
 
    # Init and pass in the template location:

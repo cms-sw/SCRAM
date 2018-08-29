@@ -1,3 +1,9 @@
+2018-08-29 Shahzad Muzaffar  <@smuzaffar>
+
+	* BuildSystem/TemplateInterface.pm: PERL 'utime 0,0' on EOS filesystem
+	sets invalid timestamp
+	https://hypernews.cern.ch/HyperNews/CMS/get/softwareDistrib/758.html
+
 2018-08-28 Shahzad Muzaffar  <@smuzaffar>
 
 	* SCRAM/Plugins/DocParser.pm: Allow '.', '-', '_' chars as Buildfile

@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_8_pre6: 2018-08-29
+
+	* Bug fix for EOS: Fix timestamp issue
+
 V2_2_8_pre5: 2018-08-28
 
 	* Allow some special chars for BuildFile tag's attibutes
