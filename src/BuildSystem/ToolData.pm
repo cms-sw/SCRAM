@@ -371,7 +371,7 @@ sub addreleasetoself()
 	       {
 	       my $x=$rtpath;
 	       $x =~ s/\Q$ENV{LOCALTOP}\E/$ENV{RELEASETOP}/g;
-	       if ($x ne $rtpath){push(@$RELPATHS,$x);}
+	       if (($x ne $rtpath) && (-d $x)){push(@$RELPATHS,$x);}
 	       }
 	    
 	    # Add the new settings:

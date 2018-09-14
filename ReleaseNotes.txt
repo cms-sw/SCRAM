@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_8_pre7: 2018-09-14
+
+	* Do not add release paths which do not exist.
+
 V2_2_8_pre6: 2018-08-29
 
 	* Bug fix for EOS: Fix timestamp issue
