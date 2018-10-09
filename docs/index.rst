@@ -14,7 +14,7 @@ documentation.
 This is some text to see changes.
 
 * **Refering to other document**:
-  :doc:`document <dir1/text1.md>`
+  :doc:`document <dir1/text1>`
 
 .. _user-docs:
 
@@ -23,8 +23,8 @@ This is some text to see changes.
    :hidden:
    :caption: This is example of constructing document tree
 
-   dir1/text1.md
-   README.md
-   Top_level.md
+   dir1/text1
+   README
+   Top_level
 
 .. _dev-docs:
