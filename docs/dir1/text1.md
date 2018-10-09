@@ -15,8 +15,6 @@ def some_function(a,b):
 ```
 
 
-# tex1 - second paragraph
-
 hahahahahahahahaha 
 
 ## tex1 - second paragraph sub paragrahp

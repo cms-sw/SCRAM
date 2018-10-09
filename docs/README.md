@@ -15,7 +15,4 @@ Double click on chart canvas: auto reset zoom to fit everything
 
 bla bla bla bl
 
-
-# Some other section
-
 ## subsection
