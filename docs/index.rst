@@ -16,6 +16,8 @@ This is some text to see changes.
 * **Refering to other document**:
   :doc:`document <dir1/text1.md>`
 
+.. _user-docs:
+
 .. toctree::
    :maxdepth: 3
    :hidden:
@@ -24,3 +26,5 @@ This is some text to see changes.
    dir1/text1.md
    README.md
    Top_level.md
+
+.. _dev-docs:
