@@ -1,7 +1,7 @@
 import sphinx_rtd_theme
 from recommonmark.parser import CommonMarkParser
 
-project = 'Brilview'
+project = 'SCRAM'
 
 html_theme = 'sphinx_rtd_theme'
 
