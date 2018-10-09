@@ -28,3 +28,9 @@ This is some text to see changes.
    Top_level
 
 .. _dev-docs:
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Docs for developers
+
+   deploy
