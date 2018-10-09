@@ -26,6 +26,7 @@ This is some text to see changes.
    dir1/text1
    README
    Top_level
+   deploy
 
 .. _dev-docs:
 
