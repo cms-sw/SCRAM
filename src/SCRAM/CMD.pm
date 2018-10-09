@@ -17,7 +17,6 @@ SCRAM::CMD - Package containing all SCRAM command functions.
 
 =cut
 
-
 package SCRAM::CMD;
 require 5.004;
 use Exporter;
