@@ -1,5 +1,4 @@
-# example nested markdown document
-
+# example from dir1
 
 bla bla bal 
 
