@@ -20,7 +20,6 @@ This is some text to see changes.
 
 .. toctree::
    :maxdepth: 3
-   :hidden:
    :caption: This is example of constructing document tree
 
    dir1/text1
