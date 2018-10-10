@@ -1,10 +1,7 @@
 Introduction page
 =======================================
 
-This an example setup record to test READ THE DOCS infrastructure.
-
-
-**To updated this documentation, follow this tutorial**: :doc:`document <README>`
+This an example setup record to test **READ THE DOCS** infrastructure. To updated this documentation, follow this tutorialq :doc:`document <README>`
 
 
 First steps
