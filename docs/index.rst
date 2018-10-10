@@ -10,17 +10,39 @@ First steps
 This is example layout to check it it is posible to mix .rst and .md files in one
 documentation.
 
-.. _user-docs:
 
 .. toctree::
    :maxdepth: 3
-   :caption: Updating documentation
+   :caption: General info
+
+   general_info
+
+.. toctree::
+   :maxdepth: 3
+   :caption: SCRAM COMMANDS
+
+   SCRAM_COMMANDS/general_info
+
+.. toctree::
+   :maxdepth: 3
+   :caption: SCRAM_FLAGS
+
+   SCRAM_FLAGS/general_info
+
+.. toctree::
+   :maxdepth: 3
+   :caption: SCRAM BUILD FLAGS
+
+   SCRAM_BUILD_FLAGS/general_info
+
+.. toctree::
+   :maxdepth: 3
+   :caption: SCRAM CONTROL FLAGS
+
+   SCRAM_CONTROL_FLAGS/general_info
+
+
+.. toctree::
+   :maxdepth: 3
 
    README
-
-.. toctree::
-   :maxdepth: 3
-   :caption: General help
-
-   scram-man
-
