@@ -14,9 +14,13 @@ documentation.
 
 .. toctree::
    :maxdepth: 3
+   :caption: Updating documentation
+
+   README
+
+.. toctree::
+   :maxdepth: 3
    :caption: General help
 
-   dir1/text1
-   README
-   Top_level
+   scram-man
 

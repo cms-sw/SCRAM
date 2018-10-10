@@ -1,6 +1,6 @@
 # SCRAM documentation
 
-This folder contains source code for SCRAM documentation hosted [Read The docs](http://scram.readthedocs.io).
+[This folder](https://github.com/cms-sw/SCRAM/tree/master/docs) contains source code for SCRAM documentation hosted [Read The docs](http://scram.readthedocs.io).
 
 ## Why Read The docs
 
