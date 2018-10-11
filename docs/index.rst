@@ -19,7 +19,7 @@ documentation.
    :maxdepth: 3
    :caption: SCRAM COMMANDS
    :glob: 
-   
+
    SCRAM_COMMANDS/*
 
 .. toctree::
