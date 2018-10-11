@@ -31,11 +31,17 @@ Just edit documents following Markdown or reStructuredText syntax. If creating n
 To develop documentation locally:
 
 ```bash
-# in the current path
+# in the /docs path
 python -m virtualenv /tmp/_env/rtd
 source /tmp/_env/rtd/bin/activate
 pip install -r requirements.txt
 make html
+
+# to generate MAN page
+# in conf.py edit `man_pages` variable for required result
+make man
+nroff _build/man/scram.1 > man.txt
+
 deactivate # deactivates virtual enviroment
 ```
 
