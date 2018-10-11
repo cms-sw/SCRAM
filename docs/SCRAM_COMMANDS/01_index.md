@@ -1,22 +1,27 @@
 # SCRAM COMMANDS
 
 ## Common Options
-       
+
        All scram commands recognize following options.
 
        -h, --help
           To show the help message for the selected command e.g.
           scram list -h
 
-       COMMANDS
+## COMMANDS
 
-       arch
-          Show  the  current  architecture flag. If this command is run from a
-          SCRAM-based release/developer area then it  shows  the  architecture
-          for   which  that  release  was  created  otherwise  shows  out  the
-          SCRAM_ARCH environment variable value.
+<!--- This will include toctree as it was .rst document -->
 
-       build [options] [gmake-options] [<targets>]
+```eval_rst
+.. toctree::
+   :maxdepth: 3
+   :glob:
+
+   commands/*
+```
+
+### build [options] [gmake-options] [<targets>]
+
           Build the productions (shared libraries,  plugins,  executables  and
           tests) for the current project area.
 
@@ -130,7 +135,8 @@
 
              shows the default flags used by the CXX compilers
 
-       config [<parameter[=value]
+### config [<parameter[=value]
+
           Show/Set site specific parameters.Running it  without  any  argument
           shows all the available parameters and their values for your site.
 
@@ -154,7 +160,8 @@
                 tion should be timed out (min. value  3s).  Default  value  is
                 10s.
 
-       db --show|--link <path>|--unlink <path>
+### db --show|--link <path>|--unlink <path>
+
           Show,  link/add  or  unlink/remove additional SCRAM db. By adding an
           external SCRAM db in your local scram db allows  scram  to  let  you
           create  developers area for projects/releases available in other cms
@@ -173,7 +180,8 @@
              Unlink/Remove an already linked external db <path> from the local
              scram db.
 
-       list [options] [<project_name>] [<version>]
+### list [options] [<project_name>] [<version>]
+
           Show available SCRAM-based projects for the selected SCRAM_ARCH.
 
           OPTIONS
@@ -199,7 +207,8 @@
              Optional: To Show only those  installed  versions  which  contain
              <version>
 
-       project  [options]  <-boot  bootstrap_file>  | <project_name version> |
+### project  [options]  <-boot  bootstrap_file>  | <project_name version> |
+
        <release_path>
           Creates  a  project  developer  area  based  on  a release area or a
           release area using the project definition from the <bootstrap_file>.
@@ -251,7 +260,8 @@
           <release_path>
              Creates a developer area based on <release_path> release area.
 
-       runtime -csh|-sh|-win [--dump <file>]
+### runtime -csh|-sh|-win [--dump <file>]
+
           Shows  the list of shell commands needed to set the runtime environ-
           ment for the release. This command needs to be run from a release or
           developer  area.  You can eval the output of this command to set the
@@ -272,7 +282,8 @@
              Optional: Save the  runtime  environment  in  a  <file>  for  the
              selected shell.
 
-       setup [<toolname>|<toolfile>.xml]
+### setup [<toolname>|<toolfile>.xml]
+
           Setup/add  an  external tool to be used by the project. All selected
           tools        definitions        exists        in        config/tool-
           box/$SCRAM_ARCH/tools/selected  directory  in  your project area. In
@@ -293,32 +304,38 @@
              <toolfile>.xml in to config/toolbox/$SCRAM_ARCH/tools for  future
              use.
 
-       tool
+### tool
+
           This  command  consists of many sub-commands which deals with exter-
           nals tools. This command needs to be run from a release or developer
           area.
 
-       tool list
+### tool list
+
           Shows the list of all selected tools names and their versions.
 
-       tool info <toolname>
+### tool info <toolname>
+
           Shows the current tool definition for tool <toolname>.
 
-       tool remove <toolname>
+### tool remove <toolname>
+
           Makes the tool <toolname> unavailable. SCRAM moves the tools defini-
           tion  file   from   config/toolbox/$SCRAM_ARCH/tools/selected/<tool-
           name>.xml  to  config/toolbox/$SCRAM_ARCH/tools/available directory.
           So if one needs to select this tool again then just run 'scram setup
           <toolname>' command.
 
-       tool tag <toolname> <tag_name>
+### tool tag <toolname> <tag_name>
+
           Shows the value of a variable(tag_name) for the <toolname> e.g.
 
              scram tool tag gcc-cxxcompiler CXX
 
           shows the c++ compiler's path.
 
-       unsetenv -csh|-sh|-win
+### unsetenv -csh|-sh|-win
+
           Shows  the  list of shell commands needed to unset the runtime envi-
           ronment set previously by 'scram runtime command'. You can eval  the
           output of this command to cleanup your previously set scram environ-
@@ -335,7 +352,8 @@
           -win
              Show unset commands for cygwin.
 
-       version
+### version
+
           Show default version of SCRAM. If this command is run from a  SCRAM-
           based release/developer area then it shows the latest available ver-
           sion of SCRAM available for that release.

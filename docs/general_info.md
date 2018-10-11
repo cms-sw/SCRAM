@@ -1,18 +1,18 @@
 # General info
 
 SCRAM  -  A  Software  Configuration, Release and Management tool which
-       supports configuration management and management processes for software
-       development.
+supports configuration management and management processes for software
+development.
 
 ## SYNOPSIS
 
-`scram [options] <COMMANDS> [sub-commands] [command-options]`
+        scram [options] <COMMANDS> [sub-commands] [command-options]
 
 ## DESCRIPTION
 
-       SCRAM  is  a software engineering tool, that supports the configuration
-       management  and  management  processes  for  software  development.  It
-resolves the issues of configuration definition, build, project organization and run-time environment.  It was designed with a focus on  supporting a distributed, multi-project development work-model
+SCRAM  is  a software engineering tool, that supports the configuration
+management  and  management  processes  for  software  development.  It
+resolves the issues of configuration definition, build, project organization and run-time environment.  It was designed with a focus on  supporting a distributed, multi-project development work-model.
 
 ## OPTIONS
 

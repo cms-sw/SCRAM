@@ -3,13 +3,11 @@ Introduction page
 
 This an example setup record to test **READ THE DOCS** infrastructure. To updated this documentation, follow this tutorialq :doc:`document <README>`
 
-
 First steps
 -----------
 
 This is example layout to check it it is posible to mix .rst and .md files in one
 documentation.
-
 
 .. toctree::
    :maxdepth: 3
@@ -20,8 +18,9 @@ documentation.
 .. toctree::
    :maxdepth: 3
    :caption: SCRAM COMMANDS
-
-   SCRAM_COMMANDS/general_info
+   :glob: 
+   
+   SCRAM_COMMANDS/*
 
 .. toctree::
    :maxdepth: 3

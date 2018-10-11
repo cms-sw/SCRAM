@@ -18,6 +18,7 @@
 
 import sphinx_rtd_theme
 from recommonmark.parser import CommonMarkParser
+from recommonmark.transform import AutoStructify
 
 # -- Project information -----------------------------------------------------
 
@@ -182,3 +183,10 @@ epub_exclude_files = ['search.html']
 
 def setup(app):
     app.add_stylesheet('css/styles.css')
+    app.add_config_value('recommonmark_config', {
+        'url_resolver': lambda url: github_doc_root + url,
+        'auto_toc_tree_section': 'Contents',
+        }, True)
+    app.add_transform(AutoStructify) # For aditonal markdown
+
+# more info at https://recommonmark.readthedocs.io/en/latest/auto_structify.html#
