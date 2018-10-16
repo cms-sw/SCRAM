@@ -534,7 +534,7 @@ sub build()
       if ($cacheobject->cachestatus())
          {
 	 use BuildSystem::BuildDataStorage;
-	 $buildstoreobject=BuildSystem::BuildDataStorage->new($configbuildfiledir);
+	 $buildstoreobject=BuildSystem::BuildDataStorage->new($configbuildfiledir, $self->toolmanager());
 	 $buildstoreobject->name($builddatastore);
 	 # Install a handler for SIGINT. This is done here becuase this is the block in which
 	 # the cache will be modified and written back. Anywhere in this process, the cache can

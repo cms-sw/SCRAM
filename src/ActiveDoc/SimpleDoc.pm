@@ -231,6 +231,12 @@ sub checktag()
       }
    }
 
+sub hasfilter()
+   {
+   my ($self,$name)=@_;
+   (exists $self->{support_filters}{$name}) ? return 1 : return 0;
+   }
+
 # -- dummy tag routines
 sub doc()
    {

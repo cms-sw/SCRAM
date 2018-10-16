@@ -1,3 +1,12 @@
+2018-10-16 Shahzad Muzaffar  <@smuzaffar>
+
+	* BuildSystem/BuildFile.pm, BuildSystem/BuildDataStorage.pm: Added
+	iftool filter to check if a tools exists e.g. one can have something
+	like the foolowing to add conditional dependencies based or run tests
+	<iftool name="root" version="6\..+">
+          <test name="root6_tests" command="root6_tests.sh"/>
+        </iftool>
+
 2018-09-14 Shahzad Muzaffar  <@smuzaffar>
 
 	* BuildSystem/ToolData.pm: In dev area, for self package, only add those

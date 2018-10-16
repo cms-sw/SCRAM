@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_8_pre8: 2018-10-16
+
+	* Added new iftool BuildFile tag.
+
 V2_2_8_pre7: 2018-09-14
 
 	* Do not add release paths which do not exist.

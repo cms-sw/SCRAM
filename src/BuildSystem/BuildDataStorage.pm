@@ -28,7 +28,7 @@ sub new()
   {
   my $proto=shift;
   my $class=ref($proto) || $proto;
-  my ($configdir) = @_;
+  my ($configdir,$toolnamager) = @_;
   my $self=
      {
      BUILDTREE => {},                # Path/data pairs;
@@ -40,6 +40,7 @@ sub new()
 
   # The location of the top-level BuildFile:
   $self->{CONFIGDIR} = $configdir;
+  $self->{TOOLMANAGER} = $toolnamager;
 
   # Somewhere to store the dependencies:
   $self->{DEPENDENCIES} = {};  # GLOBAL dependencies
@@ -112,7 +113,7 @@ sub scanbranch()
    my $file = $files->[0];
    return unless -f $file; # Just in case metabf() is empty...
    $bfbranch=BuildSystem::BuildFile->new();
-   $bfbranch->parse($file);
+   $bfbranch->parse($file, $self->{TOOLMANAGER});
    # Store:
    $self->storebranchmetadata($datapath,$bfbranch);
    return $self;
@@ -379,7 +380,7 @@ sub scan()
    my $bfparse;
    $bfparse=BuildSystem::BuildFile->new($self->{TOPLEVEL_FLAGS},1);
    # Execute the parse:
-   if (-e  $buildfile) {$bfparse->parse($buildfile);}
+   if (-e  $buildfile) {$bfparse->parse($buildfile, $self->{TOOLMANAGER});}
    # See if there were skipped dirs:
    my $skipped = $bfparse->skippeddirs($datapath);   
    # Check to see if there was an info array for this location.
@@ -760,6 +761,7 @@ sub save()
    {
    my $self=shift;
    # Delete unwanted stuff:
+   delete $self->{TOOLMANAGER};
    delete $self->{DEPENDENCIES};
    delete $self->{TEMPLATE_ENGINE};
    delete $self->{SCRAM_PROJECTS};

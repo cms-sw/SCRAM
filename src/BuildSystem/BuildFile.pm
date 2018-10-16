@@ -50,14 +50,18 @@ sub new()
 sub parse()
    {
    my $self=shift;
-   my ($filename)=@_;
+   my ($filename, $toolmanager)=@_;
    my $fhead='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><doc type="BuildSystem::BuildFile" version="1.0">';
    my $ftail='</doc>';
    $self->{scramdoc}->filetoparse($filename);
    $self->{filetoparse}=$filename;
+   $self->{toolmanager}=$toolmanager;
+   $self->{iftool_filter}=[];
    $self->{scramdoc}->parse("builder",$fhead,$ftail);
    delete $self->{filetoparse};
    delete $self->{scramdoc};
+   delete $self->{toolmanager};
+   delete $self->{iftool_filter};
    }
 
 sub classpath()
@@ -448,7 +452,6 @@ sub clean()
    delete $self->{id};
    delete $self->{tagcontent};
    delete $self->{nested};
-
    delete $self->{DEPENDENCIES};
    
    map
@@ -457,6 +460,34 @@ sub clean()
       } @tags;
    
    return $self;
+   }
+
+sub iftool()
+   {
+   my ($object,$name,%attributes) = @_;
+   my $toolname=lc($attributes{name});
+   my $tfilter="iftool_${toolname}";
+   if (! $self->{scramdoc}->hasfilter($tfilter))
+      {
+      my $xver="";
+      if ($self->{toolmanager})
+         {
+         my $tdata = $self->{toolmanager}->checkifsetup($toolname);
+         if ($tdata){$xver=$tdata->toolversion();}
+         }
+      $self->{scramdoc}->addfilter($tfilter,$xver);
+      }
+   my $version=".+";
+   if (exists $attributes{version}){$version=$attributes{version};}
+   my %nattib = ('match'=>$version);
+   push @{$self->{iftool_filter}},$tfilter;
+   $self->{scramdoc}->_checkfilter($tfilter,%nattib);
+   }
+
+sub iftool_()
+   {
+   my ($object,$name,%attributes) = @_;
+   $self->{scramdoc}->_endfilter(pop @{$self->{iftool_filter}},%attributes);
    }
 
 sub AUTOLOAD()
