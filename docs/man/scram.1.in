@@ -658,6 +658,8 @@ Valid conditions are
   scram: SCRAM_VERSION environment variable
   config: SCRAM_CONFIGCHKSUM environment variable
   cxx11_abi: SCRAM_CXX11_ABI environment variable
+  tool: To check for a tool (and optionally its version) e.g
+        <iftool name="root" version="6\..="></iftool>
 .RE
 .RS 3
 Nasted conditions blocks are allowed.
