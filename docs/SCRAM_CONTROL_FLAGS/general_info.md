@@ -121,6 +121,9 @@
                scram: SCRAM_VERSION environment variable
                config: SCRAM_CONFIGCHKSUM environment variable
                cxx11_abi: SCRAM_CXX11_ABI environment variable
+               tool: To check for a tool (and optionally its version) e.g
+                     `<iftool name="root" version="6\..="></iftool>`
+
              Nasted conditions blocks are allowed.
 
     CONTROL FLAGS (via environment)
