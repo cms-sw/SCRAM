@@ -51,6 +51,12 @@ sub new()
   }
 
 #### The methods ####
+sub settoolmanager()
+   {
+   my ($self, $tm)=@_;
+   $self->{TOOLMANAGER} = $tm;
+   }
+
 sub datapath()
    {
    my $self=shift;

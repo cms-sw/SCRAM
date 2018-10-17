@@ -553,6 +553,7 @@ sub build()
 	    if (defined $xcache) {$buildstoreobject=$xcache;}
 	    }
 	    # Update- check for changed or removed files. Also need to account for removed directories:
+	 $buildstoreobject->settoolmanager($self->toolmanager());
 	 $buildstoreobject->init_engine(); # Restart the template engine
 	 # Run in update mode:
 	 $buildstoreobject->update($cacheobject);

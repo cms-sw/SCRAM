@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_8_pre9: 2018-10-17
+
+	* Bug fix: Make sure to pass set toolmanager when BuildFiles are updated.
+
 V2_2_8_pre8: 2018-10-16
 
 	* Added new iftool BuildFile tag.

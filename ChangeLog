@@ -1,3 +1,8 @@
+2018-10-17 Shahzad Muzaffar  <@smuzaffar>
+
+	* SCRAM/CMD.pm: M<ake sure to pass tool manager if BuildFiles are
+	updated/changed.
+
 2018-10-16 Shahzad Muzaffar  <@smuzaffar>
 
 	* BuildSystem/BuildFile.pm, BuildSystem/BuildDataStorage.pm: Added
