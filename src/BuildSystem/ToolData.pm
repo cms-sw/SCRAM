@@ -123,6 +123,13 @@ sub flags()
       }
    }
 
+sub getflag()
+   {
+   my ($self, $flag)=@_;
+   if ($flag && (exists $self->{FLAGS}) && (exists $self->{FLAGS}->{$flag})){return @{$self->{FLAGS}->{$flag}};}
+   return [];
+   }
+
 sub updateflags()
    {
    my $self=shift;

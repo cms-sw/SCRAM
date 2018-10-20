@@ -159,7 +159,14 @@ sub update()
    $self->setupself();
    $self->dirty ()
    }
-   
+
+sub gettool()
+   {
+   my ($self,$tool)=@_;
+   if (exists $self->{SETUP}->{$tool}){return $self->{SETUP}->{$tool};}
+   return undef;
+   }
+
 sub storeincache()
    {
    my $self=shift;

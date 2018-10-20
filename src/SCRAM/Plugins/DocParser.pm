@@ -89,6 +89,7 @@ sub process_()
 	my $tname=$tag->{name};
         if (!exists $tag->{close})
         {
+	  if ($tname eq "else"){$self->parseError_("Use '<else/>' instead of '<else></else>'\n",1);return 0;}
 	  eval{$self->handleEvents_($tag,$tname,1);};
 	  push @{$self->{currenttag}},$tag;
 	  if(!$self->process_()){return 0;}

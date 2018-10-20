@@ -1109,15 +1109,18 @@ sub setup()
       
       # Get the tool manager:
       my $toolmanager = $self->toolmanager();
-      
+      my $selfdata = $toolmanager->gettool("self");
+      if ((!$selfdata) || ($tool eq "self"))
+         {
+         $self->create_productstores($self->localarea()->location());
+         $toolmanager->setupself();
+         $selfdata = $toolmanager->gettool("self");
+         }
+      my @flags = $selfdata->getflag('DEFAULT_COMPILER');
+      if (scalar(@flags)>0){$ENV{DEFAULT_COMPILER}=$flags[0];}
       if ($tool)
 	 {
 	 if ($tool ne "self"){$toolmanager->coresetup($tool);}
-	 else
-	    {
-	    $self->create_productstores($self->localarea()->location());
-	    $toolmanager->setupself();
-	    }
 	 }
       else
 	 {

@@ -1,3 +1,12 @@
+2018-10-20 Shahzad Muzaffar  <@smuzaffar>
+
+	* ActiveDoc/SimpleDoc.pm: Added <else/> support for conditional flags e.b
+	<ifarchitecture name="_aarch64_">
+
+        <else/>
+        </ifarchitecture>
+	* CMD.pm: Allow checking for default compiler in tool files too.
+
 2018-10-17 Shahzad Muzaffar  <@smuzaffar>
 
 	* SCRAM/CMD.pm: M<ake sure to pass tool manager if BuildFiles are

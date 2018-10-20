@@ -36,7 +36,9 @@ sub new()
    my $class=shift;
    $self={};
    bless $self, $class;
+   $self->{last_filter}=[];
    $self->addfilter("architecture",$ENV{SCRAM_ARCH});
+   $self->addfilter("ifarchitecture",$ENV{SCRAM_ARCH});
    if (exists $ENV{SCRAM_PROJECTVERSION}){
      $self->addfilter("release",$ENV{SCRAM_PROJECTVERSION});
      $self->addfilter("compiler",$ENV{DEFAULT_COMPILER});
@@ -259,6 +261,7 @@ sub _checkfilter()
    {
    my ($object,$name,%attributes)=@_;
    my $flag=$self->{"${name}_value"};
+   push @{$self->{last_filter}},$name;
    push @{$self->{$name}},$flag;
    my $filter="";
    my $exact=0;
@@ -284,7 +287,17 @@ sub _checkfilter()
 sub _endfilter()
    {
    my ($object,$name,%attributes)=@_;
+   pop @{$self->{last_filter}};
    $self->{"${name}_value"}=pop @{$self->{$name}};
+   }
+
+sub else_() {}
+
+sub else()
+   {
+   my ($object,$name,%attributes)=@_;
+   my $fname=$self->{last_filter}[-1];
+   $self->{"${fname}_value"}=(self->{"${fname}_value"}+1)%2;
    }
 
 sub AUTOLOAD()
