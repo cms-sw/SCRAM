@@ -1,5 +1,10 @@
 
 			SCRAM Release Notes
+V2_2_8: 2018-10-20
+
+	* BuildFile tag <else/> supported for condition flags.
+	Allow checking of default compilers in tool files too.
+ 
 V2_2_8_pre9: 2018-10-17
 
 	* Bug fix: Make sure to pass set toolmanager when BuildFiles are updated.
