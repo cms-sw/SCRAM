@@ -1,3 +1,7 @@
+2018-10-23 Shahzad Muzaffar  <@smuzaffar>
+
+	* SCRAM/CMD.pm: Setup Default_compiler at project setup time.
+
 2018-10-20 Shahzad Muzaffar  <@smuzaffar>
 
 	* ActiveDoc/SimpleDoc.pm: Added <else/> support for conditional flags e.b
@@ -9,7 +13,7 @@
 
 2018-10-17 Shahzad Muzaffar  <@smuzaffar>
 
-	* SCRAM/CMD.pm: M<ake sure to pass tool manager if BuildFiles are
+	* SCRAM/CMD.pm: Make sure to pass tool manager if BuildFiles are
 	updated/changed.
 
 2018-10-16 Shahzad Muzaffar  <@smuzaffar>
