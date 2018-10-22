@@ -912,12 +912,14 @@ sub bootnewproject()
    scramlogmsg("Setting up tools in project area","\n");
    scramlogmsg("------------------------------------------------\n\n");
 
-   $toolmanager->setupalltools();
-
    # Read the top-level BuildFile and create the required storage dirs. Do
    # this before setting up self:
    $self->create_productstores($area->location(),0);
    # Now setup SELF:
+   $toolmanager->setupself();
+
+   $self->_init_self_env($toolmanager,"");
+   $toolmanager->setupalltools();
    $toolmanager->setupself();
 
    # Write the cached info:
@@ -1109,15 +1111,7 @@ sub setup()
       
       # Get the tool manager:
       my $toolmanager = $self->toolmanager();
-      my $selfdata = $toolmanager->gettool("self");
-      if ((!$selfdata) || ($tool eq "self"))
-         {
-         $self->create_productstores($self->localarea()->location());
-         $toolmanager->setupself();
-         $selfdata = $toolmanager->gettool("self");
-         }
-      my @flags = $selfdata->getflag('DEFAULT_COMPILER');
-      if (scalar(@flags)>0){$ENV{DEFAULT_COMPILER}=$flags[0];}
+      $self->_init_self_env($toolmanager, $tool);
       if ($tool)
 	 {
 	 if ($tool ne "self"){$toolmanager->coresetup($tool);}
@@ -1263,6 +1257,20 @@ sub update_external_symlinks_()
       print "Updating symlinks under external/$ENV{SCRAM_ARCH}\n";
       system("cd $ENV{LOCALTOP}; $ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/SCRAM/linkexternal.pl  --arch $ENV{SCRAM_ARCH}");
       }
+   }
+
+sub _init_self_env()
+   {
+   my ($self,$toolmanager,$tool)=@_;
+   my $selfdata = $toolmanager->gettool("self");
+   if ((!$selfdata) || ($tool eq "self"))
+      {
+      $self->create_productstores($self->localarea()->location());
+      $toolmanager->setupself();
+      $selfdata = $toolmanager->gettool("self");
+      }
+   my @flags = $selfdata->getflag('DEFAULT_COMPILER');
+   if (scalar(@flags)>0){$ENV{DEFAULT_COMPILER}=$flags[0];}
    }
 
 #### End of CMD.pm ####
