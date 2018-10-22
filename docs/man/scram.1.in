@@ -637,6 +637,7 @@ To generate an executable/test executable from a <packages>/[plugins|test|bin] d
 .B <test name="<name>" command="<command-to-run>">[dependencies/flags]</test>
 To run the command for the test in <package>/test directory.
 
+.RE
 .TP 3
 .B <if<condition> name|match="[!]<regexp>"/></if<condition>>
 .RE
@@ -647,14 +648,21 @@ OR
 OR
 .RE
 .B <if<condition> name|match|value=="[!]<value>"/>
+.RS 4
 .B   <!-- contents -->
+.RE
 .B <elif name|match|value="[!]<value>"/>
+.RS 4
 .B   <!-- contents -->
+.RE
 .B <else/>
+.RS 4
 .B   <!-- contents -->
+.RE
 .B </if<condition>>
 .RE
 .RS 3
+
 Any flag/dependency within these tags will apply if regexp/value match the
 condition. If first charactor of regexp/value is '!' then flags/dependency
 will apply if regexp/value doe not match.
