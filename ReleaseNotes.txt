@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_9_pre01: 2018-10-23
+
+	* Added <elif .../> BuildFile support
+
 V2_2_9_pre00: 2018-10-23
 
 	* Bug fix: Set Default compiler at project setup time.
