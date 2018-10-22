@@ -291,6 +291,7 @@ sub _endfilter()
    $self->{"${name}_value"}=pop @{$self->{$name}};
    }
 
+sub elif_() {}
 sub else_() {}
 
 sub else()
@@ -298,6 +299,14 @@ sub else()
    my ($object,$name,%attributes)=@_;
    my $fname=$self->{last_filter}[-1];
    $self->{"${fname}_value"}=(self->{"${fname}_value"}+1)%2;
+   }
+
+sub elif()
+   {
+   my ($object,$name,%attributes)=@_;
+   $name = $self->{last_filter}->[-1];
+   $self->_endfilter($name);
+   $self->_checkfilter($name,%attributes);
    }
 
 sub AUTOLOAD()

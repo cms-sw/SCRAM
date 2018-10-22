@@ -638,11 +638,21 @@ To generate an executable/test executable from a <packages>/[plugins|test|bin] d
 To run the command for the test in <package>/test directory.
 
 .TP 3
-.B <<condition> name="[!]<regexp>"/></<condition>>
-.RE
 .B <if<condition> name|match="[!]<regexp>"/></if<condition>>
 .RE
+OR
+.RE
 .B <if<condition> value="[!]<value>"/></if<condition>>
+.RE
+OR
+.RE
+.B <if<condition> name|match|value=="[!]<value>"/>
+.B   <!-- contents -->
+.B <elif name|match|value="[!]<value>"/>
+.B   <!-- contents -->
+.B <else/>
+.B   <!-- contents -->
+.B </if<condition>>
 .RE
 .RS 3
 Any flag/dependency within these tags will apply if regexp/value match the
@@ -660,6 +670,7 @@ Valid conditions are
   cxx11_abi: SCRAM_CXX11_ABI environment variable
   tool: To check for a tool (and optionally its version) e.g
         <iftool name="root" version="6\..="></iftool>
+
 .RE
 .RS 3
 Nasted conditions blocks are allowed.

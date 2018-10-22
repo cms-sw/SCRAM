@@ -106,9 +106,17 @@
        cies/flags]</test>
           To run the command for the test in <package>/test directory.
 
-       <<condition> name="[!]<regexp>"/></<condition>>
        <if<condition> name|match="[!]<regexp>"/></if<condition>>
+       OR
        <if<condition> value="[!]<value>"/></if<condition>>
+       OR
+       <if<condition> name|match|value=="[!]<value>"/>
+         <!-- contents -->
+       <elif name|match|value="[!]<value>"/>
+         <!-- contents -->
+       <else/>
+         <!-- contents -->
+       </if<condition>>
           Any  flag/dependency  within  these  tags will apply if regexp/value
           match the condition. If first charactor of regexp/value is '!'  then
           flags/dependency will apply if regexp/value doe not match.
