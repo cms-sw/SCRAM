@@ -298,7 +298,7 @@ sub else()
    {
    my ($object,$name,%attributes)=@_;
    my $fname=$self->{last_filter}[-1];
-   $self->{"${fname}_value"}=(self->{"${fname}_value"}+1)%2;
+   $self->{"${fname}_value"}=($self->{"${fname}_value"}+1)%2;
    }
 
 sub elif()

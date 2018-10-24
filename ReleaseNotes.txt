@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_9_pre02: 2018-10-24
+
+	* Bug fix: fix for <else/> tag.
+
 V2_2_9_pre01: 2018-10-23
 
 	* Added <elif .../> BuildFile support
