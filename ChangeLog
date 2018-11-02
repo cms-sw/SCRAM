@@ -1,3 +1,8 @@
+2018-11-02: Shahzad Muzaffar  <@smuzaffar>
+
+	* BuildSystem/ToolManager.pm: Make sure Self.xml file exists before reading it.
+	In case of ProjectRename this file could be missing.
+
 2018-10-24 Shahzad Muzaffar  <@smuzaffar>
 
 	* ActiveDoc/SimpleDoc.pm: Typo: fix for <else/> tag.
