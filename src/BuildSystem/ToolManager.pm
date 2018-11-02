@@ -36,7 +36,9 @@ sub initpathvars()
    if (!exists $self->{internal}{path_variables})
       {
       my %pathvars=("PATH", 1, "LD_LIBRARY_PATH", 1, "DYLD_LIBRARY_PATH", 1, "DYLD_FALLBACK_LIBRARY_PATH", 1, "PYTHONPATH", 1);
-      my $p = $self->_parsetool($self->{configdir}."/Self.xml");
+      my $self_file = $self->{configdir}."/Self.xml";
+      if (! -e $self_file) {return ;}
+      my $p = $self->_parsetool($self_file);
       if ((exists $p->{content}) && (exists $p->{content}{CLIENT}) && (exists $p->{content}{CLIENT}{FLAGS}))
          {
          if (exists $p->{content}{CLIENT}{FLAGS}{REM_PATH_VARIABLES})
