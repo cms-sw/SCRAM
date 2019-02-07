@@ -9,8 +9,9 @@ package = "SCRAM"
 project = "SCRAM"
 project_no_spaces = project.replace(' ', '')
 version = '1'
-description = "SCRAM - A Software Configuration, Release and Management tool which supports " \
-              "configuration management and management processes for software development."
+description = "SCRAM - A Software Configuration, Release and Management " \
+              "tool which supports configuration management and management " \
+              "processes for software development. "
 authors = ['CERN CMS']
 authors_string = ', '.join(authors)
 emails = ['zygimantas.matonis@cern.ch']

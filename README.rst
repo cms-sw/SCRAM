@@ -151,7 +151,7 @@ and does an additional test run to ensure documentation generation works flawles
 You can customize the list of supported and thus tested Python versions in the ``tox.ini`` file.
 
 Pip ``requirements[-dev].txt`` files vs. Setuptools ``install_requires`` Keyword
-------------------------------------------------------------------
+------------------------------------------------------------------------------------
 
 The difference in use case between these two mechanisms can be very confusing. The `pip requirements files`_ is the conventionally-named ``requirements.txt`` that sits in the root directory of many repositories, including this one. The `Setuptools install_requires keyword`_ is the list of dependencies declared in ``setup.py`` that is automatically installed by ``pip`` or ``easy_install`` when a package is installed. They have similar but distinct purposes:
 
@@ -194,7 +194,7 @@ The template also uses a number of other pieces of software, whose licenses are 
 |Project                 |License                           |
 +========================+==================================+
 |Python itself           |Python Software Foundation License|
-+------------------------+----------------------------------+
++------------------------+---------------------------------+
 |argparse (now in stdlib)|Python Software Foundation License|
 +------------------------+----------------------------------+
 |Sphinx                  |Simplified BSD License            |

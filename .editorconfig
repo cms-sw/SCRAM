@@ -8,6 +8,7 @@ root = true
 # defaults
 [*]
 insert_final_newline = true     
+max_line_length = 79
 
 # 4 space indentation
 [*.{ini,py,py.tpl,rst}]
