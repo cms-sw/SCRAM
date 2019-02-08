@@ -20,7 +20,7 @@ MarkupSafe==0.18
 Pygments==1.6
 
 # Miscellaneous
-Paver==1.2.1
-colorama==0.2.7
+Paver
+colorama
 tox
 tox-travis
