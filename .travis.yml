@@ -6,4 +6,4 @@ python:
   - "3.4"
   - "3.6"
 install: pip install -r requirements-dev.txt
-script: tox
+script: paver test_all
