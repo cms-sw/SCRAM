@@ -6,6 +6,7 @@ from pytest import raises
 #     from pytest.mark import parametrize
 #
 import pytest
+import sys
 parametrize = pytest.mark.parametrize
 
 from SCRAM import metadata
@@ -32,7 +33,9 @@ class TestMain(object):
         with raises(SystemExit) as exc_info:
             main(['progname', versionarg])
         out, err = capsys.readouterr()
+        # bug in capturing output between python versions
+        rezults = err if sys.version_info < (3, 0) else out
         # Should print out version.
-        assert err == '{0} {1}\n'.format(metadata.project, metadata.version)
+        assert rezults == '{0} {1}\n'.format(metadata.project, metadata.version)
         # Should exit with zero return code.
         assert exc_info.value.code == 0
