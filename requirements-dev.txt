@@ -22,5 +22,5 @@ Pygments==1.6
 # Miscellaneous
 Paver==1.2.1
 colorama==0.2.7
-tox==3.7.0
-tox-travis==0.11
+tox
+tox-travis
