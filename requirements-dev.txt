@@ -2,9 +2,9 @@
 --requirement requirements.txt
 
 # Testing
-pytest==
-py==
-mock==
+pytest
+py
+mock
 
 # Linting
 flake8==2.1.0
@@ -20,5 +20,6 @@ MarkupSafe==0.18
 Pygments==1.6
 
 # Miscellaneous
-Paver==
-colorama==
+Paver
+colorama
+
