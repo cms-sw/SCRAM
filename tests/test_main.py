@@ -34,8 +34,8 @@ class TestMain(object):
             main(['progname', versionarg])
         out, err = capsys.readouterr()
         # bug in capturing output between python versions
-        rezults = err if sys.version_info < (3, 0) else out
+        rez = err if sys.version_info < (3, 0) else out
         # Should print out version.
-        assert rezults == '{0} {1}\n'.format(metadata.project, metadata.version)
+        assert rez == '{0} {1}\n'.format(metadata.project, metadata.version)
         # Should exit with zero return code.
         assert exc_info.value.code == 0
