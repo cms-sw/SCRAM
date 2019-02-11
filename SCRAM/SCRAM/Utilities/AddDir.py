@@ -1,5 +1,5 @@
 import shutil
-from os import path, makedirs
+from os import makedirs, walk, path
 
 
 def fixpath(malformed_path):
@@ -18,7 +18,7 @@ def adddir(path_to_dir):
 def copydir(src, dst):
     """
     :param src:
-    :param dst: destination directory. It
+    :param dst: destination directory. It shouldn't exists.
     :return:
     """
     shutil.copytree(src, dst, symlinks=True, ignore=None)
@@ -28,6 +28,14 @@ def copyfile(src, dst):
     shutil.copy2(src, dst)
 
 
-def getfilelist():
-    # TODO
-    return
+def getfilelist(dir_path):
+    """
+    Returns list of files in relative path from directory.
+    :param dir_path: Directory path.
+    :return:
+    """
+    rez_list = []
+    for root, dirs, files in walk(dir_path, topdown=False):
+        for name in files:
+            rez_list.append(path.join(root.replace(dir_path, ""), name))
+    return rez_list
