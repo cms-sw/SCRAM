@@ -4,8 +4,8 @@ from os import environ
 from os.path import dirname, abspath, join
 from inspect import getmembers, isfunction
 
-SCRAM_VERSION  = '@SCRAM_VERSION@'
-SCRAM_BASEPATH = '@CMS_PATH@'
+SCRAM_VERSION  = 'V3_0_0'
+SCRAM_BASEPATH = '/cvmfs/cms.cern.ch'
 path.insert(0, join(dirname(dirname(abspath(argv[0]))), "lib"))
 FORCED_ARCH = ""
 
