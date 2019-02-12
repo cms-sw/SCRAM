@@ -187,6 +187,8 @@ sub getarea ()
         chmod(filename, 644)
         return
 
+
+    # FIXME mutable default parameter {}
     def _initDB(self, scramdb=None, cache={}):
         local = False
         localdb = environ['SCRAM_LOOKUPDB'];
@@ -235,6 +237,7 @@ sub getarea ()
                 if localdb: self.LocalLinks.append(line)
         return
 
+    # FIXME mutable default parameter {}
     def _findProjects(self, project='.+', version='.+', exact_match=False,
                       arch=None, valid=False, xdata={}):
         if not arch: arch = environ['SCRAM_ARCH']
