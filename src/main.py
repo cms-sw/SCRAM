@@ -6,7 +6,7 @@ from __future__ import print_function
 
 import argparse
 import sys
-from SCRAM import metadata
+from src import metadata
 import xml.etree.ElementTree as ET
 
 

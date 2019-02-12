@@ -5,7 +5,7 @@ supports configuration management and management processes for software
 development.
 """
 
-from SCRAM import metadata
+from src import metadata
 
 __version__ = metadata.version
 __author__ = metadata.authors[0]

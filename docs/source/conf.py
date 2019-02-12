@@ -22,7 +22,7 @@ import sys
 sys.path.insert(0, os.path.abspath('../..'))
 
 # Import project metadata
-from SCRAM import metadata
+from src import metadata
 
 # -- General configuration ----------------------------------------------------
 

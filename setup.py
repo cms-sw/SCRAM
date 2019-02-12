@@ -266,11 +266,11 @@ setup_dict = dict(
     zip_safe=False,  # don't use eggs
     entry_points={
         'console_scripts': [
-            'SCRAM_cli = SCRAM.main:entry_point'
+            'SCRAM_cli = src.main:entry_point'
         ],
         # if you have a gui, use this
         # 'gui_scripts': [
-        #     'SCRAM_gui = SCRAM.gui:entry_point'
+        #     'SCRAM_gui = src.gui:entry_point'
         # ]
     }
 )

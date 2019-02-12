@@ -9,8 +9,8 @@ import pytest
 import sys
 parametrize = pytest.mark.parametrize
 
-from SCRAM import metadata
-from SCRAM.main import main
+from src import metadata
+from src.main import main
 
 
 class TestMain(object):
