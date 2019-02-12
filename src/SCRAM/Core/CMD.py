@@ -1,5 +1,9 @@
 import sys, os
-from subprocess import run
+try:
+  from subprocess import run as run_cmd
+except:
+  from subprocess import call as run_cmd
+
 from __main__ import SCRAM_VERSION, SCRAM_BASEPATH
 
 
@@ -9,7 +13,7 @@ def cmd_version(args):
 
 
 def cmd_help(args):
-    run(['man', 'scram'])
+    run_cmd(['man','scram'])
     return True;
 
 
@@ -49,7 +53,9 @@ def cmd_db(args):
 
 
 def cmd_project(args):
-    spawnversion()
+    from SCRAM.Core.ProjectDB import ProjectDB
+    d =ProjectDB()
+    d.getarea('CMSSW', 'CMSSW_10_5_0_pre1')
     return True
 
 

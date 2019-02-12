@@ -3,8 +3,7 @@ from os.path import join, exists, isdir, basename, dirname
 from sys import stderr, exit
 from subprocess import getstatusoutput as cmd
 from glob import glob
-from ..Utilities.AddDir import adddir, copydir, copyfile
-
+from SCRAM.Utilities.AddDir import adddir, copydir, copyfile
 
 def adddir(dir):
     cmd("mkdir -p %s" % dir)
