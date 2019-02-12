@@ -7,6 +7,7 @@ from inspect import getmembers, isfunction
 SCRAM_VERSION  = '@SCRAM_VERSION@'
 SCRAM_BASEPATH = '@CMS_PATH@'
 path.insert(0, join(dirname(dirname(abspath(argv[0]))), "lib"))
+FORCED_ARCH = ""
 
 #Parse common arguments
 def parse_args():
@@ -40,7 +41,10 @@ def parse_args():
     opts, args = parser.parse_known_args()
     if not args: args.append('help')
     if opts.help: args[0]='help'
-    if opts.arch: environ ['SCRAM_ARCH'] = opts.arch
+    if opts.arch:
+        environ ['SCRAM_ARCH'] = opts.arch
+        global FORCED_ARCH
+        FORCED_ARCH = opts.arch
     return (opts, args)
 
 def usage(commands):
@@ -71,7 +75,7 @@ def initialize_scram():
 
 #Run scram command
 def execcommand(args):
-    import scram_commands
+    import SCRAM.Core.CMD as scram_commands
     commands = [ cmd[0][4:] for cmd in getmembers(scram_commands, isfunction)
                  if cmd[0].startswith('cmd_')]
     cmd = args.pop(0)

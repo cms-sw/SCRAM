@@ -7,8 +7,9 @@ from os.path import exists, join, abspath, isdir, getmtime, basename
 from os import environ, chmod
 from re import compile
 from sys import stderr
-from ..Utilities.AddDir import adddir
-
+from time import localtime
+from SCRAM.Utilities.AddDir import adddir
+from SCRAM.Configuration.ConfigArea import ConfigArea
 
 class ProjectDB(object):
     def __init__(self):
@@ -22,70 +23,46 @@ class ProjectDB(object):
         self.project_module = None
         self._initDB()
 
-    to_rename = """
-sub getarea ()
-{
-  my $self=shift;
-  my $name=shift;
-  my $version=shift;
-  my $force=shift;
-  my $arch = $ENV{SCRAM_ARCH};
-  my $data = $self->_findProjects($name,$version,1,$arch);
-  my $selarch=undef;
-  delete $self->{deprecated};
-  if ((exists $data->{$arch}) && (scalar(@{$data->{$arch}}) == 1)) { 
-  $selarch=$arch;}
-  elsif ($main::FORCE_SCRAM_ARCH eq "")
-  {
-    $data = $self->updatearchs($name,$version,{$arch});
-    my @archs = keys %{$data};
-    if (scalar(@archs)==1){$selarch=$archs[0];}
-    elsif((scalar(@archs)>1) && (!$force)){$selarch=$self->productionArch(
-    $name,$version,$data->{$archs[0]}[0][2]);}
-  }
-  my $area=undef;
-  if ((defined $selarch) and (exists $data->{$selarch}))
-  {
-    if (!$force)
-    {
-      my $tc = $self->getProjectModule($name);
-      if (defined $tc)
-      {
-        $self->{deprecated}=int($tc->getDeprecatedDate($version,$selarch,
-        $data->{$selarch}[0][2]));
-        my $dep=$self->{deprecated};
-        if ($dep>0)
-        {
-          my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = 
-          localtime();
-          $mon+=1;
-          $year+=1900;
-          if ($mon<10){$mon="0${mon}";}
-          if ($mday<10){$mday="0${mday}";}
-          if (($dep-int("${year}${mon}${mday}"))<=0){$self->{deprecated}=0;}
-          else
-          {
-            $dep=~/^(\d\d\d\d)(\d\d)(\d\d)$/o;
-            print STDERR "WARNING: Release $version will be deprecated on ${
-            3}/${2}/${1}.\n",
-                         "         It is better to use a newer version.\n";
-          }
-        }
-        if ($self->{deprecated}==0)
-        {
-          print STDERR "ERROR: Project \"$name\" version \"$version\" has 
-          been deprecated.\n",
-                       "       Please use a different non-deprecated 
-                       release.\n";
-          return $area;
-        }
-      }
-    }
-    $area=$self->getAreaObject($data->{$selarch}[0], $selarch);
-  }
-  return $area;
-}
-"""
+    def getarea(self, name, version, force=False):
+        arch = environ['SCRAM_ARCH']
+        data = self._findProjects(name,version,True,arch)
+        selarch = None
+        if (arch in data) and (len(data[arch])==1): selarch = arch
+        elif FORCED_ARCH == "":
+            data = self.updatearchs(name, version, [arch])
+            archs = list(data)
+            if len(archs)==1:
+                selarch=archs[0]
+            elif (len(archs)>1) and (not force):
+                selarch = self.productionArch(name, version, data[archs[0]][0][2])
+        area = None
+        self.deprecated=False
+        if selarch and (selarch in data):
+            if not force:
+                project_module = self.getProjectModule(name)
+                if project_module:
+                    dep_date = project_module.getDeprecatedDate(version, selarch, data[selarch][0][2])
+                    dep_int = int(dep_date)
+                    if dep_int==0:
+                        self.deprecated=True
+                    elif dep_int > 0:
+                        (year, mon, mday, hour, min, src, wday, yday, isdst) = localtime()
+                        if mon<10:mon="0%s" % mon
+                        if mday<10:mday="0%s" % mday
+                        if int('%s%s%s' % (year,mon,mday))<dep_int:
+                            self.deprecated=True
+                        else:
+                            dep_date = '%s/%s/%s' % (dep_date[6:8], dep_date[4:6], dep_date[0:4])
+                            err = "WARNING: Release $version will be deprecated on %s.\n" % dep_date
+                            err+= "         It is better to use a newer version."
+                            print(err, file=stderr)
+                    if self.deprecated:
+                        err  = "ERROR: Project \"%s\" version \"%s\" has been deprecated.\n" % (name, version)
+                        err += "       Please use a different non-deprecated release."
+                        print(err, file=stderr)
+                        return area
+            area = self.getAreaObject(data[selarch][0], selarch)
+        return area
 
     def productionArch(self, project, version, release):
         rel_id = '%s:%s' % (project, version)
@@ -107,8 +84,11 @@ sub getarea ()
     def getProjectModule(self, project):
         if self.project_module is not None: return self.project_module
         self.project_module = False
-        if eval('import SCRAM.Plugins.%s as ProjectModule' % project.upper()):
-            self.project_module = ProjectModule()
+        try:
+            if eval('import SCRAM.Plugins.%s as ProjectModule' % project.upper()):
+                self.project_module = ProjectModule()
+        except:
+            pass
         return self.project_module
 
     def listlinks(self):
@@ -158,15 +138,13 @@ sub getarea ()
         return True
 
     def getAreaObject(self, data, arch):
-        # FIXME:
-        area = Configuration.ConfigArea(arch)
+        area = ConfigArea(arch)
         loc = data[2]
         if not area.bootstrapfromlocation(loc):
             area = None
             err = "ERROR: Attempt to ressurect %s %s from $loc " \
-                  "unsuccessful\n" \
-                  % (data[0], data[1])
-            err += "ERROR: %s does not look like a valid release area for " \
+                  "unsuccessful\n" % (data[0], data[1])
+            err += "ERROR: %s does not look like a valid release area for" \
                    "SCRAM_ARCH %s." % (loc, arch)
             print(err, file=stderr)
         elif data[3]:
@@ -242,8 +220,8 @@ sub getarea ()
         uniq = {}
         if not arch in self.archs: return xdata;
         xdata[arch] = []
-        projRE = re.compile('^%s$' % project)
-        verRE = re.compile(version)
+        projRE = compile('^%s$' % project)
+        verRE  = compile(version)
         for base in self.DBS['order']:
             for p in self.DBS['uniq'][base]:
                 if not projRE.match(p): continue
