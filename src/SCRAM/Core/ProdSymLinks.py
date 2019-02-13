@@ -1,10 +1,12 @@
-from os import environ
-import re
-from os.path import dirname
+from os import environ, unlink, makedirs, symlink
+from os.path import dirname, exists, isdir
+import re, tempfile
+
 """
 This class is supposed to make symlinks from your home directory (ex. /afs) to
 a faster directory ( local /tmp). 
 """
+regex = re.compile('^(.*)\$\((.+?)\)(.*)$')
 
 
 class ProdSymLinks():
@@ -26,13 +28,10 @@ class ProdSymLinks():
                 line = line.strip()
                 if not line or line.startswith("#"):
                     continue
-                print(line)
                 link, path, _ = line.split(":", 2)
                 link = dirname(link)
-                regex = re.compile("^(.*)\$\((.+?)\)(.*)$")
                 m = regex.match(link)
                 while m:
-                    print(m.groups())
                     link = m.group(1) + environ[m.group(2)] + m.group(3)
                     m = regex.match(link)
                 self.symlinks[link] = path
@@ -40,26 +39,20 @@ class ProdSymLinks():
         return
 
     def mklink(self, store):
-        permissions = 755
         link = store
-        """
-        my $link=$store;
-        $link=~s/^(.*?)\/.*$/$1/;
-        use File::Path;
-        if (!-e "$ENV{LOCALTOP}/${link}")
-        {
-            unlink "$ENV{LOCALTOP}/${link}";
-            if (exists $self->{symlinks}{$link})
-            {
-                my $path=$self->{symlinks}{$link};
-                while($path=~/^(.*)\$\((.+?)\)(.*)$/){$path="$1$ENV{$2}$3";}
-                mkpath($path,0,$prems);
-                $path = File::Temp::tempdir ( "${link}.XXXXXXXX", DIR => $path);
-                if (($path ne "") && (-d $path))
-                {symlink($path,"$ENV{LOCALTOP}/${link}");}
-            }
-        }
-        mkpath("$ENV{LOCALTOP}/${store}",0,$prems);
-        """
-
-        return  # TODO
+        link = dirname(link)
+        path_to_check = "{0}/{1}".format(environ("LOCALTOP"), link)
+        if not exists(path_to_check):
+            unlink(path_to_check)
+            if link in self.symlinks:
+                path = self.symlinks[link]
+                m = regex.match(path)
+                while m:
+                    path = m.group(1) + environ[m.group(2)] + m.group(3)
+                    m = regex.match(path)
+                makedirs(path, 755)
+                path = tempfile.mkdtemp(prefix=link + '.', dir=path)
+                if path and isdir(path):
+                    sym_link = "{0}/{1}".format(environ("LOCALTOP"), link)
+                    symlink(path, sym_link)
+        return
