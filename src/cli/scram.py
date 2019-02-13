@@ -4,10 +4,8 @@ from os import environ
 from os.path import dirname, abspath, join
 from inspect import getmembers, isfunction
 
-SCRAM_VERSION  = 'V3_0_0'
-SCRAM_BASEPATH = '/cvmfs/cms.cern.ch'
-path.insert(0, join(dirname(dirname(abspath(argv[0]))), "lib"))
-FORCED_ARCH = ""
+path.insert(0, dirname(dirname(abspath(argv[0]))))
+import SCRAM
 
 #Parse common arguments
 def parse_args():
@@ -43,8 +41,7 @@ def parse_args():
     if opts.help: args[0]='help'
     if opts.arch:
         environ ['SCRAM_ARCH'] = opts.arch
-        global FORCED_ARCH
-        FORCED_ARCH = opts.arch
+        SCRAM.FORCED_ARCH = opts.arch
     return (opts, args)
 
 def usage(commands):
@@ -60,18 +57,18 @@ def usage(commands):
 
 #Initialize SCRAM env
 def initialize_scram():
-    SCRAM_DBPATH             = SCRAM_BASEPATH
-    SCRAM_DBPATH_WRITE       = SCRAM_BASEPATH
-    environ['SCRAM_VERSION'] = SCRAM_VERSION
+    dbpath          = SCRAM.BASEPATH
+    dbpath_rw       = SCRAM.BASEPATH
+    environ['SCRAM_VERSION'] = SCRAM.VERSION
     if not 'SCRAM_LOOKUPDB' in environ:
         if 'SCRAM_USERLOOKUPDB' in environ:
-            SCRAM_DBPATH = environ['SCRAM_USERLOOKUPDB']
-            SCRAM_DBPATH_WRITE = SCRAM_DBPATH
-        environ['SCRAM_LOOKUPDB'] = SCRAM_DBPATH
+            dbpath = environ['SCRAM_USERLOOKUPDB']
+            dbpath_rw = dbpath
+        environ['SCRAM_LOOKUPDB'] = dbpath
     if not 'SCRAM_LOOKUPDB_WRITE' in environ:
        if 'SCRAM_USERLOOKUPDB' in environ:
-           SCRAM_DBPATH_WRITE = environ['SCRAM_USERLOOKUPDB']
-       environ['SCRAM_LOOKUPDB_WRITE'] = SCRAM_DBPATH_WRITE
+           dbpath_rw = environ['SCRAM_USERLOOKUPDB']
+       environ['SCRAM_LOOKUPDB_WRITE'] = dbpath_rw
 
 #Run scram command
 def execcommand(args):

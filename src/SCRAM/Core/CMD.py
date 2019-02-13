@@ -3,12 +3,11 @@ try:
   from subprocess import run as run_cmd
 except:
   from subprocess import call as run_cmd
-
-from __main__ import SCRAM_VERSION, SCRAM_BASEPATH
+import SCRAM
 
 
 def cmd_version(args):
-    print("%s" % SCRAM_VERSION)
+    print("%s" % SCRAM.VERSION)
     return True
 
 

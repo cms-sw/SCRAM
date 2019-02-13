@@ -1,6 +1,5 @@
 import re
 
-from __main__ import FORCED_ARCH  # FIXME
 from socket import getfqdn
 from glob import glob
 from os.path import exists, join, abspath, isdir, getmtime, basename
@@ -8,6 +7,7 @@ from os import environ, chmod
 from re import compile
 from sys import stderr
 from time import localtime
+from SCRAM import FORCED_ARCH
 from SCRAM.Utilities.AddDir import adddir
 from SCRAM.Configuration.ConfigArea import ConfigArea
 
