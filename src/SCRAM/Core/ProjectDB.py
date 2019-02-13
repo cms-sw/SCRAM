@@ -11,53 +11,55 @@ from SCRAM import FORCED_ARCH
 from SCRAM.Utilities.AddDir import adddir
 from SCRAM.Configuration.ConfigArea import ConfigArea
 
+
 class ProjectDB(object):
     def __init__(self):
         self.scramrc = 'etc/scramrc'
         self.linkfile = 'links.db'
         self.archs = {}
         self.listcache = {}
-        self.projects = {};
-        self.domain = getfqdn().split('.', 1)[1];
-        self.prodarch = {};
+        self.projects = {}
+        self.domain = getfqdn().split('.', 1)[1]
+        self.prodarch = {}
         self.project_module = None
         self._initDB()
 
     def getarea(self, name, version, force=False):
         arch = environ['SCRAM_ARCH']
-        data = self._findProjects(name,version,True,arch)
+        data = self._findProjects(name, version, True, arch)
         selarch = None
-        if (arch in data) and (len(data[arch])==1): selarch = arch
+        if (arch in data) and (len(data[arch]) == 1):
+            selarch = arch
         elif FORCED_ARCH == "":
             data = self.updatearchs(name, version, [arch])
             archs = list(data)
-            if len(archs)==1:
-                selarch=archs[0]
-            elif (len(archs)>1) and (not force):
+            if len(archs) == 1:
+                selarch = archs[0]
+            elif (len(archs) > 1) and (not force):
                 selarch = self.productionArch(name, version, data[archs[0]][0][2])
         area = None
-        self.deprecated=False
+        self.deprecated = False
         if selarch and (selarch in data):
             if not force:
                 project_module = self.getProjectModule(name)
                 if project_module:
                     dep_date = project_module.getDeprecatedDate(version, selarch, data[selarch][0][2])
                     dep_int = int(dep_date)
-                    if dep_int==0:
-                        self.deprecated=True
+                    if dep_int == 0:
+                        self.deprecated = True
                     elif dep_int > 0:
                         (year, mon, mday, hour, min, src, wday, yday, isdst) = localtime()
-                        if mon<10:mon="0%s" % mon
-                        if mday<10:mday="0%s" % mday
-                        if int('%s%s%s' % (year,mon,mday))<dep_int:
-                            self.deprecated=True
+                        if mon < 10: mon = "0%s" % mon
+                        if mday < 10: mday = "0%s" % mday
+                        if int('%s%s%s' % (year, mon, mday)) < dep_int:
+                            self.deprecated = True
                         else:
                             dep_date = '%s/%s/%s' % (dep_date[6:8], dep_date[4:6], dep_date[0:4])
                             err = "WARNING: Release $version will be deprecated on %s.\n" % dep_date
-                            err+= "         It is better to use a newer version."
+                            err += "         It is better to use a newer version."
                             print(err, file=stderr)
                     if self.deprecated:
-                        err  = "ERROR: Project \"%s\" version \"%s\" has been deprecated.\n" % (name, version)
+                        err = "ERROR: Project \"%s\" version \"%s\" has been deprecated.\n" % (name, version)
                         err += "       Please use a different non-deprecated release."
                         print(err, file=stderr)
                         return area
@@ -158,18 +160,18 @@ class ProjectDB(object):
     def _save(self):
         filename = join(environ['SCRAM_LOOKUPDB_WRITE'], self.scramrc)
         adddir(filename)
-        filename = self._getLinkDBFile(filename);
+        filename = self._getLinkDBFile(filename)
         with open(filename, 'w') as ref:
             for db in self.LocalLinks:
                 if db: ref.write(db + "\n")
         chmod(filename, 644)
         return
 
-
-    # FIXME mutable default parameter {}
-    def _initDB(self, scramdb=None, cache={}):
+    def _initDB(self, scramdb=None, cache=None):
+        if cache is None:
+            cache = {}
         local = False
-        localdb = environ['SCRAM_LOOKUPDB'];
+        localdb = environ['SCRAM_LOOKUPDB']
         if not scramdb:
             scramdb = localdb
             self.DBS = {'order': [], 'uniq': {}}
@@ -189,7 +191,7 @@ class ProjectDB(object):
                     proj = proj.upper()
                     self.projects[proj] = 1
                     if not proj in self.DBS['uniq'][scramdb]:
-                    self.DBS['uniq'][scramdb][proj] = {}
+                        self.DBS['uniq'][scramdb][proj] = {}
                     self.DBS['uniq'][scramdb][proj][value] = 1
 
         if not local:
@@ -215,16 +217,17 @@ class ProjectDB(object):
                 if localdb: self.LocalLinks.append(line)
         return
 
-    # FIXME mutable default parameter {}
     def _findProjects(self, project='.+', version='.+', exact_match=False,
-                      arch=None, valid=False, xdata={}):
+                      arch=None, valid=False, xdata=None):
+        if xdata is None:
+            xdata = {}
         if not arch: arch = environ['SCRAM_ARCH']
         data = {}
         uniq = {}
-        if not arch in self.archs: return xdata;
+        if not arch in self.archs: return xdata
         xdata[arch] = []
         projRE = compile('^%s$' % project)
-        verRE  = compile(version)
+        verRE = compile(version)
         for base in self.DBS['order']:
             for p in self.DBS['uniq'][base]:
                 if not projRE.match(p): continue
