@@ -14,11 +14,11 @@ def fixpath(malformed_path):
 
 def adddir(path_to_dir):
     try:
-        makedirs(fixpath(path_to_dir), 755)
+        makedirs(fixpath(path_to_dir), 0o755)
     except IOError as e:
 
         logging.error("ERROR: failed to create directory directory {0}"
-               .format(path_to_dir) + str(e))
+                      .format(path_to_dir) + str(e))
         sys.exit(1)
 
 
@@ -32,7 +32,7 @@ def copydir(src, dst):
         shutil.copytree(src, dst, symlinks=True, ignore=None)
     except IOError as e:
         logging.error("ERROR: failed to copy directory from {0} to {1}. "
-               .format(src, dst) + str(e))
+                      .format(src, dst) + str(e))
         sys.exit(1)
 
 
@@ -41,7 +41,7 @@ def copyfile(src, dst):
         shutil.copy2(src, dst)
     except IOError as e:
         logging.error("ERROR: failed to copy file from {0} to {1}. "
-               .format(src, dst) + str(e))
+                      .format(src, dst) + str(e))
         sys.exit(1)
 
 
