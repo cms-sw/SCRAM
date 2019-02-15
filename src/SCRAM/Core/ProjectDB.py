@@ -20,6 +20,7 @@ class ProjectDB(object):
         self.domain = getfqdn().split('.', 1)[1]
         self.prodarch = {}
         self.project_module = None
+        self.deprecated = False
         self._initDB()
 
     def getarea(self, name, version, force=False):
