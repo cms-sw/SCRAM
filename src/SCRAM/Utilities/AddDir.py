@@ -14,7 +14,8 @@ def fixpath(malformed_path):
 
 
 def adddir(path_to_dir):
-    if exists(path_to_dir): return
+    if exists(path_to_dir):
+        return
     try:
         makedirs(fixpath(path_to_dir), 0o755)
     except IOError as e:
