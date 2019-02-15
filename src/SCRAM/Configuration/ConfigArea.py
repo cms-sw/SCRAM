@@ -163,11 +163,12 @@ class ConfigArea(object):
             copydir(relconf, devconf)
         else:
             adddir(join(devconf, 'toolbox'))
-            copydir(join(relconf, 'toolbox', self.arch()), join(devconf,
-                                                                'toolbox'))
+            copydir(join(relconf, 'toolbox', self.arch()),
+                    join(devconf, 'toolbox', self.arch()))
         adddir(join(sat.location(), sat.sourcedir()))
         copyfile(self.toolcachename(), sat.archdir())
-        copydir(join(self.archdir(), 'timestamps'), sat.archdir())
+        copydir(join(self.archdir(), 'timestamps'),
+                join(sat.archdir(), 'timestamps'))
         envfile = join(sat.archdir(), 'Environment')
         with open(envfile, 'w') as ref:
             ref.write('RELEASETOP=%s\n' % relloc)
@@ -195,6 +196,10 @@ class ConfigArea(object):
 
     def save(self):
         self._SaveEnvFile()
+
+    def scram_version(self):
+        with open(join(self.config(), 'scram_version')) as ref:
+            return ref.readline().strip()
 
     # ---- support routines
     def _setAreaArch(self):
