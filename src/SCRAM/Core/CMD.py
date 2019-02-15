@@ -258,7 +258,7 @@ def cmd_tool(args):
     area.checklocal()
     if not args or args[0].lower() not in ['list', 'info', 'tag', 'remove']:
         SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
-    return eval('tool_%s' % args[0].lower())(args[1:], area)
+    return eval('tool_%s' % args[0].lower())(args[1:], area.localarea())
 
 
 def tool_list(args, area):
@@ -267,7 +267,7 @@ def tool_list(args, area):
     if not tools:
         SCRAM.scramerror(">>>> No tools set up for current arch or area! <<<<")
 
-    msg = "Tool list for location %s" % area.localarea().location()
+    msg = "Tool list for location %s" % area.location()
     msglen = len(msg)
     msg += "\n%s\n" % ("+" * len(msg))
     SCRAM.printmsg("\n%s" % msg)
@@ -286,7 +286,7 @@ def tool_info(args, area):
     tool = toolmanager.gettool(toolname)
     if not tool:
         SCRAM.scramerror(">>>> Tool %s is not setup for this project area. <<<<" % toolname)
-    msg = "Tool info as configured in location %s" % area.localarea().location()
+    msg = "Tool info as configured in location %s" % area.location()
     msglen = len(msg)
     msg += "\n%s\n" % ("+" * len(msg))
     msg += "Name : %s\n" % toolname
@@ -313,4 +313,17 @@ def tool_tag(args, area):
     msg = ToolFile.get_feature(tool, tag)
     if msg:
         SCRAM.printmsg(msg)
+    return True
+
+
+def tool_remove(args, area):
+    if len(args) < 1:
+        SCRAM.scramfatal("No tool name given: see \"scram tool -help\" for usage info.")
+
+    toolname = args[0].lower()
+    toolmanager = ToolManager(area)
+    if not toolmanager.hastool(toolname):
+        SCRAM.errormsg(">>>> Tool %s is not defined for this project area. <<<<" % toolname)
+    SCRAM.printmsg("Removing tool %s from current project area configuration." % toolname)
+    toolmanager.remove_tool(toolname)
     return True

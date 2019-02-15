@@ -187,6 +187,12 @@ class ConfigArea(object):
     def arch(self):
         return self._arch
 
+    def toolbox(self):
+        return join(self.location(), self.configurationdir(), 'toolbox', self.arch(), 'tools')
+
+    def config(self):
+        return join(self.location(), self.configurationdir())
+
     def save(self):
         self._SaveEnvFile()
 

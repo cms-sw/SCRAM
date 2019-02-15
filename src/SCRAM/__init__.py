@@ -35,12 +35,12 @@ def scramfatal(msg):
     exit(1)
 
 
-def printrror(msg):
+def printerror(msg):
     print(msg, file=stderr)
 
 
 def printmsg(msg):
-    print(msg)
+    print(msg, file=stdout)
 
 
 def msg(data):
@@ -61,3 +61,17 @@ def fatal(data):
 
 def info(data):
     return "info: %s" % data
+
+
+def run_command(command, debug=False, fail_on_error=False):
+    try:
+        from subprocess import run as run_command
+    except:
+        from subprocess import call as run_command
+    err, out = run_cmd(command)
+    if err and fail_on_error:
+        printerror(out)
+        exit(1)
+    if debug:
+        printmsg(out)
+    return err, out
