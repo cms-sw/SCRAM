@@ -10,17 +10,28 @@ except:
 import SCRAM
 from SCRAM.Configuration.ConfigArea import ConfigArea
 from SCRAM.Core.ProjectDB import ProjectDB
+from SCRAM.BuildSystem.ToolManager import ToolManager
+from SCRAM.BuildSystem.ToolFile import summarize_tool
 
 
 class Core(object):
     def __init__(self):
         self._localarea = None
+        self.initialize()
         return
 
     def localarea(self, area=None):
         if area is not None:
             self._localarea = area
         return self._localarea
+
+    def islocal(self):
+        return self._localarea
+
+    def checklocal(self):
+        if not self.islocal():
+            SCRAM.scramfatal("Unable to locate the top of local release. "
+                             "Please run this command from a SCRAM-based area.")
 
     def initialize(self):
         if self.localarea() is not None:
@@ -81,7 +92,6 @@ def cmd_help(args):
 
 def cmd_arch(args):
     c = Core()
-    c.initialize()
     print("%s" % environ['SCRAM_ARCH'])
     return True
 
@@ -244,5 +254,47 @@ def cmd_setup(args):
 
 
 def cmd_tool(args):
-    spawnversion()
+    area = Core()
+    area.checklocal()
+    if not args or args[0].lower() not in ['list', 'info', 'tag', 'remove']:
+        SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
+    return eval('tool_%s' % args[0].lower())(args[1:], area)
+
+
+def tool_list(args, area):
+    toolmanager = ToolManager(area)
+    tools = toolmanager.toolsdata()
+    if not tools:
+        SCRAM.scramerror(">>>> No tools set up for current arch or area! <<<<")
+
+    msg = "Tool list for location %s" % area.localarea().location()
+    msglen = len(msg)
+    msg += "\n%s\n" % ("+" * len(msg))
+    SCRAM.printmsg("\n%s" % msg)
+    for tool in sorted(tools):
+        SCRAM.printmsg(" {:40s} {:20s}".format(tool, tools[tool]['TOOLVERSION']))
+    SCRAM.printmsg("")
+    return True
+
+
+def tool_info(args, area):
+    if not args:
+        SCRAM.scramfatal("No tool name given: see \"scram tool -help\" for usage info.")
+
+    toolmanager = ToolManager(area)
+    toolname = args[0].lower()
+    tool = toolmanager.gettool(toolname)
+    if not tool:
+        SCRAM.scramerror(">>>> Tool %s is not setup for this project area. <<<<" % toolname)
+    msg = "Tool info as configured in location %s" % area.localarea().location()
+    msglen = len(msg)
+    msg += "\n%s\n" % ("+" * len(msg))
+    msg += "Name : %s\n" % toolname
+    msg += "Version : %s\n" % tool['TOOLVERSION']
+    msg += "%s\n" % ("+" * 20)
+    SCRAM.printmsg(msg)
+    tooldata = summarize_tool(tool)
+    for tag in sorted(tooldata):
+        SCRAM.printmsg('%s=%s' % (tag, tooldata[tag]))
+    SCRAM.printmsg("")
     return True

@@ -152,3 +152,33 @@ class ToolFile(object):
             if not self._update_contents(child):
                 return False
         return True
+
+
+def summarize_tool(tool):
+    data = {}
+    if 'SCRAM_PROJECT' in tool:
+        data['SCRAM_PROJECT'] = 'yes'
+    if 'SCRAM_COMPILER' in tool:
+        data['SCRAM_COMPILER'] = 'yes'
+    if 'VARIABLES' in tool:
+        for var in tool['VARIABLES']:
+            if isinstance(tool[var], str):
+                data[var] = tool[var]
+            else:
+                data[var] = ' '.join(tool[var])
+    if 'MAKEFILE' in tool:
+        data[''] = ' '.join(tool['MAKEFILE'])
+    if 'FLAGS' in tool:
+        for flag in tool['FLAGS']:
+            data[flag] = ' '.join(tool['FLAGS'][flag])
+    for extra in ['LIB', 'LIBDIR', 'INCLUDE', 'USE']:
+        if extra not in tool:
+            continue
+        data[extra] = ' '.join(tool[extra])
+    if 'RUNTIME' in tool:
+        for var in tool['RUNTIME']:
+            vname = var
+            if ':' in var:
+                vtype, vname = var.split(':', 1)
+            data[vname] = ':'.join(tool['RUNTIME'][var])
+    return data

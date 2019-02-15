@@ -30,8 +30,8 @@ def scramerror(msg):
     exit(1)
 
 
-def scramfatel(msg):
-    print("SCRAM %s" % fatel(msg), file=stderr)
+def scramfatal(msg):
+    print("SCRAM %s" % fatal(msg), file=stderr)
     exit(1)
 
 
@@ -55,8 +55,8 @@ def error(data):
     return "error: %s" % data
 
 
-def fatel(data):
-    return "fatel: %s" % data
+def fatal(data):
+    return "fatal: %s" % data
 
 
 def info(data):
