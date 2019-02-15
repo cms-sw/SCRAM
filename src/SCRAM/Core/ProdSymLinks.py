@@ -5,7 +5,7 @@ import tempfile
 
 """
 This class is supposed to make symlinks from your home directory (ex. /afs) to
-a faster directory ( local /tmp). 
+a faster directory ( local /tmp).
 """
 regex = re.compile('^(.*)\$\((.+?)\)(.*)$')
 

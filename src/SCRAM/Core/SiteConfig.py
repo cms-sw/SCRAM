@@ -18,17 +18,20 @@ class SiteConfig(object):
         self.site['release-checks-timeout']['help'] = "Time in seconds after which " \
                                                       "a request to get release information should be timed out " \
                                                       "(min. value 3s)."
-        self.readSiteConfig();
+        self.readSiteConfig()
         return
 
     def readSiteConfig(self):
         conf = join(environ['SCRAM_LOOKUPDB'], self.siteconf)
-        if not exists(conf): return
+        if not exists(conf):
+            return
         with open(conf, 'r') as ref:
             for line in [l.strip('\n').strip() for l in ref.readlines() if '=' in l]:
-                if line.startswith('#'): continue
+                if line.startswith('#'):
+                    continue
                 data = [x.strip() for x in line.split('=', 1)]
-                if not data[0] in self.site: self.site[data[0]] = {}
+                if not data[0] in self.site:
+                    self.site[data[0]] = {}
                 self.site[data[0]]['value'] = data[1]
         return
 
@@ -48,26 +51,28 @@ class SiteConfig(object):
         return True
 
     def get(self, key):
-        if (not key in self.site) or (not 'valid_values' in self.site[key]):
-            print("ERROR: Unknown site configuration parameter '%s'. " \
+        if (key not in self.site) or ('valid_values' not in self.site[key]):
+            print("ERROR: Unknown site configuration parameter '%s'. "
                   "Known parameters are" % key, file=stderr)
             for key in self.site:
-                if 'valid_values' not in self.site[key]: continue
+                if 'valid_values' not in self.site[key]:
+                    continue
                 print("  * %s" % key, file=stderr)
             return None
         return self.site[key]['value']
 
     def set(self, key, value):
         cvalue = self.get(key)
-        if cvalue is None: return False
+        if cvalue is None:
+            return False
         valid_value = self.site[key]['valid_values']
-        print(valid_value)
         if not match('^%s$' % valid_value, value):
-            print("ERROR: Invalid value '%s' provided. Valid value for %s " \
+            print("ERROR: Invalid value '%s' provided. Valid value for %s "
                   "should match '%s'" % (value, key, valid_value), file=stderr)
             return False
         print('%s=%s' % (key, value))
-        if cvalue == value: return True
+        if cvalue == value:
+            return True
         self.site[key]['value'] = value
         conf = join(environ['SCRAM_LOOKUPDB'], self.siteconf)
         with open(conf, 'w') as ref:
