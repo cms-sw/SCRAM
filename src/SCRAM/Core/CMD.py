@@ -65,7 +65,7 @@ class Core(object):
         ver_exp = m.group(1)
         rel_series = m.group(2)
         db = ProjectDB()
-        res = db.listall(area.name(), ver_exp+'.+')
+        res = db.listall(area.name(), ver_exp + '.+')
         if not res or (arch not in res):
             return
         rels = [item[1] for item in res[arch] if item[1] != version]
@@ -97,16 +97,14 @@ def cmd_arch(args):
 
 
 def remote_versioncheck(area):
-    sversion =area.scram_version()
+    sversion = area.scram_version()
     if not sversion:
         SCRAM.scramerror("Unable to determine SCRAM version used to config. remote area.")
     spawnversion(sversion)
 
 
 def spawnversion(newversion='V2_99_99'):
-    curversion = SCRAM.VERSION.split("_",1)[0]
-    reqversion = newversion.split("_",1)[0]
-    if SCRAM.VERSION.split("_",1)[0] != newversion.split("_",1)[0]:
+    if SCRAM.VERSION.split("_", 1)[0] != newversion.split("_", 1)[0]:
         environ['SCRAM_VERSION'] = newversion
         execv(SCRAM.BASEPATH + "/common/scram", argv)
 
@@ -298,7 +296,7 @@ def cmd_project(args):
         return bootnewproject(opts, args)
     project = args[0]
     version = args[1] if len(args) > 1 else None
-    releasePath =None
+    releasePath = None
     if version is None:
         if isdir(project) and project.startswith('/'):
             area = ConfigArea(SCRAM.FORCED_ARCH)
@@ -307,11 +305,11 @@ def cmd_project(args):
                 SCRAM.scramerror("Not a valid scram-based release area: %s" % project)
             project = basename(releasePath)
         version = project
-        project = project.split('_',1)[0]
+        project = project.split('_', 1)[0]
     return project_bootfromrelease(project.upper(), version, releasePath, opts)
 
 
-def project_bootfromrelease (project, version, releasePath, opts):
+def project_bootfromrelease(project, version, releasePath, opts):
     installdir = opts.install_base_dir if opts.install_base_dir else getcwd()
     installname = opts.install_name if opts.install_name else version
     relarea = None
@@ -320,7 +318,7 @@ def project_bootfromrelease (project, version, releasePath, opts):
     db = ProjectDB()
     relarea = None
     if releasePath:
-        relarea = db.getAreaObject ([project, version, releasePath, None], SCRAM.FORCED_ARCH)
+        relarea = db.getAreaObject([project, version, releasePath, None], SCRAM.FORCED_ARCH)
     else:
         relarea = db.getarea(project, version, force=SCRAM.COMMANDS_OPTS)
     xarch = environ['SCRAM_ARCH']
@@ -344,22 +342,22 @@ def project_bootfromrelease (project, version, releasePath, opts):
         SCRAM.printerror("WARNING: There already exists %s/%s area for SCRAM_ARCH %s." %
                          (installdir, installname, arch))
         return True
-    
-    #Re-run if different SCRAM version is needed to bootstrap the area.
-    #remote_versioncheck(relarea)
- 
+
+    # Re-run if different SCRAM version is needed to bootstrap the area.
+    remote_versioncheck(relarea)
+
     SCRAM.printmsg("Creating a developer area based on project %s version %s"
                    % (project, version), SCRAM.INTERACTIVE)
     environ['RELEASETOP'] = relarea.location()
     locarea = Core()
     symlink = 1 if opts.symlinks else 0
     area = relarea.satellite(installdir, installname, symlink, locarea.localarea())
-    chdir (area.location())
+    chdir(area.location())
     locarea = Core()
     return True
 
 
-def project_bootnewproject (opts, args):
+def project_bootnewproject(opts, args):
     return True
 
 
