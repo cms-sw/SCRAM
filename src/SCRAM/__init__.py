@@ -15,6 +15,7 @@ if stdin.isatty() and stdout.isatty():
 VERSION = 'V3_0_0'
 FORCED_ARCH = ""
 BASEPATH = '/cvmfs/cms.cern.ch'
+COMMANDS_OPTS = None
 
 
 def scramwinfo(msg):
@@ -39,8 +40,9 @@ def printerror(msg):
     print(msg, file=stderr)
 
 
-def printmsg(msg):
-    print(msg, file=stdout)
+def printmsg(msg, if_interactive=True):
+    if if_interactive:
+        print(msg, file=stdout)
 
 
 def msg(data):
