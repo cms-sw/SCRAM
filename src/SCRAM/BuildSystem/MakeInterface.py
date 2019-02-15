@@ -3,6 +3,7 @@ import re
 from multiprocessing import cpu_count
 from os import environ, unlink
 from subprocess import getstatusoutput as run_cmd
+import logging
 
 regex_j = re.compile('^(-j|--jobs=)([0-9]*)$')
 regex_number = re.compile('^[0-9]+$')
@@ -10,7 +11,7 @@ regex_0_or_none = re.compile('^(0+|)$')
 
 
 # TODO proper way to pas command line arguments
-class MakeInterface():
+class MakeInterface:
 
     def __init__(self):
         self.GMAKECMD = '${SCRAM_GMAKE_PATH}gmake'
@@ -47,7 +48,8 @@ class MakeInterface():
         errfile = environ["SCRAM_INTwork"] + "/build_error"
         try:
             unlink(errfile)
-        except:
+        except Exception as e:
+            logging.warning("nothing to unlink " + str(e))
             pass  # nothing to unlink
         print(
             "({makecmd} && [ ! -e {errfile} ]) || (err=$?; echo gmake: \\*\\*\\* [There are compilation/build "

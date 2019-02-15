@@ -3,7 +3,7 @@
 from sys import stdin, stdout, stderr, exit
 import logging
 FORMAT = '%(levelname)s - %(funcName)s - %(lineno)d: %(message)s'
-logging.basicConfig(format=FORMAT)
+logging.basicConfig(format=FORMAT, level=logging.INFO)
 
 # TODO to change logging config on runtime ( like by passing params from
 # command line, do `logging.getLogger().setLevel(logging.DEBUG)`
