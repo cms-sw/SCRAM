@@ -1,5 +1,5 @@
 from os import environ, getcwd, execv
-from os.path import exists, join
+from os.path import exists, join, isdir
 from sys import stderr, argv
 from re import match
 from argparse import ArgumentParser
@@ -9,6 +9,7 @@ except:
     from subprocess import call as run_cmd
 import SCRAM
 from SCRAM.Configuration.ConfigArea import ConfigArea
+from SCRAM.Core.ProjectDB import ProjectDB
 
 
 class Core(object):
@@ -52,7 +53,6 @@ class Core(object):
             return
         ver_exp = m.group(1)
         rel_series = m.group(2)
-        from SCRAM.Core.ProjectDB import ProjectDB
         db = ProjectDB()
         res = db.listall(area.name(), ver_exp+'.+')
         if not res or (arch not in res):
@@ -88,7 +88,7 @@ def cmd_arch(args):
 
 def spawnversion(newversion='V2_99_99'):
     environ['SCRAM_VERSION'] = newversion
-    execv(SCRAM_BASEPATH + "/common/scram", argv)
+    execv(SCRAM.BASEPATH + "/common/scram", argv)
 
 
 def cmd_unsetenv(args):
@@ -114,7 +114,6 @@ def cmd_list(args):
                         default=False,
                         help='Show only valid projects.')
     opts, args = parser.parse_known_args(args)
-    from SCRAM.Core.ProjectDB import ProjectDB
     db = ProjectDB()
     project = args[0] if len(args) > 0 else ''
     version = args[1] if len(args) > 1 else ''
@@ -163,14 +162,62 @@ def cmd_config(args):
 
 
 def cmd_db(args):
-    spawnversion()
+    parser = ArgumentParser(add_help=False)
+    parser.add_argument('-s', '--show',
+                        dest='show',
+                        action='store_true',
+                        default=False,
+                        help='Show all the external databases linked in to your SCRAM db')
+    parser.add_argument('-l', '--link',
+                        dest='link',
+                        type=str,
+                        default=None,
+                        help='Link/Add an external scram db <path> in to local scram db.')
+    parser.add_argument('-u', '--unlink',
+                        dest='unlink',
+                        type=str,
+                        default=None,
+                        help='Unlink/Remove an already linked external db <path> from the local scram db.')
+    opts, args = parser.parse_known_args(args)
+    db = ProjectDB()
+    if opts.link:
+        environ['SCRAM_LOOKUPDB'] = environ['SCRAM_LOOKUPDB_WRITE']
+        if isdir(opts.link):
+            if not db.link(opts.link):
+                SCRAM.scramerror("Can not link to SCRAM-DB. No such directory: %s" % opts.link)
+            else:
+                SCRAM.printmsg("Current SCRAM database: %s" % environ['SCRAM_LOOKUPDB'])
+                SCRAM.printmsg("Linked \"%s\" to current SCRAM database." % opts.link)
+    elif opts.unlink:
+        environ['SCRAM_LOOKUPDB'] = environ['SCRAM_LOOKUPDB_WRITE']
+        if db.unlink(opts.unlink):
+            SCRAM.printmsg("Current SCRAM database: %s" % environ['SCRAM_LOOKUPDB'])
+            SCRAM.printmsg("Unlinked \"%s\" from current SCRAM database." % opts.unlink)
+    else:
+        SCRAM.printmsg("Current SCRAM database: %s" % environ['SCRAM_LOOKUPDB'])
+        links = db.listlinks()
+        flag = False
+        for db_type in ["local", "linked"]:
+            if db_type not in links or not links[db_type]:
+                continue
+            flag = True
+            msg = "The following SCRAM databases are linked "
+            if 'local' == db_type:
+                msg += "directly:"
+            else:
+                msg += "in-directly:"
+            SCRAM.printmsg(msg)
+            for extdb in links[db_type]:
+                SCRAM.printmsg("\t%s" % extdb)
+            SCRAM.printmsg("")
+        if not flag:
+            SCRAM.printmsg("There are no SCRAM databases linked.")
     return True
 
 
 def cmd_project(args):
-    from SCRAM.Core.ProjectDB import ProjectDB
-    d = ProjectDB()
-    d.getarea('CMSSW', 'CMSSW_10_5_0_pre1')
+    db = ProjectDB()
+    db.getarea('CMSSW', 'CMSSW_10_5_0_pre1')
     return True
 
 

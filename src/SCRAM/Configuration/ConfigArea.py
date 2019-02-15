@@ -217,7 +217,7 @@ class ConfigArea(object):
             ref.write('SCRAM_SOURCEDIR=%s\n' % self.sourcedir())
             ref.write('SCRAM_SYMLINKS=%s\n' % self.symlinks())
             ref.write('SCRAM_CONFIGCHKSUM=%s\n' % self.configchksum())
-        chmod(envfile, 644)
+        chmod(envfile, 0o644)
         return
 
     def _readEnvFile(self, envfile):

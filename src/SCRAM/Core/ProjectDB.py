@@ -177,7 +177,7 @@ class ProjectDB(object):
             for db in self.LocalLinks:
                 if db:
                     ref.write(db + "\n")
-        chmod(filename, 644)
+        chmod(filename, 0o644)
         return
 
     def _initDB(self, scramdb=None, cache=None):
@@ -233,7 +233,7 @@ class ProjectDB(object):
                     continue
                 uniq[line] = 1
                 self._initDB(line, cache)
-                if localdb:
+                if local:
                     self.LocalLinks.append(line)
         return
 
