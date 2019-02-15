@@ -5,17 +5,6 @@ from subprocess import getstatusoutput as cmd
 from glob import glob
 from SCRAM.Utilities.AddDir import adddir, copydir, copyfile
 
-def adddir(dir):
-    cmd("mkdir -p %s" % dir)
-
-
-def copydir(src, dest):
-    cmd('cp -Rpf %s %s ' % (src, dest))
-
-
-def copyfile(src, dest):
-    cmd("cp -pf $src $dest");
-
 
 class ConfigArea(object):
     def __init__(self, forcearch=""):
@@ -31,7 +20,8 @@ class ConfigArea(object):
         self._version = None
         self._archdir = None
         self._archs = None
-        if not forcearch: forcearch = environ['SCRAM_ARCH']
+        if not forcearch:
+            forcearch = environ['SCRAM_ARCH']
         self._arch = forcearch
 
     def toolcachename(self):
@@ -41,7 +31,8 @@ class ConfigArea(object):
         return join(self.archdir(), 'ProjectCache.db.gz')
 
     def symlinks(self, links=-1):
-        if links >= 0: self._symlinks = links
+        if links >= 0:
+            self._symlinks = links
         return self._symlinks
 
     def calchksum(self):
@@ -52,23 +43,28 @@ class ConfigArea(object):
         return ''
 
     def configchksum(self, chsum=None):
-        if chsum: self._configchksum = chsum
+        if chsum:
+            self._configchksum = chsum
         return self._configchksum
 
     def name(self, name=None):
-        if name: self._name = name
+        if name:
+            self._name = name
         return self._name
 
     def version(self, version=None):
-        if version: self._version = version
+        if version:
+            self._version = version
         return self._version
 
     def setup(self, location, areaname=None, symlink=False, localarea=None):
-        if (not areaname): areaname = self.version()
+        if (not areaname):
+            areaname = self.version()
         self.location
 
     def setup(self, location, areaname=None, symlink=0, locarea=None):
-        if not areaname: areaname = self.version()
+        if not areaname:
+            areaname = self.version()
         self.location(join(location, areaname))
         self.symlinks(symlink)
         if self.configchksum():
@@ -90,25 +86,31 @@ class ConfigArea(object):
         return
 
     def configurationdir(self, dir=None):
-        if dir: self._configurationdir = dir
+        if dir:
+            self._configurationdir = dir
         return self._configurationdir
 
     def sourcedir(self, dir=None):
-        if dir: self._sourcedir = dir
+        if dir:
+            self._sourcedir = dir
         return self._sourcedir
 
     def releasetop(self, dir=None):
-        if dir: self._releasetop = dir
+        if dir:
+            self._releasetop = dir
         return self._releasetop
 
     def admindir(self, dir=None):
-        if dir: self._admindir = dir
+        if dir:
+            self._admindir = dir
         return self._admindir
 
-    def bootstrapfromlocation(self, location):
-        location = self.searchlocation(location)
-        if not location: return False
-        self.location(location)
+    def bootstrapfromlocation(self, location=None):
+        if location is not None or self._location is None:
+            location = self.searchlocation(location)
+            if not location:
+                return False
+            self.location(location)
         self._LoadEnvFile()
         return True
 
@@ -117,28 +119,32 @@ class ConfigArea(object):
             self._location = dir
             self._archs = None
             self._setAreaArch()
-        elif not self._location:
+        elif self._location is None:
             self._location = self.searchlocation()
-            if self._location: self._setAreaArch()
+            if self._location:
+                self._setAreaArch()
         return self._location
 
     def searchlocation(self, thispath=None):
-        if not thispath: thispath = getcwd()
+        if not thispath:
+            thispath = getcwd()
         while thispath and (thispath != '/') and (thispath != '.'):
             admindir = join(thispath, self.admindir())
-            if isdir(admindir): return thispath
+            if isdir(admindir):
+                return thispath
             thispath = dirname(thispath)
-        return None
+        return ''
 
     def archname(self, arch=None):
         if arch:
             self._arch = arch
-            if self._location: self.archdir(
-                join(self._location, self._admindir, self._arch))
+            if self._location:
+                self.archdir(join(self._location, self._admindir, self._arch))
         return self._arch
 
     def archdir(self, dir=None):
-        if dir: self._archdir = dir
+        if dir:
+            self._archdir = dir
         return self._archdir
 
     def satellite(self, location, areaname=None, symlink=0, locarea=None):
@@ -169,11 +175,13 @@ class ConfigArea(object):
         ref = open(chkarch, 'w')
         ref.close()
         envfile = join(sat.location(), sat.admindir(), 'Environment')
-        if not exists(envfile): sat.save()
+        if not exists(envfile):
+            sat.save()
         return sat
 
     def copyenv(self, env):
-        for e in self.ENV: env[e] = self.ENV[e]
+        for e in self.ENV:
+            env[e] = self.ENV[e]
         return
 
     def arch(self):
@@ -193,9 +201,10 @@ class ConfigArea(object):
                     if isdir(join(arch, 'tools')):
                         arch = basename(arch)
                         self._archs.append(arch)
-            if (not isdir(join(toolbox, self.arch()))) and (
-                len(self._archs) == 1): arch = self._archs[0]
-        if not arch: arch = self.arch
+            if (not isdir(join(toolbox, self.arch()))) and (len(self._archs) == 1):
+                arch = self._archs[0]
+        if not arch:
+            arch = self.arch
         self.archname(arch)
         return
 
@@ -214,7 +223,8 @@ class ConfigArea(object):
     def _readEnvFile(self, envfile):
         with open(envfile, 'r') as ref:
             for line in [l.strip('\n').strip() for l in ref.readlines()]:
-                if not line or line.startswith('#'): continue
+                if not line or line.startswith('#'):
+                    continue
                 (name, value) = line.split('=', 1)
                 self.ENV[name] = value
         return
@@ -224,18 +234,20 @@ class ConfigArea(object):
         envfile = join(self.location(), self.admindir(), 'Environment')
         self._readEnvFile(envfile)
         envfile = join(self.archdir(), 'Environment')
-        if exists(envfile):  self._readEnvFile(envfile)
-        if 'SCRAM_PROJECTNAME' in self.ENV: self.name(
-            self.ENV['SCRAM_PROJECTNAME'])
-        if 'SCRAM_SYMLINKS' in self.ENV: self.symlinks(
-            int(self.ENV['SCRAM_SYMLINKS']))
-        if 'SCRAM_CONFIGCHKSUM' in self.ENV: self.configchksum(
-            self.ENV['SCRAM_CONFIGCHKSUM'])
-        if 'SCRAM_PROJECTVERSION' in self.ENV: self.version(
-            self.ENV['SCRAM_PROJECTVERSION'])
-        if 'SCRAM_CONFIGDIR' in self.ENV: self.configurationdir(
-            self.ENV['SCRAM_CONFIGDIR'])
-        if 'SCRAM_SOURCEDIR' in self.ENV: self.sourcedir(
-            self.ENV['SCRAM_SOURCEDIR'])
-        if 'RELEASETOP' in self.ENV: self.releasetop(self.ENV['RELEASETOP'])
+        if exists(envfile):
+            self._readEnvFile(envfile)
+        if 'SCRAM_PROJECTNAME' in self.ENV:
+            self.name(self.ENV['SCRAM_PROJECTNAME'])
+        if 'SCRAM_SYMLINKS' in self.ENV:
+            self.symlinks(int(self.ENV['SCRAM_SYMLINKS']))
+        if 'SCRAM_CONFIGCHKSUM' in self.ENV:
+            self.configchksum(self.ENV['SCRAM_CONFIGCHKSUM'])
+        if 'SCRAM_PROJECTVERSION' in self.ENV:
+            self.version(self.ENV['SCRAM_PROJECTVERSION'])
+        if 'SCRAM_CONFIGDIR' in self.ENV:
+            self.configurationdir(self.ENV['SCRAM_CONFIGDIR'])
+        if 'SCRAM_SOURCEDIR' in self.ENV:
+            self.sourcedir(self.ENV['SCRAM_SOURCEDIR'])
+        if 'RELEASETOP' in self.ENV:
+            self.releasetop(self.ENV['RELEASETOP'])
         return
