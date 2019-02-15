@@ -153,32 +153,53 @@ class ToolFile(object):
                 return False
         return True
 
+    def summarize_tool(tool):
+        data = {}
+        if 'SCRAM_PROJECT' in tool:
+            data['SCRAM_PROJECT'] = 'yes'
+        if 'SCRAM_COMPILER' in tool:
+            data['SCRAM_COMPILER'] = 'yes'
+        if 'VARIABLES' in tool:
+            for var in tool['VARIABLES']:
+                if isinstance(tool[var], str):
+                    data[var] = tool[var]
+                else:
+                    data[var] = ' '.join(tool[var])
+        if 'MAKEFILE' in tool:
+            data[''] = ' '.join(tool['MAKEFILE'])
+        if 'FLAGS' in tool:
+            for flag in tool['FLAGS']:
+                data[flag] = ' '.join(tool['FLAGS'][flag])
+        for extra in ['LIB', 'LIBDIR', 'INCLUDE', 'USE']:
+            if extra not in tool:
+                continue
+            data[extra] = ' '.join(tool[extra])
+        if 'RUNTIME' in tool:
+            for var in tool['RUNTIME']:
+                vname = var
+                if ':' in var:
+                    vtype, vname = var.split(':', 1)
+                data[vname] = ':'.join(tool['RUNTIME'][var])
+        return data
 
-def summarize_tool(tool):
-    data = {}
-    if 'SCRAM_PROJECT' in tool:
-        data['SCRAM_PROJECT'] = 'yes'
-    if 'SCRAM_COMPILER' in tool:
-        data['SCRAM_COMPILER'] = 'yes'
-    if 'VARIABLES' in tool:
-        for var in tool['VARIABLES']:
-            if isinstance(tool[var], str):
-                data[var] = tool[var]
+    def get_feature(tool, tag=None):
+        value = ''
+        if tag:
+            ref = tool
+            for s in tag.split('.'):
+                if s in ref:
+                    ref = ref[s]
+                else:
+                    SCRAM.scramerror('SCRAM: No type of variable called "%s" defined for this tool.' % tag)
+            if isinstance(ref, list):
+                value = ' '.join(ref)
             else:
-                data[var] = ' '.join(tool[var])
-    if 'MAKEFILE' in tool:
-        data[''] = ' '.join(tool['MAKEFILE'])
-    if 'FLAGS' in tool:
-        for flag in tool['FLAGS']:
-            data[flag] = ' '.join(tool['FLAGS'][flag])
-    for extra in ['LIB', 'LIBDIR', 'INCLUDE', 'USE']:
-        if extra not in tool:
-            continue
-        data[extra] = ' '.join(tool[extra])
-    if 'RUNTIME' in tool:
-        for var in tool['RUNTIME']:
-            vname = var
-            if ':' in var:
-                vtype, vname = var.split(':', 1)
-            data[vname] = ':'.join(tool['RUNTIME'][var])
-    return data
+                value = ref
+        else:
+            for tag in sorted([t for t in tool if t not in ['VARIABLES']]):
+                if isinstance(tool[tag], dict):
+                    for v in sorted(tool[tag]):
+                        value += "%s.%s\n" % (tag, v)
+                else:
+                    value += '%s\n' % tag
+        return value

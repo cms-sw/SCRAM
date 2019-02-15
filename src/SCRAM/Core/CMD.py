@@ -11,7 +11,7 @@ import SCRAM
 from SCRAM.Configuration.ConfigArea import ConfigArea
 from SCRAM.Core.ProjectDB import ProjectDB
 from SCRAM.BuildSystem.ToolManager import ToolManager
-from SCRAM.BuildSystem.ToolFile import summarize_tool
+from SCRAM.BuildSystem.ToolFile import ToolFile
 
 
 class Core(object):
@@ -293,8 +293,24 @@ def tool_info(args, area):
     msg += "Version : %s\n" % tool['TOOLVERSION']
     msg += "%s\n" % ("+" * 20)
     SCRAM.printmsg(msg)
-    tooldata = summarize_tool(tool)
+    tooldata = ToolFile.summarize_tool(tool)
     for tag in sorted(tooldata):
         SCRAM.printmsg('%s=%s' % (tag, tooldata[tag]))
     SCRAM.printmsg("")
+    return True
+
+
+def tool_tag(args, area):
+    if len(args) < 1:
+        SCRAM.scramfatal("No tool name given: see \"scram tool -help\" for usage info.")
+
+    toolmanager = ToolManager(area)
+    toolname = args[0].lower()
+    tool = toolmanager.gettool(toolname)
+    if not tool:
+        SCRAM.scramerror(">>>> Tool %s is not setup for this project area. <<<<" % toolname)
+    tag = None if len(args) == 1 else args[1]
+    msg = ToolFile.get_feature(tool, tag)
+    if msg:
+        SCRAM.printmsg(msg)
     return True
