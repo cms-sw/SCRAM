@@ -1,5 +1,6 @@
 import shutil
 from os import makedirs, walk, path
+from os.path import exists
 import sys
 import logging
 
@@ -13,6 +14,7 @@ def fixpath(malformed_path):
 
 
 def adddir(path_to_dir):
+    if exists(path_to_dir): return
     try:
         makedirs(fixpath(path_to_dir), 0o755)
     except IOError as e:
