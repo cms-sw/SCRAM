@@ -1,4 +1,4 @@
-from os import environ, getcwd, execv
+from os import environ, getcwd, execv, chdir
 from os.path import exists, join, isdir
 from sys import stderr, argv
 from re import match
@@ -33,7 +33,7 @@ class Core(object):
             SCRAM.scramfatal("Unable to locate the top of local release. "
                              "Please run this command from a SCRAM-based area.")
 
-    def initialize(self):
+    def initialize(self, arch=None):
         if self.localarea() is not None:
             return
         area = ConfigArea(SCRAM.FORCED_ARCH)
@@ -96,9 +96,19 @@ def cmd_arch(args):
     return True
 
 
+def remote_versioncheck(area):
+    sversion =area.scram_version()
+    if not sversion:
+        SCRAM.scramerror("Unable to determine SCRAM version used to config. remote area.")
+    spawnversion(sversion)
+
+
 def spawnversion(newversion='V2_99_99'):
-    environ['SCRAM_VERSION'] = newversion
-    execv(SCRAM.BASEPATH + "/common/scram", argv)
+    curversion = SCRAM.VERSION.split("_",1)[0]
+    reqversion = newversion.split("_",1)[0]
+    if SCRAM.VERSION.split("_",1)[0] != newversion.split("_",1)[0]:
+        environ['SCRAM_VERSION'] = newversion
+        execv(SCRAM.BASEPATH + "/common/scram", argv)
 
 
 def cmd_unsetenv(args):
@@ -237,12 +247,6 @@ def cmd_db(args):
     return True
 
 
-def cmd_project(args):
-    db = ProjectDB()
-    db.getarea('CMSSW', 'CMSSW_10_5_0_pre1')
-    return True
-
-
 def cmd_runtime(args):
     spawnversion()
     return True
@@ -250,6 +254,112 @@ def cmd_runtime(args):
 
 def cmd_setup(args):
     spawnversion()
+    return True
+
+
+def cmd_project(args):
+    parser = ArgumentParser(add_help=False)
+    parser.add_argument('-l', '--log',
+                        dest='log',
+                        action='store_true',
+                        default=False,
+                        help='See the detail log message while creating a dev area')
+    parser.add_argument('-s', '--symlinks',
+                        dest='symlinks',
+                        action='store_true',
+                        default=False,
+                        help='Creates symlinks for various product build directories.')
+    parser.add_argument('-u', '--update',
+                        dest='update',
+                        action='store_true',
+                        default=False,
+                        help='Command-line argument -u|--update is no more supported.')
+    parser.add_argument('-d', '--dir',
+                        dest='install_base_dir',
+                        type=str,
+                        default=None,
+                        help='Project installation base directory.')
+    parser.add_argument('-b', '--boot',
+                        dest='bootstrap',
+                        type=str,
+                        default=None,
+                        help='Creates a release area using the bootstrap file')
+    parser.add_argument('-n', '--name',
+                        dest='install_name',
+                        type=str,
+                        default=None,
+                        help='Specify the name of the SCRAM-base development area directory.')
+    opts, args = parser.parse_known_args(args)
+    if len(args) == 0:
+        SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
+    SCRAM.INTERACTIVE = True if opts.log else False
+
+    if opts.bootstrap:
+        return bootnewproject(opts, args)
+    project = args[0]
+    version = args[1] if len(args) > 1 else None
+    releasePath =None
+    if version is None:
+        if isdir(project) and project.startswith('/'):
+            area = ConfigArea(SCRAM.FORCED_ARCH)
+            releasePath = area.searchlocation(project)
+            if not releasePath:
+                SCRAM.scramerror("Not a valid scram-based release area: %s" % project)
+            project = basename(releasePath)
+        version = project
+        project = project.split('_',1)[0]
+    return project_bootfromrelease(project.upper(), version, releasePath, opts)
+
+
+def project_bootfromrelease (project, version, releasePath, opts):
+    installdir = opts.install_base_dir if opts.install_base_dir else getcwd()
+    installname = opts.install_name if opts.install_name else version
+    relarea = None
+    if not (project and version):
+        SCRAM.scramfatal("Insufficient arguments: see \"scram project -help\" for usage info.")
+    db = ProjectDB()
+    relarea = None
+    if releasePath:
+        relarea = db.getAreaObject ([project, version, releasePath, None], SCRAM.FORCED_ARCH)
+    else:
+        relarea = db.getarea(project, version, force=SCRAM.COMMANDS_OPTS)
+    xarch = environ['SCRAM_ARCH']
+    if not relarea or not isdir(relarea.archdir()):
+        if db.deprecated:
+            return False
+        archs = list(db.listcache)
+        errmsg = 'ERROR: Project "%s" version "%s" is not available for arch %s.\n' % (project, version, xarch)
+        if len(archs) > 1:
+            errmsg += '       "%s" is currently available for following archs.\n' % (project)
+            errmsg += '       Please set SCRAM_ARCH properly and re-run the command.\n    %s' % '\n    '.join(archs)
+        else:
+            errmsg += '       Please make sure you have used the correct name/version.\n'
+            errmsg += '       You can run \"scram list $projectname\" to get the list of available versions.'
+        SCRAM.printerror(errmsg)
+        return False
+    arch = relarea.arch()
+    SCRAM.FORCED_ARCH = arch
+    environ['SCRAM_ARCH'] = arch
+    if isdir(join(installdir, installname, relarea.admindir(), arch)):
+        SCRAM.printerror("WARNING: There already exists %s/%s area for SCRAM_ARCH %s." %
+                         (installdir, installname, arch))
+        return True
+    
+    #Re-run if different SCRAM version is needed to bootstrap the area.
+    #remote_versioncheck(relarea)
+ 
+    SCRAM.printmsg("Creating a developer area based on project %s version %s"
+                   % (project, version), SCRAM.INTERACTIVE)
+    environ['RELEASETOP'] = relarea.location()
+    locarea = Core()
+    symlink = 1 if opts.symlinks else 0
+    area = relarea.satellite(installdir, installname, symlink, locarea.localarea())
+    chdir (area.location())
+    locarea = Core()
+    return True
+
+
+def project_bootnewproject (opts, args):
     return True
 
 
