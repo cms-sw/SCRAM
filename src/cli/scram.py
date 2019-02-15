@@ -37,6 +37,7 @@ def parse_args():
                         default=False,
                         help='Turns on any debug output.')
     opts, args = parser.parse_known_args()
+    SCRAM.COMMANDS_OPTS = opts
     if not args: args.append('help')
     if opts.help: args[0]='help'
     if opts.arch:
