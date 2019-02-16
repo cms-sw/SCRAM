@@ -38,7 +38,7 @@ class BuildFile(object):
                 return True
             use = data.attrib['name'].lower()
             if use not in self.tools:
-                self.tools[use] = exists(join(self.tool_cache, use+'.json'))
+                self.tools[use] = exists(join(self.tool_cache, use + '.json'))
             if not self.tools[use]:
                 use = data.attrib['name']
             if tag not in self.product:
@@ -104,7 +104,7 @@ class BuildFile(object):
         if node.tag == 'elif':
             del self.parser.last_filter[-1]
         if not self.parser.has_filter(tool_filter):
-            toolcache = join(self.tool_cache, toolname+'.json')
+            toolcache = join(self.tool_cache, toolname + '.json')
             toolver = ''
             if exists(toolcache):
                 with open(toolcache) as ref:
