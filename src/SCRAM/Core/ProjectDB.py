@@ -1,11 +1,11 @@
 from socket import getfqdn
 from glob import glob
-from os.path import exists, join, abspath, isdir, getmtime, basename
+from os.path import exists, join, abspath, isdir, getmtime, basename, dirname
 from os import environ, chmod
 from re import compile
 from sys import stderr
 from time import localtime
-from SCRAM import FORCED_ARCH
+import SCRAM
 from SCRAM.Utilities.AddDir import adddir
 from SCRAM.Configuration.ConfigArea import ConfigArea
 
@@ -29,7 +29,7 @@ class ProjectDB(object):
         selarch = None
         if (arch in data) and (len(data[arch]) == 1):
             selarch = arch
-        elif FORCED_ARCH == "":
+        elif not SCRAM.FORCED_ARCH:
             data = self.updatearchs(name, version, [arch])
             archs = list(data)
             if len(archs) == 1:
@@ -80,7 +80,7 @@ class ProjectDB(object):
         if not archs:
             project_module = self.getProjectModule(project)
             if project_module:
-                archs = project_module.releaseArch(version, 1, release)
+                archs = project_module.releaseArchs(version, 1, release)
         arch = ""
         if len(archs) == 1:
             arch = archs[0]
@@ -92,9 +92,9 @@ class ProjectDB(object):
             return self.project_module
         self.project_module = False
         try:
-            if eval('import SCRAM.Plugins.%s as ProjectModule' % project.upper()):
-                self.project_module = ProjectModule()
-        except:
+            import importlib
+            self.project_module = importlib.import_module('SCRAM.Plugins.Releases.{0}'.format(project)).Releases()
+        except Exception as e:
             pass
         return self.project_module
 
@@ -110,7 +110,7 @@ class ProjectDB(object):
         oarch = environ['SCRAM_ARCH']
         xdata = self._findProjects(project, version, exact_match=False,
                                    arch=oarch, valid=valid)
-        if all or ((oarch not in xdata) and (FORCED_ARCH == "")):
+        if all or ((oarch not in xdata) and (SCRAM.FORCED_ARCH == "")):
             for arch in self.archs:
                 if arch == oarch:
                     continue
@@ -126,7 +126,7 @@ class ProjectDB(object):
             data = self._findProjects(name, version, exact_match=True,
                                       arch=arch)
             if (arch in data) and (len(data[arch]) == 1):
-                self.lichcache[arch] = data[arch]
+                self.listcache[arch] = data[arch]
         return self.listcache
 
     def link(self, db):

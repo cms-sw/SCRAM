@@ -1,4 +1,4 @@
-from os import environ, getcwd, execv, chdir
+from os import environ, getcwd, execv, chdir, makedirs
 from os.path import exists, join, isdir
 from sys import stderr, argv
 from re import match
@@ -11,6 +11,7 @@ import SCRAM
 from SCRAM.Configuration.ConfigArea import ConfigArea
 from SCRAM.Core.ProjectDB import ProjectDB
 from SCRAM.BuildSystem.ToolManager import ToolManager
+from SCRAM.BuildSystem.BuildFile import BuildFile
 from SCRAM.BuildSystem.ToolFile import ToolFile
 
 
@@ -32,6 +33,13 @@ class Core(object):
         if not self.islocal():
             SCRAM.scramfatal("Unable to locate the top of local release. "
                              "Please run this command from a SCRAM-based area.")
+
+    def init_env(self):
+        if self.localarea() is None:
+            return
+        self.localarea().copyenv(environ)
+        environ['SCRAM_INTwork'] = join(environ['SCRAM_TMP'], environ['SCRAM_ARCH'])
+        return
 
     def initialize(self, arch=None):
         if self.localarea() is not None:
@@ -320,7 +328,7 @@ def project_bootfromrelease(project, version, releasePath, opts):
     if releasePath:
         relarea = db.getAreaObject([project, version, releasePath, None], SCRAM.FORCED_ARCH)
     else:
-        relarea = db.getarea(project, version, force=SCRAM.COMMANDS_OPTS)
+        relarea = db.getarea(project, version, force=SCRAM.COMMANDS_OPTS.force)
     xarch = environ['SCRAM_ARCH']
     if not relarea or not isdir(relarea.archdir()):
         if db.deprecated:
@@ -344,7 +352,7 @@ def project_bootfromrelease(project, version, releasePath, opts):
         return True
 
     # Re-run if different SCRAM version is needed to bootstrap the area.
-    remote_versioncheck(relarea)
+    # remote_versioncheck(relarea)
 
     SCRAM.printmsg("Creating a developer area based on project %s version %s"
                    % (project, version), SCRAM.INTERACTIVE)
@@ -353,8 +361,104 @@ def project_bootfromrelease(project, version, releasePath, opts):
     symlink = 1 if opts.symlinks else 0
     area = relarea.satellite(installdir, installname, symlink, locarea.localarea())
     chdir(area.location())
-    locarea = Core()
+    c = Core()
+    c.init_env()
+    create_productstores(c.localarea())
+    if relarea.basedir:
+        with open(join(area.config(), 'scram_basedir'), 'w') as ref:
+            ref.write(relarea.basedir)
+    XXX = """
+    my $toolmanager = $self->toolmanager($area);
+    $toolmanager->update ($area);
+
+    # Write the cached info:
+    $toolmanager->writecache();
+
+        my $temp=$area->location()."/".$area->{admindir}."/".$ENV{SCRAM_ARCH};
+        if (-f "${temp}/MakeData/Tools.mk")
+           {
+           my $t1=(stat("${temp}/MakeData/Tools.mk"))[9];
+           utime $t1-1,$t1-1,"${temp}/MakeData/Tools.mk";
+           if (-f "${temp}/timestamps/self")
+              {
+              utime $t1,$t1,"${temp}/timestamps/self";
+              }
+           }
+"""
+    SCRAM.printmsg("\n\nInstallation procedure complete.", SCRAM.INTERACTIVE)
+    SCRAM.printmsg("Developer area located at:\n\n\t\t%s\n\n" % area.location(), SCRAM.INTERACTIVE)
+    if xarch != arch:
+        SCRAM.printmsg("WARNING: Release %s is not available for architecture %s" %
+                       (version, xarch))
+        SCRAM.printmsg("         Developer's area is created for available architecture %s." %
+                       (arch))
+    os = cmsos()
+    if not arch.startswith(os):
+        SCRAM.printmsg("WARNING: Developer's area is created for architecture %s while your current OS is %s." %
+                       (arch, os))
+    if not SCRAM.COMMANDS_OPTS.force:
+        os = db.productionArch(project, version, area.location())
+        if os and os != arch:
+            msg = "WARNING: Developer's area is created for non-production architecture $ENV{SCRAM_ARCH}. " \
+                  "Production architecture for this release is %s" % (arch, os)
+            SCRAM.printmsg(msg)
+    tc = db.getProjectModule(project)
+    if tc:
+        tc.getData(version, relarea.location())
+    if 'SCRAM_IGNORE_PROJECT_HOOK' not in environ:
+        proj_hook = join(area.config(), 'SCRAM', 'hooks', 'project-hook')
+        if exists(proj_hook):
+            SCRAM.run_command(proj_hook)
+    if '/afs/cern.ch/' in environ['SCRAM_TOOL_HOME']:
+        msg = "****************************** WARNING ******************************\n" \
+              "You are using CMSSW from CERN AFS space. Please note that, by the start of 2017, " \
+              "new CMSSW releases shall only be available via CVMFS.\n" \
+              "See the announcement https://hypernews.cern.ch/HyperNews/CMS/get/swDevelopment/3374.html"
+        SCRAM.printmsg(msg)
     return True
+
+
+def cmsos():
+    e, os = SCRAM.run_command('cmsos')
+    if e:
+        return None
+    return '_'.join(os.split('_', 2)[:2])
+
+
+def create_productstores(area):
+    sym = None
+    if area.symlinks() > 0:
+        from SCRAM.Core.ProdSymLinks import ProdSymLinks
+        sym = ProdSymLinks()
+    location = area.location()
+    bf = BuildFile(location)
+    bf.parse(join(area.config(), 'BuildFile.xml'))
+    arch = area.arch()
+    for store in bf.contents['PRODUCTSTORE']:
+        storename = None
+        if ('type' in store) and (store['type'] == 'arch'):
+            if ('swap' in store) and (store['swap'] == 'true'):
+                storename = join(store['name'], arch)
+            else:
+                storename = join(arch, store['name'])
+        else:
+            storename = store['name']
+        if not exists(storename):
+            if not sym:
+                makedirs(join(location, storename), 0o755)
+            else:
+                sym.mklink(location, storename)
+    src = join(location, area.sourcedir())
+    if not exists(src):
+        makedirs(src)
+    tmp = join(area.tmp(), arch)
+    if not sym:
+        tmp = join(location, tmp)
+        if not exists(tmp):
+            makedirs(tmp, 0o755)
+    else:
+        sym.mklink(location, tmp)
+    return
 
 
 def project_bootnewproject(opts, args):

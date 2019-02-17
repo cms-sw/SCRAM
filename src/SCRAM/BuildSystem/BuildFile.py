@@ -86,6 +86,14 @@ class BuildFile(object):
             self.product['COMMAND'] = data.attrib['command']
         elif tag in ['ROOT', 'ENVIRONMENT'] or self.parser.has_filter(data.tag):
             pass
+        elif tag == 'PRODUCTSTORE':
+            if tag not in self.contents:
+                self.contents[tag] = []
+            self.contents[tag].append(data.attrib)
+        elif tag == 'CLASSPATH':
+            if tag not in self.contents:
+                self.contents[tag] = []
+            self.contents[tag].append(data.attrib['path'])
         else:
             print('ERROR: Unknown tag %s found in %s.' % (data.tag, self.filename))
         for child in list(data):

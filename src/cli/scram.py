@@ -5,7 +5,9 @@ from os.path import dirname, abspath, join
 from inspect import getmembers, isfunction
 from argparse import ArgumentParser
 
-path.insert(0, dirname(dirname(abspath(argv[0]))))
+scram_home = dirname(dirname(abspath(argv[0])))
+path.insert(0, scram_home)
+environ['SCRAM_TOOL_HOME'] = scram_home
 import SCRAM
 
 
