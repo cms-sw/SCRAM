@@ -11,10 +11,12 @@ logging.basicConfig(format=FORMAT, level=logging.INFO)
 INTERACTIVE = False
 if stdin.isatty() and stdout.isatty():
     INTERACTIVE = True
+ORIGINAL_INTERACTIVE = INTERACTIVE
 
 VERSION = 'V3_0_0'
 FORCED_ARCH = ""
 BASEPATH = '/cvmfs/cms.cern.ch'
+COMMANDS_OPTS = None
 
 
 def scramwinfo(msg):
@@ -39,8 +41,9 @@ def printerror(msg):
     print(msg, file=stderr)
 
 
-def printmsg(msg):
-    print(msg, file=stdout)
+def printmsg(msg, if_interactive=True):
+    if if_interactive:
+        print(msg, file=stdout)
 
 
 def msg(data):
@@ -65,9 +68,9 @@ def info(data):
 
 def run_command(command, debug=False, fail_on_error=False):
     try:
-        from subprocess import run as run_command
+        from subprocess import getstatusoutput as run_cmd
     except:
-        from subprocess import call as run_command
+        from subprocess import call as run_cmd
     err, out = run_cmd(command)
     if err and fail_on_error:
         printerror(out)

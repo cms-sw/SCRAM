@@ -2,24 +2,30 @@ import xml.etree.ElementTree as ET
 from os import environ
 from re import search
 
+DEFAULT_ENV_FILTERS = {
+    'ifarchitecture': 'SCRAM_ARCH',
+    'architecture': 'SCRAM_ARCH',
+    'release': 'SCRAM_PROJECTVERSION',
+    'compiler': 'DEFAULT_COMPILER',
+    'ifrelease': 'SCRAM_PROJECTVERSION',
+    'ifcompiler': 'DEFAULT_COMPILER',
+    'ifcxx11_abi': 'SCRAM_CXX11_ABI',
+    'ifproject': 'SCRAM_PROJECTNAME',
+    'ifconfig': 'SCRAM_CONFIGCHKSUM',
+    'ifscram': 'SCRAM_VERSION'
+}
+
 
 class SimpleDoc(object):
     def __init__(self):
         self.filters = {}
         self.callbacks = {}
         self.last_filter = []
-        if 'SCRAM_ARCH' in environ:
-            self.add_filter('architecture', environ['SCRAM_ARCH'])
-            self.add_filter('ifarchitecture', environ['SCRAM_ARCH'])
-        if 'SCRAM_PROJECTVERSION' in environ:
-            self.add_filter("release", environ['SCRAM_PROJECTVERSION'])
-            self.add_filter("compiler", environ['DEFAULT_COMPILER'])
-            self.add_filter("ifrelease", environ['SCRAM_PROJECTVERSION'])
-            self.add_filter("ifcompiler", environ['DEFAULT_COMPILER'])
-            self.add_filter("ifcxx11_abi", environ['SCRAM_CXX11_ABI'])
-            self.add_filter("ifproject", environ['SCRAM_PROJECTNAME'])
-            self.add_filter("ifconfig", environ['SCRAM_CONFIGCHKSUM'])
-            self.add_filter("ifscram", environ['SCRAM_VERSION'])
+        for filt in DEFAULT_ENV_FILTERS:
+            value = ""
+            if filt in environ:
+                value = environ[filt]
+            self.add_filter(filt, value)
 
     def add_callback(self, tag, callback, args=None):
         self.callbacks[tag] = [callback, args]

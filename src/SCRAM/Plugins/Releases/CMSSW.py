@@ -1,15 +1,14 @@
-from SCRAM import INTERACTIVE, SCRAM_VERSION
+from SCRAM import ORIGINAL_INTERACTIVE, VERSION, run_command
 from sys import stderr
 from os import environ
 from re import match
 from SCRAM.Core.SiteConfig import SiteConfig
-from subprocess import getstatusoutput as run_cmd
 
 
-class CMSSW(object):
+class Releases(object):
     def __init__(self):
         self.data = None
-        if not INTERACTIVE:
+        if not ORIGINAL_INTERACTIVE:
             warn = "WARNING: In non-interactive mode release checks e.g. " \
                    "deprecated releases, production architectures are " \
                    "disabled."
@@ -51,15 +50,14 @@ class CMSSW(object):
                 url = "https://cmssdt.cern.ch/SDT/releases.map?release=%s&" \
                       "architecture=%s&scram=%s&releasetop=%s" \
                       % (version, environ['SCRAM_ARCH'],
-                         SCRAM_VERSION, reldir)
+                         VERSION, reldir)
                 cmd = 'wget  --no-check-certificate -nv -o /dev/null -O- '
-                e, out = run_cmd('which wget')
+                e, out = run_command('which wget')
                 if e:
                     cmd = 'curl -L -k --stderr /dev/null'
                 cmd = '%s "%s"' % (cmd, url)
-                cmd = 'cat /afs/cern.ch/user/m/muzaffar/public/git/cms-bot/releases.map'
                 maxwait = siteconf.get("release-checks-timeout")
-                e, out = run_cmd('timeout %s %s |  grep ";label=%s;\|;state=IB;"' % (maxwait, cmd, version))
+                e, out = run_command('timeout %s %s |  grep ";label=%s;\|;state=IB;"' % (maxwait, cmd, version))
                 if e:
                     return self.data
                 for line in out.split('\n'):

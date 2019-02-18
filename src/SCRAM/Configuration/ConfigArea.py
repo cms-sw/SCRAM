@@ -11,7 +11,8 @@ class ConfigArea(object):
         self._admindir = '.SCRAM'
         self._configurationdir = 'config'
         self._forcearch = forcearch
-        self._sourcedir = None
+        self._sourcedir = 'src'
+        self._tmp = 'tmp'
         self._releasetop = None
         self._location = None
         self._configchksum = None
@@ -20,6 +21,7 @@ class ConfigArea(object):
         self._version = None
         self._archdir = None
         self._archs = None
+        self.basedir = None
         if not forcearch:
             forcearch = environ['SCRAM_ARCH']
         self._arch = forcearch
@@ -51,6 +53,11 @@ class ConfigArea(object):
         if name:
             self._name = name
         return self._name
+
+    def tmp(self, tmp=None):
+        if tmp:
+            self._tmp = tmp
+        return self._tmp
 
     def version(self, version=None):
         if version:
@@ -154,6 +161,7 @@ class ConfigArea(object):
         sat.version(self.version())
         sat.configurationdir(self.configurationdir())
         sat.sourcedir(self.sourcedir())
+        sat.tmp(self.tmp())
         sat.releasetop(relloc)
         sat.configchksum(self.configchksum())
         sat.setup(location, areaname, symlink, locarea)
@@ -163,11 +171,12 @@ class ConfigArea(object):
             copydir(relconf, devconf)
         else:
             adddir(join(devconf, 'toolbox'))
-            copydir(join(relconf, 'toolbox', self.arch()), join(devconf,
-                                                                'toolbox'))
+            copydir(join(relconf, 'toolbox', self.arch()),
+                    join(devconf, 'toolbox', self.arch()))
         adddir(join(sat.location(), sat.sourcedir()))
         copyfile(self.toolcachename(), sat.archdir())
-        copydir(join(self.archdir(), 'timestamps'), sat.archdir())
+        copydir(join(self.archdir(), 'timestamps'),
+                join(sat.archdir(), 'timestamps'))
         envfile = join(sat.archdir(), 'Environment')
         with open(envfile, 'w') as ref:
             ref.write('RELEASETOP=%s\n' % relloc)
@@ -196,6 +205,10 @@ class ConfigArea(object):
     def save(self):
         self._SaveEnvFile()
 
+    def scram_version(self):
+        with open(join(self.config(), 'scram_version')) as ref:
+            return ref.readline().strip()
+
     # ---- support routines
     def _setAreaArch(self):
         arch = self._forcearch
@@ -223,6 +236,7 @@ class ConfigArea(object):
             ref.write('SCRAM_SOURCEDIR=%s\n' % self.sourcedir())
             ref.write('SCRAM_SYMLINKS=%s\n' % self.symlinks())
             ref.write('SCRAM_CONFIGCHKSUM=%s\n' % self.configchksum())
+            ref.write('SCRAM_TMP=%s\n' % self.tmp())
         chmod(envfile, 0o644)
         return
 
@@ -256,4 +270,6 @@ class ConfigArea(object):
             self.sourcedir(self.ENV['SCRAM_SOURCEDIR'])
         if 'RELEASETOP' in self.ENV:
             self.releasetop(self.ENV['RELEASETOP'])
+        if 'SCRAM_TMP' in self.ENV:
+            self.tmp(self.ENV['SCRAM_TMP'])
         return
