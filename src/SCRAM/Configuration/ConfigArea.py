@@ -64,22 +64,17 @@ class ConfigArea(object):
             self._version = version
         return self._version
 
-    def setup(self, location, areaname=None, symlink=False, localarea=None):
-        if (not areaname):
-            areaname = self.version()
-        self.location
-
-    def setup(self, location, areaname=None, symlink=0, locarea=None):
+    def setup(self, location, areaname=None, symlink=0, localarea=None):
         if not areaname:
             areaname = self.version()
         self.location(join(location, areaname))
         self.symlinks(symlink)
         if self.configchksum():
             envfile = join(self.location(), self.admindir(), 'Environment')
-            if (not locarea) and exists(envfile):
-                locarea = ConfigArea()
-                locarea.bootstrapfromlocation(self.location())
-            if locarea and locarea.configchksum() != self.configchksum():
+            if (not localarea) and exists(envfile):
+                localarea = ConfigArea()
+                localarea.bootstrapfromlocation(self.location())
+            if localarea and localarea.configchksum() != self.configchksum():
                 err = "ERROR: Can not setup your current working area for " \
                       "SCRAM_ARCH: $ENV{SCRAM_ARCH}\n"
                 err += "Your current development area ${location}/${" \
@@ -154,7 +149,7 @@ class ConfigArea(object):
             self._archdir = dir
         return self._archdir
 
-    def satellite(self, location, areaname=None, symlink=0, locarea=None):
+    def satellite(self, location, areaname=None, symlink=0, localarea=None):
         relloc = self.location()
         sat = ConfigArea(environ['SCRAM_ARCH'])
         sat.name(self.name())
@@ -164,7 +159,7 @@ class ConfigArea(object):
         sat.tmp(self.tmp())
         sat.releasetop(relloc)
         sat.configchksum(self.configchksum())
-        sat.setup(location, areaname, symlink, locarea)
+        sat.setup(location, areaname, symlink, localarea)
         devconf = join(sat.location(), sat.configurationdir())
         relconf = join(self.location(), self.configurationdir())
         if not isdir(devconf):
@@ -223,7 +218,7 @@ class ConfigArea(object):
             if (not isdir(join(toolbox, self.arch()))) and (len(self._archs) == 1):
                 arch = self._archs[0]
         if not arch:
-            arch = self.arch
+            arch = self.arch()
         self.archname(arch)
         return
 

@@ -357,9 +357,9 @@ def project_bootfromrelease(project, version, releasePath, opts):
     SCRAM.printmsg("Creating a developer area based on project %s version %s"
                    % (project, version), SCRAM.INTERACTIVE)
     environ['RELEASETOP'] = relarea.location()
-    locarea = Core()
+    localarea = Core()
     symlink = 1 if opts.symlinks else 0
-    area = relarea.satellite(installdir, installname, symlink, locarea.localarea())
+    area = relarea.satellite(installdir, installname, symlink, localarea.localarea())
     chdir(area.location())
     c = Core()
     c.init_env()
