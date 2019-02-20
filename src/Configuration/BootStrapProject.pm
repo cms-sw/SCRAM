@@ -79,7 +79,7 @@ sub project_()
       else
          {
          my $boot=$self->{scramdoc}->filetoparse();
-         die "Project creating error. Missing directory \"${toolbox}/tools\" in the toolbox. Please fix file \"$boo\" and set a valid toolbox directory.";
+         die "Project creating error. Missing directory \"${toolbox}/tools\" in the toolbox. Please fix file \"$boot\" and set a valid toolbox directory.";
          }
       }
    else
