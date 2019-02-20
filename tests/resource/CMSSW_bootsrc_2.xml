@@ -1,0 +1,15 @@
+<project name="@PROJECT_NAME@" version="Version_1">
+  <config dir="config"/>
+  <base url="file:./">
+    <download url="file:tests" name="config"/>
+    <download url="file:src"    name="src"/>
+  </base>
+  <base url="file:src">
+      <base url="file:src/SCRAM">
+        <download url="file:Plugins" name="Plugins_config_config_level2_name"/>
+      </base>
+    <download url="file:cli" name="cli_config_level_1_name"/>
+  </base>
+  <download url="file:run.py" name="run.py_config_level_0_name"/>
+  <toolbox dir="file:@PROJECT_TOOL_CONF@"/>
+</project>

@@ -37,5 +37,3 @@ class TestTemplateStash(object):
         assert stash.get("key1") == 1
         assert stash.get("key2") == 2
         assert stash.get("empty_key") == ""
-
-

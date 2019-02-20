@@ -39,4 +39,5 @@ pip-log.txt
 
 ## Dev environment
 .idea/
-venv/
+venv*/
+tmp/
