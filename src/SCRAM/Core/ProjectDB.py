@@ -93,7 +93,7 @@ class ProjectDB(object):
         self.project_module = False
         try:
             import importlib
-            self.project_module = importlib.import_module('SCRAM.Plugins.Releases.{0}'.format(project)).Releases()
+            self.project_module = importlib.import_module('SCRAM.Plugins.{0}.Releases'.format(project)).Releases()
         except Exception as e:
             pass
         return self.project_module

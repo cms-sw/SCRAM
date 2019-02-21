@@ -167,10 +167,10 @@ def cmd_list(args):
             msg = " for architecture %s" % environ['SCRAM_ARCH']
         if not version:
             SCRAM.scramwarning(">>>> No SCRAM project %s version %s available%s. <<<<" % (project, version, msg))
-            SCRAM.printrror("You can run \"scram list %s\" to see the available versions." % project)
+            SCRAM.printerror("You can run \"scram list %s\" to see the available versions." % project)
         elif project:
             SCRAM.scramwarning(">>>> No SCRAM project %s available%s. <<<<" % (project, msg))
-            SCRAM.printrror("You can run \"scram list\" to see the available projects and their versions.")
+            SCRAM.printerror("You can run \"scram list\" to see the available projects and their versions.")
         else:
             SCRAM.scramwarning(">>>> There are no SCRAM project yet installed%s. <<<<" % msg)
         return False
