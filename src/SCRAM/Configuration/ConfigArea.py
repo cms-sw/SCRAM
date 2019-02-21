@@ -169,7 +169,8 @@ class ConfigArea(object):
             copydir(join(relconf, 'toolbox', self.arch()),
                     join(devconf, 'toolbox', self.arch()))
         adddir(join(sat.location(), sat.sourcedir()))
-        copyfile(self.toolcachename(), sat.archdir())
+        if exists(self.toolcachename()):
+            copydir(self.toolcachename(), sat.archdir())
         copydir(join(self.archdir(), 'timestamps'),
                 join(sat.archdir(), 'timestamps'))
         envfile = join(sat.archdir(), 'Environment')

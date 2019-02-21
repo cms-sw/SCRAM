@@ -474,7 +474,7 @@ def project_bootfromrelease(project, version, releasePath, opts):
     if not SCRAM.COMMANDS_OPTS.force:
         os = db.productionArch(project, version, area.location())
         if os and os != arch:
-            msg = "WARNING: Developer's area is created for non-production architecture $ENV{SCRAM_ARCH}. " \
+            msg = "WARNING: Developer's area is created for non-production architecture %s. " \
                   "Production architecture for this release is %s" % (arch, os)
             SCRAM.printmsg(msg)
     tc = db.getProjectModule(project)
@@ -542,11 +542,9 @@ def project_bootnewproject(opts, args):
     areaname = ''
     bootstrapfile = opts.bootstrap
     installarea = opts.install_base_dir
-
-    bs = BootStrapProject (installarea)
+    bs = BootStrapProject(installarea)
     area = bs.boot(bootstrapfile)
-    
-    XX="""
+    XX = """
    my $name=$area->location();
 
    # Add ToolManager object to store all tool info:
@@ -556,7 +554,7 @@ def project_bootnewproject(opts, args):
    $ENV{'SCRAM_PROJECTDIR'} = $area->location();
    $ENV{'SCRAM_PROJECTVERSION'} = $area->version();
    $ENV{'LOCALTOP'} = $ENV{'SCRAM_PROJECTDIR'};
-   
+
    # Now set up selected tools:
    scramlogmsg("Setting up tools in project area","\n");
    scramlogmsg("------------------------------------------------\n\n");
@@ -580,6 +578,7 @@ def project_bootnewproject(opts, args):
    return 0;
    return True
 """
+
 
 def cmd_tool(args):
     area = Core()
