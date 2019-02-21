@@ -93,11 +93,17 @@ def execcommand(args):
         print("ERROR: %s commands matched '%s': %s" % (cmds_count, cmd, ", ".join(cmds)))
         exit(1)
     if cmds_count == 0:
-        print (usage(commands))
+        print(usage(commands))
         exit(1)
     initialize_scram()
     return eval('scram_commands.cmd_%s' % cmds[0])(args)
 
-opts, args = parse_args()
-if not execcommand(args):
-    exit(1)
+
+def main():
+    opts, args = parse_args()
+    if not execcommand(args):
+        exit(1)
+
+
+if __name__ == '__main__':
+    main()
