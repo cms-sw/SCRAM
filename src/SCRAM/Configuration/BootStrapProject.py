@@ -10,7 +10,7 @@ from os import environ
 from re import compile
 from SCRAM.Utilities.AddDir import adddir, copydir, copyfile, fixpath
 from SCRAM import die
-from os.path import isdir, isfile
+from os.path import isdir, isfile, join
 
 regex_file = compile(r"^\s*file:")
 
@@ -33,7 +33,7 @@ class BootStrapProject:
         self.baselocation = baselocation
         self.file_to_parse = None
 
-    def parse(self, filename):
+    def boot(self, filename):
         self.file_to_parse = filename
         parser = SimpleDoc()
         data = parser.parse(filename)
@@ -91,8 +91,8 @@ class BootStrapProject:
         return True
 
     def _process(self):
-        confdir = fixpath(self.area.location() + "/" + self.area.configurationdir())
-        conf = fixpath(confdir + "/toolbox/" + environ["SCRAM_ARCH"])
+        confdir = fixpath(self.area.config())
+        conf = join(confdir, "toolbox", environ["SCRAM_ARCH"])
         toolbox = self.toolbox
         logging.debug("confdir: {0},\n conf: {1}, \n toolbox: {2}".format(confdir, conf, toolbox))
         if isdir(toolbox):
@@ -118,4 +118,4 @@ class BootStrapProject:
                     f.write(environ["SCRAM_VERSION"] + "\n")
             except IOError:
                 die("ERROR: Can not open {confdir}/scram_version file for writing.".format(confdir=confdir))
-            self.area.save()
+        self.area.save()

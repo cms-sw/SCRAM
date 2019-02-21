@@ -9,6 +9,7 @@ except:
     from subprocess import call as run_cmd
 import SCRAM
 from SCRAM.Configuration.ConfigArea import ConfigArea
+from SCRAM.Configuration.BootStrapProject import BootStrapProject
 from SCRAM.Core.ProjectDB import ProjectDB
 from SCRAM.BuildSystem.ToolManager import ToolManager
 from SCRAM.BuildSystem.BuildFile import BuildFile
@@ -370,12 +371,12 @@ def cmd_project(args):
                         default=None,
                         help='Specify the name of the SCRAM-base development area directory.')
     opts, args = parser.parse_known_args(args)
-    if len(args) == 0:
-        SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
     SCRAM.INTERACTIVE = True if opts.log else False
 
     if opts.bootstrap:
-        return bootnewproject(opts, args)
+        return project_bootnewproject(opts, args)
+    if len(args) == 0:
+        SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
     project = args[0]
     version = args[1] if len(args) > 1 else None
     releasePath = None
@@ -536,8 +537,49 @@ def create_productstores(area):
 
 
 def project_bootnewproject(opts, args):
-    return True
+    if len(args) != 0:
+        SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
+    areaname = ''
+    bootstrapfile = opts.bootstrap
+    installarea = opts.install_base_dir
 
+    bs = BootStrapProject (installarea)
+    area = bs.boot(bootstrapfile)
+    
+    XX="""
+   my $name=$area->location();
+
+   # Add ToolManager object to store all tool info:
+   my $toolmanager = BuildSystem::ToolManager->new($area);
+
+   # Need an autotoolssetup object:
+   $ENV{'SCRAM_PROJECTDIR'} = $area->location();
+   $ENV{'SCRAM_PROJECTVERSION'} = $area->version();
+   $ENV{'LOCALTOP'} = $ENV{'SCRAM_PROJECTDIR'};
+   
+   # Now set up selected tools:
+   scramlogmsg("Setting up tools in project area","\n");
+   scramlogmsg("------------------------------------------------\n\n");
+
+   # Read the top-level BuildFile and create the required storage dirs. Do
+   # this before setting up self:
+   $self->create_productstores($area->location(),0);
+   # Now setup SELF:
+   $toolmanager->setupself();
+
+   $self->_init_self_env($toolmanager,"");
+   $toolmanager->setupalltools();
+   $toolmanager->setupself();
+
+   # Write the cached info:
+   $toolmanager->writecache();
+
+   scramlogmsg("\n>> Installation Located at: ".$area->location()." <<\n\n");
+
+   # Return nice value:
+   return 0;
+   return True
+"""
 
 def cmd_tool(args):
     area = Core()

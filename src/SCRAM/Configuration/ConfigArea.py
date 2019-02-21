@@ -38,7 +38,7 @@ class ConfigArea(object):
         return self._symlinks
 
     def calchksum(self):
-        conf = join(self.location(), self.configurationdir(), 'config_tag')
+        conf = join(self.config(), 'config_tag')
         if exists(conf):
             tag = open(conf, 'r').readline().strip('\n')
             return tag
