@@ -1,7 +1,7 @@
 <project name="@PROJECT_NAME@" version="Version_1">
   <config dir="config"/>
   <base url="file:./">
-    <download url="file:tests" name="config"/>
+    <download url="file:tests" name="tests"/>
     <download url="file:src"    name="src"/>
   </base>
   <base url="file:src">
@@ -11,5 +11,5 @@
     <download url="file:cli" name="cli_config_level_1_name"/>
   </base>
   <download url="file:run.py" name="run.py_config_level_0_name"/>
-  <toolbox dir="file:@PROJECT_TOOL_CONF@"/>
+  <toolbox dir="file:/tmp/SCRAM_TEST_src/toolbox"/>
 </project>

@@ -2,15 +2,17 @@
 no need to use parsing call back functions (project, porject_)
 use SimpleDoc class
 """
+import logging
+
 from SCRAM.BuildSystem.SimpleDoc import SimpleDoc
 from SCRAM.Configuration.ConfigArea import ConfigArea
-import logging
 from os import environ
 from re import compile
 from SCRAM.Utilities.AddDir import adddir, copydir, copyfile, fixpath
+from SCRAM import die
 from os.path import isdir, isfile
 
-regex_file = compile("^\s*file:")
+regex_file = compile(r"^\s*file:")
 
 
 def _remove_file(str):
@@ -23,10 +25,16 @@ def _remove_file(str):
 class BootStrapProject:
 
     def __init__(self, baselocation):
+        """
+
+        :param baselocation: destination where project will be setupped
+        """
         self.area = ConfigArea()  # sets SCRAM_ARCH env variable by default
         self.baselocation = baselocation
+        self.file_to_parse = None
 
     def parse(self, filename):
+        self.file_to_parse = filename
         parser = SimpleDoc()
         data = parser.parse(filename)
         self._update_contents(data)
@@ -66,14 +74,12 @@ class BootStrapProject:
             dest_path = _remove_file(self.area.location() + "/" + data.attrib["name"])
             dest_path = fixpath(dest_path)
             # Generate directories and copy files
-            # adddir(dest_path)
-            logging.debug("Copy from " + "'{0}'".format(src_path) + " to " + "'{0}'".format(dest_path))
             if isfile(src_path):
                 copyfile(src_path, dest_path)
             elif isdir(src_path):
                 copydir(src_path, dest_path)
             else:
-                logging.debug("Not a file or directory")
+                logging.warning("Not a file or directory: " + src_path)
         elif data.tag == "root":
             pass  # Do nothing
         else:
@@ -85,4 +91,31 @@ class BootStrapProject:
         return True
 
     def _process(self):
-        pass  # todo
+        confdir = fixpath(self.area.location() + "/" + self.area.configurationdir())
+        conf = fixpath(confdir + "/toolbox/" + environ["SCRAM_ARCH"])
+        toolbox = self.toolbox
+        logging.debug("confdir: {0},\n conf: {1}, \n toolbox: {2}".format(confdir, conf, toolbox))
+        if isdir(toolbox):
+            if isdir(toolbox + "/tools"):
+                adddir(conf + "/tools")
+                copydir(toolbox + "/tools/selected", conf + "/tools/selected")
+                copydir(toolbox + "/tools/available", conf + "/tools/available")
+            else:
+                die(
+                    "Project creating error. Missing directory \"{toolbox}/tools\" in the toolbox."
+                    " Please fix file \"{boot}\" and set a valid toolbox directory."
+                    .format(toolbox=toolbox, boot=self.file_to_parse)
+                )
+        else:
+            die(
+                "Project creating error. Missing directory \"{toolbox}/\". Please fix file \"{boot}\" "
+                "and set a valid toolbox directory.".format(toolbox=toolbox, boot=self.file_to_parse)
+            )
+        self.area.configchksum(self.area.calchksum())
+        if not isfile(confdir + "/scram_version"):
+            try:
+                with open(confdir + "/scram_version", 'w+') as f:
+                    f.write(environ["SCRAM_VERSION"] + "\n")
+            except IOError:
+                die("ERROR: Can not open {confdir}/scram_version file for writing.".format(confdir=confdir))
+            self.area.save()

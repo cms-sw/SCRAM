@@ -2,11 +2,15 @@
 # Other settings could be set here (or in .ini file)
 from sys import stdin, stdout, stderr, exit
 import logging
-FORMAT = '%(levelname)s - %(funcName)s - %(lineno)d: %(message)s'
-logging.basicConfig(format=FORMAT, level=logging.INFO)
+from os import environ
+import traceback
 
-# TODO to change logging config on runtime ( like by passing params from
-# command line, do `logging.getLogger().setLevel(logging.DEBUG)`
+logging_config = {"format": '%(levelname)s %(funcName)10s %(lineno)3d: %(message)s'}
+SCRAM_DEBUG = None
+if "SCRAM_DEBUG" in environ:
+    SCRAM_DEBUG = environ["SCRAM_DEBUG"]
+    logging_config["level"] = logging.DEBUG
+logging.basicConfig(**logging_config)
 
 INTERACTIVE = False
 if stdin.isatty() and stdout.isatty():
@@ -28,11 +32,15 @@ def scramwarning(msg):
 
 
 def scramerror(msg):
+    if SCRAM_DEBUG:
+        traceback.print_stack(file=stderr)
     print("SCRAM %s" % error(msg), file=stderr)
     exit(1)
 
 
 def scramfatal(msg):
+    if SCRAM_DEBUG:
+        traceback.print_stack(file=stderr)
     print("SCRAM %s" % fatal(msg), file=stderr)
     exit(1)
 
@@ -64,6 +72,13 @@ def fatal(data):
 
 def info(data):
     return "info: %s" % data
+
+
+def die(msg):
+    if SCRAM_DEBUG:
+        traceback.print_stack(file=stderr)
+    print(msg + "\n", file=stderr)
+    exit(1)
 
 
 def run_command(command, debug=False, fail_on_error=False):

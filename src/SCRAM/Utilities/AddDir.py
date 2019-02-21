@@ -1,7 +1,7 @@
 import shutil
 from os import makedirs, walk, path
 from os.path import exists
-import sys
+from SCRAM import die
 import logging
 
 
@@ -14,15 +14,15 @@ def fixpath(malformed_path):
 
 
 def adddir(path_to_dir):
+    logging.debug("Creating directory {0}".format(path_to_dir))
     if exists(path_to_dir):
+        logging.debug("Directory exists {0}".format(path_to_dir))
         return
     try:
+        logging.debug("Creating directory {0}".format(path_to_dir))
         makedirs(fixpath(path_to_dir), 0o755)
     except IOError as e:
-
-        logging.error("ERROR: failed to create directory directory {0}"
-                      .format(path_to_dir) + str(e))
-        sys.exit(1)
+        die("cannot make directory {0} . {1}".format(path_to_dir, str(e)))
 
 
 def copydir(src, dst):
@@ -31,21 +31,19 @@ def copydir(src, dst):
     :param dst: destination directory. It shouldn't exists.
     :return:
     """
+    logging.debug("Copy from " + "'{0}'".format(src) + " to " + "'{0}'".format(dst))
     try:
         shutil.copytree(src, dst, symlinks=True, ignore=None)
     except IOError as e:
-        logging.error("ERROR: failed to copy directory from {0} to {1}. "
-                      .format(src, dst) + str(e))
-        sys.exit(1)
+        die("ERROR: failed to copy directory from {0} to {1}. ".format(src, dst) + str(e))
 
 
 def copyfile(src, dst):
+    logging.debug("Copy from " + "'{0}'".format(src) + " to " + "'{0}'".format(dst))
     try:
         shutil.copy2(src, dst)
     except IOError as e:
-        logging.error("ERROR: failed to copy file from {0} to {1}. "
-                      .format(src, dst) + str(e))
-        sys.exit(1)
+        die("ERROR: failed to copy file from {0} to {1}. ".format(src, dst) + str(e))
 
 
 def getfilelist(dir_path):
@@ -60,8 +58,6 @@ def getfilelist(dir_path):
             for name in files:
                 rez_list.append(path.join(root.replace(dir_path, ""), name))
     except IOError as e:
-        logging.error("ERROR: failed to list path: {0}. ".format(dir_path) +
-                      str(e))
-        sys.exit(1)
+        die("ERROR: Can not open directory for reading: {0}".format(dir_path))
 
     return rez_list
