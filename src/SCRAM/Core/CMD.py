@@ -38,6 +38,8 @@ class Core(object):
         if self.localarea() is None:
             return
         self.localarea().copyenv(environ)
+        if 'SCRAM_TMP' not in environ:
+            environ['SCRAM_TMP'] = 'tmp'
         environ['SCRAM_INTwork'] = join(environ['SCRAM_TMP'], environ['SCRAM_ARCH'])
         return
 
@@ -118,7 +120,16 @@ def spawnversion(newversion='V2_99_99'):
 
 
 def cmd_unsetenv(args):
-    spawnversion()
+    print(args)
+    from SCRAM.Core.RuntimeEnv import RUNTIME_SHELLS
+    print(RUNTIME_SHELLS)
+    if (len(args) != 1) or (args[0] not in RUNTIME_SHELLS):
+        SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
+    from SCRAM.Core.RuntimeEnv import RuntimeEnv
+    area = Core()
+    area.checklocal()
+    rt = RuntimeEnv(area.localarea())
+    rt.unsetenv(RUNTIME_SHELLS[args[0]])
     return True
 
 
@@ -254,12 +265,75 @@ def cmd_db(args):
 
 
 def cmd_runtime(args):
-    spawnversion()
+    print(args)
+    from SCRAM.Core.RuntimeEnv import RUNTIME_SHELLS
+    print(RUNTIME_SHELLS)
+    if (len(args) != 1) or (args[0] not in RUNTIME_SHELLS):
+        SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
+    from SCRAM.Core.RuntimeEnv import RuntimeEnv
+    area = Core()
+    area.checklocal()
+    area.init_env()
+    rt = RuntimeEnv(area.localarea())
+    rt._runtime()
     return True
 
 
+def _init_self_env(toolmanager, tool):
+    selfdata = toolmanager.gettool("self")
+    if (not selfdata) or (tool == "self"):
+        create_productstores(toolmanager.area)
+        toolmanager.setupself()
+        selfdata = toolmanager.gettool("self")
+    if ('FLAGS' in selfdata) and \
+       ('DEFAULT_COMPILER' in selfdata['FLAGS']):
+        environ['DEFAULT_COMPILER'] = selfdata['FLAGS']['DEFAULT_COMPILER'][0]
+
+
 def cmd_setup(args):
-    spawnversion()
+    parser = ArgumentParser(add_help=False)
+    parser.add_argument('-i', '--interactive',
+                        dest='interactive',
+                        action='store_true',
+                        default=False,
+                        help='Obsolete command-line argument')
+    opts, args = parser.parse_known_args(args)
+    if len(args) > 1:
+        SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
+    area = Core()
+    area.checklocal()
+    area.init_env()
+    larea = area.localarea()
+    toolmanager = ToolManager(larea)
+    tool = ''
+    if args:
+        tool = args[0]
+    if tool:
+        if not exists(tool):
+            toolname = tool.lower()
+            if toolname != 'self':
+                toolbox = larea.toolbox()
+                tool = join(toolbox, 'selected', '%s.xml' % toolname)
+                if not exists(tool):
+                    tool = join(toolbox, 'available', '%s.xml' % toolname)
+                    if not exists(tool):
+                        SCRAM.scramfatal('Can not setup tool "%s" because of missing "%s.xml" '
+                                         'file under %s directory."' % (toolname, toolname, toolbox))
+            else:
+                tool = toolname
+        else:
+            tool = abspath(tool)
+    toolmanager = ToolManager(larea)
+    _init_self_env(toolmanager, tool)
+    if tool:
+        if tool != 'self':
+            toolmanager.coresetup(tool)
+    else:
+        SCRAM.printmsg("Setting up all tools in current area")
+        if not isdir(larea.toolcachename()):
+            create_productstores(larea)
+            toolmanager.setupself()
+        toolmanager.setupalltools()
     return True
 
 

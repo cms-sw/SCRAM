@@ -23,8 +23,9 @@ class SimpleDoc(object):
         self.last_filter = []
         for filt in DEFAULT_ENV_FILTERS:
             value = ""
-            if filt in environ:
-                value = environ[filt]
+            filtenv = DEFAULT_ENV_FILTERS[filt]
+            if filtenv in environ:
+                value = environ[filtenv]
             self.add_filter(filt, value)
 
     def add_callback(self, tag, callback, args=None):
@@ -76,8 +77,6 @@ class SimpleDoc(object):
         with open(filename) as ref:
             root = ET.fromstringlist(['<root>', ref.read(), '</root>'])
         self.process(root)
-        if 'SCRAM_DEBUG' in environ:
-            ET.dump(root)
         return root
 
     def process(self, root):

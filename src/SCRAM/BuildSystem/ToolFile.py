@@ -3,6 +3,7 @@ from re import compile
 from os import environ
 from os.path import exists
 from json import dump
+from SCRAM import printmsg
 
 reReplaceEnv = [compile('^(.*)(\$\((\w+)\))(.*)$'),
                 compile('^(.*)(\$\{(\w+)\})(.*)$'),
@@ -27,6 +28,8 @@ class ToolFile(object):
         for k in self.env:
             self.env[k] = self._fix_data(self.env[k])
         if not self._update_contents(data):
+            if self.warnings:
+                printmsg('%s' % '\n'.join(self.warnings))
             return False
         for key in list(self.contents):
             if not self.contents[key]:
@@ -35,6 +38,7 @@ class ToolFile(object):
 
     def _clean(self, filename=None):
         self.filename = filename
+        self.warnings = []
         self.contents = {'USE': [], 'LIB': [], 'INCLUDE': [], 'LIBDIR': [],
                          'BINDIR': [], 'TOOLNAME': '', 'TOOLVERSION': '',
                          'VARIABLES': [], 'LIBTYPES': [], 'RUNTIME': {}, 'FLAGS': {}}
@@ -80,7 +84,7 @@ class ToolFile(object):
                 msg = 'OK (but currently missing)'
             else:
                 msg = 'FAIL'
-            print('Checks [%s] for %s' % (msg, path))
+            self.warnings.append('Checks [%s] for %s' % (msg, path))
         return msg != 'FAIL'
 
     def _update_contents(self, data):
@@ -114,7 +118,6 @@ class ToolFile(object):
                     self.contents[tag].append(value)
             else:
                 self.contents[tag] = value
-                print('ADDED New Env %s for %s' % (tag, self.filename))
         elif tag == 'FLAGS':
             flag_name = list(data.attrib)[0]
             tag = flag_name.upper()

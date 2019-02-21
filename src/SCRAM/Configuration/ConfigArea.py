@@ -27,7 +27,7 @@ class ConfigArea(object):
         self._arch = forcearch
 
     def toolcachename(self):
-        return join(self.archdir(), 'ToolCache.db.gz')
+        return join(self.archdir(), 'tools')
 
     def projectcachename(self):
         return join(self.archdir(), 'ProjectCache.db.gz')
