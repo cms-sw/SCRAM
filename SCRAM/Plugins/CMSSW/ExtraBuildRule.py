@@ -19,12 +19,11 @@ class ExtraBuildRule:
 
     def Project(self):
         common = self.template
-        # fh = common.filehandle()  # TODo
-        fh = open("todo")
+        fh = common.filehandle()
         common.symlinkPythonDirectory(1)
         common.autoGenerateClassesH(1)
-        #   #$self->addPluginSupport(plugin-type,plugin-flag,plugin-refresh-cmd,dir-regexp-for-default-plugins,
-        # plugin-store-variable,plugin-cache-file,plugin-name-exp,no-copy-shared-lib)
+        #$self->addPluginSupport(plugin-type,plugin-flag,plugin-refresh-cmd,dir-regexp-for-default-plugins,
+        #   plugin-store-variable,plugin-cache-file,plugin-name-exp,no-copy-shared-lib)
         common.addPluginSupport("edm", "EDM_PLUGIN", "edmPluginRefresh", '\/plugins$', "SCRAMSTORENAME_LIB",
                                 ".edmplugincache", '$name="${name}.edmplugin"', "yes")
         common.addPluginSupport("rivet", "RIVET_PLUGIN", "RivetPluginRefresh", '\/plugins$', "SCRAMSTORENAME_LIB",
@@ -73,6 +72,72 @@ dependencies:
         ######################################################################
         # Documentation targets. Note- must be lower case otherwise conflict with rules
         # for dirs which have the same name:
+        fh.write(""".PHONY: userguide referencemanual doc doxygen
+doc: referencemanual
+\t@echo "Documentation/release notes built for $(SCRAM_PROJECTNAME) v$(SCRAM_PROJECTVERSION)"
+userguide:
+\t@if [ -f $(LOCALTOP)/src/Documentation/UserGuide/scripts/makedoc ]; then \\
+\t  doctop=$(LOCALTOP); \\
+\telse \\
+\t  doctop=$(RELEASETOP); \\
+\tfi; \\
+\tcd $$doctop/src; \\
+\tDocumentation/UserGuide/scripts/makedoc $(LOCALTOP)/src $(LOCALTOP)/doc/UserGuide $(RELEASETOP)/src
+referencemanual:
+\t@cd $(LOCALTOP)/src/Documentation/ReferenceManualScripts/config; \\
+\tsed -e 's|@PROJ_NAME@|$(SCRAM_PROJECTNAME)|g' \\
+\t-e 's|@PROJ_VERS@|$(SCRAM_PROJECTVERSION)|g' \\
+\t-e 's|@CMSSW_BASE@|$(LOCALTOP)|g' \\
+\t-e 's|@INC_PATH@|$(LOCALTOP)/src|g' \\
+\tdoxyfile.conf.in > doxyfile.conf; \\
+\tcd $(LOCALTOP); \\
+\tls -d src/*/*/doc/*.doc | sed 's|(.*).doc|mv "&" "\\1.dox"|' | /bin/sh; \\
+\tif [ `expr substr $(SCRAM_PROJECTVERSION) 1 1` = "2" ]; then \\
+\t  ./config/fixdocs.sh $(SCRAM_PROJECTNAME)"_"$(SCRAM_PROJECTVERSION); \\
+\telse \\
+\t  ./config/fixdocs.sh $(SCRAM_PROJECTVERSION); \\
+\tfi; \\
+\tls -d src/*/*/doc/*.doy |  sed 's/(.*).doy/sed "s|@PROJ_VERS@|$(SCRAM_PROJECTVERSION)|g" "&" > "\\1.doc"/' | /bin/sh; \\
+\trm -rf src/*/*/doc/*.doy; \\
+\tcd $(LOCALTOP)/src/Documentation/ReferenceManualScripts/config; \\
+\tdoxygen doxyfile.conf; \\
+\tcd $(LOCALTOP); \\
+\tls -d src/*/*/doc/*.dox | sed 's|(.*).dox|mv "&" "\\1.doc"|' | /bin/sh;
+doxygen:
+\t@rm -rf $(LOCALTOP)/$(WORKINGDIR)/doxygen &&\\
+\tmkdir -p $(LOCALTOP)/$(WORKINGDIR)/doxygen &&\\
+\tscriptdir=$(LOCALTOP)/$(SCRAM_SOURCEDIR)/Documentation/ReferenceManualScripts/doxygen/utils &&\\
+\t[ -d $$scriptdir ] || scriptdir=$(RELEASETOP)/$(SCRAM_SOURCEDIR)/Documentation/ReferenceManualScripts/doxygen/utils &&\\
+\tcd $$scriptdir/doxygen &&\\
+\tcp -t $(LOCALTOP)/$(WORKINGDIR)/doxygen cfgfile footer.html header.html doxygen.css DoxygenLayout.xml doxygen ../../script_launcher.sh &&\\
+\tcd $(LOCALTOP)/$(WORKINGDIR)/doxygen &&\\
+\tchmod +rwx doxygen script_launcher.sh &&\\
+\tsed -e 's|@CMSSW_BASE@|$(LOCALTOP)|g' cfgfile > cfgfile.conf &&\\
+\t./doxygen cfgfile.conf &&\\
+\t./script_launcher.sh $(SCRAM_PROJECTVERSION) $$scriptdir $(LOCALTOP) &&\\
+\techo "Reference Manual is generated."
+.PHONY: gindices
+gindices:
+\t@cd $(LOCALTOP); \\
+\trm -rf  .glimpse_*; mkdir .glimpse_full; \\
+\tfind $(LOCALTOP)/src $(LOCALTOP)/cfipython/$(SCRAM_ARCH) -follow -mindepth 3 -type f | grep -v '.pyc$$' | sed 's|^./||' | glimpseindex -F -H .glimpse_full; \\
+\tchmod 0644 .glimpse_full/.glimpse_*; \\
+\tmv .glimpse_full/.glimpse_filenames .; \\
+\tfor  x in `ls -A1 .glimpse_full` ; do \\
+\t  ln -s .glimpse_full/$$x $$x; \\
+\tdone; \\
+\tcp .glimpse_filenames .glimpse_full/.glimpse_filenames; \\
+\tsed -i -e "s|$(LOCALTOP)/||" .glimpse_filenames
+.PHONY: productmap
+productmap:
+\t@cd $(LOCALTOP); \\
+\tmkdir -p src; rm -f src/ReleaseProducts.list; echo ">> Generating Product Map in src/ReleaseProducts.list.";\\
+\t(RelProducts.pl $(LOCALTOP) > $(LOCALTOP)/src/ReleaseProducts.list || exit 0)
+.PHONY: depscheck
+depscheck:
+\t@ReleaseDepsChecks.pl --detail
+""")
+
 
     def Extra_templateI(self):
         pass
