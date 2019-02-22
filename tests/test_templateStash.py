@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from pytest import raises
 import pytest
-from src.SCRAM.BuildSystem.TemplateStash import TemplateStash
+from SCRAM.BuildSystem.TemplateStash import TemplateStash
 
 parametrize = pytest.mark.parametrize
 

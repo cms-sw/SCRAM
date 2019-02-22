@@ -2,7 +2,7 @@
 import os
 import shutil
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from os import environ
 environ['SCRAM_ARCH'] = "SCRAM_ARCH"
 environ['SCRAM_VERSION'] = "SCRAM_VERSION"
@@ -32,4 +32,4 @@ with open(tools_path + "/available/f", 'w') as f:
     f.write("111\n111\n111\n111\n")
 
 project = BootStrapProject("/tmp/SCRAM_TEST/path/to/something")
-project.parse(filename)
+project.boot(filename)
