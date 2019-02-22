@@ -22,7 +22,7 @@ class ExtraBuildRule:
         fh = common.filehandle()
         common.symlinkPythonDirectory(1)
         common.autoGenerateClassesH(1)
-        #$self->addPluginSupport(plugin-type,plugin-flag,plugin-refresh-cmd,dir-regexp-for-default-plugins,
+        # $self->addPluginSupport(plugin-type,plugin-flag,plugin-refresh-cmd,dir-regexp-for-default-plugins,
         #   plugin-store-variable,plugin-cache-file,plugin-name-exp,no-copy-shared-lib)
         common.addPluginSupport("edm", "EDM_PLUGIN", "edmPluginRefresh", '\/plugins$', "SCRAMSTORENAME_LIB",
                                 ".edmplugincache", '$name="${name}.edmplugin"', "yes")
@@ -138,6 +138,22 @@ depscheck:
 \t@ReleaseDepsChecks.pl --detail
 """)
 
-
     def Extra_templateI(self):
-        pass
+        common = self.template
+        skip = common.core.flags("SKIP_FILES")
+        if skip == "*" or skip == "%":
+            return True
+        common.pushstash()
+        common.moc_template()
+        common.popstash()
+        common.plugin_template()
+        common.pushstash()
+        common.lexyacc_template()
+        common.popstash()
+        common.pushstash()
+        common.codegen_template()
+        common.popstash()
+        common.pushstash()
+        common.dict_template()
+        common.popstash()
+        return True
