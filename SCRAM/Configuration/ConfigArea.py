@@ -171,8 +171,6 @@ class ConfigArea(object):
         adddir(join(sat.location(), sat.sourcedir()))
         if exists(self.toolcachename()):
             copydir(self.toolcachename(), sat.archdir())
-        copydir(join(self.archdir(), 'timestamps'),
-                join(sat.archdir(), 'timestamps'))
         envfile = join(sat.archdir(), 'Environment')
         with open(envfile, 'w') as ref:
             ref.write('RELEASETOP=%s\n' % relloc)

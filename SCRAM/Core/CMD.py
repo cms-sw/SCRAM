@@ -436,30 +436,17 @@ def project_bootfromrelease(project, version, releasePath, opts):
     symlink = 1 if opts.symlinks else 0
     area = relarea.satellite(installdir, installname, symlink, localarea.localarea())
     chdir(area.location())
-    c = Core()
-    c.init_env()
-    create_productstores(c.localarea())
+    area = Core()
+    area.init_env()
+    create_productstores(area.localarea())
     if relarea.basedir:
         with open(join(area.config(), 'scram_basedir'), 'w') as ref:
             ref.write(relarea.basedir)
-    XXX = """
-    my $toolmanager = $self->toolmanager($area);
-    $toolmanager->update ($area);
-
-    # Write the cached info:
-    $toolmanager->writecache();
-
-        my $temp=$area->location()."/".$area->{admindir}."/".$ENV{SCRAM_ARCH};
-        if (-f "${temp}/MakeData/Tools.mk")
-           {
-           my $t1=(stat("${temp}/MakeData/Tools.mk"))[9];
-           utime $t1-1,$t1-1,"${temp}/MakeData/Tools.mk";
-           if (-f "${temp}/timestamps/self")
-              {
-              utime $t1,$t1,"${temp}/timestamps/self";
-              }
-           }
-"""
+    toolmanager = ToolManager(area.localarea())
+    toolmanager.setupself(dump=False)
+    temp = area.localarea().archdir()
+    if not exists(area.localarea().toolcachename()):
+        toolmanager.setupalltools(dump=False)
     SCRAM.printmsg("\n\nInstallation procedure complete.", SCRAM.INTERACTIVE)
     SCRAM.printmsg("Developer area located at:\n\n\t\t%s\n\n" % area.location(), SCRAM.INTERACTIVE)
     if xarch != arch:
@@ -539,45 +526,20 @@ def create_productstores(area):
 def project_bootnewproject(opts, args):
     if len(args) != 0:
         SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
-    areaname = ''
     bootstrapfile = opts.bootstrap
     installarea = opts.install_base_dir
     bs = BootStrapProject(installarea)
     area = bs.boot(bootstrapfile)
-    XX = """
-   my $name=$area->location();
-
-   # Add ToolManager object to store all tool info:
-   my $toolmanager = BuildSystem::ToolManager->new($area);
-
-   # Need an autotoolssetup object:
-   $ENV{'SCRAM_PROJECTDIR'} = $area->location();
-   $ENV{'SCRAM_PROJECTVERSION'} = $area->version();
-   $ENV{'LOCALTOP'} = $ENV{'SCRAM_PROJECTDIR'};
-
-   # Now set up selected tools:
-   scramlogmsg("Setting up tools in project area","\n");
-   scramlogmsg("------------------------------------------------\n\n");
-
-   # Read the top-level BuildFile and create the required storage dirs. Do
-   # this before setting up self:
-   $self->create_productstores($area->location(),0);
-   # Now setup SELF:
-   $toolmanager->setupself();
-
-   $self->_init_self_env($toolmanager,"");
-   $toolmanager->setupalltools();
-   $toolmanager->setupself();
-
-   # Write the cached info:
-   $toolmanager->writecache();
-
-   scramlogmsg("\n>> Installation Located at: ".$area->location()." <<\n\n");
-
-   # Return nice value:
-   return 0;
-   return True
-"""
+    chdir(area.location())
+    c = Core()
+    c.init_env()
+    area = c.localarea()
+    toolmanager = ToolManager(area)
+    create_productstores(area)
+    toolmanager.setupself(dump=False, dev_area=False)
+    toolmanager.setupalltools(dump=False, )
+    toolmanager.setupself(dump=False, dev_area=False)
+    return True
 
 
 def cmd_tool(args):

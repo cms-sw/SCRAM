@@ -1,7 +1,7 @@
 from os import environ, stat
 from os.path import exists, join
 from sys import stdout
-from re import compile, escape
+from re
 from json import dump, load
 import SCRAM
 from SCRAM.BuildSystem.ToolManager import ToolManager
@@ -17,7 +17,7 @@ class RuntimeEnv(object):
         self.area = area
         self.OENV = environ.copy()
         self.env_backup_prefix = 'SRT_'
-        self.skip_env = compile('^(_|PWD|PROMPT_COMMAND|SCRAM_.+|SCRAMV1_.+|SCRAM|LOCALTOP|RELEASETOP|BASE_PATH)$')
+        self.skip_env = re.compile('^(_|PWD|PROMPT_COMMAND|SCRAM_.+|SCRAMV1_.+|SCRAM|LOCALTOP|RELEASETOP|BASE_PATH)$')
         self.shell = {}
         self.shell['BOURNE'] = {'EQUALS': '=', 'SEP': ':', 'EXPORT': 'export', 'UNEXPORT': 'unset'}
         self.shell['TCSH'] = {'EQUALS': ' ', 'SEP': ':', 'EXPORT': 'setenv', 'UNEXPORT': 'unsetenv'}
@@ -36,6 +36,9 @@ class RuntimeEnv(object):
                 save_env[k] = environ[k]
                 del environ[k]
         self.save('RTBOURNE')
+        for k, v in save_env.items():
+            environ[k] = v
+        self.setenv("RTBOURNE")
         if 'RTBOURNE' in self.env['rtstring']:
             for e in self.env['rtstring']['RTBOURNE']:
                 environ[e] = self.env['rtstring']['RTBOURNE'][e]
@@ -51,10 +54,11 @@ class RuntimeEnv(object):
             var = DYLD_FALLBACK_LIBRARY_PATH
         return var
 
-    def setenv(self, shell, where=stdout):
+    def setenv(self, shell, ostream=None):
         if self.recursive:
             return
-        ref = where
+        if not ostream:
+            ostream = stdout
         shell_data = self.shell[shell]
         sep = shell_data['SEP']
         udata = {}
@@ -103,7 +107,7 @@ class RuntimeEnv(object):
         if unset:
             if unset_vars and not self._unsetenv:
                 SCRAM.printerror("**** Following environment variables are going to be unset.\n%s" % unset_vars)
-            print("%s %s;" % (shell_data['UNEXPORT'], unset), file=ref)
+            print("%s %s;" % (shell_data['UNEXPORT'], unset), file=ostream)
         for d in data:
             for var, val in d.items():
                 if shell == 'RTBOURNE':
@@ -122,99 +126,78 @@ class RuntimeEnv(object):
                 print ('%s %s%s\"%s\";' % (shell_data['EXPORT'], var,
                        shell_data['EQUALS'], val), file=stdout)
         return True
-        XX = """
 
-sub save()
-{
-  my $self=shift;
-  if ($self->{recursive}){return;}
-  my $shell=shift;
-  my $ref=shift || *STDOUT;
-  if (exists($ENV{SCRAMRT_SET}))
-  {
-    $self->restore_environment_($shell);
-    delete $ENV{SCRAMRT_SET};
-    $self->save($shell,$ref);
-  }
-  else
-  {
-    my $env_prefix=$self->{env_backup_prefix};
-    my $env = $self->runtime_();
-    my @data=();my $index=0;
-    my $sep=$self->{shell}{$shell}{SEP};
-    my $skip=$self->{skipenv};
-    foreach my $h (@{$env->{variables}})
-    {
-      while (my ($name, $value) = each %$h)
-      {
-	my $btype="_SCRAMRT";
-	if (!exists $ENV{$name}){$btype="_SCRAMRTDEL";}
-	$data[$index++]{"${env_prefix}${name}${btype}"}=$value->[0];
-      }
-    }
-    $self->{backup_type}={};
-    my %opt=();
-    while (my ($name, $value) = each %{$env->{path}})
-    {
-      if ($name=~/^(.+?)_SRTOPT_(.+)$/)
-      {
-        if (exists $self->{optional_paths}{$1}){$opt{$2}{$1}=1;}
-        next;
-      }
-      my $btype="_SCRAMRT";
-      if (!exists $ENV{$name}){$btype="_SCRAMRTDEL";}
-      $data[$index++]{"${env_prefix}${name}${btype}"}=&cleanpath_(join($sep,@$value),$sep);
-      $self->{backup_type}{$name}=$btype;
-    }
-    foreach my $v (keys %opt)
-    {
-      my $btype="";
-      my $nbtype="";
-      if (exists $self->{backup_type}{$v})
-      {
-        $btype=$self->{backup_type}{$v};
-	$nbtype=$btype;
-      }
-      else
-      {
-        $nbtype="_SCRAMRT";
-	if (!exists $ENV{$v}){$nbtype="_SCRAMRTDEL";}
-	$self->{backup_type}{$v}=$nbtype;
-      }
-      foreach my $t (keys %{$opt{$v}})
-      {
-	my $xindex=$index;
-        my $pval="";
-	if ($btype ne "")
-	{
-          for(my $i=0;$i<$index;$i++)
-	  {
-	    if (exists $data[$i]{"${env_prefix}${v}${btype}"})
-	    {
-	      $xindex=$i;
-	      $pval=$data[$i]{"${env_prefix}${v}${btype}"};
-	      last;
-	    }
-	  }
-        }
-	my $nval=join($sep,@{$env->{path}{$t."_SRTOPT_".$v}});
-        if ($pval ne ""){$nval="${nval}${sep}${pval}";}
-        $data[$xindex]{"${env_prefix}${v}${nbtype}"}=&cleanpath_($nval,$sep);
-        if ($xindex == $index){$index++;}
-      }
-    }
-    $data[$index++]{SCRAMRT_SET}="$ENV{SCRAM_PROJECTNAME}:$ENV{SCRAM_PROJECTVERSION}:$ENV{SCRAM_ARCH}:$ENV{SCRAM_VERSION}:${env_prefix}";
-    foreach my $v (@data)
-    {
-      while(my ($name, $value) = each %$v)
-      {
-        $value =~ s/\"/\\\"/g; $value =~ s/\`/\\\`/g;
-        $ENV{$name}=$value;
-      }
-    }
-  }
-}
-"""
+    def save(self, shell, ostream=None):
+        if self.recursive:
+            return
+        if not ostream:
+            ostream = stdout
+        if 'SCRAMRT_SET' in environ:
+            self._restore_environment(shell)
+            del environ['SCRAMRT_SET']
+        env_prefix = self.env_backup_prefix
+        env = self._runtime()
+        data = []
+        sep = self.shell[shell]['SEP']
+        skip = self.skipenv
+        for h in env['variables']:
+            while name, value in h.items():
+                btype = '_SCRAMRT'
+                if name in environ:
+                    btype += 'DEL'
+                data.append({'%s%s%s' % (env_prefix, name, btype): value[0]})
+        self.backup_type = {}
+        opt = {}
+        regexp = re.compile('^(.+?)_SRTOPT_(.+)$')
+        while name, value = env['path']:
+            m = regexp.match(name)
+            if m:
+                if m.group(1) in self.optional_paths:
+                    opt[m.group(2)] = m.group(1)
+                continue
+            btype = '_SCRAMRT'
+            if name not in environ:
+                btype += 'DEL'
+            data.append({'%s%s%s' % (env_prefix, name, btype): self._cleanpath(sep.join(value), sep)})
+            self.backup_type[name] = btype
+        for v in opt:
+            btype = ''
+            nbtype = ''
+            if v in self.backup_type:
+                btype = self.backup_type[v]
+                nbtype = btype
+            else:
+                nbtype = '_SCRAMRT'
+                if v in environ:
+                    nbtype += 'DEL'
+            for t in opt[v]:
+                xindex = len(data)
+                pval = ''
+                if btype:
+                    k = '%s%s%s' % (env_prefix, v, btype)
+                    i = -1
+                    for d in data:
+                        i += 1
+                        if k not in d:
+                            continue
+                        xindex = i
+                        pval = d[k]
+                        last
+                nval = sep.join(env['path']['%s_SRTOPT_%s' % (t, v)])
+                if pval:
+                    nval = '%s%s%s' % (nval, sep, pval)
+                if xindex == index:
+                    data.append({})
+                data[xindex]['%s%s%s' % (env_prefix, v, nbtype)] = self._cleanpath(nval, sep)
+        scram_set = ''
+        for e in ['SCRAM_PROJECTNAME', 'SCRAM_PROJECTVERSION', 'SCRAM_ARCH', 'SCRAM_VERSION']:
+            scram_set += '%s:' % environ[e]
+        data.append({'SCRAMRT_SET':
+                     '%s%s' % (scram_set, env_prefix)})
+        for v in data:
+            for name, value in v.items():
+                environ[name] = value.replace('"', '\\"').replace('`', '\\`')
+        return
 
     def optional_env(self, tools=[]):
         self.optional_paths = {}
@@ -240,7 +223,7 @@ sub save()
         prefix = penv[4]
         bvar = 'SCRAMRT_BACKUP_ENV'
         bval = {} if bvar not in environ else \
-                  dict([item.split('=', 1) for item in environ[bvar].split(';')])
+            dict([item.split('=', 1) for item in environ[bvar].split(';')])
         for name, value in environ.items():
             if name.startswith('SCRAMRT_'):
                 del backup_env[name]
@@ -267,7 +250,7 @@ sub save()
                     elif val == value:
                         val = ''
                     else:
-                        regex = compile('^(.*?%s|)%s(%s.*|)$' % (sep, escape(value), sep))
+                        regex = eompile('^(.*?%s|)%s(%s.*|)$' % (sep, re.escape(value), sep))
                         m = regex.match(val)
                         if m:
                             val = '%s%s' % (m.group(1), m.group(2))
@@ -289,64 +272,54 @@ sub save()
         return
 
     def _runtime_hooks(self):
-        return True
-        XXX = """
-sub runtime_hooks_()
-{
-  my $self=shift;
-  my $debug=0;
-  if (exists $self->{OENV}{SCRAM_HOOKS_DEBUG}){$debug=1;}
-  my $area = $self->{scram}->localarea();
-  my $hook=$area->location()."/".$area->configurationdir()."/SCRAM/hooks/runtime-hook";
-  if($debug){print STDERR "SCRAM_HOOK: $hook\n";}
-  if (! -x $hook){return;}
-  if ($debug){print STDERR "SCRAM_HOOK: Found\n";}
-  my $out=`$hook 2>&1`;
-  if ($debug){print STDERR "SCRAN_HOOK: $out";}
-  foreach my $line (split("\n",$out))
-  {
-    if ($line!~/^runtime:((path:(append|prepend|remove):[a-zA-Z0-9-_]+)|(variable:[a-zA-Z0-9-_]+))=/io){print STDERR "$line\n"; next;}
-    my @vals = split("=",$line,2);
-    my @items = split(":",$vals[0]);
-    my $vtype = lc($items[1]);
-    if ($vtype eq "path")
-    {
-      if(! exists $self->{env}{rtstring}{path}){$self->{env}{rtstring}{path}={};}
-      my $c = $self->{env}{rtstring}{path};
-      $vtype=lc($items[2]);
-      my $evar = $items[3];
-      if (($vtype ne "remove") && (! exists $c->{$evar})){$c->{$evar}=[];}
-      foreach my $d (split(":",$vals[1]))
-      {
-        $d=~s/\s//g;
-        if($d eq ""){next;}
-        if ($vtype eq "append"){push(@{$c->{$evar}},$d);}
-        elsif ($vtype eq "prepend"){unshift @{$c->{$evar}}, $d;}
-        elsif ($vtype eq "remove")
-        {
-          my $npath=[];
-          foreach my $x (@{$c->{$evar}})
-          {
-            if ($x eq $d){next;}
-            push(@$npath,$x);
-          }
-          $c->{$evar}=$npath;
-        }
-      }
-    }
-    elsif ($vtype eq "variable")
-    {
-      if (! exists $self->{env}{rtstring}{variables}){$self->{env}{rtstring}{variables}=[];}
-      my $c = $self->{env}{rtstring}{variables};
-      my $vindex = 0;
-      my $evar = $items[2];
-      if (exists $self->{env}{variables}{$evar}){$vindex = $self->{env}{variables}{$evar};}
-      else{$vindex = scalar(@{$c});}
-      $c->[$vindex]{$evar}=[$vals[1]];
-    }
-  }
-}
-"""
+        hook = join(area.config(), 'SCRAM', 'hooks', 'runtime-hook')
+        if not exists(hook):
+            return
+        regexp = re.compile(
+            '^runtime:((path:(append|prepend|remove):[a-zA-Z0-9-_]+)|(variable:[a-zA-Z0-9-_]+))=(.*)$',
+            re.I)
+        err, out = SCRAM.run_command('%s 2>&1' % hook)
+        for line in out.split('\n'):
+            if not regexp(line):
+                continue
+            vals = line.split('=', 1)
+            items = vals[0].split(':')
+            vtype = items[1].lower()
+            if vtype == 'path':
+                if vtype not in self.env[rtstring]:
+                    self.env[rtstring][vtype] = {}
+                data = self.env[rtstring][vtype]
+                vtype = items[2].lower()
+                evar = items[3]
+                if (vtype != 'remove') and (evar not in cache):
+                    cache[evar] = []
+                for d in vals[1].split(':'):
+                    d = d.strip()
+                    if not d:
+                        continue
+                    if vtype == 'append':
+                        cache[evar].append(d)
+                    elif vtype == 'prepend':
+                        cache[evar].insert(0, d)
+                    elif vtype == 'remove':
+                        try:
+                            cache[evar].remove(d)
+                        except:
+                            pass
+            elif vtype == 'variable':
+                if 'variables' not in self.env['rtstring']:
+                    self.env['rtstring']['variables'] = []
+                cache = self.env['rtstring']['variables']
+                vindex = 0
+                evar = items[2]
+                if evar in self.env['variables']:
+                    vindex = self.env['variables'][evar]
+                else:
+                    vindex = len(cache)
+                    self.env['variables'][evar] = vindex
+                    cache.append({})
+                cache[vindex][evar] = [vals[1]]
+        return
 
     def _runtime(self):
         if 'rtstring' in self.env:

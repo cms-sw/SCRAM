@@ -3,7 +3,7 @@ from re import compile
 from os import environ
 from os.path import exists
 from json import dump
-from SCRAM import printmsg
+from SCRAM import printmsg, printerror
 
 reReplaceEnv = [compile('^(.*)(\$\((\w+)\))(.*)$'),
                 compile('^(.*)(\$\{(\w+)\})(.*)$'),
@@ -12,6 +12,7 @@ reReplaceEnv = [compile('^(.*)(\$\((\w+)\))(.*)$'),
 
 class ToolFile(object):
     def __init__(self):
+        self.path_variables = []
         self.parser = SimpleDoc()
         self.parser.add_callback('tool', self._tool_callback)
         return
@@ -21,7 +22,8 @@ class ToolFile(object):
             dump(self.contents, ref, sort_keys=True, indent=2)
         return
 
-    def parse(self, filename):
+    def parse(self, filename, path_variables=None):
+        self.path_variables = [] if path_variables is None else path_variables
         self._clean(filename)
         data = self.parser.parse(filename)
         self._update_env(data)
@@ -69,6 +71,7 @@ class ToolFile(object):
                         value = environ[key]
                     else:
                         print('ERROR: Unable to replace %s in %s' % (m.group(2), self.filename))
+                        return None
                     data = '%s%s%s' % (m.group(1), value, m.group(4))
                     break
         return data
@@ -108,8 +111,15 @@ class ToolFile(object):
         elif tag == 'ENVIRONMENT':
             value = data.attrib['default'] if 'default' in data.attrib else data.attrib['value']
             value = self._fix_data(value)
+            if value is None:
+                return True
             tag = data.attrib['name'].upper()
-            if tag == '%s_BASE' % self.contents['TOOLNAME'].upper().replace('-', '_'):
+            if tag in self.path_variables:
+                printerror('****WARNING: "%s" is not allowed in client environment, '
+                           'it can override runtime environmnet.\n'
+                           'Please use <runtime/> tag instead of <environmnet/>. Please fix '
+                           '"%s" tool definition.' % (tag, self.contents['TOOLNAME']))
+            elif tag == '%s_BASE' % self.contents['TOOLNAME'].upper().replace('-', '_'):
                 self.contents[tag] = value
             elif tag in self.contents:
                 if isinstance(self.contents[tag], str):
@@ -133,10 +143,14 @@ class ToolFile(object):
             vtype = ''
             if 'type' in data.attrib:
                 vtype = data.attrib['type'].upper()
+            elif tag in self.path_variables:
+                vtype = 'PATH'
             handler = ''
             if 'handler' in data.attrib:
                 handler = data.attrib['handler'].upper()
             value = self._fix_data(value)
+            if value is None:
+                return True
             if vtype == 'PATH':
                 if not self._check_path(value, handler):
                     return False

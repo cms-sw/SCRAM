@@ -39,6 +39,7 @@ class BootStrapProject:
         data = parser.parse(filename)
         self._update_contents(data)
         self._process()  # TODO last function to create directories
+        return self.area
 
     def _update_contents(self, data, base_src_list=None):
         if base_src_list is None:  # nested list of baseUrl, last one is important
@@ -50,7 +51,6 @@ class BootStrapProject:
                 src = 'src'
             name = data.attrib['name']
             version = data.attrib['version']
-            print("Creating New Project " + name + " Version " + version + "\n\n")  # TODO scramlog
             self.area.name(name)
             self.area.version(version)
             self.area.sourcedir(src)

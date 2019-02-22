@@ -1,7 +1,7 @@
 from glob import glob
 from json import load, loads, dumps
 from os.path import basename, exists, join, isdir, dirname, abspath
-from os import remove, stat, utime
+from os import remove, stat, utime, environ
 from glob import glob
 from shutil import copy2, move
 from SCRAM import run_command, printerror, scramerror, printmsg
@@ -17,38 +17,59 @@ def isnewer(srcfile, desfile):
 
 class ToolManager(object):
     def __init__(self, area):
+        self.path_variables = ['PATH', 'LD_LIBRARY_PATH', 'DYLD_LIBRARY_PATH',
+                               'DYLD_FALLBACK_LIBRARY_PATH', 'PYTHONPATH',
+                               'PYTHON27PATH', 'PYTHON3PATH']
         self.area = area
         self.tools = {}
         self.loaded = False
         self.xml = None
         return
 
-    def setupself(self):
+    def init_path_variables(self):
+        self_tool = self.gettool ('self')
+        if not self_tool:
+            return
+        if 'FLAGS' in self_tool:
+            if 'REM_PATH_VARIABLES' in self_tool['FLAGS']:
+                for v in self_tool['FLAGS']['REM_PATH_VARIABLES']:
+                    if v in self.path_variables:
+                        self.path_variables.remove(v)
+            if 'PATH_VARIABLES' in self_tool['FLAGS']:
+                for v in self_tool['FLAGS']['PATH_VARIABLES']:
+                    if v not in self.path_variables:
+                        self.path_variables.append(v)
+        return
+
+    def setupself(self, dump=True, dev_area=True):
         selftool = join(self.area.config(), 'Self.xml')
         if not exists(selftool):
             printerror("\nSCRAM: No file config/Self.xml...nothing to do.")
             return False
         if not self.xml:
             self.xml = ToolFile()
-        if not self.xml.parse(selftool):
+        if not self.xml.parse(selftool, self.path_variables):
             scramerror("Failed to setup 'self' tool")
+        if dev_area and ('RELEASETOP' in environ) and exists(environ['RELEASETOP']):
+            self.addrelease()
         self.tools['self'] = self.xml.contents
+        self.init_path_variables()
         tooljson = self.tool_json_path('self')
         if not isnewer(selftool, tooljson):
             return
-        self._update_json(tooljson)
+        self._update_json(tooljson, dump)
         return
 
-    def setupalltools(self):
+    def setupalltools(self, dump=True):
         for toolfile in glob(join(self.area.toolbox(), 'selected', '*.xml')):
-            self.coresetup(toolfile)
+            self.coresetup(toolfile, dump)
 
-    def coresetup(self, toolfile):
+    def coresetup(self, toolfile, dump=True):
         tname = basename(toolfile)[:-4].lower()
         toolfile = abspath(toolfile)
         if not self.xml:
             self.xml = ToolFile()
-        if not self.xml.parse(toolfile):
+        if not self.xml.parse(toolfile, self.path_variables):
             scramerror("Failed to setup '%s' tool" % tname)
         toolname = self.xml.contents['TOOLNAME'].lower()
         if tname != tname:
@@ -63,7 +84,7 @@ class ToolManager(object):
                 copy2(toolfile, selected)
         elif not isnewer(selected, tooljson):
             return
-        self._update_json(tooljson)
+        self._update_json(tooljson, dump)
         return
 
     def _update_json(self, tooljson, dump=True):
@@ -207,21 +228,21 @@ class ToolManager(object):
         relpath = localpath.replace(ltop, rtop)
         return relpath if exists(relpath) else ""
 
-    def addrelease(self, contents):
+    def addrelease(self):
         ltop = environ['LOCALTOP']
         rtop = environ['RELEASETOP']
         for k in ['INCLUDE', 'LIBDIR']:
-            if k not in contents:
+            if k not in self.xml.contents:
                 continue
-            for v in contents[k]:
+            for v in self.xml.contents[k]:
                 v = self._getreleasedata(v)
-                if v and v not in contents[k]:
-                    contents[k].append(v)
-        if 'RUNTIME' not in contents:
+                if v and v not in self.xml.contents[k]:
+                    self.xml.contents[k].append(v)
+        if 'RUNTIME' not in self.xml.contents:
             return
-        for var in [v for v in contents['RUNTIME'] if v.startswith('PATH:')]:
-            for d in contents['RUNTIME'][var]:
+        for var in [v for v in self.xml.contents['RUNTIME'] if v.startswith('PATH:')]:
+            for d in self.xml.contents['RUNTIME'][var]:
                 d = self._getreleasedata(d)
-                if d and d not in contents['RUNTIME'][var]:
-                    contents['RUNTIME'][var].append(d)
+                if d and d not in self.xml.contents['RUNTIME'][var]:
+                    self.xml.contents['RUNTIME'][var].append(d)
         return
