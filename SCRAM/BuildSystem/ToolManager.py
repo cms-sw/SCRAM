@@ -27,7 +27,7 @@ class ToolManager(object):
         return
 
     def init_path_variables(self):
-        self_tool = self.gettool ('self')
+        self_tool = self.gettool('self')
         if not self_tool:
             return
         if 'FLAGS' in self_tool:

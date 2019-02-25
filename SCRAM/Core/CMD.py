@@ -120,20 +120,6 @@ def spawnversion(newversion='V2_99_99'):
         execv(SCRAM.BASEPATH + "/common/scram", argv)
 
 
-def cmd_unsetenv(args):
-    print(args)
-    from SCRAM.Core.RuntimeEnv import RUNTIME_SHELLS
-    print(RUNTIME_SHELLS)
-    if (len(args) != 1) or (args[0] not in RUNTIME_SHELLS):
-        SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
-    from SCRAM.Core.RuntimeEnv import RuntimeEnv
-    area = Core()
-    area.checklocal()
-    rt = RuntimeEnv(area.localarea())
-    rt.unsetenv(RUNTIME_SHELLS[args[0]])
-    return True
-
-
 def cmd_list(args):
     parser = ArgumentParser(add_help=False)
     parser.add_argument('-A', '--all',
@@ -265,18 +251,26 @@ def cmd_db(args):
     return True
 
 
-def cmd_runtime(args):
-    print(args)
-    from SCRAM.Core.RuntimeEnv import RUNTIME_SHELLS
-    print(RUNTIME_SHELLS)
+def cmd_unsetenv(args):
+    from SCRAM.Core.RuntimeEnv import RUNTIME_SHELLS, RuntimeEnv
     if (len(args) != 1) or (args[0] not in RUNTIME_SHELLS):
         SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
-    from SCRAM.Core.RuntimeEnv import RuntimeEnv
+    rt = RuntimeEnv(area=None)
+    rt.unsetenv(RUNTIME_SHELLS[args[0]])
+    return True
+
+
+def cmd_runtime(args):
+    from SCRAM.Core.RuntimeEnv import RUNTIME_SHELLS, RuntimeEnv
+    if (len(args) == 0) or (args[0] not in RUNTIME_SHELLS):
+        SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
     area = Core()
     area.checklocal()
     area.init_env()
     rt = RuntimeEnv(area.localarea())
-    rt._runtime()
+    rt.optional_env(args[1:])
+    rt.save(RUNTIME_SHELLS[args[0]])
+    rt.setenv(RUNTIME_SHELLS[args[0]])
     return True
 
 
@@ -336,6 +330,49 @@ def cmd_setup(args):
             toolmanager.setupself()
         toolmanager.setupalltools()
     return True
+
+
+def cmsos():
+    e, os = SCRAM.run_command('cmsos')
+    if e:
+        return None
+    return '_'.join(os.split('_', 2)[:2])
+
+
+def create_productstores(area):
+    sym = None
+    if area.symlinks() > 0:
+        from SCRAM.Core.ProdSymLinks import ProdSymLinks
+        sym = ProdSymLinks()
+    location = area.location()
+    bf = BuildFile(location)
+    bf.parse(join(area.config(), 'BuildFile.xml'))
+    arch = area.arch()
+    for store in bf.contents['PRODUCTSTORE']:
+        storename = None
+        if ('type' in store) and (store['type'] == 'arch'):
+            if ('swap' in store) and (store['swap'] == 'true'):
+                storename = join(store['name'], arch)
+            else:
+                storename = join(arch, store['name'])
+        else:
+            storename = store['name']
+        if not exists(storename):
+            if not sym:
+                makedirs(join(location, storename), 0o755)
+            else:
+                sym.mklink(location, storename)
+    src = join(location, area.sourcedir())
+    if not exists(src):
+        makedirs(src)
+    tmp = join(area.tmp(), arch)
+    if not sym:
+        tmp = join(location, tmp)
+        if not exists(tmp):
+            makedirs(tmp, 0o755)
+    else:
+        sym.mklink(location, tmp)
+    return
 
 
 def cmd_project(args):
@@ -478,49 +515,6 @@ def project_bootfromrelease(project, version, releasePath, opts):
               "See the announcement https://hypernews.cern.ch/HyperNews/CMS/get/swDevelopment/3374.html"
         SCRAM.printmsg(msg)
     return True
-
-
-def cmsos():
-    e, os = SCRAM.run_command('cmsos')
-    if e:
-        return None
-    return '_'.join(os.split('_', 2)[:2])
-
-
-def create_productstores(area):
-    sym = None
-    if area.symlinks() > 0:
-        from SCRAM.Core.ProdSymLinks import ProdSymLinks
-        sym = ProdSymLinks()
-    location = area.location()
-    bf = BuildFile(location)
-    bf.parse(join(area.config(), 'BuildFile.xml'))
-    arch = area.arch()
-    for store in bf.contents['PRODUCTSTORE']:
-        storename = None
-        if ('type' in store) and (store['type'] == 'arch'):
-            if ('swap' in store) and (store['swap'] == 'true'):
-                storename = join(store['name'], arch)
-            else:
-                storename = join(arch, store['name'])
-        else:
-            storename = store['name']
-        if not exists(storename):
-            if not sym:
-                makedirs(join(location, storename), 0o755)
-            else:
-                sym.mklink(location, storename)
-    src = join(location, area.sourcedir())
-    if not exists(src):
-        makedirs(src)
-    tmp = join(area.tmp(), arch)
-    if not sym:
-        tmp = join(location, tmp)
-        if not exists(tmp):
-            makedirs(tmp, 0o755)
-    else:
-        sym.mklink(location, tmp)
-    return
 
 
 def project_bootnewproject(opts, args):

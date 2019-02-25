@@ -1,7 +1,8 @@
 from os import environ, stat
-from os.path import exists, join
+from os.path import exists, join, abspath
 from sys import stdout
-from re
+import re
+from base64 import b64decode, b64encode
 from json import dump, load
 import SCRAM
 from SCRAM.BuildSystem.ToolManager import ToolManager
@@ -12,7 +13,7 @@ RUNTIME_SHELLS = {'-sh': 'BOURNE', '-csh': 'TCSH', '-win': 'CYGWIN'}
 
 class RuntimeEnv(object):
     def __init__(self, area):
-        self.recursive = 1 if 'SCRAM_RTBOURNE_SET' in environ else 0
+        self.recursive = True if 'SCRAM_RTBOURNE_SET' in environ else False
         self.optional_paths = {}
         self.area = area
         self.OENV = environ.copy()
@@ -68,7 +69,7 @@ class RuntimeEnv(object):
             env_prefix = self.env_backup_prefix
             env = self._runtime()
             for d in env['variables']:
-                for var, val in data.items():
+                for var, val in d.items():
                     udata[var] = 1
                     data.append({var: val[0]})
             for var in env['path']:
@@ -134,26 +135,33 @@ class RuntimeEnv(object):
             ostream = stdout
         if 'SCRAMRT_SET' in environ:
             self._restore_environment(shell)
-            del environ['SCRAMRT_SET']
         env_prefix = self.env_backup_prefix
         env = self._runtime()
         data = []
         sep = self.shell[shell]['SEP']
-        skip = self.skipenv
+        skip = self.skip_env
+        backup_vars = ""
         for h in env['variables']:
-            while name, value in h.items():
+            for (name, value) in h.items():
                 btype = '_SCRAMRT'
-                if name in environ:
+                if name not in environ:
                     btype += 'DEL'
+                else:
+                    backup_vars += "%s=%s;" % (name, environ[name])
                 data.append({'%s%s%s' % (env_prefix, name, btype): value[0]})
+        if backup_vars:
+            backup_vars = backup_vars.strip(';')
+            data.append({'SCRAMRT_BACKUP_ENV': b64encode(backup_vars.encode('utf-8')).decode('utf-8')})
         self.backup_type = {}
         opt = {}
         regexp = re.compile('^(.+?)_SRTOPT_(.+)$')
-        while name, value = env['path']:
+        for (name, value) in env['path'].items():
             m = regexp.match(name)
             if m:
                 if m.group(1) in self.optional_paths:
-                    opt[m.group(2)] = m.group(1)
+                    if not m.group(2) in opt:
+                        opt[m.group(2)] = {}
+                    opt[m.group(2)][m.group(1)] = 1
                 continue
             btype = '_SCRAMRT'
             if name not in environ:
@@ -182,11 +190,11 @@ class RuntimeEnv(object):
                             continue
                         xindex = i
                         pval = d[k]
-                        last
+                        break
                 nval = sep.join(env['path']['%s_SRTOPT_%s' % (t, v)])
                 if pval:
                     nval = '%s%s%s' % (nval, sep, pval)
-                if xindex == index:
+                if xindex == len(data):
                     data.append({})
                 data[xindex]['%s%s%s' % (env_prefix, v, nbtype)] = self._cleanpath(nval, sep)
         scram_set = ''
@@ -199,9 +207,9 @@ class RuntimeEnv(object):
                 environ[name] = value.replace('"', '\\"').replace('`', '\\`')
         return
 
-    def optional_env(self, tools=[]):
+    def optional_env(self, types=[]):
         self.optional_paths = {}
-        for t in tools:
+        for t in types:
             self.optional_paths[t.upper()] = 1
         return
 
@@ -223,7 +231,9 @@ class RuntimeEnv(object):
         prefix = penv[4]
         bvar = 'SCRAMRT_BACKUP_ENV'
         bval = {} if bvar not in environ else \
-            dict([item.split('=', 1) for item in environ[bvar].split(';')])
+            dict([item.split('=', 1)
+                  for item in b64decode(environ[bvar]).decode('utf-8').split(';')
+                  if item])
         for name, value in environ.items():
             if name.startswith('SCRAMRT_'):
                 del backup_env[name]
@@ -250,7 +260,7 @@ class RuntimeEnv(object):
                     elif val == value:
                         val = ''
                     else:
-                        regex = eompile('^(.*?%s|)%s(%s.*|)$' % (sep, re.escape(value), sep))
+                        regex = re.compile('^(.*?%s|)%s(%s.*|)$' % (sep, re.escape(value), sep))
                         m = regex.match(val)
                         if m:
                             val = '%s%s' % (m.group(1), m.group(2))
@@ -272,7 +282,7 @@ class RuntimeEnv(object):
         return
 
     def _runtime_hooks(self):
-        hook = join(area.config(), 'SCRAM', 'hooks', 'runtime-hook')
+        hook = join(self.area.config(), 'SCRAM', 'hooks', 'runtime-hook')
         if not exists(hook):
             return
         regexp = re.compile(
@@ -280,7 +290,7 @@ class RuntimeEnv(object):
             re.I)
         err, out = SCRAM.run_command('%s 2>&1' % hook)
         for line in out.split('\n'):
-            if not regexp(line):
+            if not regexp.match(line):
                 continue
             vals = line.split('=', 1)
             items = vals[0].split(':')
@@ -288,7 +298,7 @@ class RuntimeEnv(object):
             if vtype == 'path':
                 if vtype not in self.env[rtstring]:
                     self.env[rtstring][vtype] = {}
-                data = self.env[rtstring][vtype]
+                cache = self.env[rtstring][vtype]
                 vtype = items[2].lower()
                 evar = items[3]
                 if (vtype != 'remove') and (evar not in cache):
@@ -329,7 +339,7 @@ class RuntimeEnv(object):
         if exists(cache):
             st = stat(cache)
             if (st.st_size > 0):
-                toolcache = join(self.area.archdir(), 'Tools.db')
+                toolcache = self.area.toolcachename()
                 if st.st_mtime > stat(toolcache).st_mtime:
                     with open(cache) as ref:
                         self.env['rtstring'] = load(ref)
@@ -364,7 +374,6 @@ class RuntimeEnv(object):
                 self._toolenv(t)
         for t in compilertools:
             self._toolenv(t)
-        vindex = len(self.env['rtstring']['variables'])
         for k in list(self.env):
             if k != 'rtstring':
                 del self.env[k]
@@ -381,7 +390,6 @@ class RuntimeEnv(object):
            not tool['RUNTIME']:
             return
         projTool = True if tname == environ['SCRAM_PROJECTNAME'].lower() else False
-        vindex = len(self.env['rtstring']['variables'])
         gmake = ""
         for trtvar, trtval in tool['RUNTIME'].items():
             if trtvar.startswith('PATH:'):
@@ -403,21 +411,21 @@ class RuntimeEnv(object):
                             self.env['paths'][var][val] = 1
                             self.env['rtstring']['path'][var].append(val)
             elif trtvar not in self.env['variables']:
-                self.env['variables'][trtvar] = vindex
+                self.env['variables'][trtvar] = len(self.env['rtstring']['variables'])
                 self.env['rtstring']['variables'].append({trtvar: trtval})
-                vindex += 1
 
     def _cleanpath(self, path, sep):
         upath = {}
         opath = []
         for p in path.split(sep):
+            p = abspath(p)
             if not p:
                 continue
             while '/./' in p:
                 p = p.replace('/./', '/')
             while '//' in p:
                 p = p.replace('//', '/')
-            while '/.' in p.endswith('/.'):
+            while p.endswith('/.'):
                 p = p[:-2]
             if not p:
                 p = '/'
