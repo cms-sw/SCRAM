@@ -1,3 +1,8 @@
+2019-02-28 Shahzad Muzaffar  <@smuzaffar>
+
+	* BuildSystem/BuildFile.pm: Added source_only="1" attrib for BuildFile
+	"use" tag to indicate a source only dependency.
+
 2018-11-02: Shahzad Muzaffar  <@smuzaffar>
 
 	* BuildSystem/ToolManager.pm: Make sure Self.xml file exists before reading it.

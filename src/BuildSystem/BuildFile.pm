@@ -120,9 +120,18 @@ sub use()
       {
       if (!$self->{scramdoc}->_isvalid()){return;}
       my ($name,%attributes)=@_;
-      $self->{DEPENDENCIES}->{$attributes{'name'}} = 1;
-      $self->{nested} == 1 ? push(@{$self->{tagcontent}->{USE}}, $attributes{'name'})
-	 : push(@{$self->{content}->{USE}}, $attributes{'name'});
+      my $use = $attributes{'name'};
+      if ((exists $attributes{'source_only'}) && ($attributes{'source_only'} eq "1"))
+         {
+         my %attrib = ('USE_SOURCE_ONLY'=> $use);
+         $object->flags('FLAGS', %attrib);
+         }
+      else
+         {
+         $self->{DEPENDENCIES}->{$use} = 1;
+         $self->{nested} == 1 ? push(@{$self->{tagcontent}->{USE}}, $use)
+	    : push(@{$self->{content}->{USE}}, $use);
+         }
       }
    }
 
