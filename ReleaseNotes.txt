@@ -1,5 +1,10 @@
 
 			SCRAM Release Notes
+V2_2_9_pre04: 2019-02-28
+
+	New feature: Added source_only attribute to specify source only
+	dependency.
+
 V2_2_9_pre03: 2018-11-02
 
 	Buf fix: https://github.com/cms-sw/SCRAM/issues/32
