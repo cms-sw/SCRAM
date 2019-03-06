@@ -7,7 +7,7 @@ from os.path import exists, join, isdir, basename
 from os import environ, getcwd, chdir
 
 
-def cmd_project(args):
+def process(args):
     parser = ArgumentParser(add_help=False)
     parser.add_argument('-l', '--log',
                         dest='log',
