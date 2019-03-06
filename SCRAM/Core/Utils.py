@@ -1,6 +1,6 @@
 import SCRAM
 from os.path import exists, join
-from os import environ, makedirs
+from os import environ, makedirs, execv
 
 
 def create_productstores(area):

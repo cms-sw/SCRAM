@@ -98,28 +98,28 @@ def project_bootfromrelease(project, version, releasePath, opts):
         return True
 
     # Re-run if different SCRAM version is needed to bootstrap the area.
-    # remote_versioncheck(relarea)
+    remote_versioncheck(relarea)
 
     SCRAM.printmsg("Creating a developer area based on project %s version %s"
                    % (project, version), SCRAM.INTERACTIVE)
     environ['RELEASETOP'] = relarea.location()
-    localarea = Core()
     symlink = 1 if opts.symlinks else 0
-    area = relarea.satellite(installdir, installname, symlink, localarea.localarea())
+    area = relarea.satellite(installdir, installname, symlink, Core().localarea())
     chdir(area.location())
     area = Core()
     area.init_env()
-    create_productstores(area.localarea())
+    localarea = area.localarea()
+    create_productstores(localarea)
     if relarea.basedir:
-        with open(join(area.config(), 'scram_basedir'), 'w') as ref:
+        with open(join(localarea.config(), 'scram_basedir'), 'w') as ref:
             ref.write(relarea.basedir)
-    toolmanager = ToolManager(area.localarea())
+    toolmanager = ToolManager(localarea)
     toolmanager.setupself(dump=False)
-    temp = area.localarea().archdir()
-    if not exists(area.localarea().toolcachename()):
+    temp = localarea.archdir()
+    if not exists(localarea.toolcachename()):
         toolmanager.setupalltools(dump=False)
     SCRAM.printmsg("\n\nInstallation procedure complete.", SCRAM.INTERACTIVE)
-    SCRAM.printmsg("Developer area located at:\n\n\t\t%s\n\n" % area.location(), SCRAM.INTERACTIVE)
+    SCRAM.printmsg("Developer area located at:\n\n\t\t%s\n\n" % localarea.location(), SCRAM.INTERACTIVE)
     if xarch != arch:
         SCRAM.printmsg("WARNING: Release %s is not available for architecture %s" %
                        (version, xarch))
@@ -130,7 +130,7 @@ def project_bootfromrelease(project, version, releasePath, opts):
         SCRAM.printmsg("WARNING: Developer's area is created for architecture %s while your current OS is %s." %
                        (arch, os))
     if not SCRAM.COMMANDS_OPTS.force:
-        os = db.productionArch(project, version, area.location())
+        os = db.productionArch(project, version, relarea.location())
         if os and os != arch:
             msg = "WARNING: Developer's area is created for non-production architecture %s. " \
                   "Production architecture for this release is %s" % (arch, os)
@@ -139,7 +139,7 @@ def project_bootfromrelease(project, version, releasePath, opts):
     if tc:
         tc.getData(version, relarea.location())
     if 'SCRAM_IGNORE_PROJECT_HOOK' not in environ:
-        proj_hook = join(area.config(), 'SCRAM', 'hooks', 'project-hook')
+        proj_hook = join(localarea.config(), 'SCRAM', 'hooks', 'project-hook')
         if exists(proj_hook):
             SCRAM.run_command(proj_hook)
     if '/afs/cern.ch/' in environ['SCRAM_TOOL_HOME']:
