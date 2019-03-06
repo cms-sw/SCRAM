@@ -70,8 +70,8 @@ class ToolFile(object):
                     elif key in environ:
                         value = environ[key]
                     else:
-                        print('ERROR: Unable to replace %s in %s' % (m.group(2), self.filename))
-                        return None
+                        self.warnings.append('ERROR: Unable to replace %s in %s' % (m.group(2), self.filename))
+                        return ""
                     data = '%s%s%s' % (m.group(1), value, m.group(4))
                     break
         return data
@@ -111,7 +111,7 @@ class ToolFile(object):
         elif tag == 'ENVIRONMENT':
             value = data.attrib['default'] if 'default' in data.attrib else data.attrib['value']
             value = self._fix_data(value)
-            if value is None:
+            if not value:
                 return True
             tag = data.attrib['name'].upper()
             if tag in self.path_variables:
@@ -149,14 +149,12 @@ class ToolFile(object):
             if 'handler' in data.attrib:
                 handler = data.attrib['handler'].upper()
             value = self._fix_data(value)
-            if value is None:
-                return True
             if vtype == 'PATH':
+                if not value:
+                    return True
                 if not self._check_path(value, handler):
                     return False
                 tag = 'PATH:%s' % tag
-            else:
-                tag = '%s' % tag
             if tag not in self.contents['RUNTIME']:
                 self.contents['RUNTIME'][tag] = []
             if value not in self.contents['RUNTIME'][tag]:

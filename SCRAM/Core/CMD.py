@@ -1,94 +1,11 @@
-from os import environ, getcwd, execv, chdir, makedirs
+from os import environ, execv
 from os.path import exists, join, isdir
 from sys import stderr, argv
 from re import match
 from argparse import ArgumentParser
-try:
-    from subprocess import run as run_cmd
-except:
-    from subprocess import call as run_cmd
 import SCRAM
-from SCRAM.Configuration.ConfigArea import ConfigArea
-from SCRAM.Configuration.BootStrapProject import BootStrapProject
-from SCRAM.Core.ProjectDB import ProjectDB
-from SCRAM.BuildSystem.ToolManager import ToolManager
-from SCRAM.BuildSystem.BuildFile import BuildFile
-from SCRAM.BuildSystem.ToolFile import ToolFile
-
-
-class Core(object):
-    def __init__(self):
-        self._localarea = None
-        self.initialize()
-        return
-
-    def localarea(self, area=None):
-        if area is not None:
-            self._localarea = area
-        return self._localarea
-
-    def islocal(self):
-        return self._localarea
-
-    def checklocal(self):
-        if not self.islocal():
-            SCRAM.scramfatal("Unable to locate the top of local release. "
-                             "Please run this command from a SCRAM-based area.")
-
-    def init_env(self):
-        if self.localarea() is None:
-            return
-        self.localarea().copyenv(environ)
-        if 'SCRAM_TMP' not in environ:
-            environ['SCRAM_TMP'] = 'tmp'
-        environ['SCRAM_INTwork'] = join(environ['SCRAM_TMP'], environ['SCRAM_ARCH'])
-        return
-
-    def initialize(self, arch=None):
-        if self.localarea() is not None:
-            return
-        area = ConfigArea(SCRAM.FORCED_ARCH)
-        location = area.location()
-        if not location:
-            self.localarea(False)
-            return
-        self._localarea = area
-        environ['LOCALTOP'] = location
-        area.bootstrapfromlocation()
-        arch = area.arch()
-        environ['SCRAM_ARCH'] = arch
-        environ['THISDIR'] = getcwd().replace(location, '').strip('/')
-        rel = area.releasetop()
-        if not rel:
-            return
-        rel_file = join(rel, area.admindir(), arch, 'ProjectCache.db.gz')
-        if exists(rel_file):
-            return
-        err = '********** ERROR: Missing Release top ************\n' \
-              '  The release area "%s"\n' \
-              '  for "%s" version "%s" is not available/usable.' \
-              % (rel, area.name(), area.version())
-        print(err, file=stderr)
-        version = area.version()
-        m = match('^(([^\d]*\d+_\d+)_).*$', version)
-        if not m:
-            return
-        ver_exp = m.group(1)
-        rel_series = m.group(2)
-        db = ProjectDB()
-        res = db.listall(area.name(), ver_exp + '.+')
-        if not res or (arch not in res):
-            return
-        rels = [item[1] for item in res[arch] if item[1] != version]
-        if rels:
-            err = '  In case this release has been deprecated, you can move your code to\n' \
-                  '  one of the following release(s) of release series "%s".\n\n' \
-                  '  %s' % (rel_series, '\n  '.join(rels))
-        else:
-            err = '  Sorry, there is no other release installed which you can use for this '\
-                  'release series "%s".' % rel_series
-        print(err, file=stderr)
-        print('***********************************************', file=stderr)
+from SCRAM.Core.Core import Core
+from SCRAM.Core.Utils import create_productstores, spawnversion
 
 
 def cmd_version(args):
@@ -97,7 +14,7 @@ def cmd_version(args):
 
 
 def cmd_help(args):
-    run_cmd(['man', 'scram'])
+    SCRAM.run_command('man scram')
     return True
 
 
@@ -107,20 +24,8 @@ def cmd_arch(args):
     return True
 
 
-def remote_versioncheck(area):
-    sversion = area.scram_version()
-    if not sversion:
-        SCRAM.scramerror("Unable to determine SCRAM version used to config. remote area.")
-    spawnversion(sversion)
-
-
-def spawnversion(newversion='V2_99_99'):
-    if SCRAM.VERSION.split("_", 1)[0] != newversion.split("_", 1)[0]:
-        environ['SCRAM_VERSION'] = newversion
-        execv(SCRAM.BASEPATH + "/common/scram", argv)
-
-
 def cmd_list(args):
+    from SCRAM.Core.ProjectDB import ProjectDB
     parser = ArgumentParser(add_help=False)
     parser.add_argument('-A', '--all',
                         dest='all',
@@ -198,6 +103,7 @@ def cmd_config(args):
 
 
 def cmd_db(args):
+    from SCRAM.Core.ProjectDB import ProjectDB
     parser = ArgumentParser(add_help=False)
     parser.add_argument('-s', '--show',
                         dest='show',
@@ -295,6 +201,7 @@ def cmd_setup(args):
     opts, args = parser.parse_known_args(args)
     if len(args) > 1:
         SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
+    from SCRAM.BuildSystem.ToolManager import ToolManager
     area = Core()
     area.checklocal()
     area.init_env()
@@ -332,281 +239,11 @@ def cmd_setup(args):
     return True
 
 
-def cmsos():
-    e, os = SCRAM.run_command('cmsos')
-    if e:
-        return None
-    return '_'.join(os.split('_', 2)[:2])
-
-
-def create_productstores(area):
-    sym = None
-    if area.symlinks() > 0:
-        from SCRAM.Core.ProdSymLinks import ProdSymLinks
-        sym = ProdSymLinks()
-    location = area.location()
-    bf = BuildFile(location)
-    bf.parse(join(area.config(), 'BuildFile.xml'))
-    arch = area.arch()
-    for store in bf.contents['PRODUCTSTORE']:
-        storename = None
-        if ('type' in store) and (store['type'] == 'arch'):
-            if ('swap' in store) and (store['swap'] == 'true'):
-                storename = join(store['name'], arch)
-            else:
-                storename = join(arch, store['name'])
-        else:
-            storename = store['name']
-        if not exists(storename):
-            if not sym:
-                makedirs(join(location, storename), 0o755)
-            else:
-                sym.mklink(location, storename)
-    src = join(location, area.sourcedir())
-    if not exists(src):
-        makedirs(src)
-    tmp = join(area.tmp(), arch)
-    if not sym:
-        tmp = join(location, tmp)
-        if not exists(tmp):
-            makedirs(tmp, 0o755)
-    else:
-        sym.mklink(location, tmp)
-    return
-
-
 def cmd_project(args):
-    parser = ArgumentParser(add_help=False)
-    parser.add_argument('-l', '--log',
-                        dest='log',
-                        action='store_true',
-                        default=False,
-                        help='See the detail log message while creating a dev area')
-    parser.add_argument('-s', '--symlinks',
-                        dest='symlinks',
-                        action='store_true',
-                        default=False,
-                        help='Creates symlinks for various product build directories.')
-    parser.add_argument('-u', '--update',
-                        dest='update',
-                        action='store_true',
-                        default=False,
-                        help='Command-line argument -u|--update is no more supported.')
-    parser.add_argument('-d', '--dir',
-                        dest='install_base_dir',
-                        type=str,
-                        default=None,
-                        help='Project installation base directory.')
-    parser.add_argument('-b', '--boot',
-                        dest='bootstrap',
-                        type=str,
-                        default=None,
-                        help='Creates a release area using the bootstrap file')
-    parser.add_argument('-n', '--name',
-                        dest='install_name',
-                        type=str,
-                        default=None,
-                        help='Specify the name of the SCRAM-base development area directory.')
-    opts, args = parser.parse_known_args(args)
-    SCRAM.INTERACTIVE = True if opts.log else False
-
-    if opts.bootstrap:
-        return project_bootnewproject(opts, args)
-    if len(args) == 0:
-        SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
-    project = args[0]
-    version = args[1] if len(args) > 1 else None
-    releasePath = None
-    if version is None:
-        if isdir(project) and project.startswith('/'):
-            area = ConfigArea(SCRAM.FORCED_ARCH)
-            releasePath = area.searchlocation(project)
-            if not releasePath:
-                SCRAM.scramerror("Not a valid scram-based release area: %s" % project)
-            project = basename(releasePath)
-        version = project
-        project = project.split('_', 1)[0]
-    return project_bootfromrelease(project.upper(), version, releasePath, opts)
-
-
-def project_bootfromrelease(project, version, releasePath, opts):
-    installdir = opts.install_base_dir if opts.install_base_dir else getcwd()
-    installname = opts.install_name if opts.install_name else version
-    relarea = None
-    if not (project and version):
-        SCRAM.scramfatal("Insufficient arguments: see \"scram project -help\" for usage info.")
-    db = ProjectDB()
-    relarea = None
-    if releasePath:
-        relarea = db.getAreaObject([project, version, releasePath, None], SCRAM.FORCED_ARCH)
-    else:
-        relarea = db.getarea(project, version, force=SCRAM.COMMANDS_OPTS.force)
-    xarch = environ['SCRAM_ARCH']
-    if not relarea or not isdir(relarea.archdir()):
-        if db.deprecated:
-            return False
-        archs = list(db.listcache)
-        errmsg = 'ERROR: Project "%s" version "%s" is not available for arch %s.\n' % (project, version, xarch)
-        if len(archs) > 1:
-            errmsg += '       "%s" is currently available for following archs.\n' % (project)
-            errmsg += '       Please set SCRAM_ARCH properly and re-run the command.\n    %s' % '\n    '.join(archs)
-        else:
-            errmsg += '       Please make sure you have used the correct name/version.\n'
-            errmsg += '       You can run \"scram list $projectname\" to get the list of available versions.'
-        SCRAM.printerror(errmsg)
-        return False
-    arch = relarea.arch()
-    SCRAM.FORCED_ARCH = arch
-    environ['SCRAM_ARCH'] = arch
-    if isdir(join(installdir, installname, relarea.admindir(), arch)):
-        SCRAM.printerror("WARNING: There already exists %s/%s area for SCRAM_ARCH %s." %
-                         (installdir, installname, arch))
-        return True
-
-    # Re-run if different SCRAM version is needed to bootstrap the area.
-    # remote_versioncheck(relarea)
-
-    SCRAM.printmsg("Creating a developer area based on project %s version %s"
-                   % (project, version), SCRAM.INTERACTIVE)
-    environ['RELEASETOP'] = relarea.location()
-    localarea = Core()
-    symlink = 1 if opts.symlinks else 0
-    area = relarea.satellite(installdir, installname, symlink, localarea.localarea())
-    chdir(area.location())
-    area = Core()
-    area.init_env()
-    create_productstores(area.localarea())
-    if relarea.basedir:
-        with open(join(area.config(), 'scram_basedir'), 'w') as ref:
-            ref.write(relarea.basedir)
-    toolmanager = ToolManager(area.localarea())
-    toolmanager.setupself(dump=False)
-    temp = area.localarea().archdir()
-    if not exists(area.localarea().toolcachename()):
-        toolmanager.setupalltools(dump=False)
-    SCRAM.printmsg("\n\nInstallation procedure complete.", SCRAM.INTERACTIVE)
-    SCRAM.printmsg("Developer area located at:\n\n\t\t%s\n\n" % area.location(), SCRAM.INTERACTIVE)
-    if xarch != arch:
-        SCRAM.printmsg("WARNING: Release %s is not available for architecture %s" %
-                       (version, xarch))
-        SCRAM.printmsg("         Developer's area is created for available architecture %s." %
-                       (arch))
-    os = cmsos()
-    if not arch.startswith(os):
-        SCRAM.printmsg("WARNING: Developer's area is created for architecture %s while your current OS is %s." %
-                       (arch, os))
-    if not SCRAM.COMMANDS_OPTS.force:
-        os = db.productionArch(project, version, area.location())
-        if os and os != arch:
-            msg = "WARNING: Developer's area is created for non-production architecture %s. " \
-                  "Production architecture for this release is %s" % (arch, os)
-            SCRAM.printmsg(msg)
-    tc = db.getProjectModule(project)
-    if tc:
-        tc.getData(version, relarea.location())
-    if 'SCRAM_IGNORE_PROJECT_HOOK' not in environ:
-        proj_hook = join(area.config(), 'SCRAM', 'hooks', 'project-hook')
-        if exists(proj_hook):
-            SCRAM.run_command(proj_hook)
-    if '/afs/cern.ch/' in environ['SCRAM_TOOL_HOME']:
-        msg = "****************************** WARNING ******************************\n" \
-              "You are using CMSSW from CERN AFS space. Please note that, by the start of 2017, " \
-              "new CMSSW releases shall only be available via CVMFS.\n" \
-              "See the announcement https://hypernews.cern.ch/HyperNews/CMS/get/swDevelopment/3374.html"
-        SCRAM.printmsg(msg)
-    return True
-
-
-def project_bootnewproject(opts, args):
-    if len(args) != 0:
-        SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
-    bootstrapfile = opts.bootstrap
-    installarea = opts.install_base_dir
-    bs = BootStrapProject(installarea)
-    area = bs.boot(bootstrapfile)
-    chdir(area.location())
-    c = Core()
-    c.init_env()
-    area = c.localarea()
-    toolmanager = ToolManager(area)
-    create_productstores(area)
-    toolmanager.setupself(dump=False, dev_area=False)
-    toolmanager.setupalltools(dump=False, )
-    toolmanager.setupself(dump=False, dev_area=False)
-    return True
+    from SCRAM.Core.CMD_project import cmd_project as run_project_cmd
+    run_project_cmd(args)
 
 
 def cmd_tool(args):
-    area = Core()
-    area.checklocal()
-    if not args or args[0].lower() not in ['list', 'info', 'tag', 'remove']:
-        SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
-    return eval('tool_%s' % args[0].lower())(args[1:], area.localarea())
-
-
-def tool_list(args, area):
-    toolmanager = ToolManager(area)
-    tools = toolmanager.toolsdata()
-    if not tools:
-        SCRAM.scramerror(">>>> No tools set up for current arch or area! <<<<")
-
-    msg = "Tool list for location %s" % area.location()
-    msglen = len(msg)
-    msg += "\n%s\n" % ("+" * len(msg))
-    SCRAM.printmsg("\n%s" % msg)
-    for tool in sorted(tools):
-        SCRAM.printmsg(" {:40s} {:20s}".format(tool, tools[tool]['TOOLVERSION']))
-    SCRAM.printmsg("")
-    return True
-
-
-def tool_info(args, area):
-    if not args:
-        SCRAM.scramfatal("No tool name given: see \"scram tool -help\" for usage info.")
-
-    toolmanager = ToolManager(area)
-    toolname = args[0].lower()
-    tool = toolmanager.gettool(toolname)
-    if not tool:
-        SCRAM.scramerror(">>>> Tool %s is not setup for this project area. <<<<" % toolname)
-    msg = "Tool info as configured in location %s" % area.location()
-    msglen = len(msg)
-    msg += "\n%s\n" % ("+" * len(msg))
-    msg += "Name : %s\n" % toolname
-    msg += "Version : %s\n" % tool['TOOLVERSION']
-    msg += "%s\n" % ("+" * 20)
-    SCRAM.printmsg(msg)
-    tooldata = ToolFile.summarize_tool(tool)
-    for tag in sorted(tooldata):
-        SCRAM.printmsg('%s=%s' % (tag, tooldata[tag]))
-    SCRAM.printmsg("")
-    return True
-
-
-def tool_tag(args, area):
-    if len(args) < 1:
-        SCRAM.scramfatal("No tool name given: see \"scram tool -help\" for usage info.")
-
-    toolmanager = ToolManager(area)
-    toolname = args[0].lower()
-    tool = toolmanager.gettool(toolname)
-    if not tool:
-        SCRAM.scramerror(">>>> Tool %s is not setup for this project area. <<<<" % toolname)
-    tag = None if len(args) == 1 else args[1]
-    msg = ToolFile.get_feature(tool, tag)
-    if msg:
-        SCRAM.printmsg(msg)
-    return True
-
-
-def tool_remove(args, area):
-    if len(args) < 1:
-        SCRAM.scramfatal("No tool name given: see \"scram tool -help\" for usage info.")
-
-    toolname = args[0].lower()
-    toolmanager = ToolManager(area)
-    if not toolmanager.hastool(toolname):
-        SCRAM.errormsg(">>>> Tool %s is not defined for this project area. <<<<" % toolname)
-    SCRAM.printmsg("Removing tool %s from current project area configuration." % toolname)
-    toolmanager.remove_tool(toolname)
-    return True
+    from SCRAM.Core.CMD_tool import cmd_tool as run_tool_cmd
+    run_tool_cmd(args, Core())

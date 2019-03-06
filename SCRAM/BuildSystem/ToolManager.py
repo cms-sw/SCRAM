@@ -220,9 +220,7 @@ class ToolManager(object):
         if exists(linkexternal):
             run_command('%s --arch %s' % (linkexternal, self.area.arch()), fail_on_error=True)
 
-    def _getreleasedata(self, localpath):
-        ltop = environ['LOCALTOP']
-        rtop = environ['RELEASETOP']
+    def _getreleasedata(self, localpath, ltop, rtop):
         if not localpath.startswith(ltop):
             return ""
         relpath = localpath.replace(ltop, rtop)
@@ -235,14 +233,14 @@ class ToolManager(object):
             if k not in self.xml.contents:
                 continue
             for v in self.xml.contents[k]:
-                v = self._getreleasedata(v)
+                v = self._getreleasedata(v, ltop, rtop)
                 if v and v not in self.xml.contents[k]:
                     self.xml.contents[k].append(v)
         if 'RUNTIME' not in self.xml.contents:
             return
         for var in [v for v in self.xml.contents['RUNTIME'] if v.startswith('PATH:')]:
             for d in self.xml.contents['RUNTIME'][var]:
-                d = self._getreleasedata(d)
+                d = self._getreleasedata(d, ltop, rtop)
                 if d and d not in self.xml.contents['RUNTIME'][var]:
                     self.xml.contents['RUNTIME'][var].append(d)
         return
