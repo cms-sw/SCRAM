@@ -20,7 +20,7 @@ def cmd_arch(args):
 
 
 def cmd_list(args):
-    from SCRAM.Core.Commands.runtime import runtime
+    from SCRAM.Core.Commands.list import process
     return process(args)
 
 
