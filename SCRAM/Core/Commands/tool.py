@@ -1,9 +1,11 @@
 import SCRAM
 from SCRAM.BuildSystem.ToolManager import ToolManager
+from SCRAM.Core.Core import Core
 from operator import itemgetter
 
 
-def process(args, area):
+def process(args):
+    area = Core()
     area.checklocal()
     if not args or args[0].lower() not in ['list', 'info', 'tag', 'remove']:
         SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")

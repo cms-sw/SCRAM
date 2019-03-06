@@ -1,63 +1,64 @@
-import SCRAM
-from SCRAM.Core.Core import Core
-
-
 def cmd_version(args):
-    print("%s" % SCRAM.VERSION)
+    from SCRAM import printmsg
+    printmsg("%s" % SCRAM.VERSION)
     return True
 
 
 def cmd_help(args):
-    SCRAM.run_command('man scram')
+    from SCRAM import run_command
+    run_command('man scram')
     return True
 
 
 def cmd_arch(args):
+    from SCRAM import printmsg
+    from os import environ
+    from SCRAM.Core.Core import Core
     c = Core()
-    SCRAM.printmsg("%s" % environ['SCRAM_ARCH'])
+    printmsg("%s" % environ['SCRAM_ARCH'])
     return True
 
 
 def cmd_list(args):
     from SCRAM.Core.Commands.runtime import runtime
-    process(args)
+    return process(args)
 
 
 def cmd_build(args):
-    spawnversion()
-    return True
+    from SCRAM.Core.Commands.build import process
+    return process(args)
 
 
 def cmd_config(args):
     from SCRAM.Core.Commands.config import process
-    process(args)
+    return process(args)
 
 
 def cmd_db(args):
     from SCRAM.Core.Commands.db import process
-    process(args)
+    return process(args)
 
 
 def cmd_setup(args):
     from SCRAM.Core.Commands.setup import process
-    process(args)
+    return process(args)
 
 
 def cmd_unsetenv(args):
-    from SCRAM.Core.Commands.runtime import process_unsetenv
-    unsetenv(args)
+    from SCRAM.Core.Commands.runtime import process_unsetenv as process
+    return process(args)
 
 
 def cmd_runtime(args):
-    from SCRAM.Core.Commands.runtime import process_runtime
-    runtime(args)
+    from SCRAM.Core.Commands.runtime import process_runtime as process
+    return process(args)
 
 
 def cmd_project(args):
     from SCRAM.Core.Commands.project import process
-    process(args)
+    return process(args)
 
 
 def cmd_tool(args):
     from SCRAM.Core.Commands.tool import process
-    process(args, Core())
+    return process(args)
