@@ -3,6 +3,7 @@ from SCRAM.Core.ProjectDB import ProjectDB
 from argparse import ArgumentParser
 from os import environ
 
+
 def process(args):
     parser = ArgumentParser(add_help=False)
     parser.add_argument('-A', '--all',

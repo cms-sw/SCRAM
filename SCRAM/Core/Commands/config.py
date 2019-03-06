@@ -15,4 +15,3 @@ def cmd_config(args):
     if value is None:
         return False
     return conf.dump(key)
-

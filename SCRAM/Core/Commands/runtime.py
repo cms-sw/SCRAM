@@ -22,4 +22,3 @@ def process_runtime(args):
     rt.save(RUNTIME_SHELLS[args[0]])
     rt.setenv(RUNTIME_SHELLS[args[0]])
     return True
-

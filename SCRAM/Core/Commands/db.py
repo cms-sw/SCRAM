@@ -57,4 +57,3 @@ def process(args):
         if not flag:
             SCRAM.printmsg("There are no SCRAM databases linked.")
     return True
-
