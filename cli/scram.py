@@ -48,6 +48,8 @@ def parse_args():
     if opts.arch:
         environ['SCRAM_ARCH'] = opts.arch
         SCRAM.FORCED_ARCH = opts.arch
+    if opts.debug:
+        environ['SCRAM_DEBUG'] = 1
     return (opts, args)
 
 

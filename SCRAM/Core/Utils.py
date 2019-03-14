@@ -22,7 +22,7 @@ def create_productstores(area):
                 storename = join(arch, store['name'])
         else:
             storename = store['name']
-        if not exists(storename):
+        if not exists(join(location, storename)):
             if not sym:
                 makedirs(join(location, storename), 0o755)
             else:

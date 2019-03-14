@@ -4,12 +4,19 @@ from json import load, dump
 
 
 class BuildFile(object):
-    def __init__(self, tools):
+    def __init__(self, toolmanager):
         self.tools = {}
-        self.tool_cache = tools
+        self.toolmanager = toolmanager
         self.parser = SimpleDoc()
         self.parser.add_filter('iftool', '', self._check_iftool)
         return
+
+    def save_on_change(self, outfile):
+        if exists(outfile):
+            old = load(open(outfile))
+            if old == self.contents:
+                return
+        self.save_json(outfile)
 
     def save_json(self, outfile):
         with open(outfile, 'w') as ref:
@@ -38,7 +45,7 @@ class BuildFile(object):
                 return True
             use = data.attrib['name'].lower()
             if use not in self.tools:
-                self.tools[use] = exists(join(self.tool_cache, use + '.json'))
+                self.tools[use] = self.toolmanager.hastool(use)
             if not self.tools[use]:
                 use = data.attrib['name']
             if tag not in self.product:
@@ -112,12 +119,10 @@ class BuildFile(object):
         if node.tag == 'elif':
             del self.parser.last_filter[-1]
         if not self.parser.has_filter(tool_filter):
-            toolcache = join(self.tool_cache, toolname + '.json')
+            tooldata = self.toolmanager.gettool(toolname)
             toolver = ''
-            if exists(toolcache):
-                with open(toolcache) as ref:
-                    tooldata = load(ref)
-                    toolver = tooldata['TOOLVERSION']
+            if tooldata:
+                toolver = tooldata['TOOLVERSION']
             self.parser.add_filter(tool_filter, toolver)
         version = '.+'
         if 'version' in node.attrib:

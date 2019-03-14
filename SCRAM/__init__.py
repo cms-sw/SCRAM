@@ -22,6 +22,9 @@ FORCED_ARCH = ""
 BASEPATH = '/cvmfs/cms.cern.ch'
 COMMANDS_OPTS = None
 
+def scramdebug(msg):
+    if SCRAM_DEBUG:
+        printmsg(msg)
 
 def scramwinfo(msg):
     print("SCRAM %s" % info(msg), file=stdout)

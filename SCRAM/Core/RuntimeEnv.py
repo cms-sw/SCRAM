@@ -32,7 +32,7 @@ class RuntimeEnv(object):
 
     def runtimebuildenv(self):
         save_env = {}
-        for e in ['LD_PRELOAD']:
+        for k in ['LD_PRELOAD']:
             if k in environ:
                 save_env[k] = environ[k]
                 del environ[k]
