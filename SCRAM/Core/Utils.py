@@ -1,6 +1,7 @@
 import SCRAM
 from os.path import exists, join
 from os import environ, makedirs, execv
+from sys import argv
 
 
 def create_productstores(area):

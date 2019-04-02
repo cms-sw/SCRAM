@@ -1,6 +1,6 @@
 def cmd_version(args):
-    from SCRAM import printmsg
-    printmsg("%s" % SCRAM.VERSION)
+    from SCRAM import printmsg, VERSION
+    printmsg("%s" % VERSION)
     return True
 
 
