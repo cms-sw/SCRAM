@@ -63,7 +63,6 @@ class DirCache(object):
         return True
 
     def save_cache(self):
-        print("SAVED")
         self.dirty = False
         with open(self.cachefile, "w") as ref:
             dump(self.cache, ref, sort_keys=True, indent=2)
@@ -249,11 +248,24 @@ class DirCache(object):
         dircache.cache['ADDEDBF'] = {}
         return
 
+    def get_makerules(self):
+        return join(self.toolmanager.area.archdir(), 'BuildFiles', 'ProductCache.txt')
+
+    def has_makerules(self):
+        return exists(self.get_makerules())
+
     def write_gmake(self):
+        makerules = self.get_makerules()
+        if exists(makerules):
+            remove(makerules)
         if dircache.cache['ADDEDDIR']:
             self.dir_make()
         if dircache.cache['ADDEDBF']:
             self.write_buildfile()
+        dircache.save_cache()
+        with open(makerules, "w") as ref:
+            pass
+        return
 
 
 def process(args):
@@ -306,16 +318,10 @@ def process(args):
         e, out = SCRAM.run_command(ProjectInit)
         SCRAM.printmsg(out)
         SCRAM.scramdebug("Script exitted with status %s" % e)
-    prodStore = join(localarea.archdir(), 'BuildFiles', 'ProductCache.txt')
-    if not exists(prodStore):
+    if not exists(dircache.has_makerules()):
         opts.reset = True
     if not SCRAM.COMMANDS_OPTS.force:
         dircache.checkfiles(opts.reset)
     if dircache.dirty:
-        if exists(prodStore):
-            remove(prodStore)
         dircache.write_gmake()
-        dircache.save_cache()
-        with open(prodStore, "w") as ref:
-            pass
     return True
