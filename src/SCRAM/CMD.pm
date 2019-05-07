@@ -1254,7 +1254,7 @@ sub update_external_symlinks_()
    if (($dirty) &&
        (-x "$ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/SCRAM/linkexternal.pl"))
       {
-      print "Updating symlinks under external/$ENV{SCRAM_ARCH}\n";
+      print "THIS IS TEST COMMENT. Updating symlinks under external/$ENV{SCRAM_ARCH}\n";
       system("cd $ENV{LOCALTOP}; $ENV{LOCALTOP}/$ENV{SCRAM_CONFIGDIR}/SCRAM/linkexternal.pl  --arch $ENV{SCRAM_ARCH}");
       }
    }
