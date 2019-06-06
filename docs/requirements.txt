@@ -6,7 +6,7 @@ CommonMark==0.5.4
 docutils==0.14
 idna==2.7
 imagesize==1.1.0
-Jinja2==2.10
+Jinja2==2.10.1
 MarkupSafe==1.0
 packaging==18.0
 Pygments==2.2.0
@@ -20,4 +20,4 @@ Sphinx==1.8.1
 sphinx-rtd-theme==0.4.2
 sphinxcontrib-websupport==1.1.0
 typing==3.6.6
-urllib3==1.23
+urllib3==1.25.3
