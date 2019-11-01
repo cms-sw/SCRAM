@@ -765,6 +765,7 @@ sub bootfromrelease() {
     my ($projectname,$projectversion,$installdir,$installname,$symlinks,$projPath,$force) = @_;
     my $iname=$installname || $projectversion;
     if ($projectname && $projectversion) {
+	if ($main::FORCE_SCRAM_ARCH eq ""){$ENV{SCRAM_ARCH}=$main::ORIG_SCRAM_ARCH;}
 	my $scramdb = $self->scramprojectdb();
 	my $relarea=undef;
 	if ($projPath)
