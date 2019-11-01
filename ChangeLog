@@ -1,3 +1,7 @@
+2019-11-01 Shahzad Muzaffar  <@smuzaffar>
+
+	* SCRAM/CMD.pm: Use SCRAM_ARCH from env for creating project area.
+
 2019-02-28 Shahzad Muzaffar  <@smuzaffar>
 
 	* BuildSystem/BuildFile.pm: Added source_only="1" attrib for BuildFile

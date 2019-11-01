@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_9_pre05: 2019-11-01
+
+	Fix creation of project area with in another if OS does not match.
+
 V2_2_9_pre04: 2019-02-28
 
 	New feature: Added source_only attribute to specify source only
