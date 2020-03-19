@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_9_pre06: 2020-03-18
+
+	Fxi scram man pages.
+
 V2_2_9_pre05: 2019-11-01
 
 	Fix creation of project area with in another if OS does not match.

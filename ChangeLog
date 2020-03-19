@@ -1,3 +1,7 @@
+2020-03-18 Shahzad Muzaffar  <@smuzaffar>
+	* docs: Thanks for suggestion of Marco Rovere. Rename the .1.in to
+	.1 and directly install it.
+
 2019-11-01 Shahzad Muzaffar  <@smuzaffar>
 
 	* SCRAM/CMD.pm: Use SCRAM_ARCH from env for creating project area.
