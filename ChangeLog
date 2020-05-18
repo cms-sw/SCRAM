@@ -1,3 +1,8 @@
+2020-05-18 Shahzad Muzaffar  <@smuzaffar>
+
+	* SCRAM/Plugins/RuntimeEnv.pm: Allow to replace a path/variable via
+	hooks.
+
 2020-03-18 Shahzad Muzaffar  <@smuzaffar>
 	* docs: Thanks for suggestion of Marco Rovere. Rename the .1.in to
 	.1 and directly install it.
@@ -30,8 +35,8 @@
 	* ActiveDoc/SimpleDoc.pm: Added <else/> support for conditional flags e.b
 	<ifarchitecture name="_aarch64_">
 
-        <else/>
-        </ifarchitecture>
+	<else/>
+	</ifarchitecture>
 	* CMD.pm: Allow checking for default compiler in tool files too.
 
 2018-10-17 Shahzad Muzaffar  <@smuzaffar>
@@ -45,8 +50,8 @@
 	iftool filter to check if a tools exists e.g. one can have something
 	like the foolowing to add conditional dependencies based or run tests
 	<iftool name="root" version="6\..+">
-          <test name="root6_tests" command="root6_tests.sh"/>
-        </iftool>
+	  <test name="root6_tests" command="root6_tests.sh"/>
+	</iftool>
 
 2018-09-14 Shahzad Muzaffar  <@smuzaffar>
 

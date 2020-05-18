@@ -374,7 +374,7 @@ sub runtime_hooks_()
   if ($debug){print STDERR "SCRAN_HOOK: $out";}
   foreach my $line (split("\n",$out))
   {
-    if ($line!~/^runtime:((path:(append|prepend|remove):[a-zA-Z0-9-_]+)|(variable:[a-zA-Z0-9-_]+))=/io){print STDERR "$line\n"; next;}
+    if ($line!~/^runtime:((path:(append|prepend|remove|replace):[a-zA-Z0-9-_]+)|(variable:[a-zA-Z0-9-_]+))=/io){print STDERR "$line\n"; next;}
     my @vals = split("=",$line,2);
     my @items = split(":",$vals[0]);
     my $vtype = lc($items[1]);
@@ -384,6 +384,12 @@ sub runtime_hooks_()
       my $c = $self->{env}{rtstring}{path};
       $vtype=lc($items[2]);
       my $evar = $items[3];
+      if ($vtype eq "replace")
+      {
+        my @xitems = split("=",$vals[1],2);
+        $vals[1] = $xitems[0];
+        $vals[2] = $xitems[1];
+      }
       if (($vtype ne "remove") && (! exists $c->{$evar})){$c->{$evar}=[];}
       foreach my $d (split(":",$vals[1]))
       {
@@ -391,12 +397,19 @@ sub runtime_hooks_()
         if($d eq ""){next;}
         if ($vtype eq "append"){push(@{$c->{$evar}},$d);}
         elsif ($vtype eq "prepend"){unshift @{$c->{$evar}}, $d;}
-        elsif ($vtype eq "remove")
+        elsif (($vtype eq "remove") || ($vtype eq "replace"))
         {
           my $npath=[];
           foreach my $x (@{$c->{$evar}})
           {
-            if ($x eq $d){next;}
+            if ($x eq $d)
+            {
+              if ($vtype eq "replace")
+              {
+                foreach my $r (split(":",$vals[2])){push(@$npath,$r);}
+              }
+              next;
+            }
             push(@$npath,$x);
           }
           $c->{$evar}=$npath;
