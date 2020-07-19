@@ -1516,7 +1516,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                  "ALL_PYTHON_DIRS += $(patsubst src/%,%,{1})\n"
                  "{0}_files := $(patsubst {1}/%,%,$(wildcard $(foreach dir,{1} {3},$(foreach ext,"
                  "$(SRC_FILES_SUFFIXES),$(dir)/*.$(ext)))))\n".
-                 format(safename, path, safepath, self.getSubDirIfEnabled(), self.get("Xparent")))
+                 format(safename, path, safepath, self.getSubDirIfEnabled(), self.get("parent")))
         self.dumpBuildFileData()
         fh.write("else\n"
                  "$(eval $(call MultipleWarningMsg,{0},{1}))\n"
