@@ -52,7 +52,7 @@ class RuntimeEnv(object):
 
     def _fixlibenv(self, var):
         if environ['SCRAM_ARCH'].startswith('osx') and var == 'LD_LIBRARY_PATH':
-            var = DYLD_FALLBACK_LIBRARY_PATH
+            var = 'DYLD_FALLBACK_LIBRARY_PATH'
         return var
 
     def setenv(self, shell, ostream=None):
@@ -64,7 +64,6 @@ class RuntimeEnv(object):
         sep = shell_data['SEP']
         udata = {}
         data = []
-        index = 0
         if not self._unsetenv:
             env_prefix = self.env_backup_prefix
             env = self._runtime()
@@ -124,8 +123,8 @@ class RuntimeEnv(object):
                     if val == oenv[var]:
                         continue
                 environ[var] = val
-                print ('%s %s%s\"%s\";' % (shell_data['EXPORT'], var,
-                       shell_data['EQUALS'], val), file=stdout)
+                print('%s %s%s\"%s\";' % (shell_data['EXPORT'], var,
+                      shell_data['EQUALS'], val), file=stdout)
         return True
 
     def save(self, shell, ostream=None):
@@ -139,7 +138,6 @@ class RuntimeEnv(object):
         env = self._runtime()
         data = []
         sep = self.shell[shell]['SEP']
-        skip = self.skip_env
         backup_vars = ""
         for h in env['variables']:
             for (name, value) in h.items():
@@ -296,9 +294,9 @@ class RuntimeEnv(object):
             items = vals[0].split(':')
             vtype = items[1].lower()
             if vtype == 'path':
-                if vtype not in self.env[rtstring]:
-                    self.env[rtstring][vtype] = {}
-                cache = self.env[rtstring][vtype]
+                if vtype not in self.env["rtstring"]:
+                    self.env["rtstring"][vtype] = {}
+                cache = self.env["rtstring"][vtype]
                 vtype = items[2].lower()
                 evar = items[3]
                 if (vtype != 'remove') and (evar not in cache):
@@ -314,7 +312,7 @@ class RuntimeEnv(object):
                     elif vtype == 'remove':
                         try:
                             cache[evar].remove(d)
-                        except:
+                        except Exception:
                             pass
             elif vtype == 'variable':
                 if 'variables' not in self.env['rtstring']:

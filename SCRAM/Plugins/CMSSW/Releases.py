@@ -57,7 +57,7 @@ class Releases(object):
                     cmd = 'curl -L -k --stderr /dev/null'
                 cmd = '%s "%s"' % (cmd, url)
                 maxwait = siteconf.get("release-checks-timeout")
-                e, out = run_command('timeout %s %s |  grep ";label=%s;\|;state=IB;"' % (maxwait, cmd, version))
+                e, out = run_command(r'timeout %s %s |  grep ";label=%s;\|;state=IB;"' % (maxwait, cmd, version))
                 if e:
                     return self.data
                 for line in out.split('\n'):
@@ -74,6 +74,6 @@ class Releases(object):
                 continue
             if ('state' in items) and (items['state'] == 'Deprecated'):
                 return 0
-            if ('deprecate_date' in items) and match('^\d{8}$', items['deprecate_date']):
+            if ('deprecate_date' in items) and match(r'^\d{8}$', items['deprecate_date']):
                 return items['deprecate_date']
         return -1

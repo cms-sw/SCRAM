@@ -18,7 +18,6 @@ def tool_list(args, area):
     if not tools:
         SCRAM.scramerror(">>>> No tools set up for current arch or area! <<<<")
     msg = "Tool list for location %s" % area.location()
-    msglen = len(msg)
     msg += "\n%s\n" % ("+" * len(msg))
     SCRAM.printmsg("\n%s" % msg)
     for tool in sorted(tools, key=itemgetter('TOOLNAME')):
@@ -38,7 +37,6 @@ def tool_info(args, area):
     if not tool:
         SCRAM.scramerror(">>>> Tool %s is not setup for this project area. <<<<" % toolname)
     msg = "Tool info as configured in location %s" % area.location()
-    msglen = len(msg)
     msg += "\n%s\n" % ("+" * len(msg))
     msg += "Name : %s\n" % toolname
     msg += "Version : %s\n" % tool['TOOLVERSION']
@@ -60,6 +58,7 @@ def tool_tag(args, area):
     tool = toolmanager.gettool(toolname)
     if not tool:
         SCRAM.scramerror(">>>> Tool %s is not setup for this project area. <<<<" % toolname)
+    from SCRAM.BuildSystem.ToolFile import ToolFile
     tag = None if len(args) == 1 else args[1]
     msg = ToolFile.get_feature(tool, tag)
     if msg:

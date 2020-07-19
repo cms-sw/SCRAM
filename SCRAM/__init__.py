@@ -22,9 +22,11 @@ FORCED_ARCH = ""
 BASEPATH = '/cvmfs/cms.cern.ch'
 COMMANDS_OPTS = None
 
+
 def scramdebug(msg):
     if SCRAM_DEBUG:
         printmsg(msg)
+
 
 def scramwinfo(msg):
     print("SCRAM %s" % info(msg), file=stdout)
@@ -87,7 +89,7 @@ def die(msg):
 def run_command(command, debug=False, fail_on_error=False):
     try:
         from subprocess import getstatusoutput as run_cmd
-    except:
+    except Exception:
         from subprocess import call as run_cmd
     err, out = run_cmd(command)
     if err and fail_on_error:

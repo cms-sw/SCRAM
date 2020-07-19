@@ -11,30 +11,30 @@ re_check = {
 
 class ExtraBuildRule:
 
-    def __init__(self, template):
-        self.template = template
+    def __init__(self, buildrules):
+        self.buildrules = buildrules
+        buildrules.symlinkPythonDirectory(1)
+        buildrules.autoGenerateClassesH(1)
+        # $self->addPluginSupport(plugin-type,plugin-flag,plugin-refresh-cmd,dir-regexp-for-default-plugins,
+        #   plugin-store-variable,plugin-cache-file,plugin-name-exp,no-copy-shared-lib)
+        buildrules.addPluginSupport("edm", "EDM_PLUGIN", "edmPluginRefresh", r'\/plugins$', "SCRAMSTORENAME_LIB",
+                                    ".edmplugincache", '$name="${name}.edmplugin"', "yes")
+        buildrules.addPluginSupport("rivet", "RIVET_PLUGIN", "RivetPluginRefresh", r'\/plugins$', "SCRAMSTORENAME_LIB",
+                                    ".rivetcache", '$name="Rivet${name}.$(SHAREDSUFFIX)"', "yes")
+        buildrules.addPluginSupport("dd4hep", "DD4HEP_PLUGIN", "DD4HepPluginRefresh", r'\/nplugins$',
+                                    "SCRAMSTORENAME_LIB", ".dd4hepcache", '$name="lib${name}.components"', "yes")
+        buildrules.setProjectDefaultPluginType("edm")
+        buildrules.addSymLinks("src/LCG include/LCG 1 . ''")
 
     def isPublic(self, klass):
         return klass in ["LIBRARY", "BIGPRODUCT"]
 
     def Project(self):
-        common = self.template
+        common = self.buildrules
         fh = common.filehandle()
-        common.symlinkPythonDirectory(1)
-        common.autoGenerateClassesH(1)
-        # $self->addPluginSupport(plugin-type,plugin-flag,plugin-refresh-cmd,dir-regexp-for-default-plugins,
-        #   plugin-store-variable,plugin-cache-file,plugin-name-exp,no-copy-shared-lib)
-        common.addPluginSupport("edm", "EDM_PLUGIN", "edmPluginRefresh", '\/plugins$', "SCRAMSTORENAME_LIB",
-                                ".edmplugincache", '$name="${name}.edmplugin"', "yes")
-        common.addPluginSupport("rivet", "RIVET_PLUGIN", "RivetPluginRefresh", '\/plugins$', "SCRAMSTORENAME_LIB",
-                                ".rivetcache", '$name="Rivet${name}.\$(SHAREDSUFFIX)"', "yes")
-        common.addPluginSupport("dd4hep", "DD4HEP_PLUGIN", "DD4HepPluginRefresh", '\/nplugins$', "SCRAMSTORENAME_LIB",
-                                ".dd4hepcache", '$name="lib${name}.components"', "yes")
-        common.setProjectDefaultPluginType("edm")
-        common.setLCGCapabilitiesPluginType("edm")
-        common.addSymLinks("src/LCG include/LCG 1 . ''")
-        fh.write(
-            "COND_SERIALIZATION:=$(SCRAM_SOURCEDIR)/CondFormats/Serialization/python/condformats_serialization_generate.py\n")
+        fh.write("COND_SERIALIZATION:=$(SCRAM_SOURCEDIR)/CondFormats/Serialization/python"
+                 "/condformats_serialization_generate.py\n")
+        fh.write("ALL_EXTRA_PRODUCT_RULES+=LCG\n")
         if re_check["_mic_"].match(environ["SCRAM_ARCH"]):
             fh.write("EDM_WRITE_CONFIG:=true\n"
                      "EDM_CHECK_CLASS_VERSION:=true\n"
@@ -52,107 +52,104 @@ class ExtraBuildRule:
             if re_check["_TSAN_"].match(environ["SCRAM_PROJECTVERSION"]):
                 fh.write("EDM_TOOLS_PREFIX:=LD_PRELOAD=$(GCC_CXXCOMPILER_BASE)/lib64/libtsan.so\n")
 
-        fh.write("""COMPILE_PYTHON_SCRIPTS:=yes
-self_EX_FLAGS_CPPDEFINES+=-DCMSSW_GIT_HASH='"$(CMSSW_GIT_HASH)"' -DPROJECT_NAME='"$(SCRAM_PROJECTNAME)"' -DPROJECT_VERSION='"$(SCRAM_PROJECTVERSION)"'
-ifeq ($(strip $(RELEASETOP)$(IS_PATCH)),yes)
-CMSSW_SEARCH_PATH:=${CMSSW_SEARCH_PATH}:$($(SCRAM_PROJECTNAME)_BASE_FULL_RELEASE)/$(SCRAM_SOURCEDIR)
-endif
-""")
+        fh.write("COMPILE_PYTHON_SCRIPTS:=yes\n"
+                 "self_EX_FLAGS_CPPDEFINES+=-DCMSSW_GIT_HASH='\"$(CMSSW_GIT_HASH)\"' "
+                 "-DPROJECT_NAME='\"$(SCRAM_PROJECTNAME)\"' -DPROJECT_VERSION='\"$(SCRAM_PROJECTVERSION)\"'\n"
+                 "ifeq ($(strip $(RELEASETOP)$(IS_PATCH)),yes)\n"
+                 "CMSSW_SEARCH_PATH:=${CMSSW_SEARCH_PATH}:$($(SCRAM_PROJECTNAME)_BASE_FULL_RELEASE)"
+                 "/$(SCRAM_SOURCEDIR)\n"
+                 "endif\n")
 
         ######################################################################
         # Dependencies: run ignominy analysis for release documentation
-        fh.write(""".PHONY: dependencies
-dependencies:
-\t@cd $(LOCALTOP); \\
-\tmkdir -p $(LOCALTOP)/doc/deps/$(SCRAM_ARCH); \\
-\tcd $(LOCALTOP)/doc/deps/$(SCRAM_ARCH); \\
-\tignominy -f -i -A -g all $(LOCALTOP)
-""")
+        fh.write(".PHONY: dependencies\n"
+                 "dependencies:\n"
+                 "\t@cd $(LOCALTOP); \\\n"
+                 "\tmkdir -p $(LOCALTOP)/doc/deps/$(SCRAM_ARCH); \\\n"
+                 "\tcd $(LOCALTOP)/doc/deps/$(SCRAM_ARCH); \\\n"
+                 "\tignominy -f -i -A -g all $(LOCALTOP)\n")
 
         ######################################################################
         # Documentation targets. Note- must be lower case otherwise conflict with rules
         # for dirs which have the same name:
-        fh.write(""".PHONY: userguide referencemanual doc doxygen
-doc: referencemanual
-\t@echo "Documentation/release notes built for $(SCRAM_PROJECTNAME) v$(SCRAM_PROJECTVERSION)"
-userguide:
-\t@if [ -f $(LOCALTOP)/src/Documentation/UserGuide/scripts/makedoc ]; then \\
-\t  doctop=$(LOCALTOP); \\
-\telse \\
-\t  doctop=$(RELEASETOP); \\
-\tfi; \\
-\tcd $$doctop/src; \\
-\tDocumentation/UserGuide/scripts/makedoc $(LOCALTOP)/src $(LOCALTOP)/doc/UserGuide $(RELEASETOP)/src
-referencemanual:
-\t@cd $(LOCALTOP)/src/Documentation/ReferenceManualScripts/config; \\
-\tsed -e 's|@PROJ_NAME@|$(SCRAM_PROJECTNAME)|g' \\
-\t-e 's|@PROJ_VERS@|$(SCRAM_PROJECTVERSION)|g' \\
-\t-e 's|@CMSSW_BASE@|$(LOCALTOP)|g' \\
-\t-e 's|@INC_PATH@|$(LOCALTOP)/src|g' \\
-\tdoxyfile.conf.in > doxyfile.conf; \\
-\tcd $(LOCALTOP); \\
-\tls -d src/*/*/doc/*.doc | sed 's|(.*).doc|mv "&" "\\1.dox"|' | /bin/sh; \\
-\tif [ `expr substr $(SCRAM_PROJECTVERSION) 1 1` = "2" ]; then \\
-\t  ./config/fixdocs.sh $(SCRAM_PROJECTNAME)"_"$(SCRAM_PROJECTVERSION); \\
-\telse \\
-\t  ./config/fixdocs.sh $(SCRAM_PROJECTVERSION); \\
-\tfi; \\
-\tls -d src/*/*/doc/*.doy |  sed 's/(.*).doy/sed "s|@PROJ_VERS@|$(SCRAM_PROJECTVERSION)|g" "&" > "\\1.doc"/' | /bin/sh; \\
-\trm -rf src/*/*/doc/*.doy; \\
-\tcd $(LOCALTOP)/src/Documentation/ReferenceManualScripts/config; \\
-\tdoxygen doxyfile.conf; \\
-\tcd $(LOCALTOP); \\
-\tls -d src/*/*/doc/*.dox | sed 's|(.*).dox|mv "&" "\\1.doc"|' | /bin/sh;
-doxygen:
-\t@rm -rf $(LOCALTOP)/$(WORKINGDIR)/doxygen &&\\
-\tmkdir -p $(LOCALTOP)/$(WORKINGDIR)/doxygen &&\\
-\tscriptdir=$(LOCALTOP)/$(SCRAM_SOURCEDIR)/Documentation/ReferenceManualScripts/doxygen/utils &&\\
-\t[ -d $$scriptdir ] || scriptdir=$(RELEASETOP)/$(SCRAM_SOURCEDIR)/Documentation/ReferenceManualScripts/doxygen/utils &&\\
-\tcd $$scriptdir/doxygen &&\\
-\tcp -t $(LOCALTOP)/$(WORKINGDIR)/doxygen cfgfile footer.html header.html doxygen.css DoxygenLayout.xml doxygen ../../script_launcher.sh &&\\
-\tcd $(LOCALTOP)/$(WORKINGDIR)/doxygen &&\\
-\tchmod +rwx doxygen script_launcher.sh &&\\
-\tsed -e 's|@CMSSW_BASE@|$(LOCALTOP)|g' cfgfile > cfgfile.conf &&\\
-\t./doxygen cfgfile.conf &&\\
-\t./script_launcher.sh $(SCRAM_PROJECTVERSION) $$scriptdir $(LOCALTOP) &&\\
-\techo "Reference Manual is generated."
-.PHONY: gindices
-gindices:
-\t@cd $(LOCALTOP); \\
-\trm -rf  .glimpse_*; mkdir .glimpse_full; \\
-\tfind $(LOCALTOP)/src $(LOCALTOP)/cfipython/$(SCRAM_ARCH) -follow -mindepth 3 -type f | grep -v '.pyc$$' | sed 's|^./||' | glimpseindex -F -H .glimpse_full; \\
-\tchmod 0644 .glimpse_full/.glimpse_*; \\
-\tmv .glimpse_full/.glimpse_filenames .; \\
-\tfor  x in `ls -A1 .glimpse_full` ; do \\
-\t  ln -s .glimpse_full/$$x $$x; \\
-\tdone; \\
-\tcp .glimpse_filenames .glimpse_full/.glimpse_filenames; \\
-\tsed -i -e "s|$(LOCALTOP)/||" .glimpse_filenames
-.PHONY: productmap
-productmap:
-\t@cd $(LOCALTOP); \\
-\tmkdir -p src; rm -f src/ReleaseProducts.list; echo ">> Generating Product Map in src/ReleaseProducts.list.";\\
-\t(RelProducts.pl $(LOCALTOP) > $(LOCALTOP)/src/ReleaseProducts.list || exit 0)
-.PHONY: depscheck
-depscheck:
-\t@ReleaseDepsChecks.pl --detail
-""")
+        fh.write(".PHONY: userguide referencemanual doc doxygen\n"
+                 "doc: referencemanual\n"
+                 "\t@echo \"Documentation/release notes built for $(SCRAM_PROJECTNAME) v$(SCRAM_PROJECTVERSION)\"\n"
+                 "userguide:\n"
+                 "\t@if [ -f $(LOCALTOP)/src/Documentation/UserGuide/scripts/makedoc ]; then \\\n"
+                 "\t  doctop=$(LOCALTOP); \\\n"
+                 "\telse \\\n"
+                 "\t  doctop=$(RELEASETOP); \\\n"
+                 "\tfi; \\\n"
+                 "\tcd $$doctop/src; \\\n"
+                 "\tDocumentation/UserGuide/scripts/makedoc $(LOCALTOP)/src $(LOCALTOP)/doc/UserGuide "
+                 "$(RELEASETOP)/src\n"
+                 "referencemanual:\n"
+                 "\t@cd $(LOCALTOP)/src/Documentation/ReferenceManualScripts/config; \\\n"
+                 "\tsed -e 's|@PROJ_NAME@|$(SCRAM_PROJECTNAME)|g' \\\n"
+                 "\t-e 's|@PROJ_VERS@|$(SCRAM_PROJECTVERSION)|g' \\\n"
+                 "\t-e 's|@CMSSW_BASE@|$(LOCALTOP)|g' \\\n"
+                 "\t-e 's|@INC_PATH@|$(LOCALTOP)/src|g' \\\n"
+                 "\tdoxyfile.conf.in > doxyfile.conf; \\\n"
+                 "\tcd $(LOCALTOP); \\\n"
+                 "\tls -d src/*/*/doc/*.doc | sed 's|(.*).doc|mv \"&\" \"\\1.dox\"|' | /bin/sh; \\\n"
+                 "\tif [ `expr substr $(SCRAM_PROJECTVERSION) 1 1` = \"2\" ]; then \\\n"
+                 "\t  ./config/fixdocs.sh $(SCRAM_PROJECTNAME)\"_\"$(SCRAM_PROJECTVERSION); \\\n"
+                 "\telse \\\n"
+                 "\t  ./config/fixdocs.sh $(SCRAM_PROJECTVERSION); \\\n"
+                 "\tfi; \\\n"
+                 "\tls -d src/*/*/doc/*.doy |  sed 's/(.*).doy/sed \"s|@PROJ_VERS@|$(SCRAM_PROJECTVERSION)|g\" \"&\" > "
+                 "\"\\1.doc\"/' | /bin/sh; \\\n"
+                 "\trm -rf src/*/*/doc/*.doy; \\\n"
+                 "\tcd $(LOCALTOP)/src/Documentation/ReferenceManualScripts/config; \\\n"
+                 "\tdoxygen doxyfile.conf; \\\n"
+                 "\tcd $(LOCALTOP); \\\n"
+                 "\tls -d src/*/*/doc/*.dox | sed 's|(.*).dox|mv \"&\" \"\\1.doc\"|' | /bin/sh;\n"
+                 "doxygen:\n"
+                 "\t@rm -rf $(LOCALTOP)/$(WORKINGDIR)/doxygen &&\\\n"
+                 "\tmkdir -p $(LOCALTOP)/$(WORKINGDIR)/doxygen &&\\\n"
+                 "\tscriptdir=$(LOCALTOP)/$(SCRAM_SOURCEDIR)/Documentation/ReferenceManualScripts/doxygen/utils &&\\\n"
+                 "\t[ -d $$scriptdir ] || scriptdir=$(RELEASETOP)/$(SCRAM_SOURCEDIR)/Documentation"
+                 "/ReferenceManualScripts"
+                 "/doxygen/utils &&\\\n"
+                 "\tcd $$scriptdir/doxygen &&\\\n"
+                 "\tcp -t $(LOCALTOP)/$(WORKINGDIR)/doxygen cfgfile footer.html header.html doxygen.css "
+                 "DoxygenLayout.xml doxygen ../../script_launcher.sh &&\\\n"
+                 "\tcd $(LOCALTOP)/$(WORKINGDIR)/doxygen &&\\\n"
+                 "\tchmod +rwx doxygen script_launcher.sh &&\\\n"
+                 "\tsed -e 's|@CMSSW_BASE@|$(LOCALTOP)|g' cfgfile > cfgfile.conf &&\\\n"
+                 "\t./doxygen cfgfile.conf &&\\\n"
+                 "\t./script_launcher.sh $(SCRAM_PROJECTVERSION) $$scriptdir $(LOCALTOP) &&\\\n"
+                 "\techo \"Reference Manual is generated.\"\n"
+                 ".PHONY: gindices\n"
+                 "gindices:\n"
+                 "\t@cd $(LOCALTOP); \\\n"
+                 "\trm -rf  .glimpse_*; mkdir .glimpse_full; \\\n"
+                 "\tfind $(LOCALTOP)/src $(LOCALTOP)/cfipython/$(SCRAM_ARCH) -follow -mindepth 3 -type f | "
+                 "grep -v '.pyc$$' | sed 's|^./||' | glimpseindex -F -H .glimpse_full; \\\n"
+                 "\tchmod 0644 .glimpse_full/.glimpse_*; \\\n"
+                 "\tmv .glimpse_full/.glimpse_filenames .; \\\n"
+                 "\tfor  x in `ls -A1 .glimpse_full` ; do \\\n"
+                 "\t  ln -s .glimpse_full/$$x $$x; \\\n"
+                 "\tdone; \\\n"
+                 "\tcp .glimpse_filenames .glimpse_full/.glimpse_filenames; \\\n"
+                 "\tsed -i -e \"s|$(LOCALTOP)/||\" .glimpse_filenames\n"
+                 ".PHONY: productmap\n"
+                 "productmap:\n"
+                 "\t@cd $(LOCALTOP); \\\n"
+                 "\tmkdir -p src; rm -f src/ReleaseProducts.list; "
+                 "echo \">> Generating Product Map in src/ReleaseProducts.list.\";\\\n"
+                 "\t(RelProducts.pl $(LOCALTOP) > $(LOCALTOP)/src/ReleaseProducts.list || exit 0)\n"
+                 ".PHONY: depscheck\n"
+                 "depscheck:\n"
+                 "\t@ReleaseDepsChecks.pl --detail\n")
 
-    def Extra_templateI(self):
-        common = self.template
-        skip = common.core.flags("SKIP_FILES")
+    def Extra_template(self):
+        common = common = self.buildrules
+        skip = common.getFlagValue("SKIP_FILES", True)
         if skip == "*" or skip == "%":
             return True
-        common.pushstash()
-        common.moc_template()
-        common.popstash()
         common.plugin_template()
-        common.pushstash()
-        common.lexyacc_template()
-        common.popstash()
-        common.pushstash()
-        common.codegen_template()
-        common.popstash()
         common.pushstash()
         common.dict_template()
         common.popstash()

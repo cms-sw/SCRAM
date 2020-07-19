@@ -2,12 +2,11 @@ from glob import glob
 from json import load, loads, dumps
 from os.path import basename, exists, join, isdir, dirname, abspath
 from os import remove, stat, utime, environ
-from glob import glob
 from shutil import copy2, move
 from SCRAM import run_command, printerror, scramerror, printmsg
 from SCRAM.Configuration.ConfigArea import ConfigArea
 from SCRAM.BuildSystem.ToolFile import ToolFile
-from SCRAM.Utilities.AddDir import adddir, copydir, copyfile
+from SCRAM.Utilities.AddDir import adddir
 
 
 def isnewer(srcfile, desfile):
@@ -186,7 +185,6 @@ class ToolManager(object):
         return order
 
     def gettool(self, tool):
-        tooldata = {}
         if tool not in self.tools:
             toolfile = self.tool_json_path(tool)
             if exists(toolfile):

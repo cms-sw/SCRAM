@@ -14,7 +14,7 @@ def cmd_arch(args):
     from SCRAM import printmsg
     from os import environ
     from SCRAM.Core.Core import Core
-    c = Core()
+    Core()
     printmsg("%s" % environ['SCRAM_ARCH'])
     return True
 

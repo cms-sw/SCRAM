@@ -7,7 +7,7 @@ import tempfile
 This class is supposed to make symlinks from your home directory (ex. /afs) to
 a faster directory ( local /tmp).
 """
-regex = re.compile('^(.*)\$\((.+?)\)(.*)$')
+regex = re.compile(r'^(.*)\$\((.+?)\)(.*)$')
 
 
 class ProdSymLinks():
@@ -44,7 +44,7 @@ class ProdSymLinks():
         if not exists(path_to_check):
             try:
                 unlink(path_to_check)
-            except:
+            except Exception:
                 pass
             if link in self.symlinks:
                 path = self.symlinks[link]

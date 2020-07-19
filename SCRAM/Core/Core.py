@@ -60,7 +60,7 @@ class Core(object):
               % (rel, area.name(), area.version())
         SCRAM.printerror(err)
         version = area.version()
-        m = match('^(([^\d]*\d+_\d+)_).*$', version)
+        m = match(r'^(([^\d]*\d+_\d+)_).*$', version)
         if not m:
             return
         ver_exp = m.group(1)

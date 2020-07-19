@@ -3,11 +3,11 @@ from re import compile
 from os import environ
 from os.path import exists
 from json import dump
-from SCRAM import printmsg, printerror
+from SCRAM import printmsg, printerror, scramerror
 
-reReplaceEnv = [compile('^(.*)(\$\((\w+)\))(.*)$'),
-                compile('^(.*)(\$\{(\w+)\})(.*)$'),
-                compile('^(.*)(\$(\w+))(.*)$')]
+reReplaceEnv = [compile(r'^(.*)(\$\((\w+)\))(.*)$'),
+                compile(r'^(.*)(\$\{(\w+)\})(.*)$'),
+                compile(r'^(.*)(\$(\w+))(.*)$')]
 
 
 class ToolFile(object):
@@ -102,8 +102,8 @@ class ToolFile(object):
                 elif vtype == 'COMPILER':
                     self.contents['SCRAM_COMPILER'] = 1
                 else:
-                    print ('ERROR: Unknow tool type %s found in %s' %
-                           (data.attrib['type'], self.filename))
+                    print('ERROR: Unknow tool type %s found in %s' %
+                          (data.attrib['type'], self.filename))
         elif tag == 'USE':
             self.contents['USE'].append(data.attrib['name'].lower())
         elif tag == 'LIB':
@@ -205,7 +205,7 @@ class ToolFile(object):
                 if s in ref:
                     ref = ref[s]
                 else:
-                    SCRAM.scramerror('SCRAM: No type of variable called "%s" defined for this tool.' % tag)
+                    scramerror('SCRAM: No type of variable called "%s" defined for this tool.' % tag)
             if isinstance(ref, list):
                 value = ' '.join(ref)
             else:

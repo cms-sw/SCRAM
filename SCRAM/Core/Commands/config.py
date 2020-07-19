@@ -1,7 +1,7 @@
 from SCRAM.Core.SiteConfig import SiteConfig
 
 
-def cmd_config(args):
+def process(args):
     conf = SiteConfig()
     if len(args) == 0:
         return conf.dump()

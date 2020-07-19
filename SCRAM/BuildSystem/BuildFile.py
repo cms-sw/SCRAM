@@ -1,5 +1,5 @@
 from SCRAM.BuildSystem.SimpleDoc import SimpleDoc
-from os.path import exists, join, basename
+from os.path import exists, basename
 from json import load, dump
 
 
@@ -15,13 +15,13 @@ class BuildFile(object):
         if exists(outfile):
             old = load(open(outfile))
             if old == self.contents:
-                return
-        self.save_json(outfile)
+                return False
+        return self.save_json(outfile)
 
     def save_json(self, outfile):
         with open(outfile, 'w') as ref:
             dump(self.contents, ref, sort_keys=True, indent=2)
-        return
+        return True
 
     def parse(self, filename):
         self._clean(filename)
@@ -63,7 +63,7 @@ class BuildFile(object):
             self.product[tag].append(data.attrib['path'])
         elif tag == 'FLAGS':
             if tag not in self.product:
-                self.product[tag] = []
+                self.product[tag] = {}
             flag_name = list(data.attrib)[0]
             value = data.attrib[flag_name]
             flag_name = flag_name.upper()
@@ -71,7 +71,7 @@ class BuildFile(object):
                 self.product[tag][flag_name] = []
             self.product[tag][flag_name].append(value)
         elif tag == 'EXPORT':
-            self.contents[tag] = {'USE': [], 'FLAGS': {}}
+            self.contents[tag] = {'LIB': []}
             self.product = self.contents[tag]
         elif tag in ['BIN', 'LIBRARY']:
             if tag not in self.contents['BUILDPRODUCTS']:
@@ -106,10 +106,12 @@ class BuildFile(object):
         for child in list(data):
             if not self._update_contents(child):
                 return False
-        if tag in ['EXPORT', 'BIN', 'LIBRARY']:
+        if tag in ['BIN', 'LIBRARY']:
             for key in list(self.product):
                 if not self.product[key]:
                     del self.product[key]
+            self.product = self.contents
+        elif tag in ["EXPORT"]:
             self.product = self.contents
         return True
 

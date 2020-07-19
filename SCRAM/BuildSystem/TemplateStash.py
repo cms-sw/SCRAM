@@ -32,14 +32,12 @@ class TemplateStash():
     def set(self, key, value):
         if not key:
             return
-        c = self._index
-        self._stash[c][key] = value
+        self._stash[self._index][key] = value
 
     def get(self, key):
         if not key:
             return ""
-        c = self._index
-        for i in range(c, -1, -1):
+        for i in range(self._index, -1, -1):
             if key in self._stash[i]:
                 return self._stash[i][key]
         return ""  # if not found, return empty string

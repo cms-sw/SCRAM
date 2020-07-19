@@ -1,6 +1,6 @@
 from socket import getfqdn
 from glob import glob
-from os.path import exists, join, abspath, isdir, getmtime, basename, dirname
+from os.path import exists, join, abspath, isdir, getmtime, basename
 from os import environ, chmod
 from re import compile
 from sys import stderr
@@ -94,7 +94,7 @@ class ProjectDB(object):
         try:
             import importlib
             self.project_module = importlib.import_module('SCRAM.Plugins.{0}.Releases'.format(project)).Releases()
-        except Exception as e:
+        except Exception:
             pass
         return self.project_module
 

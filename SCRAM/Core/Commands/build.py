@@ -1,20 +1,23 @@
 import SCRAM
+from SCRAM.BuildSystem import get_safename
 from SCRAM.BuildSystem.BuildFile import BuildFile as XMLReader
+from SCRAM.BuildSystem.BuildData import BuildData
 from SCRAM.BuildSystem.ToolManager import ToolManager
 from argparse import ArgumentParser
-from SCRAM.Core.RuntimeEnv import RUNTIME_SHELLS, RuntimeEnv
-from SCRAM.Utilities.AddDir import adddir, fixpath
+from SCRAM.Core.RuntimeEnv import RuntimeEnv
+from SCRAM.Utilities.AddDir import adddir
 from SCRAM.Core.Core import Core
 from SCRAM.Core.Utils import create_productstores
+from SCRAM.Plugins.BuildRules import BuildRules
 from os import getcwd, environ, chdir, makedirs, stat, remove
-from os.path import join, exists, getmtime, dirname
+from os.path import join, exists, dirname, normpath, basename
 from glob import glob
 from json import dump, load
 from stat import S_ISDIR
 from re import compile
 
-VALID_DIR_NAMES = compile('.*/[a-zA-Z0-9][a-zA-Z0-9-_]*$')
-IGNORE_DIR_NAMES = compile('.*/(CVS|\..*)$')
+VALID_DIR_NAMES = compile(r'.*/[a-zA-Z0-9][a-zA-Z0-9-_]*$')
+IGNORE_DIR_NAMES = compile(r'.*/(CVS|\..*)$')
 
 
 class DirCache(object):
@@ -25,6 +28,9 @@ class DirCache(object):
         self.buildfile = buildfile_name
         self.buildfile_ext = '.xml'
         self.dirty = False
+        self.cachefile = join(toolmanager.area.archdir(), 'DirCache.json')
+        self.rebuild_make = {}
+        self.project_context = None
         self.cache = {'DIRCACHE': {},
                       'ADDEDDIR': {},
                       'REMOVEDDIR': {},
@@ -32,9 +38,15 @@ class DirCache(object):
                       'REMOVEDBF': {},
                       'ADDEDBF': {},
                       'CLASSMAP': {},
+                      'PACKMAP': {},
                       'CLASSDATA': []}
-        self.cachefile = join(toolmanager.area.archdir(), 'DirCache.json')
-        return
+        self.buildrules = BuildRules(toolmanager)
+        self.env = {}
+        for e in environ:
+            if e.startswith('SCRAMRT_'):
+                continue
+            if (e.startswith('SCRAM')) or (e in ["LOCALTOP", "RELEASETOP"]):
+                self.env[e] = environ[e]
 
     def buildfile_name(self):
         return self.buildfile + self.buildfile_ext
@@ -50,6 +62,7 @@ class DirCache(object):
         bf = XMLReader(self.toolmanager)
         if not bf.parse(join(environ['SCRAM_CONFIGDIR'], self.buildfile_name())):
             return False
+        self.buildrules.project_bf = bf.contents
         classdata = []
         for cp in bf.contents['CLASSPATH']:
             cpdata = []
@@ -76,8 +89,6 @@ class DirCache(object):
         self.buildclass(environ['SCRAM_SOURCEDIR'])
         self.checktree(environ['SCRAM_CONFIGDIR'], True, recursive=False)
         self.checktree(environ['SCRAM_SOURCEDIR'], True)
-        if self.dirty:
-            self.cache['ADDEDBF'][join(environ['SCRAM_CONFIGDIR'], self.buildfile_name())] = 1
         return True
 
     def getstats(self, path):
@@ -85,7 +96,7 @@ class DirCache(object):
             return self.stats[path]
         try:
             self.stats[path] = stat(path)
-        except:
+        except Exception:
             self.stats[path] = None
         return self.stats[path]
 
@@ -93,20 +104,25 @@ class DirCache(object):
         st = self.getstats(path)
         if st is None:
             if required:
-                SCRAM.die(str(e))
+                SCRAM.die("Missing required path: %s" % path)
             self.prune(path)
             return
         if path not in self.cache['DIRCACHE']:
-            self.cache['ADDEDDIR'][path] = 1
-            self.cache['DIRCACHE'][path] = [st.st_mtime] + self.getdir(path)
+            clds = []
+            if recursive:
+                clds = self.getdir(path)
+            self.cache['ADDEDDIR'][path] = 2
+            self.cache['DIRCACHE'][path] = [st.st_mtime] + clds
             self.dirty = True
             required = True
         elif self.cache['DIRCACHE'][path][0] != st.st_mtime:
-            curdirs = self.getdir(path)
-            olddirs = self.cache['DIRCACHE'][path][1:]
-            for odir in olddirs:
-                if odir not in curdirs:
-                    self.prune(odir, True)
+            curdirs = []
+            if recursive:
+                curdirs = self.getdir(path)
+                olddirs = self.cache['DIRCACHE'][path][1:]
+                for odir in olddirs:
+                    if odir not in curdirs:
+                        self.prune(odir, True)
             self.cache['ADDEDDIR'][path] = 1
             self.cache['DIRCACHE'][path] = [st.st_mtime] + curdirs
             self.dirty = True
@@ -116,13 +132,11 @@ class DirCache(object):
         if self.reset:
             self.cache['ADDEDDIR'][path] = 1
             self.dirty = True
-        bf_dir = join(environ['SCRAM_INTwork'], 'cache', 'bf', path)
-        cbf = join(bf_dir, self.buildfile)
         bf = join(path, self.buildfile_name())
         bf_st = None
         try:
             bf_st = stat(bf)
-        except:
+        except Exception:
             pass
         if bf_st is None:
             if bf in self.cache['BFCACHE']:
@@ -147,10 +161,8 @@ class DirCache(object):
             if not VALID_DIR_NAMES.match(d) or IGNORE_DIR_NAMES.match(d):
                 continue
             st = self.getstats(d)
-            if S_ISDIR(st.st_mode):
-                classinfo = self.buildclass(d)
-                if not classinfo[2]:
-                    dirs.append(d)
+            if S_ISDIR(st.st_mode) and (not self.buildclass(d)[2]):
+                dirs.append(d)
         return dirs
 
     def prune(self, path, skip_parent=False):
@@ -160,11 +172,6 @@ class DirCache(object):
                 self.cache['DIRCACHE'][parent].remove(path)
                 self.cache['ADDEDDIR'][parent] = 1
                 self.dirty = True
-        if path in self.cache['ADDEDDIR']:
-            del self.cache['ADDEDDIR'][path]
-        if path not in self.cache['DIRCACHE']:
-            return
-        self.dirty = True
         bf = join(path, self.buildfile_name())
         if bf in self.cache['BFCACHE']:
             if not exists(bf):
@@ -172,6 +179,14 @@ class DirCache(object):
             del self.cache['BFCACHE'][bf]
             if bf in self.cache['ADDEDBF']:
                 del self.cache['ADDEDBF'][bf]
+            self.dirty = True
+        if path in self.cache['PACKMAP']:
+            del self.cache['PACKMAP'][path]
+        if path in self.cache['ADDEDDIR']:
+            del self.cache['ADDEDDIR'][path]
+        if path not in self.cache['DIRCACHE']:
+            return
+        self.dirty = True
         if not exists(path):
             self.cache['REMOVEDDIR'][path] = 1
         sdirs = self.cache['DIRCACHE'][path][1:]
@@ -183,7 +198,7 @@ class DirCache(object):
     def buildclass(self, path):
         if path in self.cache['CLASSMAP']:
             return self.cache['CLASSMAP'][path]
-        dirs = fixpath(path).split("/")
+        dirs = normpath(path).split("/")
         ranks = []
         for cp in self.cache['CLASSDATA']:
             rank = [[], dirs]
@@ -191,7 +206,7 @@ class DirCache(object):
             for component in cp:
                 try:
                     sdir = rank[1][idx]
-                except:
+                except Exception:
                     rank[1] = []
                     break
                 xtype = 0
@@ -214,38 +229,76 @@ class DirCache(object):
                 best.append(rank)
         n = 0
         cp = best[n][len(best[n]) - 1]
-        self.cache['CLASSMAP'][path] = [cp[1].upper(), '/'.join(best[n][0]), '/'.join(best[n][1])]
+        self.cache['CLASSMAP'][path] = [cp[1], '/'.join(best[n][0]), '/'.join(best[n][1])]
         return self.cache['CLASSMAP'][path]
 
     def dir_make(self):
-        mk_dir = join(environ['SCRAM_INTwork'], 'MakeData', 'DirCache')
+        mk_dir = join(environ['LOCALTOP'], self.toolmanager.area.admindir(), 'MakeData', 'DirCache')
         adddir(mk_dir)
-        srclen = len(environ['SCRAM_SOURCEDIR']) + 1
-        for xdir in dircache.cache['ADDEDDIR']:
-            classinfo = dircache.buildclass(xdir)
-            if classinfo[0] in ['SUBSYSTEM', 'PACKAGE', 'DOMAIN']:
-                name = xdir[srclen:]
-                sname = xdir.replace('/', '_')
-                with open(join(mk_dir, sname + '.mk'), "w") as mk:
-                    mk.write('ALL_%sS += %s\n' % (classinfo[0], name))
-                    mk.write('subdirs_%s := %s\n' %
-                             (sname, ' '.join([d.replace('/', '_') for d in dircache.cache['DIRCACHE'][xdir][1:]])))
-        dircache.cache['ADDEDDIR'] = {}
+        mk_dir = join(environ['LOCALTOP'], environ['SCRAM_INTwork'], 'MakeData', 'DirCache')
+        adddir(mk_dir)
+        for xdir in self.cache['ADDEDDIR']:
+            classinfo = self.buildclass(xdir)
+            classname = classinfo[0].upper()
+            flag = classname in ["PACKAGE", "SUBSYSTEM", "DOMAIN", "PYTHON"]
+            if classname == "LIBRARY":
+                self.cache['PACKMAP'][dirname(xdir)] = xdir
+                continue
+            if classname == "SCRIPTS":
+                if join(xdir, self.buildfile_name()) in self.cache["BFCACHE"]:
+                    continue
+                flag = True
+            if not flag:
+                continue
+            name = basename(xdir)
+            pkgclass = BuildData('', classinfo)
+            pkgclass.branch['parent'] = dirname(xdir)
+            pkgclass.branch['name'] = name
+            pkgclass.branch['environment'] = self.env
+            self.buildrules.process(pkgclass.branch["template"], pkgclass, self.cache['DIRCACHE'])
+        self.cache['ADDEDDIR'] = {}
+        rmv_mk = join(environ['LOCALTOP'], environ['SCRAM_INTwork'], 'MakeData', 'RmvDirCache.mk')
+        if self.cache['REMOVEDDIR']:
+            self.buildrules.addRemakeDirectory(mk_dir)
+            with open(rmv_mk, "w") as mk:
+                for xdir in self.cache['REMOVEDDIR']:
+                    print("RMVDIR", xdir)
+                    sname = get_safename(xdir)
+                    SCRAM.run_command("cd %s; rm -f %s.mk %s_*.mk" % (mk_dir, sname, sname))
+                    mk.write('REMOVED_DIRS += %s\n' % (xdir))
+            self.cache['REMOVEDDIR'] = {}
+        if not exists(rmv_mk):
+            with open(rmv_mk, "w") as mk:
+                pass
         return
 
     def write_buildfile(self):
         xml = XMLReader(self.toolmanager)
         localarea = self.toolmanager.area
+        bf_cache_dir = join(localarea.archdir(), 'BuildFiles')
         for bf in self.cache['ADDEDBF']:
-            if bf == 'src/Utilities/General/test/BuildFile.xml':
-                continue
-            classinfo = self.buildclass(bf)
             if not xml.parse(bf):
                 return False
-            bf_cache = join(localarea.archdir(), 'BuildFiles', dirname(bf))
+            bfdir = dirname(bf)
+            bf_class_dir = bfdir
+            if bfdir in self.cache['PACKMAP']:
+                bf_class_dir = self.cache['PACKMAP'][bfdir]
+            classinfo = self.buildclass(bf_class_dir)
+            bf_cache = join(bf_cache_dir, bfdir)
             adddir(bf_cache)
-            xml.save_on_change(join(localarea.archdir(), 'BuildFiles', bf))
-        dircache.cache['ADDEDBF'] = {}
+            if xml.save_on_change(join(bf_cache_dir, bf)) or True:
+                pkgclass = BuildData(bf, classinfo)
+                pkgclass.branch['environment'] = self.env
+                pkgclass.branch['context'] = xml.contents
+                self.buildrules.process(pkgclass.branch["template"], pkgclass, self.cache['DIRCACHE'])
+        self.cache['ADDEDBF'] = {}
+        if self.cache['REMOVEDBF']:
+            for bf in self.cache['REMOVEDBF']:
+                print("RMVBF", bf)
+                bf_cache = join(bf_cache_dir, bf)
+                if exists(bf_cache):
+                    remove(bf_cache)
+            self.cache['REMOVEDBF'] = {}
         return
 
     def get_makerules(self):
@@ -255,15 +308,16 @@ class DirCache(object):
         return exists(self.get_makerules())
 
     def write_gmake(self):
+        self.buildrules.startRules()
         makerules = self.get_makerules()
+        self.rebuild_make = {}
         if exists(makerules):
             remove(makerules)
-        if dircache.cache['ADDEDDIR']:
-            self.dir_make()
-        if dircache.cache['ADDEDBF']:
-            self.write_buildfile()
-        dircache.save_cache()
-        with open(makerules, "w") as ref:
+        self.dir_make()
+        self.write_buildfile()
+        self.buildrules.endRules()
+        self.save_cache()
+        with open(makerules, "w"):
             pass
         return
 
