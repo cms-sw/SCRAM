@@ -11,7 +11,7 @@ import re
 class BuildRules(object):
 
     def __init__(self, toolmanager):
-        self.make_dir = join(environ["LOCALTOP"], toolmanager.area.admindir(), environ["SCRAM_ARCH"], "MakeData")
+        self.make_dir = join(toolmanager.area.archdir(), "MakeData")
         self.project_bf = None
         self.cache = {"toolcache": toolmanager}
         for x in ["ToolVariables", "Compilers", "ProductTypes", "SourceExtensions", "CacheData",

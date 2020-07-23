@@ -243,7 +243,7 @@ class DirCache(object):
         return self.cache['CLASSMAP'][path]
 
     def dir_make(self):
-        mk_dir = join(environ['LOCALTOP'], self.toolmanager.area.admindir(), 'MakeData', 'DirCache')
+        mk_dir = join(self.toolmanager.area.archdir(), 'MakeData', 'DirCache')
         adddir(mk_dir)
         mk_dir = join(environ['LOCALTOP'], environ['SCRAM_INTwork'], 'MakeData', 'DirCache')
         adddir(mk_dir)
