@@ -24,7 +24,7 @@ class ExtraBuildRule:
         buildrules.addPluginSupport("dd4hep", "DD4HEP_PLUGIN", "DD4HepPluginRefresh", r'\/nplugins$',
                                     "SCRAMSTORENAME_LIB", ".dd4hepcache", '$name="lib${name}.components"', "yes")
         buildrules.setProjectDefaultPluginType("edm")
-        buildrules.addSymLinks("src/LCG include/LCG 1 . ''")
+        buildrules.addSymLinks("src/LCG include/LCG 1 .")
 
     def isPublic(self, klass):
         return klass in ["LIBRARY", "BIGPRODUCT"]
@@ -146,7 +146,7 @@ class ExtraBuildRule:
 
     def Extra_template(self):
         common = common = self.buildrules
-        skip = common.getFlagValue("SKIP_FILES", True)
+        skip = common.core.get_flag_value("SKIP_FILES", True)
         if skip == "*" or skip == "%":
             return True
         common.plugin_template()

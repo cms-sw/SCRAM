@@ -5,15 +5,18 @@ from os.path import exists
 from json import dump
 from SCRAM import printmsg, printerror, scramerror
 
-reReplaceEnv = [compile(r'^(.*)(\$\((\w+)\))(.*)$'),
-                compile(r'^(.*)(\$\{(\w+)\})(.*)$'),
+reReplaceEnv = [compile(r'^(.*)(\$\{(\w+)\})(.*)$'),
                 compile(r'^(.*)(\$(\w+))(.*)$')]
 
 
 class ToolFile(object):
     def __init__(self):
+        valid_attribs = {
+            "environment": ["name", "default", "value", "handler"],
+            "lib": ["name", "type"]
+        }
         self.path_variables = []
-        self.parser = SimpleDoc()
+        self.parser = SimpleDoc(valid_attribs)
         self.parser.add_callback('tool', self._tool_callback)
         return
 
@@ -59,10 +62,13 @@ class ToolFile(object):
             self._update_env(child)
 
     def _fix_data(self, data):
-        while '$' in data:
+        loop = True
+        while loop:
+            loop = False
             for regex in reReplaceEnv:
                 m = regex.match(data)
                 if m:
+                    loop = True
                     key = m.group(3)
                     value = ''
                     if key in self.env:
@@ -91,6 +97,9 @@ class ToolFile(object):
         return msg != 'FAIL'
 
     def _update_contents(self, data):
+        inv = self.parser.check_valid_attrib(data)
+        if inv:
+            printerror("ERROR: Invalid attribute '%s' in file %s.\n%s" % (inv, self.filename, data))
         tag = data.tag.upper()
         if tag == 'TOOL':
             self.contents['TOOLNAME'] = data.attrib['name'].lower()
@@ -107,7 +116,14 @@ class ToolFile(object):
         elif tag == 'USE':
             self.contents['USE'].append(data.attrib['name'].lower())
         elif tag == 'LIB':
-            self.contents['LIB'].append(data.attrib['name'])
+            type = "LIB"
+            if "type" in data.attrib:
+                type = "%s_LIB" % data.attrib['type'].upper()
+            if type not in self.contents:
+                self.contents[type] = []
+            self.contents[type].append(data.attrib['name'])
+            if type != tag:
+                self.contents['LIBTYPES'].append(type)
         elif tag == 'ENVIRONMENT':
             value = data.attrib['default'] if 'default' in data.attrib else data.attrib['value']
             value = self._fix_data(value)
@@ -135,8 +151,7 @@ class ToolFile(object):
             if tag not in self.contents['FLAGS']:
                 self.contents['FLAGS'][tag] = []
             for flag in [f for f in value.split(' ') if f]:
-                if flag not in self.contents['FLAGS'][tag]:
-                    self.contents['FLAGS'][tag].append(flag)
+                self.contents['FLAGS'][tag].append(flag)
         elif tag == 'RUNTIME':
             tag = data.attrib['name']
             value = data.attrib['default'] if 'default' in data.attrib else data.attrib['value']

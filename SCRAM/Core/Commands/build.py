@@ -3,11 +3,12 @@ from SCRAM.BuildSystem import get_safename
 from SCRAM.BuildSystem.BuildFile import BuildFile as XMLReader
 from SCRAM.BuildSystem.BuildData import BuildData
 from SCRAM.BuildSystem.ToolManager import ToolManager
+from SCRAM.BuildSystem.MakeInterface import MakeInterface
 from argparse import ArgumentParser
 from SCRAM.Core.RuntimeEnv import RuntimeEnv
 from SCRAM.Utilities.AddDir import adddir
 from SCRAM.Core.Core import Core
-from SCRAM.Core.Utils import create_productstores
+from SCRAM.Core.Utils import create_productstores, cmsos
 from SCRAM.Plugins.BuildRules import BuildRules
 from os import getcwd, environ, chdir, makedirs, stat, remove
 from os.path import join, exists, dirname, normpath, basename
@@ -62,7 +63,7 @@ class DirCache(object):
         bf = XMLReader(self.toolmanager)
         if not bf.parse(join(environ['SCRAM_CONFIGDIR'], self.buildfile_name())):
             return False
-        self.buildrules.project_bf = bf.contents
+        self.buildrules.project_bf = bf
         classdata = []
         for cp in bf.contents['CLASSPATH']:
             cpdata = []
@@ -138,15 +139,24 @@ class DirCache(object):
             bf_st = stat(bf)
         except Exception:
             pass
+        bfcachedir = join(environ['LOCALTOP'], environ['SCRAM_INTwork'], 'cache/bf/%s' % path)
+        cbf = join(bfcachedir, "BuildFile")
         if bf_st is None:
             if bf in self.cache['BFCACHE']:
                 self.cache['REMOVEDBF'][bf] = 1
                 del self.cache['BFCACHE'][bf]
                 self.dirty = True
+                makedirs(bfcachedir, exist_ok=True)
+                with open(cbf, "w"):
+                    pass
         else:
             bfmtime = bf_st.st_mtime
             if self.reset or (bf not in self.cache['BFCACHE']) or \
                (bfmtime != self.cache['BFCACHE'][bf]):
+                if not exists(cbf) or bf in self.cache['BFCACHE']:
+                    makedirs(bfcachedir, exist_ok=True)
+                    with open(cbf, "w"):
+                        pass
                 self.cache['ADDEDBF'][bf] = 1
                 self.cache['BFCACHE'][bf] = bfmtime
                 self.dirty = True
@@ -237,6 +247,7 @@ class DirCache(object):
         adddir(mk_dir)
         mk_dir = join(environ['LOCALTOP'], environ['SCRAM_INTwork'], 'MakeData', 'DirCache')
         adddir(mk_dir)
+        xml = XMLReader()
         for xdir in self.cache['ADDEDDIR']:
             classinfo = self.buildclass(xdir)
             classname = classinfo[0].upper()
@@ -255,6 +266,7 @@ class DirCache(object):
             pkgclass.branch['parent'] = dirname(xdir)
             pkgclass.branch['name'] = name
             pkgclass.branch['environment'] = self.env
+            pkgclass.branch['context'] = xml
             self.buildrules.process(pkgclass.branch["template"], pkgclass, self.cache['DIRCACHE'])
         self.cache['ADDEDDIR'] = {}
         rmv_mk = join(environ['LOCALTOP'], environ['SCRAM_INTwork'], 'MakeData', 'RmvDirCache.mk')
@@ -286,11 +298,21 @@ class DirCache(object):
             classinfo = self.buildclass(bf_class_dir)
             bf_cache = join(bf_cache_dir, bfdir)
             adddir(bf_cache)
-            if xml.save_on_change(join(bf_cache_dir, bf)) or True:
-                pkgclass = BuildData(bf, classinfo)
-                pkgclass.branch['environment'] = self.env
-                pkgclass.branch['context'] = xml.contents
-                self.buildrules.process(pkgclass.branch["template"], pkgclass, self.cache['DIRCACHE'])
+            pkgclass = BuildData(bf, classinfo)
+            pkgclass.branch['environment'] = self.env
+            pkgclass.branch['context'] = xml
+            self.buildrules.process(pkgclass.branch["template"], pkgclass, self.cache['DIRCACHE'])
+            xml.save_json(join(bf_cache_dir, bf))
+            if pkgclass.branch["class"] == "LIBRARY":
+                prod = xml.contents["NAME"]
+                with open(join(bf_cache_dir, bfdir, prod), "w") as ref:
+                    ref.write("{0}_PACKAGE := self/{1}\n".format(prod, bf_class_dir))
+            else:
+                prods = xml.get_build_products()
+                for ptype in prods:
+                    for prod in prods[ptype]:
+                        with open(join(bf_cache_dir, bfdir, prod), "w") as ref:
+                            ref.write("{0}_PACKAGE := self/{1}\n".format(prod, bfdir))
         self.cache['ADDEDBF'] = {}
         if self.cache['REMOVEDBF']:
             for bf in self.cache['REMOVEDBF']:
@@ -322,7 +344,7 @@ class DirCache(object):
         return
 
 
-def process(args):
+def process(args, main_opts):
     parser = ArgumentParser(add_help=False)
     parser.add_argument('-t', '--testrun',
                         dest='testrun',
@@ -378,4 +400,19 @@ def process(args):
         dircache.checkfiles(opts.reset)
     if dircache.dirty:
         dircache.write_gmake()
+    chkarch = join(localarea.admindir(), "chkarch")
+    if opts.ignore_arch and exists(chkarch):
+        remove(chkarch)
+    if exists(chkarch):
+        os = cmsos()
+        if not environ["SCRAM_ARCH"].startswith(os):
+            SCRAM.printwarning("You are trying to compile/build for architecture %s on %s OS which"
+                               "might not work.\nIf you know this SCRAM_ARCH/OS combination works "
+                               "then please first run 'scram build --ignore-arch'.")
+    mkfile = join(workdir, "Makefile")
+    if not exists(mkfile):
+        from shutil import copyfile
+        copyfile(join(localarea.config(), "SCRAM", "GMake", "Makefile.init"), mkfile)
+    MAKER = MakeInterface()
+    MAKER.exec(mkfile, args, main_opts)
     return True

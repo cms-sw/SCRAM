@@ -1,27 +1,28 @@
+from SCRAM import printerror
 from SCRAM.BuildSystem.SimpleDoc import SimpleDoc
-from os.path import exists, basename
-from json import load, dump
+from os.path import basename
+from json import dump
+import xml.etree.ElementTree as ET
 
 
 class BuildFile(object):
-    def __init__(self, toolmanager):
+    def __init__(self, toolmanager=None, contents={}):
+        self.contents = contents
         self.tools = {}
+        self.flags = {}
+        self.selected = {}
         self.toolmanager = toolmanager
         self.parser = SimpleDoc()
         self.parser.add_filter('iftool', '', self._check_iftool)
         return
 
-    def save_on_change(self, outfile):
-        if exists(outfile):
-            old = load(open(outfile))
-            if old == self.contents:
-                return False
-        return self.save_json(outfile)
-
     def save_json(self, outfile):
         with open(outfile, 'w') as ref:
             dump(self.contents, ref, sort_keys=True, indent=2)
         return True
+
+    def set_contents(self, contents):
+        self.contents = contents
 
     def parse(self, filename):
         self._clean(filename)
@@ -34,24 +35,100 @@ class BuildFile(object):
                 del self.contents[key]
         return True
 
+    def get_flags(self):
+        if self.flags:
+            return self.flags
+        data = self.get_data("FLAGS")
+        if not data:
+            return {}
+        vals = {}
+        for x in data:
+            for f in x:
+                if f not in vals:
+                    vals[f] = []
+                if f == "CPPDEFINES":
+                    vals[f] += ["-D%s" % i for i in x[f]]
+                else:
+                    vals[f] += x[f]
+        self.flags = vals
+        return vals
+
+    def get_data(self, key, toplevel=False):
+        topdata = {}
+        data = []
+        if key in self.contents:
+            topdata = self.contents[key]
+            data.append(topdata)
+        if toplevel:
+            return topdata
+        if self.selected and key in self.selected:
+            data.append(self.selected[key])
+        return data
+
+    def get_flag_value(self, flag, as_string=True):
+        flags = self.get_flags()
+        val = []
+        if flags and (flag in flags):
+            val = flags[flag]
+        if as_string:
+            return " ".join(val)
+        return val
+
+    def add_build_product(self, name, files, type, typename):
+        if "BUILDPRODUCTS" not in self.contents:
+            self.contents["BUILDPRODUCTS"] = {}
+        if typename not in self.contents["BUILDPRODUCTS"]:
+            self.contents["BUILDPRODUCTS"][typename] = {}
+        self.contents["BUILDPRODUCTS"][typename][name] = {"FILES": files,
+                                                          "TYPE": type}
+
+    def get_build_products(self):
+        prods = {}
+        if "BUILDPRODUCTS" in self.contents:
+            prods = self.contents["BUILDPRODUCTS"]
+        return prods
+
+    def get_products(self, type):
+        if "BUILDPRODUCTS" in self.contents:
+            if type in self.contents["BUILDPRODUCTS"][type]:
+                return self.contents["BUILDPRODUCTS"][type]
+        return {}
+
+    def set_build_product(self, prodtype, name):
+        self.flags = {}
+        self.selected = self.contents["BUILDPRODUCTS"][prodtype][name]
+
+    def get_product_files(self):
+        if "FILES" in self.selected:
+            return [f for fs in self.selected["FILES"].split(",") for f in fs.split(" ") if f]
+        return []
+
     def _clean(self, filename=None):
         self.filename = filename
+        self.flags = {}
+        self.selected = {}
         self.contents = {'USE': [], 'EXPORT': {}, 'FLAGS': {}, 'BUILDPRODUCTS': {}}
 
     def _update_contents(self, data):
+        inv = self.parser.check_valid_attrib(data)
+        if inv:
+            printerror("ERROR: Invalid attribute '%s' in file %s.\n%s" % (inv, self.filename, data))
         tag = data.tag.upper()
         if tag == 'USE':
-            if 'name' not in data.attrib:
-                return True
             use = data.attrib['name'].lower()
+            if use == "self":
+                return True
             if use not in self.tools:
                 self.tools[use] = self.toolmanager.hastool(use)
             if not self.tools[use]:
                 use = data.attrib['name']
-            if tag not in self.product:
-                self.product[tag] = []
-            if use not in self.product[tag]:
-                self.product[tag].append(use)
+            if ('source_only' in data.attrib) and (data.attrib['source_only'] in ["1", "true"]):
+                self._update_contents(ET.Element("FLAGS", {'USE_SOURCE_ONLY': use}))
+            else:
+                if tag not in self.product:
+                    self.product[tag] = []
+                if use not in self.product[tag]:
+                    self.product[tag].append(use)
         elif tag == 'LIB':
             if tag not in self.product:
                 self.product[tag] = []
@@ -102,7 +179,7 @@ class BuildFile(object):
                 self.contents[tag] = []
             self.contents[tag].append(data.attrib['path'])
         else:
-            print('ERROR: Unknown tag %s found in %s.' % (data.tag, self.filename))
+            printerror('ERROR: Unknown tag %s found in %s.' % (data.tag, self.filename))
         for child in list(data):
             if not self._update_contents(child):
                 return False

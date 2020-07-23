@@ -8,6 +8,7 @@ from argparse import ArgumentParser
 scram_home = dirname(dirname(abspath(argv[0])))
 path.insert(0, scram_home)
 environ['SCRAM_TOOL_HOME'] = scram_home
+environ["SCRAM"] = abspath(argv[0])
 import SCRAM
 
 
@@ -41,9 +42,9 @@ def parse_args():
                         help='Turns on any debug output.')
     opts, args = parser.parse_known_args()
     SCRAM.COMMANDS_OPTS = opts
-    if not args:
-        args.append('help')
     if opts.help:
+        if not args:
+            args.append("")
         args[0] = 'help'
     if opts.arch:
         environ['SCRAM_ARCH'] = opts.arch
@@ -82,28 +83,27 @@ def initialize_scram():
 
 
 # Run scram command
-def execcommand(args):
+def execcommand(args, opts):
     import SCRAM.Core.CMD as scram_commands
     commands = [cmd[0][4:] for cmd in getmembers(scram_commands, isfunction)
                 if cmd[0].startswith('cmd_')]
-    cmd = args.pop(0)
-    cmds = [c for c in commands if c == cmd]
-    if len(cmds) == 0:
-        cmds = [c for c in commands if c.startswith(cmd)]
-    cmds_count = len(cmds)
-    if cmds_count > 1:
-        print("ERROR: %s commands matched '%s': %s" % (cmds_count, cmd, ", ".join(cmds)))
-        exit(1)
-    if cmds_count == 0:
-        print(usage(commands))
-        exit(1)
-    initialize_scram()
-    return eval('scram_commands.cmd_%s' % cmds[0])(args)
+    if args:
+        cmd = args.pop(0)
+        cmds = [c for c in commands if c == cmd]
+        if len(cmds) == 0:
+            cmds = [c for c in commands if c.startswith(cmd)]
+        cmds_count = len(cmds)
+        if cmds_count > 1:
+            SCRAM.scramerror("Multiple commands matched '%s': %s" % (cmds_count, cmd, ", ".join(cmds)))
+        if cmds_count == 1:
+             initialize_scram()
+             return eval('scram_commands.cmd_%s' % cmds[0])(args, opts)
+    SCRAM.printmsg(usage(commands))
 
 
 def main():
     opts, args = parse_args()
-    if not execcommand(args):
+    if not execcommand(args, opts):
         exit(1)
 
 

@@ -73,7 +73,7 @@ def tool_remove(args, area):
     toolname = args[0].lower()
     toolmanager = ToolManager(area)
     if not toolmanager.hastool(toolname):
-        SCRAM.errormsg(">>>> Tool %s is not defined for this project area. <<<<" % toolname)
+        SCRAM.scramerror(">>>> Tool %s is not defined for this project area. <<<<" % toolname)
     SCRAM.printmsg("Removing tool %s from current project area configuration." % toolname)
     toolmanager.remove_tool(toolname)
     return True

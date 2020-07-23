@@ -1,7 +1,7 @@
 from glob import glob
 from json import load, loads, dumps
 from os.path import basename, exists, join, isdir, dirname, abspath
-from os import remove, stat, utime, environ
+from os import remove, stat, utime, environ, makedirs
 from shutil import copy2, move
 from SCRAM import run_command, printerror, scramerror, printmsg
 from SCRAM.Configuration.ConfigArea import ConfigArea
@@ -96,6 +96,14 @@ class ToolManager(object):
             adddir(self.area.toolcachename())
         self.xml.save_json(tooljson)
         utime(self.area.toolcachename(), None)
+        tname = basename(tooljson)
+        if tname != "self":
+            instDir = join(dirname(dirname(tooljson)), "InstalledTools")
+            if not exists(instDir):
+                makedirs(instDir, exist_ok=True)
+            instTool = join(instDir, tname)
+            with open(instTool, "w"):
+                pass
         if not dump:
             return True
         printmsg("\n%s\n" % ("+" * 40))
@@ -110,8 +118,8 @@ class ToolManager(object):
 
     def loadtools(self):
         if not self.loaded:
-            for tool in glob(join(self.area.toolcachename(), '*.json')):
-                toolname = basename(tool)[:-5]
+            for tool in glob(join(self.area.toolcachename(), '*')):
+                toolname = basename(tool)
                 with open(tool) as ref:
                     self.tools[toolname] = load(ref)
             self.loaded = True
@@ -198,7 +206,7 @@ class ToolManager(object):
         return exists(self.tool_json_path(tool))
 
     def tool_json_path(self, toolname):
-        return join(self.area.toolcachename(), toolname.lower() + '.json')
+        return join(self.area.toolcachename(), toolname.lower())
 
     def remove_tool(self, tool):
         tool = tool.lower()

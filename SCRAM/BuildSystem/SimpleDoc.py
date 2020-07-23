@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 from os import environ
 from re import search
+from SCRAM import printerror
 
 DEFAULT_ENV_FILTERS = {
     'ifarchitecture': 'SCRAM_ARCH',
@@ -17,16 +18,62 @@ DEFAULT_ENV_FILTERS = {
 
 
 class SimpleDoc(object):
-    def __init__(self):
+    def __init__(self, valid_attribs={}):
+        self.valid_attribs = {
+            "use": ["name", "source_only"],
+            "lib": ["name", "type"],
+            "export": [],
+            "include_path": ["path"],
+            "bin": ["name", "file"],
+            "library": ["name", "file"],
+            "test": ["name", "command"],
+            "environment": [],
+            "ifarchitecture": ["name", "match", "value"],
+            "ifcxx11_abi": ["value"],
+            "ifrelease": ["name", "match", "value"],
+            "iftool": ["name", "match", "version"],
+            "release": ["name", "match", "value"],
+            "else": [],
+            "architecture": ["name", "match", "value"],
+            "root": [],
+            "productstore": ["name", "type", "swap"],
+            "classpath": ["path"],
+            "flags": ["*"],
+            "client": [],
+            "tool": ["name", "version", "type"],
+            "info": ["url"],
+            "runtime": ["name", "value", "type", "default", "handler"],
+            "project": ["name", "version"],
+            "base": ["url"]
+        }
+        for tag in valid_attribs:
+            self.valid_attribs[tag] = valid_attribs[tag][:]
         self.filters = {}
         self.callbacks = {}
         self.last_filter = []
+        self.filename = None
         for filt in DEFAULT_ENV_FILTERS:
             value = ""
             filtenv = DEFAULT_ENV_FILTERS[filt]
             if filtenv in environ:
                 value = environ[filtenv]
             self.add_filter(filt, value)
+
+    def check_valid_attrib(self, data):
+        invalid_attrib = []
+        tag = data.tag
+        if tag.startswith("iftool_"):
+            tag = "iftool"
+        if tag not in self.valid_attribs:
+            printerror("Invalid tag '%s' found in %s." % (tag, self.filename))
+            return []
+        valid_attrib = self.valid_attribs[tag]
+        if '*' in valid_attrib:
+            return invalid_attrib
+        for atr in data.attrib:
+            if atr not in valid_attrib:
+                invalid_attrib.append(atr)
+        return invalid_attrib
 
     def add_callback(self, tag, callback, args=None):
         self.callbacks[tag] = [callback, args]
@@ -72,6 +119,7 @@ class SimpleDoc(object):
         return ok
 
     def parse(self, filename):
+        self.filename = filename
         self.last_filter = []
         root = None
         with open(filename) as ref:
@@ -82,6 +130,9 @@ class SimpleDoc(object):
     def process(self, root):
         keep = True
         filtered = False
+        inv = self.check_valid_attrib(root)
+        if inv:
+            printerror("ERROR: Invalid attribute '%s' in file %s.\n%s" % (inv, self.filename, root))
         if root.tag in self.callbacks:
             self.callbacks[root.tag][0](root=root, start_event=True,
                                         args=self.callbacks[root.tag][1])

@@ -284,7 +284,7 @@ class RuntimeEnv(object):
         if not exists(hook):
             return
         regexp = re.compile(
-            '^runtime:((path:(append|prepend|remove):[a-zA-Z0-9-_]+)|(variable:[a-zA-Z0-9-_]+))=(.*)$',
+            '^runtime:((path:(append|prepend|remove|replace):[a-zA-Z0-9-_]+)|(variable:[a-zA-Z0-9-_]+))=(.*)$',
             re.I)
         err, out = SCRAM.run_command('%s 2>&1' % hook)
         for line in out.split('\n'):
@@ -299,7 +299,11 @@ class RuntimeEnv(object):
                 cache = self.env["rtstring"][vtype]
                 vtype = items[2].lower()
                 evar = items[3]
-                if (vtype != 'remove') and (evar not in cache):
+                if (vtype == 'replace'):
+                    xitems = vals[1].split("=", 1)
+                    vals[1] = xitems[0]
+                    vals.append(xitems[1])
+                elif (vtype != 'remove') and (evar not in cache):
                     cache[evar] = []
                 for d in vals[1].split(':'):
                     d = d.strip()
@@ -310,23 +314,21 @@ class RuntimeEnv(object):
                     elif vtype == 'prepend':
                         cache[evar].insert(0, d)
                     elif vtype == 'remove':
-                        try:
+                        if d in cache[evar]:
                             cache[evar].remove(d)
-                        except Exception:
-                            pass
+                    elif vtype == 'replace':
+                        npath = []
+                        for x in cache[evar]:
+                            if x != d:
+                                npath.append(x)
+                            else:
+                                for r in vals[2].split(":"):
+                                    npath.append(r)
+                        cache[evar] = npath
             elif vtype == 'variable':
                 if 'variables' not in self.env['rtstring']:
                     self.env['rtstring']['variables'] = []
-                cache = self.env['rtstring']['variables']
-                vindex = 0
-                evar = items[2]
-                if evar in self.env['variables']:
-                    vindex = self.env['variables'][evar]
-                else:
-                    vindex = len(cache)
-                    self.env['variables'][evar] = vindex
-                    cache.append({})
-                cache[vindex][evar] = [vals[1]]
+                self.env['rtstring']['variables'].append({items[2]: [vals[1]]})
         return
 
     def _runtime(self):
@@ -409,7 +411,6 @@ class RuntimeEnv(object):
                             self.env['paths'][var][val] = 1
                             self.env['rtstring']['path'][var].append(val)
             elif trtvar not in self.env['variables']:
-                self.env['variables'][trtvar] = len(self.env['rtstring']['variables'])
                 self.env['rtstring']['variables'].append({trtvar: trtval})
 
     def _cleanpath(self, path, sep):

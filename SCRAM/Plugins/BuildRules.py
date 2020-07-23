@@ -1,12 +1,11 @@
 import SCRAM
 from SCRAM.BuildSystem.TemplateStash import TemplateStash
 from SCRAM.BuildSystem import get_safename
-from os import environ, rename, symlink, listdir, makedirs
+from os import environ, rename, symlink, listdir, makedirs, unlink, stat
 from os.path import normpath, exists, join, isdir, islink, dirname, basename
-from SCRAM.Utilities.AddDir import adddir
+from os.path import sep as dirsep
 import importlib
 import re
-import os
 
 
 class BuildRules(object):
@@ -32,6 +31,7 @@ class BuildRules(object):
         }
         environ["LOCALTOP"] = normpath(environ["LOCALTOP"])
         self.init = False
+        self.core = None
         return
 
     def process(self, name, data, dir_cache):
@@ -43,8 +43,10 @@ class BuildRules(object):
             data.branch["safepath"] = environ['SCRAM_SOURCEDIR']
             data.branch["path"] = environ['SCRAM_SOURCEDIR']
         ofile = join(self.make_dir, "DirCache", data.branch["safepath"] + ".mk")
+        remake = True
         if data.branch["path"] == environ['SCRAM_SOURCEDIR']:
             ofile = join(self.make_dir, environ['SCRAM_SOURCEDIR'] + ".mk")
+            remake = False
         self.data["DirCache"] = {}
         self.data["makefile"] = ofile
         self.data["data"] = data
@@ -53,29 +55,29 @@ class BuildRules(object):
         self.data["context"].stash(data.branch)
         self.data["swap_prod_mkfile"] = False
         self.data["context"].pushstash()
-        self.data["core"] = data.branch["context"]
+        self.core = data.branch["context"]
         self.data["product"] = {}
-        self.data["data_cache"] = {}
         if not self.init:
             self.initTemplate_PROJECT()
             self.init = True
         ret = self.runTemplate("%s_template" % name)
         self.data["context"].popstash()
         self.data["FH"].close()
-        if os.stat(ofile).st_size == 0:
-            os.unlink(ofile)
+        if stat(ofile).st_size == 0:
+            unlink(ofile)
         elif self.data["swap_prod_mkfile"]:
             nfile = ofile.replace(self.cache["toolcache"].area.admindir(), environ["SCRAM_TMP"])
             rename(ofile, nfile)
             ofile = nfile
-        self.addRemakeDirectory(dirname(ofile))
+        if remake:
+            self.addRemakeDirectory(dirname(ofile))
         return ret
 
     def addRemakeDirectory(self, dir):
         self.cache["RemakeDir"][dir] = 1
 
     def filehandle(self):
-        return self.data['FH']
+        return self.data["FH"]
 
     def core(self):
         return self.data['core']
@@ -97,6 +99,28 @@ class BuildRules(object):
             with open(mk_dir + ".mk", "w"):
                 pass
             SCRAM.run_command("cd %s; find . -name \"*.mk\" -type f | xargs -n 2000 cat >> %s.mk" % (mk_dir, mk_dir))
+        if 'ReleaseArea' not in self.cache:
+            return
+        arch = environ['SCRAM_ARCH']
+        ext_arch = join(environ['LOCALTOP'], 'external', arch)
+        if not exists(ext_arch):
+            SCRAM.run_command("%s/SCRAM/linkexternal.py --arch %s" %
+                              (join(environ['LOCALTOP'], environ['SCRAM_CONFIGDIR']), arch))
+            makedirs(ext_arch, exist_ok=True)
+
+        if not self.cache['ReleaseArea']:
+            env = self.get('environment')
+            relobj = join(env['RELEASETOP'], 'objs', arch)
+            locobj = join(ext_arch, 'objs-base')
+            if isdir(relobj) and (not islink(locobj)):
+                symlink(relobj, locobj)
+        proj_name = self.cache['ProjectName']
+        pj = self.getTool(proj_name)
+        if pj:
+            relobj = join(pj["%s_BASE" % proj_name.upper()], "objs", arch)
+            locobj = join(ext_arch, "objs-full")
+            if isdir(relobj) and (not islink(locobj)):
+                symlink(relobj, locobj)
 
 #################################################
 
@@ -134,7 +158,7 @@ class BuildRules(object):
         return self.cache['toolcache'].loadtools()
 
     def isDependentOnTool(self, tool):
-        data = self.data["core"].data('USE')
+        data = self.core.get_data('USE')
         if data and type(data) is list:
             for dep in data:
                 if tool == dep.lower():
@@ -256,47 +280,8 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             SCRAM.printerror('WARNING: You are only suppose to build a single library from "%s".' % path)
         return
 
-    def getFlags(self):
-        if "FLAGS" in self.data["data_cache"]:
-            return self.data["data_cache"]["FLAGS"]
-        data = self.getData("FLAGS")
-        if not data:
-            return {}
-        vals = {}
-        for x in data:
-            for f in x:
-                if f not in vals:
-                    vals[f] = []
-                if f == "CPPDEFINES":
-                    vals[f] += ["-D%s" % i for i in x[f]]
-                else:
-                    vals[f] += x[f]
-        self.data["data_cache"]["FLAGS"] = vals
-        return vals
-
-    def getData(self, key, toplevel=False):
-        topdata = {}
-        data = []
-        if key in self.data["core"]:
-            topdata = self.data["core"][key]
-            data.append(topdata)
-        if toplevel:
-            return topdata
-        if self.data['product'] and key in self.data['product']:
-            data.append(self.data['product'][key])
-        return data
-
-    def getFlagValue(self, flag, as_string=True):
-        flags = self.getFlags()
-        val = []
-        if flags and (flag in flags):
-            val = flags[flag]
-        if as_string:
-            return " ".join(val)
-        return val
-
-    def getSubDirIfEnabled(self):
-        val = self.getFlagValue("ADD_SUBDIR")
+    def getSubdirIfEnabled(self):
+        val = self.core.get_flag_value("ADD_SUBDIR")
         if val not in ['yes', '1']:
             return ""
         path = self.get('path')
@@ -305,32 +290,6 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             SCRAM.printerror("ERROR: You requested to compile files under '%s' sub-directories but none found."
                              " Please cleanup BuildFile and remove 'ADD_SUBDIR' flag." % path)
         return subdirs
-
-    def addBuildProduct(self, name, files, type, typename):
-        if "BUILDPRODUCTS" not in self.data["core"]:
-            self.data["core"]["BUILDPRODUCTS"] = {}
-        if typename not in self.data["core"]["BUILDPRODUCTS"]:
-            self.data["core"]["BUILDPRODUCTS"][typename] = {}
-        self.data["core"]["BUILDPRODUCTS"][typename][name] = {"FILES": files,
-                                                              "TYPE": type}
-
-    def getBuildProducts(self):
-        prods = {}
-        if "BUILDPRODUCTS" in self.data["core"]:
-            prods = self.data["core"]["BUILDPRODUCTS"]
-        return prods
-
-    def setBuildProduct(self, prodtype, name):
-        try:
-            del self.data["data_cache"]["FLAGS"]
-        except Exception:
-            pass
-        self.data["product"] = self.data["core"]["BUILDPRODUCTS"][prodtype][name]
-
-    def getProductFiles(self):
-        if "FILES" in self.data["product"]:
-            return [f for fs in self.data["product"]["FILES"].split(",") for f in fs.split(" ") if f]
-        return []
 
 #######################################
 # Various functions
@@ -343,7 +302,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         return (self.get("template") == "library")
 
     def isLibSymLoadChecking(self):
-        flag = self.getFlagValue("NO_LIB_CHECKING")
+        flag = self.core.get_flag_value("NO_LIB_CHECKING")
         if flag in ["yes", "1"]:
             return "no"
         return ""
@@ -365,7 +324,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
     def hasPythonscripts(self):
         path = self.get("path")
         pythonprod = {}
-        flags = self.getFlags()
+        flags = self.core.get_flags()
         if "PYTHONPRODUCT" in flags:
             bfile = self.getLocalBuildFile()
             xfiles = []
@@ -458,7 +417,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         ref.write("################ ALL SCRAM Stores #######################\n")
         ref.write("ALL_PRODUCT_STORES:=\n")
         arch = environ["SCRAM_ARCH"]
-        for store in self.getData("PRODUCTSTORE", True):
+        for store in self.core.get_data("PRODUCTSTORE", True):
             storename = None
             if ('type' in store) and (store['type'] == 'arch'):
                 if ('swap' in store) and (store['swap'] == 'true'):
@@ -489,7 +448,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         keys.append("SRC_FILES_SUFFIXES        := $(CXXSRC_FILES_SUFFIXES) $(CSRC_FILES_SUFFIXES) "
                     "$(FORTRANSRC_FILES_SUFFIXES) $(CUDASRC_FILES_SUFFIXES)")
         keys.append("SCRAM_ADMIN_DIR           := .SCRAM/$(SCRAM_ARCH)")
-        keys.append("SCRAM_TOOLS_DIR           := $(SCRAM_ADMIN_DIR)/timestamps")
+        keys.append("SCRAM_TOOLS_DIR           := $(SCRAM_ADMIN_DIR)/tools")
         self.dumpCompilersFlags(keys)
         if self.isMultipleCompilerSupport():
             keys.append("SCRAM_MULTIPLE_COMPILERS := yes")
@@ -615,7 +574,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             ltop = self.cache["LocalTop"]
             for d in [j for i in data for j in i]:
                 x = d.strip()
-                if x.startswith(os.path.sep):
+                if x.startswith(dirsep):
                     x = join(ltop, ldir, x)
                 x = normpath(x)
                 if x not in udata:
@@ -653,10 +612,10 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         return ndata
 
     def fixProductName(self, name):
-        if os.path.sep in name:
+        if dirsep in name:
             xname = basename(name)
             SCRAM.printerror('WARNING: Product name should not have "%s" in it. '
-                             'Setting %s=>%s' % (os.path.sep, name, xname))
+                             'Setting %s=>%s' % (dirsep, name, xname))
             name = xname
         return name
 
@@ -770,22 +729,6 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
 # Plugin Support
 ###########################################
 
-    def setLCGCapabilitiesPluginType(self, type=None):
-        if not type:
-            type = self.cache['DefaultPluginType']
-        type = type.lower()
-        if type and (type not in self.cache['SupportedPlugins']):
-            SCRAM.printerror("****ERROR: LCG Capabilities Plugin type \"%s\" not supported." % type)
-            SCRAM.printerror("           Currently available plugins are: %s" % ",".join(self.getSupportedPlugins()))
-        else:
-            self.cache['LCGCapabilitiesPlugin'] = type
-        return
-
-    def getLCGCapabilitiesPluginType(self):
-        if self.cache['LCGCapabilitiesPlugin']:
-            return self.cache['LCGCapabilitiesPlugin']
-        return self.cache['SupportedPlugins']
-
     def addPluginSupport(self, type, flag, refresh, reg="", dir='SCRAMSTORENAME_MODULE',
                          cache='.cache', name='$name="${name}.reg"', ncopylib=""):
         type = type.lower()
@@ -836,8 +779,6 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         if (not type) or (type not in self.cache['SupportedPlugins']):
             return
         del self.cache['SupportedPlugins'][type]
-        if self.cache['LCGCapabilitiesPlugin'] == type:
-            self.cache['LCGCapabilitiesPlugin'] = ""
         if self.cache['DefaultPluginType'] == type:
             self.cache['DefaultPluginType'] = ""
         return
@@ -998,7 +939,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         return name
 
     def safename_JoinAll(self, path):
-        return path.replace(os.path.sep, "")
+        return path.replace(dirsep, "")
 
 ###############################################
 ######################################
@@ -1035,11 +976,11 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         ltop = environ['LOCALTOP']
         odir = ltop
         proj_name = environ['SCRAM_PROJECTNAME']
-        arch = environ['SCRAM_ARCH']
         stool = self.getTool('self')
-        odir1 = stool['RUNTIME']['LOCALRT']
-        if odir1:
-            odir = odir1[0]
+        if 'LOCALRT' in stool['RUNTIME']:
+            odir1 = stool['RUNTIME']['LOCALRT']
+            if odir1:
+                odir = odir1[0]
         defcompiler = "gcc"
         comFlags = {}
         for flag in ["CXXFLAGS", "CFLAGS", "FFLAGS", "CPPDEFINES", "LDFLAGS", "CPPFLAGS"]:
@@ -1070,28 +1011,13 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         env['SCRAM_INIT_LOCALTOP'] = odir
         bdir = join(ltop, environ['SCRAM_INTwork'], 'cache')
         for d in ["prod", "bf", "log"]:
-            adddir(join(bdir, d))
+            makedirs(join(bdir, d), exist_ok=True)
         if ('RELEASETOP' in env) and (env['RELEASETOP'] != ""):
             self.set('releasearea', False)
             self.cache['ReleaseArea'] = False
         else:
             self.set('releasearea', True)
             self.cache['ReleaseArea'] = True
-        ext_arch = join(ltop, 'external', arch)
-        if not exists(ext_arch):
-            SCRAM.run_command("%s/SCRAM/linkexternal.pl --arch %s" % (join(ltop, environ['SCRAM_CONFIGDIR']), arch))
-            adddir(ext_arch)
-        if not self.cache['ReleaseArea']:
-            relobj = join(env['RELEASETOP'], 'objs', arch)
-            locobj = join(ext_arch, 'objs-base')
-            if isdir(relobj) and (not islink(locobj)):
-                symlink(relobj, locobj)
-        pj = self.getTool(proj_name)
-        if pj:
-            relobj = join(pj["%s_BASE" % proj_name.upper()], "objs", arch)
-            locobj = join(ext_arch, "objs-full")
-            if isdir(relobj) and (not islink(locobj)):
-                symlink(relobj, locobj)
         self.cache['LCGProjectLibPrefix'] = "lcg_"
         self.setRootReflex('rootrflx')
         self.setPythonProductStore('$(SCRAMSTORENAME_PYTHON)')
@@ -1111,11 +1037,12 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         proj = self.cache['ProjectName'].lower()
         if not self.isToolAvailable(proj):
             proj = ""
-        xdata = self.data["core"]
+        xdata = self.core
         if self.get("path") != environ["SCRAM_SOURCEDIR"]:
-            self.data["core"] = self.project_bf
+            self.core = self.project_bf
+        self.cache["LCGDICT_PACKAGE"] = self.core.get_flag_value("LCGDICT_PACKAGE", False)
         for var in ["LIB", "INCLUDE", "USE"]:
-            val = self.fixData(self.getData(var), var, "")
+            val = self.fixData(self.core.get_data(var), var, "")
             if var == "USE" and ("self" not in val):
                 if not val:
                     val = ["self"]
@@ -1126,7 +1053,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                 if var == "USE":
                     vals += proj
                 self.addCacheData(var, vals)
-        self.data["core"] = xdata
+        self.core = xdata
         try:
             extraRules = 'SCRAM.Plugins.{0}.ExtraBuildRule'.format(environ['SCRAM_PROJECTNAME'])
             self.cache['ProjectPlugin'] = importlib.import_module(extraRules).ExtraBuildRule(self)
@@ -1137,8 +1064,8 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
     def SubSystem_template(self):
         self.data["swap_prod_mkfile"] = True
         self.initTemplate_common2all()
-        fh = self.data['FH']
-        src = environ["SCRAM_SOURCEDIR"] + os.path.sep
+        fh = self.data["FH"]
+        src = environ["SCRAM_SOURCEDIR"] + dirsep
         path = self.get("path")
         subdirs = self.getSafeSubPaths(path)
         path = path[len(src):]
@@ -1147,13 +1074,13 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
 
     def Package_template(self):
         self.initTemplate_common2all()
-        fh = self.data['FH']
+        fh = self.data["FH"]
         path = self.get("path")
         if self.get('metabf'):
             self.depsOnlyBuildFile()
         else:
             subdirs = self.getSafeSubPaths(path)
-            src = environ["SCRAM_SOURCEDIR"] + os.path.sep
+            src = environ["SCRAM_SOURCEDIR"] + dirsep
             self.data["swap_prod_mkfile"] = True
             fh.write("ALL_PACKAGES += %s\n" % path[len(src):])
             fh.write("subdirs_%s := %s\n" % (self.get("safepath"), subdirs))
@@ -1164,7 +1091,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
     def Project_template(self):
         path = self.get("path")
         safepath = self.get("safepath")
-        fh = self.data['FH']
+        fh = self.data["FH"]
         self.updateEnvVarMK()
         for var in ["LIB", "INCLUDE", "USE"]:
             fh.write('%s :=\n' % var)
@@ -1189,7 +1116,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                     else:
                         fh.write("{0} := $({1}_EX_FLAGS_{0})\n".format(flag, rflx))
         # All flags from top level BuildFile
-        flags = self.getFlags()
+        flags = self.core.get_flags()
         for flag in flags:
             val = " ".join(flags[flag])
             if flag.startswith("HOOK_"):
@@ -1199,7 +1126,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             else:
                 fh.write("%s+=%s\n" % (flag, val))
         # Makefile section of toplevel BuildFile
-        for mk in self.getData("MAKEFILE"):
+        for mk in self.core.get_data("MAKEFILE"):
             for line in mk:
                 fh.write("%s\n" % line)
         fh.write("\n\nifeq ($(strip $(GENREFLEX)),)\n"
@@ -1252,7 +1179,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         plugintype = self.get('plugin_type')
         err = False
         plugin = 0
-        flags = self.getFlags()
+        flags = self.core.get_flags()
         if plugintype:
             plugin = 1
             plugintype = plugintype.lower()
@@ -1341,21 +1268,21 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
     def plugin_template(self):
         self.checkPluginFlag()
         if self.get("plugin_name"):
-            self.data['FH'].write("{0}_PRE_INIT_FUNC += $$(eval $$(call {1}Plugin,{2},{0},$({3}),{4}))\n".format(
+            self.data["FH"].write("{0}_PRE_INIT_FUNC += $$(eval $$(call {1}Plugin,{2},{0},$({3}),{4}))\n".format(
                 self.get("safename"), self.get("plugin_type"), self.get("plugin_name"),
                 self.get("plugin_dir"), self.get("path")))
         return
 
     def dnn_template(self):
-        dnn_name = self.getFlagValue("DNN_NAME")
+        dnn_name = self.core.get_flag_value("DNN_NAME")
         if dnn_name:
-            self.data['FH'].write("%s_DNN_NAME   := %s\n" % (self.get("safename"), dnn_name))
+            self.data["FH"].write("%s_DNN_NAME   := %s\n" % (self.get("safename"), dnn_name))
         return
 
     def opencl_template(self):
-        cl_name = self.getFlagValue("OPENCL_DEVICE_FILES")
+        cl_name = self.core.get_flag_value("OPENCL_DEVICE_FILES")
         if cl_name:
-            self.data['FH'].write("%s_OPENCL_DEVICE_FILES   := %s\n" % (self.get("safename"), cl_name))
+            self.data["FH"].write("%s_OPENCL_DEVICE_FILES   := %s\n" % (self.get("safename"), cl_name))
         return
 
     def dict_template(self):
@@ -1383,7 +1310,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         xr = "y "
         for i in range(1, len(rootdict) - 1):
             xr += "y%s " % i
-        fh = self.data['FH']
+        fh = self.data["FH"]
         safename = self.get("safename")
         fh.write("%s_ROOTDICTS  := %s\n" % (safename, xr))
         fh.write("{0}_PRE_INIT_FUNC += $$(eval $$(call RootDict,{0},{1},{2},$({3})))\n".format(
@@ -1391,12 +1318,12 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         return
 
     def cond_serialization_template(self):
-        self.data['FH'].write("{0}_PRE_INIT_FUNC += $$(eval $$(call CondSerialization,{0},{1},{2}))\n".format(
+        self.data["FH"].write("{0}_PRE_INIT_FUNC += $$(eval $$(call CondSerialization,{0},{1},{2}))\n".format(
             self.get("safename"), self.get("path"), self.get("cond_serialization")))
         return
 
     def precompile_header_template(self):
-        self.data['FH'].write("{0}_PRE_INIT_FUNC += $$(eval $$(call PreCompileHeader,{0},{1},{2},"
+        self.data["FH"].write("{0}_PRE_INIT_FUNC += $$(eval $$(call PreCompileHeader,{0},{1},{2},"
                               "$(patsubst $(SCRAM_SOURCEDIR)/%,%,{1})))\n".
                               format(self.get("safename"), self.get("path"), self.get("precompile_header")))
 
@@ -1406,7 +1333,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         xr = "x "
         for i in range(1, len(lcgdict)):
             xr += "x%s " % i
-        fh = self.data['FH']
+        fh = self.data["FH"]
         fh.write("%s_LCGDICTS  := %s\n" % (safename, xr))
         fh.write("{0}_PRE_INIT_FUNC += $$(eval $$(call LCGDict,{0},{1},{2},$({3}),{4}))\n".format(
             safename, " ".join(lcgdict), " ".join(self.get("classes_def_xml")),
@@ -1414,13 +1341,13 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
 
     def src2store_copy(self, filter, store):
         self.initTemplate_common2all()
-        fh = self.data['FH']
+        fh = self.data["FH"]
         safepath = self.get("safepath")
         path = self.get("path")
         fh.write("{0}_files := $(filter-out \\#% %\\#,$(notdir $(wildcard "
                  "$(foreach dir,$(LOCALTOP)/{1},$(dir)/{2}))))\n".format(safepath, path, filter))
         for f in ["SKIP_FILES", "INSTALL_SCRIPTS"]:
-            val = self.getFlagValue(f)
+            val = self.core.get_flag_value(f)
             if val:
                 fh.write("%s_%s := %s\n" % (safepath, f, val))
         fh.write("$(eval $(call Src2StoreCopy,{0},{1},{2},{3}))\n".format(
@@ -1439,39 +1366,39 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
     def donothing_template(self):
         self.swapMakefile()
         self.initTemplate_common2all()
-        self.data['FH'].write(".PHONY : all_{0} {0}\n{0} all_{0}:\n".format(self.get("safepath")))
+        self.data["FH"].write(".PHONY : all_{0} {0}\n{0} all_{0}:\n".format(self.get("safepath")))
         return
 
     def plugins_template(self):
         autoPlugin = 0
-        skip = self.getFlagValue("SKIP_FILES")
+        skip = self.core.get_flag_value("SKIP_FILES")
         if skip in ["*", "%"]:
             return
-        if self.getLocalBuildFile() and (not self.getData("BUILDPRODUCTS", True)):
-            if not self.getData("USE", True):
+        if self.getLocalBuildFile() and (not self.core.get_data("BUILDPRODUCTS", True)):
+            if not self.core.get_data("USE", True):
                 return
-            flags = self.getFlags()
+            flags = self.core.get_flags()
             for ptype in self.cache["SupportedPlugins"]:
                 for pflag in self.cache["SupportedPlugins"][ptype]:
                     if (pflag in flags) and (flags[pflag][0] == "0"):
                         return
             name = self.get("parent") + "Auto"
-            self.addBuildProduct(name.replace("/", ""), "", "lib", "LIBRARY")
+            self.core.add_build_product(name.replace("/", ""), "", "lib", "LIBRARY")
             autoPlugin = 1
         self.binary_rules(autoPlugin)
 
     def library_template(self):
-        ex = self.getData("EXPORT", True)
+        ex = self.core.get_data("EXPORT", True)
         if ex:
             libs = []
             if "LIB" in ex:
                 libs = ex["LIB"]
             if (len(libs) == 1) and (libs[0] != "1"):
                 self.set("safename", libs[0])
-        elif self.getLocalBuildFile() and (not self.getData("USE")):
+        elif self.getLocalBuildFile() and (not self.core.get_data("USE")):
             return
         self.initTemplate_LIBRARY()
-        types = self.getBuildProducts()
+        types = self.core.get_build_products()
         if types:
             for type in types:
                 self.set("type", type)
@@ -1480,7 +1407,8 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         safepath = self.get("safepath")
         safename = self.get("safename")
         parent = self.get("parent")
-        fh = self.data['FH']
+        self.core.contents["NAME"] = safename
+        fh = self.data["FH"]
         self.data["data"].branch["name"] = safename
         fh.write("ifeq ($(strip $({2})),)\n"
                  "ALL_COMMONRULES += {1}\n"
@@ -1490,7 +1418,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                  "{2} := {0}\n"
                  "{0}_files := $(patsubst {3}/%,%,$(wildcard $(foreach dir,{3} {5},"
                  "$(foreach ext,$(SRC_FILES_SUFFIXES),$(dir)/*.$(ext)))))\n".
-                 format(safename, safepath, parent, path, self.get("class"), self.getSubDirIfEnabled()))
+                 format(safename, safepath, parent, path, self.get("class"), self.getSubdirIfEnabled()))
         if parent.startswith("LCG/"):
             fh.write("%s := %s\n" % (parent[4:], safename))
         self.library_template_generic()
@@ -1500,7 +1428,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
     def python_template(self):
         self.swapMakefile()
         self.initTemplate_PYTHON()
-        types = self.getBuildProducts()
+        types = self.core.get_build_products()
         if types:
             for type in types:
                 self.set("type", type)
@@ -1508,7 +1436,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         path = self.get("path")
         safepath = self.get("safepath")
         safename = self.get("safename")
-        fh = self.data['FH']
+        fh = self.data["FH"]
         self.data["data"].branch["name"] = safename
         fh.write("ifeq ($(strip $({0})),)\n"
                  "{0} := self/{1}\n"
@@ -1516,7 +1444,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                  "ALL_PYTHON_DIRS += $(patsubst src/%,%,{1})\n"
                  "{0}_files := $(patsubst {1}/%,%,$(wildcard $(foreach dir,{1} {3},$(foreach ext,"
                  "$(SRC_FILES_SUFFIXES),$(dir)/*.$(ext)))))\n".
-                 format(safename, path, safepath, self.getSubDirIfEnabled(), self.get("parent")))
+                 format(safename, path, safepath, self.getSubdirIfEnabled(), self.get("parent")))
         self.dumpBuildFileData()
         fh.write("else\n"
                  "$(eval $(call MultipleWarningMsg,{0},{1}))\n"
@@ -1530,7 +1458,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         self.binary_template()
 
     def dumpBuildFileLOC(self, localbf, safename, path, no_export, lib):
-        fh = self.data['FH']
+        fh = self.data["FH"]
         locuse = ""
         if localbf:
             fh.write("%s_BuildFile    := $(WORKINGDIR)/cache/bf/%s\n" % (safename, localbf[:-4]))
@@ -1543,36 +1471,36 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             for xpre in ["", "_REM"]:
                 for xflag in self.cache["DefaultCompilerFlags"] + self.cache["DefaultBuildFileFlagsToDump"]:
                     flag = "%s%s" % (xpre, xflag)
-                    v = self.getFlagValue(flag)
+                    v = self.core.get_flag_value(flag)
                     if v:
                         fh.write("%s_LOC_FLAGS_%s   := %s\n" % (safename, flag, v))
                     flags_added[flag] = 1
-            flags = self.getFlags()
+            flags = self.core.get_flags()
             for flag in flags:
                 for xflag in self.cache["DefaultCompilerFlags"] + self.cache["DefaultBuildFileFlagsToDump"]:
                     m = re.match('^(FILE.+?)_((REM_|)%s)$' % xflag, flag)
                     if m:
-                        v = self.getFlagValue(flag)
+                        v = self.core.get_flag_value(flag)
                         if v:
                             fh.write("%s_%s_LOC_FLAGS_%s   := %s" % (safename, m.group(1), m.group(2), v))
                         flags_added[flag] = 1
             for flag in flags:
                 if flag not in flags_added:
-                    v = self.getFlagValue(flag)
+                    v = self.core.get_flag_value(flag)
                     fh.write("%s_LOC_FLAGS_%s   := %s\n" % (safename, flag, v))
             for data in ["INCLUDE"]:
-                val = self.fixData(self.getData(data), data, localbf)
+                val = self.fixData(self.core.get_data(data), data, localbf)
                 if val:
                     fh.write("%s_LOC_%s   := %s\n" % (safename, data, " ".join(val)))
             if lib:
-                for d in self.getFlagValue("NO_EXPORT", False):
+                for d in self.core.get_flag_value("NO_EXPORT", False):
                     for x in d.split(" "):
                         no_export[x] = 0
             for data in ["LIB"]:
-                val = self.fixData(self.getData(data), data, localbf)
+                val = self.fixData(self.core.get_data(data), data, localbf)
                 if val:
                     fh.write("%s_LOC_%s   := %s\n" % (safename, data, " ".join(val)))
-            val = self.fixData(self.getData("USE"), "USE", localbf)
+            val = self.fixData(self.core.get_data("USE"), "USE", localbf)
             if val:
                 locuse = " ".join(val)
                 if lib:
@@ -1583,13 +1511,13 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                 flag = self.isLibSymLoadChecking()
                 if flag:
                     fh.write("%s_libcheck     := %s\n" % (safename, flag))
-            flag = self.getFlagValue("SKIP_FILES")
+            flag = self.core.get_flag_value("SKIP_FILES")
             if flag:
                 fh.write("%s_SKIP_FILES   := %s\n" % (safename, flag))
         fh.write("%s_LOC_USE := %s  %s\n" % (safename, self.getCacheData("USE"), locuse))
 
     def dumpBuildFileData(self, lib=False):
-        fh = self.data['FH']
+        fh = self.data["FH"]
         safename = self.get("safename")
         localbf = self.getLocalBuildFile()
         no_export = {}
@@ -1600,7 +1528,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         self.dnn_template()
         self.opencl_template()
         if lib and localbf:
-            ex = self.getData("EXPORT", True)
+            ex = self.core.get_data("EXPORT", True)
             if self.isPublictype() and ex:
                 if not self.get("plugin_type"):
                     for data in ["INCLUDE", "LIB"]:
@@ -1638,7 +1566,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                                      "library as plugin. Please cleanup %s by removing the "
                                      "<export></export> section.\n" % localbf)
         if localbf:
-            for mk in self.getData("MAKEFILE"):
+            for mk in self.core.get_data("MAKEFILE"):
                 for line in mk:
                     fh.write("%s\n" % line)
         self.setValidSourceExtensions()
@@ -1646,7 +1574,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         safepath = self.get("safepath")
         store1 = self.getProductStore("scripts")
         store2 = self.getProductStore("logs")
-        ins_script = self.getFlagValue("INSTALL_SCRIPTS")
+        ins_script = self.core.get_flag_value("INSTALL_SCRIPTS")
         xclass = self.get("class")
         if xclass == "LIBRARY":
             fh.write("%s_CLASS := %s\n" % (safename, xclass))
@@ -1675,17 +1603,17 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         rootdict = []
         path = self.get('path')
         dir = path
-        files = self.getProductFiles()
+        files = self.core.get_product_files()
         if files:
-            if os.path.sep in files[0]:
+            if dirsep in files[0]:
                 stubdir = dirname(files[0])
                 dir = join(dir, stubdir)
         if not isdir(dir):
             SCRAM.die("ERROR: Can not open '%s' directory. BuildFile in '%s' is refering "
                       "to files in this directory" % (dir, path))
         all_files = self.readDir(dir, 2, 1)
-        hfile = self.getFlagValue("LCG_DICT_HEADER")
-        xfile = self.getFlagValue("LCG_DICT_XML")
+        hfile = self.core.get_flag_value("LCG_DICT_HEADER")
+        xfile = self.core.get_flag_value("LCG_DICT_XML")
         xmldef = {}
         if not hfile:
             hfile = "classes.h"
@@ -1699,14 +1627,18 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         x = [join(path, x) for x in xfile.split(" ")]
         xc = len(x)
         if (len(h) == xc) and (xc > 0):
+            pack = self.get("parent")
             for i in range(xc):
-                if x[i] in all_files:
-                    if x[i] in all_files:
-                        xmldef[x[i]] = h[i]
+                xf = x[i]
+                if xf in all_files:
+                    if h[i] in all_files:
+                        xmldef[xf] = h[i]
                     elif self.isAutoGenerateClassesH():
-                        xmldef[x[i]] = "$(WORKINGDIR)/classes/%s.h" % x[i]
+                        xmldef[xf] = "$(WORKINGDIR)/classes/%s.h" % xf
                     else:
-                        xmldef[x[i]] = ""
+                        xmldef[xf] = ""
+                elif (xf not in xmldef) and (pack in self.cache["LCGDICT_PACKAGE"]):
+                    xmldef["$(WORKINGDIR)/classes/classes_def.xml"] = "$(WORKINGDIR)/classes/classes.h"
         h = []
         x = []
         for f in xmldef:
@@ -1719,12 +1651,12 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
             for i in range(xc):
                 lcgheader.append(h[i])
                 lcgxml.append(x[i])
-            tmp = self.getFlagValue("GENREFLEX_ARGS").strip()
+            tmp = self.core.get_flag_value("GENREFLEX_ARGS").strip()
             if tmp == "--":
                 genreflex_args = ""
             elif tmp:
                 genreflex_args = tmp
-            tmp = self.getFlagValue("GENREFLEX_FAILES_ON_WARNS").lower()
+            tmp = self.core.get_flag_value("GENREFLEX_FAILES_ON_WARNS").lower()
             if tmp not in ["no", "0"]:
                 genreflex_args += " $(root_EX_FLAGS_GENREFLEX_FAILES_ON_WARNS)"
             plugin = self.get('plugin_name')
@@ -1771,7 +1703,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         localbf = self.getLocalBuildFile()
         if not localbf:
             return
-        fh = self.data['FH']
+        fh = self.data["FH"]
         subsys = self.get("parent")
         path = self.get("path")
         safename = basename(path)
@@ -1784,19 +1716,19 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         for xpre in ["", "REM_", "BIGOBJ_", "REM_BIGOBJ_"]:
             for xflag in self.cache["DefaultCompilerFlags"] + self.cache["DefaultBuildFileFlagsToDump"]:
                 flag = "%s%s" % (xpre, xflag)
-                v = self.getFlagValue(flag)
+                v = self.core.get_flag_value(flag)
                 if v:
                     fh.write("%s_LOC_FLAGS_%s   := %s\n" % (safename, flag, v))
         for data in ["LIB"]:
-            val = self.fixData(self.getData(data), data, localbf)
+            val = self.fixData(self.core.get_data(data), data, localbf)
             if val:
                 fh.write("%s_LOC_%s   := %s\n" % (safename, data, " ".join(val)))
         locuse = ""
-        val = self.fixData(self.getData("USE"), "USE", localbf)
+        val = self.fixData(self.core.get_data("USE"), "USE", localbf)
         if val:
             locuse = " ".join(val)
             fh.write("%s_PACKAGES := %s\n" % (safename, locuse))
-        val = self.getFlagValue("DROP_DEP")
+        val = self.core.get_flag_value("DROP_DEP")
         if val:
             fh.write("%s_DROP_DEP := %s\n" % (safename, val))
         fh.write("%s_LOC_USE := %s  %s\n" % (safename, self.getCacheData("USE"), locuse))
@@ -1804,25 +1736,25 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         fh.write("endif\n")
 
     def depsOnlyBuildFile(self):
-        if not self.data["core"]:
+        if not self.core:
             return
         sname = self.get("safepath")
         src = environ["SCRAM_SOURCEDIR"]
         path = self.get("path")
         pack = path[len(src):].strip("/")
         localbf = self.getLocalBuildFile()
-        fh = self.data['FH']
+        fh = self.data["FH"]
         fh.write("ifeq ($(strip $({1})),)\n"
                  "{0} := self/{1}\n"
                  "{1}  := {0}\n"
                  "{0}_BuildFile    := $(WORKINGDIR)/cache/bf/{2}\n".
                  format(sname, pack, localbf[:-4]))
-        ex = self.getData("EXPORT", True)
+        ex = self.core.get_data("EXPORT", True)
         for data in ["INCLUDE", "USE"]:
             udata = []
             for d in self.getCacheData(data).split(" "):
                 udata.append(d)
-            for d in self.fixData(self.getData(data), data, localbf, 1):
+            for d in self.fixData(self.core.get_data(data), data, localbf, 1):
                 if d not in udata:
                     udata.append(d)
             if ex and data in ex:
@@ -1838,36 +1770,36 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         return
 
     def binary_template(self):
-        if not self.data["core"]:
+        if not self.core:
             return
         self.swapMakefile()
         self.binary_rules()
 
     def binary_rules(self, autoPlugin=0):
-        if self.getFlagValue("SKIP_FILES") in ["*", "%"]:
+        if self.core.get_flag_value("SKIP_FILES") in ["*", "%"]:
             return
         self.initTemplate_common2all()
         safepath = self.get("safepath")
         path = self.get("path")
-        fh = self.data['FH']
+        fh = self.data["FH"]
         xclass = self.get("class")
-        types = self.getBuildProducts()
+        types = self.core.get_build_products()
         localbf = self.getLocalBuildFile()
         for ptype in sorted(types.keys()):
             if ptype == "LIBRARY":
                 for prod in sorted(types[ptype].keys()):
                     safename = self.fixProductName(prod)
                     self.set("safename", safename)
-                    self.setBuildProduct(ptype, prod)
+                    self.core.set_build_product(ptype, prod)
                     fh.write("ifeq ($(strip $(%s)),)\n%s := self/%s\n" % (safename, safename, path))
                     if xclass == "PLUGINS":
                         fh.write("PLUGINS:=yes\n")
                     if autoPlugin:
                         fh.write("{0}_files := $(patsubst {1}/%,%,$(wildcard $(foreach dir,{1} {2},"
                                  "$(foreach ext,$(SRC_FILES_SUFFIXES),$(dir)/*.$(ext)))))\n".
-                                 format(safename, path, self.getSubDirIfEnabled()))
+                                 format(safename, path, self.getSubdirIfEnabled()))
                     else:
-                        prodfiles = " ".join(self.getProductFiles())
+                        prodfiles = " ".join(self.core.get_product_files())
                         fh.write("{0}_files := $(patsubst {1}/%,%,$(foreach file,{2},$(eval "
                                  "xfile:=$(wildcard {1}/$(file)))$(if $(xfile),$(xfile),"
                                  "$(warning No such file exists: {1}/$(file). Please fix {3}.))))\n".
@@ -1885,13 +1817,13 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                 for prod in sorted(types[ptype].keys()):
                     safename = self.fixProductName(prod)
                     self.set("safename", safename)
-                    self.setBuildProduct(ptype, prod)
+                    self.core.set_build_product(ptype, prod)
                     cmd = ""
                     if "COMMAND" in types[ptype][prod]:
                         cmd = types[ptype][prod]["COMMAND"]
                     prodfiles = "1"
                     if not cmd:
-                        prodfiles = " ".join(self.getProductFiles())
+                        prodfiles = " ".join(self.core.get_product_files())
                     elif xclass != "TEST":
                         SCRAM.printerror("****WARNING: '<test name=.../>' tag is only valid for test directories. "
                                          "Ignoring test '%s' from %s\n" % (safename, localbf))
@@ -1907,26 +1839,26 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                                      "$(warning No such file exists: {1}/$(file). Please fix {3}.))))\n".
                                      format(safename, path, prodfiles, localbf[:-4]))
                         if xclass == "TEST":
-                            val = self.getFlagValue("NO_TESTRUN").lower()
+                            val = self.core.get_flag_value("NO_TESTRUN").lower()
                             if val in ["yes", "1"]:
                                 fh.write("{0}_TEST_RUNNER_CMD := echo\n{0}_NO_TESTRUN := yes\n".format(safename))
                             else:
                                 if cmd:
                                     val = cmd
                                 else:
-                                    val = self.getFlagValue("TEST_RUNNER_CMD")
+                                    val = self.core.get_flag_value("TEST_RUNNER_CMD")
                                 if val:
                                     fh.write("%s_TEST_RUNNER_CMD :=  %s\n" % (safename, val))
                                 else:
                                     fh.write("{0}_TEST_RUNNER_CMD :=  {0} {1}\n".
-                                             format(safename, self.getFlagValue("TEST_RUNNER_ARGS")))
-                                for val in self.getFlagValue("SETENV_SCRIPT", False):
+                                             format(safename, self.core.get_flag_value("TEST_RUNNER_ARGS")))
+                                for val in self.core.get_flag_value("SETENV_SCRIPT", False):
                                     if val:
                                         fh.write("%s_TEST_ENV += source %s && \n" % (safename, val))
-                                for val in self.getFlagValue("SETENV", False):
+                                for val in self.core.get_flag_value("SETENV", False):
                                     if val:
                                         fh.write("%s_TEST_ENV += export %s && \n" % (safename, val))
-                            val = self.getFlagValue("PRE_TEST")
+                            val = self.core.get_flag_value("PRE_TEST")
                             if val:
                                 fh.write("%s_PRE_TEST := %s\n" % (safename, val))
                             self.set("type", "test")
