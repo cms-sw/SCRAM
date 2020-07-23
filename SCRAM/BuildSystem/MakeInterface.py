@@ -12,7 +12,7 @@ regex_0_or_none = re.compile('^(0+|)$')
 class MakeInterface:
 
     def exec(self, make_f_p, args, opts):
-        arg = ["-r", "-f", make_f_p]
+        gmake_arg = ["gmake", "-r", "-f", make_f_p]
         job_args = 0
         job_val = ""
 
@@ -31,18 +31,18 @@ class MakeInterface:
                     continue
                 else:
                     job_val = "0"  # else default to 0
-            arg.append(a)  # create arg string minus '-j /--jobs'
+            gmake_arg.append(a)  # create arg string minus '-j /--jobs'
         if job_args:  # if '-j /--jobs' flag was passed
             if regex_0_or_none.match(job_val):  # but no core count, get max from the system
                 job_val = cpu_count()
-            arg.append("-j")
-            arg.append(job_val)
+            gmake_arg.append("-j")
+            gmake_arg.append(job_val)
 
         # generate make command and execute it
         if opts.verbose:
             environ["SCRAM_BUILDVERBOSE"] = "1"
         script = "%s/%s/SCRAM/scram_build.sh" % (environ['LOCALTOP'], environ['SCRAM_CONFIGDIR'])
         try:
-            execl(script, *arg)
+            execl(script, *gmake_arg)
         except Exception as e:
             scramerror("SCRAM MakeInterface::exec(): Unable to run gmake ...  %s" % e)
