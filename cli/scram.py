@@ -89,6 +89,8 @@ def execcommand(args, opts):
                 if cmd[0].startswith('cmd_')]
     if args:
         cmd = args.pop(0)
+        if cmd in ["install"]:
+            exit(0)
         cmds = [c for c in commands if c == cmd]
         if len(cmds) == 0:
             cmds = [c for c in commands if c.startswith(cmd)]
