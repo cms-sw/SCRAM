@@ -69,7 +69,7 @@ def usage(commands):
 # Initialize SCRAM env
 def initialize_scram():
     dbpath = SCRAM.BASEPATH
-    dbpath_rw = SCRAM.BASEPATH
+    dbpath_rw = SCRAM.BASEPATH_RW
     environ['SCRAM_VERSION'] = SCRAM.VERSION
     if 'SCRAM_LOOKUPDB' not in environ:
         if 'SCRAM_USERLOOKUPDB' in environ:
