@@ -238,8 +238,12 @@ class ProjectDB(object):
                     self.LocalLinks.append(line)
         return
 
-    def _findProjects(self, project='.+', version='.+', exact_match=False,
+    def _findProjects(self, project=None, version=None, exact_match=False,
                       arch=None, valid=False, xdata=None):
+        if not project:
+            project = '.+'
+        if not version:
+            version = '.+'
         if xdata is None:
             xdata = {}
         if not arch:
