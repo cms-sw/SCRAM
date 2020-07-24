@@ -426,7 +426,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                     storename = join(arch, store['name'])
             else:
                 storename = store['name']
-            sname = store['name'].upper()
+            sname = store['name'].upper().replace("/", "_")
             ref.write("SCRAMSTORENAME_%s:=%s\n" % (sname, storename))
             ref.write("ALL_PRODUCT_STORES+=$(SCRAMSTORENAME_%s)\n" % sname)
         ref.close()
@@ -1095,7 +1095,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
         self.updateEnvVarMK()
         for var in ["LIB", "INCLUDE", "USE"]:
             fh.write('%s :=\n' % var)
-            val = self.getCacheData("var")
+            val = self.getCacheData(var)
             if val:
                 fh.write("%s += %s\n" % (var, val))
         for tn in self.getCompilerTypes():
