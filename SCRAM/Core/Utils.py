@@ -1,5 +1,5 @@
 import SCRAM
-from os.path import exists, join
+from os.path import exists, join, dirname, isdir
 from os import environ, makedirs, execv
 from sys import argv
 
@@ -59,3 +59,34 @@ def cmsos():
     if e:
         return None
     return '_'.join(os.split('_', 2)[:2])
+
+
+def readProducts(area):
+    cache = {}
+    archdir = area.archdir()
+    dirCache = join(archdir, "DirCache.json")
+    if not exists(dirCache):
+        return cache
+    bfdir = join(archdir, "BuildFiles")
+    if not isdir(bfdir):
+        return cache
+    import json
+    dirs = {}
+    with open(dirCache) as ref:
+        dirs = json.load(ref)
+    if "BFCACHE" not in dirs:
+        return cache
+    pmap = {}
+    if "PACKMAP" in dirs:
+        pmap = dirs["PACKMAP"]
+    sdir = area.sourcedir()+"/"
+    slen = len(sdir)
+    for bf in dirs["BFCACHE"]:
+        if not bf.startswith(sdir):
+            continue
+        bdir = dirname(bf)[slen:]
+        if bdir in cache:
+            continue
+        with open(join(bfdir,bf)) as obj:
+            cache[bdir] = json.load(obj)
+    return cache
