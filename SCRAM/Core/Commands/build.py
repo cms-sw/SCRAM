@@ -409,10 +409,6 @@ def process(args, main_opts):
             SCRAM.printwarning("You are trying to compile/build for architecture %s on %s OS which"
                                "might not work.\nIf you know this SCRAM_ARCH/OS combination works "
                                "then please first run 'scram build --ignore-arch'.")
-    mkfile = join(workdir, "Makefile")
-    if not exists(mkfile):
-        from shutil import copyfile
-        copyfile(join(localarea.config(), "SCRAM", "GMake", "Makefile"), mkfile)
     MAKER = MakeInterface()
-    MAKER.exec(mkfile, args, main_opts)
+    MAKER.exec(args, main_opts)
     return True
