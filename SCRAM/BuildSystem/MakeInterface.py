@@ -8,16 +8,14 @@ regex_number = re.compile('^[0-9]+$')
 regex_0_or_none = re.compile('^(0+|)$')
 
 
-# TODO proper way to pas command line arguments
 class MakeInterface:
 
-    def exec(self, make_f_p, args, opts):
-        gmake_arg = ["gmake", "-r", "-f", make_f_p]
+    def exec(self, args, opts):
+        gmake_arg = ["bash"]
         job_args = 0
         job_val = ""
 
-        for a in args:  # arguments passed to script
-            # parse each command line argument
+        for a in args:
             m = regex_j.match(a)
             if m:
                 # if '-j /--jobs' flag passed, store it
@@ -41,7 +39,7 @@ class MakeInterface:
         # generate make command and execute it
         if opts.verbose:
             environ["SCRAM_BUILDVERBOSE"] = "1"
-        script = "%s/%s/SCRAM/scram_build.sh" % (environ['LOCALTOP'], environ['SCRAM_CONFIGDIR'])
+        script = "%s/%s/SCRAM/run_gmake.sh" % (environ['LOCALTOP'], environ['SCRAM_CONFIGDIR'])
         try:
             execl(script, *gmake_arg)
         except Exception as e:
