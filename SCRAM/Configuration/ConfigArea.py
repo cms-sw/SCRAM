@@ -1,4 +1,4 @@
-from os import environ, chmod, getcwd
+from os import environ, chmod, getcwd, utime
 from os.path import join, exists, isdir, basename, dirname
 from sys import stderr, exit
 from glob import glob
@@ -169,7 +169,7 @@ class ConfigArea(object):
                     join(devconf, 'toolbox', self.arch()))
         adddir(join(sat.location(), sat.sourcedir()))
         if exists(self.toolcachename()):
-            copydir(self.toolcachename(), sat.archdir())
+            copydir(self.toolcachename(), sat.toolcachename())
         envfile = join(sat.archdir(), 'Environment')
         with open(envfile, 'w') as ref:
             ref.write('RELEASETOP=%s\n' % relloc)
@@ -179,6 +179,7 @@ class ConfigArea(object):
         envfile = join(sat.location(), sat.admindir(), 'Environment')
         if not exists(envfile):
             sat.save()
+        utime(join(devconf, "Self.xml"))
         return sat
 
     def copyenv(self, env):

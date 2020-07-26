@@ -76,10 +76,7 @@ def readProducts(area):
         dirs = json.load(ref)
     if "BFCACHE" not in dirs:
         return cache
-    pmap = {}
-    if "PACKMAP" in dirs:
-        pmap = dirs["PACKMAP"]
-    sdir = area.sourcedir()+"/"
+    sdir = area.sourcedir() + "/"
     slen = len(sdir)
     for bf in dirs["BFCACHE"]:
         if not bf.startswith(sdir):
@@ -87,6 +84,6 @@ def readProducts(area):
         bdir = dirname(bf)[slen:]
         if bdir in cache:
             continue
-        with open(join(bfdir,bf)) as obj:
+        with open(join(bfdir, bf)) as obj:
             cache[bdir] = json.load(obj)
     return cache

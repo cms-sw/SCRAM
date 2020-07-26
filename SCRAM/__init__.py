@@ -24,6 +24,13 @@ BASEPATH_RW = '@CMS_PATH@'
 COMMANDS_OPTS = None
 
 
+def setDebug():
+    global SCRAM_DEBUG
+    SCRAM_DEBUG = True
+    logging_config["level"] = logging.DEBUG
+    logging.basicConfig(**logging_config)
+
+
 def scramdebug(msg):
     if SCRAM_DEBUG:
         printmsg(msg)

@@ -51,7 +51,7 @@ class Core(object):
         rel = area.releasetop()
         if not rel:
             return
-        rel_file = join(rel, area.admindir(), arch, 'ProjectCache.db.gz')
+        rel_file = join(rel, area.admindir(), arch, 'DirCache.json')
         if exists(rel_file):
             return
         err = '********** ERROR: Missing Release top ************\n' \

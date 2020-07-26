@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from sys import exit, argv, path
 from os import environ
-from os.path import dirname, abspath, join
+from os.path import dirname, abspath
 from inspect import getmembers, isfunction
 from argparse import ArgumentParser
 
@@ -50,7 +50,8 @@ def parse_args():
         environ['SCRAM_ARCH'] = opts.arch
         SCRAM.FORCED_ARCH = opts.arch
     if opts.debug:
-        environ['SCRAM_DEBUG'] = 1
+        environ['SCRAM_DEBUG'] = "1"
+        SCRAM.setDebug()
     return (opts, args)
 
 
@@ -98,8 +99,8 @@ def execcommand(args, opts):
         if cmds_count > 1:
             SCRAM.scramerror("Multiple commands matched '%s': %s" % (cmds_count, cmd, ", ".join(cmds)))
         if cmds_count == 1:
-             initialize_scram()
-             return eval('scram_commands.cmd_%s' % cmds[0])(args, opts)
+            initialize_scram()
+            return eval('scram_commands.cmd_%s' % cmds[0])(args, opts)
     SCRAM.printmsg(usage(commands))
 
 
