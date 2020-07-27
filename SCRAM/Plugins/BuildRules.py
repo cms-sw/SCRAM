@@ -104,7 +104,7 @@ class BuildRules(object):
         arch = environ['SCRAM_ARCH']
         ext_arch = join(environ['LOCALTOP'], 'external', arch)
         if not exists(ext_arch):
-            SCRAM.run_command("%s/SCRAM/linkexternal.py --arch %s" %
+            SCRAM.run_command("%s/SCRAM/linkexternal --arch %s" %
                               (join(environ['LOCALTOP'], environ['SCRAM_CONFIGDIR']), arch))
             makedirs(ext_arch, exist_ok=True)
 
