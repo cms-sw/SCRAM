@@ -84,6 +84,13 @@ def readProducts(area):
         bdir = dirname(bf)[slen:]
         if bdir in cache:
             continue
+        cdir = dirname(bf)
+        xclass = "UNKNOWN"
+        if cdir in dirs["PACKMAP"]:
+            cdir = dirs["PACKMAP"][cdir]
+        if cdir in dirs["CLASSMAP"]:
+            xclass = dirs["CLASSMAP"][cdir].upper()
         with open(join(bfdir, bf)) as obj:
             cache[bdir] = json.load(obj)
+        cache[bdir]["CLASS"] = xclass
     return cache
