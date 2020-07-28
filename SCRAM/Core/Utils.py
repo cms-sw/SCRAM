@@ -89,7 +89,7 @@ def readProducts(area):
         if cdir in dirs["PACKMAP"]:
             cdir = dirs["PACKMAP"][cdir]
         if cdir in dirs["CLASSMAP"]:
-            xclass = dirs["CLASSMAP"][cdir].upper()
+            xclass = dirs["CLASSMAP"][cdir][0].upper()
         with open(join(bfdir, bf)) as obj:
             cache[bdir] = json.load(obj)
         cache[bdir]["CLASS"] = xclass
