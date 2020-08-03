@@ -174,7 +174,8 @@ sub versioncheck() {
     my $self=shift;
     if ((!defined $self->{SCRAM_VERSIONCHECK}) && ($self->islocal())) {
 	my $version=$self->versioninfile($ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR});
-	$self->spawnversion($version), if (defined ($version));
+	my $basedir= $self->scram_basedir($ENV{LOCALTOP}."/".$ENV{SCRAM_CONFIGDIR});
+	$self->spawnversion($version, $basedir), if (defined ($version));
     }
     $self->{SCRAM_VERSIONCHECK} = 1;
     return $self;
@@ -196,7 +197,8 @@ sub remote_versioncheck() {
     if (!defined($version)) {
       $self->error("Unable to determine SCRAM version used to config. remote area.\n");
     }
-    $self->spawnversion($version);
+    my $basedir = $self->scram_basedir($remote_area->location()."/".$remote_area->configurationdir());
+    $self->spawnversion($version, $basedir);
     return $self;
 }
 
@@ -446,9 +448,9 @@ sub versioninfile
    my $area=shift;
    my $versionfile="${area}/scram_version";
    my $version=undef;
-   if ( -f "${area}/scram_version" )
+   if ( -f "${versionfile}" )
       {
-      open (VERSION, "< ${area}/scram_version");
+      open (VERSION, "< ${versionfile}");
       $version=<VERSION>;
       close(VERSION);
       chomp $version;
@@ -456,12 +458,33 @@ sub versioninfile
    return $version;
    }
 
+sub scram_basedir
+   {
+   my $self=shift;
+   my $area=shift;
+   my $basedir_file="${area}/scram_basedir";
+   my $basedir=undef;
+   if ( -f "${basedir_file}" )
+      {
+      open (BASEDIR, "< ${basedir_file}");
+      $basedir=<BASEDIR>;
+      close(BASEDIR);
+      chomp $basedir;
+      }
+   return $basedir;
+   }
+
 sub spawnversion
    {
    my $self=shift;
    my $version=shift;
+   my $basedir=shift || "";
+   my $scram_cmd = "scram";
+   if ( -e "${basedir}/common/scram" )
+      {
+      $scram_cmd = "${basedir}/common/scram";
+      }
    my $rv=0;
-
    if (defined $version)
       {
       $ENV{SCRAM_VERSION}=~/^V(\d+)_(\d+)_\d+.*$/o;
@@ -473,7 +496,7 @@ sub spawnversion
 	 {
 	 $ENV{SCRAM_VERSION}=$version;
 	 $self->verbose("Spawning SCRAM version $version");
-	 my $rv=system("scram", @$main::ORIG_ARGV)/256;
+	 my $rv=system("${scram_cmd}", @$main::ORIG_ARGV)/256;
 	 exit $rv;
 	 }
       }

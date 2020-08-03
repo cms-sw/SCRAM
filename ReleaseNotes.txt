@@ -1,8 +1,16 @@
 
 			SCRAM Release Notes
+V2_2_9_pre08: 2020-08-03
+
+	Use correct scram base directory to spawn version.
+
+V2_2_9_pre07: 2020-05-18
+
+	Added support to dynamically replace env at runtime.
+
 V2_2_9_pre06: 2020-03-18
 
-	Fxi scram man pages.
+	Fix scram man pages.
 
 V2_2_9_pre05: 2019-11-01
 
