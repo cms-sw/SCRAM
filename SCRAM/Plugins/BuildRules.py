@@ -199,7 +199,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
 """
         fh.write(symMk)
         for d in self.getSymLinks():
-            fh.write("\t%s/SCRAM/createSymLinks.pl %s &&\\\n" % (self.cache['ProjectConfig'], d))
+            fh.write("\t%s/SCRAM/createSymLinks.sh %s &&\\\n" % (self.cache['ProjectConfig'], d))
         fh.write("\tif [ ! -f $@ ] ; then touch $@; fi\n\n")
         return
 
