@@ -45,13 +45,15 @@ def remote_versioncheck(area):
     sversion = area.scram_version()
     if not sversion:
         SCRAM.scramerror("Unable to determine SCRAM version used to config. remote area.")
-    spawnversion(sversion)
+    spawnversion(sversion, area.scram_basedir())
 
 
-def spawnversion(newversion='V2_99_99'):
+def spawnversion(newversion='V2_99_99', basedir=None):
+    if not basedir:
+        basedir=SCRAM.BASEPATH
     if SCRAM.VERSION.split("_", 1)[0] != newversion.split("_", 1)[0]:
         environ['SCRAM_VERSION'] = newversion
-        execv(SCRAM.BASEPATH + "/common/scram", argv)
+        execv(join(basedir,"common","scram"), argv)
 
 
 def cmsos():

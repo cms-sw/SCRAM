@@ -203,6 +203,13 @@ class ConfigArea(object):
         with open(join(self.config(), 'scram_version')) as ref:
             return ref.readline().strip()
 
+    def scram_basedir(self):
+        bfile = join(self.config(), 'scram_basedir')
+        if not exists(bfile):
+            return None
+        with open(bfile) as ref:
+            return ref.readline().strip()
+
     # ---- support routines
     def _setAreaArch(self):
         arch = self._forcearch
