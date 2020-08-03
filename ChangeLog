@@ -1,6 +1,6 @@
 2020-08-03 Shahzad Muzaffar  <@smuzaffar>
 
-	* SCRAM/SCRAM.pm: USe correct scram base to spawn version.
+	* SCRAM/SCRAM.pm: Use correct scram base to spawn version.
 
 2020-05-18 Shahzad Muzaffar  <@smuzaffar>
 
