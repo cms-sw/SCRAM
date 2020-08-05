@@ -1,4 +1,4 @@
-from os import environ, chmod, getcwd, utime
+from os import environ, chmod, getcwd, utime, listdir
 from os.path import join, exists, isdir, basename, dirname
 from sys import stderr, exit
 from glob import glob
@@ -170,6 +170,10 @@ class ConfigArea(object):
         adddir(join(sat.location(), sat.sourcedir()))
         if exists(self.toolcachename()):
             copydir(self.toolcachename(), sat.toolcachename())
+            for item in listdir(sat.toolcachename()):
+                if item.startswith('.'):
+                    continue
+                utime(join(sat.toolcachename(), item))
         envfile = join(sat.archdir(), 'Environment')
         with open(envfile, 'w') as ref:
             ref.write('RELEASETOP=%s\n' % relloc)
