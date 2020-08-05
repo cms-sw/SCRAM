@@ -26,7 +26,7 @@ def process(args):
     if args:
         tool = args[0]
     if tool:
-        if not exists(tool):
+        if (not exists(tool)) or (not tool.endswith(".xml")):
             toolname = tool.lower()
             if toolname != 'self':
                 toolbox = larea.toolbox()
