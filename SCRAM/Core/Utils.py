@@ -49,10 +49,13 @@ def remote_versioncheck(area):
 
 
 def spawnversion(newversion='V2_99_99', basedir=None):
+    if 'SCRAM_NO_VERSION_SPAWN' in environ and environ['SCRAM_NO_VERSION_SPAWN'] == 'true':
+        return
     if not basedir:
         basedir=SCRAM.BASEPATH
     if SCRAM.VERSION.split("_", 1)[0] != newversion.split("_", 1)[0]:
         environ['SCRAM_VERSION'] = newversion
+        environ['SCRAM_NO_VERSION_SPAWN'] = 'true'
         execv(join(basedir,"common","scram"), argv)
 
 
