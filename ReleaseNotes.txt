@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_9_pre09: 2020-08-06
+
+	Do not spwan scram version if SCRAM_NO_VERSION_SPAWN is set.
+
 V2_2_9_pre08: 2020-08-03
 
 	Use correct scram base directory to spawn version.

@@ -1,3 +1,7 @@
+2020-08-06 Shahzad Muzaffar  <@smuzaffar>
+
+	* SCRAM/SCRAM.pm: Do not change scram version if SCRAM_NO_VERSION_SPAWN=true
+
 2020-08-03 Shahzad Muzaffar  <@smuzaffar>
 
 	* SCRAM/SCRAM.pm: Use correct scram base to spawn version.

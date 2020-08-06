@@ -480,6 +480,7 @@ sub spawnversion
    my $version=shift;
    my $basedir=shift || "";
    my $scram_cmd = "scram";
+   if ($ENV{SCRAM_NO_VERSION_SPAWN} eq "true"){return 0;}
    if ( -e "${basedir}/common/scram" )
       {
       $scram_cmd = "${basedir}/common/scram";
@@ -495,6 +496,7 @@ sub spawnversion
           (($cmajor<3) && ($cminor != $nminor) && (($cmajor<2) || ($cminor<2) || ($nminor<2))))
 	 {
 	 $ENV{SCRAM_VERSION}=$version;
+         $ENV{SCRAM_NO_VERSION_SPAWN}="true";
 	 $self->verbose("Spawning SCRAM version $version");
 	 my $rv=system("${scram_cmd}", @$main::ORIG_ARGV)/256;
 	 exit $rv;
