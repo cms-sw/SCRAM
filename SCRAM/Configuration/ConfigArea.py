@@ -1,9 +1,7 @@
-from os import environ, chmod, getcwd, utime, listdir
+from os import environ, chmod, getcwd, utime, listdir, makedirs, system
 from os.path import join, exists, isdir, basename, dirname
 from sys import stderr, exit
 from glob import glob
-from SCRAM.Utilities.AddDir import adddir, copydir
-
 
 class ConfigArea(object):
     def __init__(self, forcearch=""):
@@ -83,7 +81,7 @@ class ConfigArea(object):
                 err += self.releasetop()
                 print(err, file=stderr)
                 exit(1)
-        adddir(self.archdir())
+        makedirs(self.archdir(), mode=0o755, exist_ok=True)
         return
 
     def configurationdir(self, dir=None):
@@ -162,14 +160,14 @@ class ConfigArea(object):
         devconf = join(sat.location(), sat.configurationdir())
         relconf = join(self.location(), self.configurationdir())
         if not isdir(devconf):
-            copydir(relconf, devconf)
+            system("cp -Rpf %s %s" % (relconf, devconf))
         else:
-            adddir(join(devconf, 'toolbox'))
-            copydir(join(relconf, 'toolbox', self.arch()),
-                    join(devconf, 'toolbox', self.arch()))
-        adddir(join(sat.location(), sat.sourcedir()))
+            makedirs(join(devconf, 'toolbox'), mode=0o755, exist_ok=True)
+            system("cp -Rpf %s %s" % (join(relconf, 'toolbox', self.arch()),
+                    join(devconf, 'toolbox', self.arch())))
+        makedirs(join(sat.location(), sat.sourcedir()), mode=0o755, exist_ok=True)
         if exists(self.toolcachename()):
-            copydir(self.toolcachename(), sat.toolcachename())
+            system("cp -Rpf %s %s" % (self.toolcachename(), sat.toolcachename()))
             for item in listdir(sat.toolcachename()):
                 if item.startswith('.'):
                     continue

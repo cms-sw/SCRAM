@@ -6,11 +6,10 @@ import logging
 
 from SCRAM.BuildSystem.SimpleDoc import SimpleDoc
 from SCRAM.Configuration.ConfigArea import ConfigArea
-from os import environ
+from os import environ, makedirs, system
 from re import compile
-from SCRAM.Utilities.AddDir import adddir, copydir, copyfile, fixpath
 from SCRAM import die
-from os.path import isdir, isfile, join
+from os.path import isdir, isfile, join, normpath
 
 regex_file = compile(r"^\s*file:")
 
@@ -70,14 +69,14 @@ class BootStrapProject:
             if len(base_src_list) > 0:
                 base_url = base_src_list[-1] + "/"
             src_path = base_url + _remove_file(data.attrib['url'])
-            src_path = fixpath(src_path)
+            src_path = normpath(src_path)
             dest_path = _remove_file(self.area.location() + "/" + data.attrib["name"])
-            dest_path = fixpath(dest_path)
+            dest_path = normpath(dest_path)
             # Generate directories and copy files
             if isfile(src_path):
-                copyfile(src_path, dest_path)
+                system("cp -pf %s %s" % (src_path, dest_path))
             elif isdir(src_path):
-                copydir(src_path, dest_path)
+                system("cp -Rpf %s %s" % (src_path, dest_path))
             else:
                 logging.warning("Not a file or directory: " + src_path)
         elif data.tag == "root":
@@ -91,15 +90,15 @@ class BootStrapProject:
         return True
 
     def _process(self):
-        confdir = fixpath(self.area.config())
+        confdir = normpath(self.area.config())
         conf = join(confdir, "toolbox", environ["SCRAM_ARCH"])
         toolbox = self.toolbox
         logging.debug("confdir: {0},\n conf: {1}, \n toolbox: {2}".format(confdir, conf, toolbox))
         if isdir(toolbox):
             if isdir(toolbox + "/tools"):
-                adddir(conf + "/tools")
-                copydir(toolbox + "/tools/selected", conf + "/tools/selected")
-                copydir(toolbox + "/tools/available", conf + "/tools/available")
+                makedirs(conf + "/tools", mode=0o755, exist_ok=True)
+                system("cp -Rpf %s %s" % (toolbox + "/tools/selected", conf + "/tools/selected"))
+                system("cp -Rpf %s %s" % (toolbox + "/tools/available", conf + "/tools/available"))
             else:
                 die(
                     "Project creating error. Missing directory \"{toolbox}/tools\" in the toolbox."

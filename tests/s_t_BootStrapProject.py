@@ -9,7 +9,6 @@ environ['SCRAM_VERSION'] = "SCRAM_VERSION"
 environ['SCRAM_DEBUG'] = "True"
 
 from SCRAM.Configuration.BootStrapProject import BootStrapProject
-from SCRAM.Utilities.AddDir import adddir
 
 filename = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'resource', 'CMSSW_bootsrc_2.xml')
 
@@ -24,8 +23,8 @@ for path_to_remove in ['/tmp/SCRAM_TEST', '/tmp/SCRAM_TEST_src']:
         pass  # no directory to remove
 
 # Setup
-adddir(tools_path + "/selected")
-adddir(tools_path + "/available")
+os.makdirs(tools_path + "/selected")
+os.makedirs(tools_path + "/available")
 with open(tools_path + "/selected/f", 'w') as f:
     f.write("111\n111\n111\n111\n")
 with open(tools_path + "/available/f", 'w') as f:

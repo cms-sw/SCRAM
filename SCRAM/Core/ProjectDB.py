@@ -1,12 +1,11 @@
 from socket import getfqdn
 from glob import glob
 from os.path import exists, join, abspath, isdir, getmtime, basename
-from os import environ, chmod
+from os import environ, chmod, makedirs
 from re import compile
 from sys import stderr
 from time import localtime
 import SCRAM
-from SCRAM.Utilities.AddDir import adddir
 from SCRAM.Configuration.ConfigArea import ConfigArea
 
 
@@ -172,7 +171,7 @@ class ProjectDB(object):
     ##################################################
     def _save(self):
         filename = join(environ['SCRAM_LOOKUPDB_WRITE'], self.scramrc)
-        adddir(filename)
+        makedirs(filename, mode=0o755, exist_ok=True)
         filename = self._getLinkDBFile(filename)
         with open(filename, 'w') as ref:
             for db in self.LocalLinks:

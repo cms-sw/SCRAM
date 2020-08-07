@@ -6,7 +6,6 @@ from shutil import copy2, move
 from SCRAM import run_command, printerror, scramerror, printmsg
 from SCRAM.Configuration.ConfigArea import ConfigArea
 from SCRAM.BuildSystem.ToolFile import ToolFile
-from SCRAM.Utilities.AddDir import adddir
 
 
 def isnewer(srcfile, desfile):
@@ -93,7 +92,7 @@ class ToolManager(object):
                 utime(tooljson, None)
                 return False
         if not exists(self.area.toolcachename()):
-            adddir(self.area.toolcachename())
+            makedirs(self.area.toolcachename(), mode=0o755, exist_ok=True)
         self.xml.save_json(tooljson)
         utime(self.area.toolcachename(), None)
         tname = basename(tooljson)

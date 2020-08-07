@@ -6,7 +6,6 @@ from SCRAM.BuildSystem.ToolManager import ToolManager
 from SCRAM.BuildSystem.MakeInterface import MakeInterface
 from argparse import ArgumentParser
 from SCRAM.Core.RuntimeEnv import RuntimeEnv
-from SCRAM.Utilities.AddDir import adddir
 from SCRAM.Core.Core import Core
 from SCRAM.Core.Utils import create_productstores, cmsos
 from SCRAM.Plugins.BuildRules import BuildRules
@@ -244,9 +243,9 @@ class DirCache(object):
 
     def dir_make(self):
         mk_dir = join(self.toolmanager.area.archdir(), 'MakeData', 'DirCache')
-        adddir(mk_dir)
+        makedirs(mk_dir, mode=0o755, exist_ok=True)
         mk_dir = join(environ['LOCALTOP'], environ['SCRAM_INTwork'], 'MakeData', 'DirCache')
-        adddir(mk_dir)
+        makedirs(mk_dir, mode=0o755, exist_ok=True)
         xml = XMLReader()
         for xdir in self.cache['ADDEDDIR']:
             classinfo = self.buildclass(xdir)
@@ -297,7 +296,7 @@ class DirCache(object):
                 bf_class_dir = self.cache['PACKMAP'][bfdir]
             classinfo = self.buildclass(bf_class_dir)
             bf_cache = join(bf_cache_dir, bfdir)
-            adddir(bf_cache)
+            makedirs(bf_cache, mode=0o755, exist_ok=True)
             pkgclass = BuildData(bf, classinfo)
             pkgclass.branch['environment'] = self.env
             pkgclass.branch['context'] = xml
