@@ -9,7 +9,7 @@ from SCRAM.Configuration.ConfigArea import ConfigArea
 from os import environ, makedirs, system
 from re import compile
 from SCRAM import die
-from os.path import isdir, isfile, join, normpath
+from os.path import isdir, isfile, join, normpath, dirname
 
 regex_file = compile(r"^\s*file:")
 
@@ -76,6 +76,7 @@ class BootStrapProject:
             if isfile(src_path):
                 system("cp -pf %s %s" % (src_path, dest_path))
             elif isdir(src_path):
+                makedirs(dirname(dest_path), mode=0o755, exist_ok=True)
                 system("cp -Rpf %s %s" % (src_path, dest_path))
             else:
                 logging.warning("Not a file or directory: " + src_path)
