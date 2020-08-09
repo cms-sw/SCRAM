@@ -274,8 +274,8 @@ sub _initlocalarea() {
 	    $self->islocal(1);
 	    my $rel=$area->releasetop();
 	    if (defined $rel) {
-	       my $pfile="$rel/".$area->admindir()."/".$ENV{SCRAM_ARCH}."/ProjectCache.db.gz";
-	       if (!-f $pfile) {
+	       my $pfile="$rel/".$area->admindir()."/".$ENV{SCRAM_ARCH}."/MakeData";
+	       if (!-d $pfile) {
 		  my $vregexp=$version;
 		  $vregexp=~s/^(([^\d]*\d+_\d+)_).*$/$1/; my $relseries=$2;
 	          print STDERR "********** ERROR: Missing Release top ************\n",
