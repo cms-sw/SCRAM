@@ -1049,9 +1049,9 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                 else:
                     val.append("self")
             if val:
-                vals = " ".join(val)
                 if var == "USE":
-                    vals += proj
+                    val.append(proj)
+                vals = " ".join(val)
                 self.addCacheData(var, vals)
         self.core = xdata
         try:
