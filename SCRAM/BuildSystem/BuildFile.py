@@ -127,8 +127,7 @@ class BuildFile(object):
             else:
                 if tag not in self.product:
                     self.product[tag] = []
-                if use not in self.product[tag]:
-                    self.product[tag].append(use)
+                self.product[tag].append(use)
         elif tag == 'LIB':
             if tag not in self.product:
                 self.product[tag] = []
