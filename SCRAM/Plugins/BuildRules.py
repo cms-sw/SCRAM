@@ -104,7 +104,7 @@ class BuildRules(object):
         arch = environ['SCRAM_ARCH']
         ext_arch = join(environ['LOCALTOP'], 'external', arch)
         if not exists(ext_arch):
-            SCRAM.run_command("%s/SCRAM/linkexternal --arch %s" %
+            SCRAM.run_command("%s/SCRAM/linkexternal.py --arch %s" %
                               (join(environ['LOCALTOP'], environ['SCRAM_CONFIGDIR']), arch))
             makedirs(ext_arch, exist_ok=True)
 
@@ -449,6 +449,7 @@ $(COMMON_WORKINGDIR)/cache/project_links: FORCE_TARGET
                     "$(FORTRANSRC_FILES_SUFFIXES) $(CUDASRC_FILES_SUFFIXES)")
         keys.append("SCRAM_ADMIN_DIR           := .SCRAM/$(SCRAM_ARCH)")
         keys.append("SCRAM_TOOLS_DIR           := $(SCRAM_ADMIN_DIR)/tools")
+        keys.append("SCRAM_SCRIPT_EXT          := .py")
         self.dumpCompilersFlags(keys)
         if self.isMultipleCompilerSupport():
             keys.append("SCRAM_MULTIPLE_COMPILERS := yes")
