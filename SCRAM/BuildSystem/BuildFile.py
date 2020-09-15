@@ -123,7 +123,7 @@ class BuildFile(object):
             if not self.tools[use]:
                 use = data.attrib['name']
             if ('source_only' in data.attrib) and (data.attrib['source_only'] in ["1", "true"]):
-                self._update_contents(ET.Element("FLAGS", {'USE_SOURCE_ONLY': use}))
+                self._update_contents(ET.Element("flags", {'USE_SOURCE_ONLY': use}))
             else:
                 if tag not in self.product:
                     self.product[tag] = []
