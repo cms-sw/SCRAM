@@ -8,7 +8,6 @@ from argparse import ArgumentParser
 from SCRAM.Core.RuntimeEnv import RuntimeEnv
 from SCRAM.Core.Core import Core
 from SCRAM.Core.Utils import create_productstores, cmsos
-from SCRAM.Plugins.BuildRules import BuildRules
 from os import getcwd, environ, chdir, makedirs, stat, remove
 from os.path import join, exists, dirname, normpath, basename
 from glob import glob
@@ -40,6 +39,7 @@ class DirCache(object):
                       'CLASSMAP': {},
                       'PACKMAP': {},
                       'CLASSDATA': []}
+        from SCRAM.Plugins.BuildRules import BuildRules
         self.buildrules = BuildRules(toolmanager)
         self.env = {}
         for e in environ:
