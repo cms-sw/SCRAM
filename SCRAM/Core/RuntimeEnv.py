@@ -275,6 +275,11 @@ class RuntimeEnv(object):
             override = join(SCRAM.BASEPATH, 'share', 'overrides', 'bin')
             if exists(override):
                 self.env['rtstring']['path']['PATH'].insert(0, override)
+        override = join(SCRAM.BASEPATH, 'share', 'overrides', 'python')
+        if exists(override):
+            for v in ["PYTHONPATH", "PYTHON27PATH", "PYTHON3PATH"]:
+                if v in self.env['rtstring']['path']:
+                    self.env['rtstring']['path'][v].insert(0, override)
         if 'SCRAM_IGNORE_RUNTIME_HOOK' not in self.OENV:
             self._runtime_hooks()
         return
