@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_9_pre11: 2020-09-22
+
+	Allow to override share/override/python.
+
 V2_2_9_pre10: 2020-08-09
 
 	Fixes for SCRAM V2/V3: Check MakeData for release top

@@ -1,3 +1,7 @@
+2020-09-22 Shahzad Muzaffar  <@smuzaffar>
+
+	* SCRAM/Plugins/RuntimeEnv.pm: Allow to override python path.
+
 2020-08-09 Shahzad Muzaffar  <@smuzaffar>
 
 	* SCRAM/SCRAM.pm: Use MakeData for checking the release top

@@ -349,12 +349,26 @@ sub init_ ()
 sub update_overrides_()
 {
   my $self=shift;
-  if ((exists $self->{env}{rtstring}{path}) && (exists $self->{env}{rtstring}{path}{PATH}))
+  if (exists $self->{env}{rtstring}{path})
   {
-    my $override = $main::installPath . "/share/overrides/bin";
+    if (exists $self->{env}{rtstring}{path}{PATH})
+    {
+      my $override = $main::installPath . "/share/overrides/bin";
+      if (-e $override)
+      {
+        unshift @{$self->{env}{rtstring}{path}{PATH}}, $override;
+      }
+    }
+    my $override = $main::installPath . "/share/overrides/python";
     if (-e $override)
     {
-      unshift @{$self->{env}{rtstring}{path}{PATH}}, $override;
+      foreach my $v ("PYTHONPATH", "PYTHON27PATH", "PYTHON3PATH")
+      {
+        if (exists $self->{env}{rtstring}{path}{$v})
+        {
+          unshift @{$self->{env}{rtstring}{path}{$v}}, $override;
+        }
+      }
     }
   }
   if (! exists $self->{OENV}{"SCRAM_IGNORE_RUNTIME_HOOK"}){$self->runtime_hooks_();}
