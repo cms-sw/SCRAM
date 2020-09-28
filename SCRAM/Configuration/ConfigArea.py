@@ -160,7 +160,7 @@ class ConfigArea(object):
         devconf = join(sat.location(), sat.configurationdir())
         relconf = join(self.location(), self.configurationdir())
         if not isdir(devconf):
-            system("cp -Rpf %s %s; rm -rf %s/SCRAM/Plugins/__pycache__" % (relconf, devconf, devconf))
+            system("cp -Rpf {0} {1}; rm -rf {1}/SCRAM/Plugins/__pycache__ {1}/SCRAM/Plugins/*/__pycache__".format(relconf, devconf))
         else:
             makedirs(join(devconf, 'toolbox'), mode=0o755, exist_ok=True)
             system("cp -Rpf %s %s" % (join(relconf, 'toolbox', self.arch()),
