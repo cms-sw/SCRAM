@@ -1,3 +1,7 @@
+2021-02-08 Shahzad Muzaffar  <@smuzaffar>
+
+	* BuildSystem/BuildFile.pm: Drop makefile tag support in Buildfile.
+
 2020-09-22 Shahzad Muzaffar  <@smuzaffar>
 
 	* SCRAM/Plugins/RuntimeEnv.pm: Allow to override python path.

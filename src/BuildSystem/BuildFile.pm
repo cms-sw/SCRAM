@@ -166,24 +166,6 @@ sub lib()
       : push(@{$self->{content}->{LIB}}, $libname);
    }
 
-sub makefile()
-   {
-   my ($object,$name,%attributes)=@_;
-   # The getter part:
-   if (ref($object) eq __PACKAGE__)
-      {
-      return $self->{content}->{MAKEFILE};
-      }
-   }
-
-sub makefile_()
-   {
-   my ($object,$name,$cdata)=@_;
-   if (!$self->{scramdoc}->_isvalid()){return;}
-   $self->{nested} == 1 ? push(@{$self->{tagcontent}->{MAKEFILE}}, join("\n",@$cdata))
-      : push(@{$self->{content}->{MAKEFILE}}, join("\n",@$cdata));
-   }
-
 sub flags()
    {
    my ($object,$name,%attributes)=@_;
