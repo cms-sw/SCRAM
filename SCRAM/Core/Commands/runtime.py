@@ -15,10 +15,6 @@ def process_runtime(args):
     if (len(args) == 0) or (args[0] not in RUNTIME_SHELLS):
         SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
     from SCRAM.Core.Core import Core
-    try:
-        environ['ORIG_SCRAM_ARCH'] = environ['ORIG_SCRAM_ARCH']
-    except:
-        environ['ORIG_SCRAM_ARCH'] = ''
     area = Core()
     area.checklocal()
     area.init_env()
