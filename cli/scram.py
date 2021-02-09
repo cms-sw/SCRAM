@@ -11,10 +11,6 @@ environ['SCRAM_TOOL_HOME'] = scram_home
 environ["SCRAM"] = abspath(argv[0])
 import SCRAM
 
-try:
-  environ['ORIG_SCRAM_ARCH'] = environ['ORIG_SCRAM_ARCH']
-except:
-  environ['ORIG_SCRAM_ARCH'] = ''
 
 # Parse common arguments
 def parse_args():
