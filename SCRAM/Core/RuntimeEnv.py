@@ -17,6 +17,7 @@ class RuntimeEnv(object):
         self.optional_paths = {}
         self.area = area
         self.OENV = environ.copy()
+        self.OENV['SCRAM_ARCH'] = self.OENV['ORIG_SCRAM_ARCH']
         self.env_backup_prefix = 'SRT_'
         self.skip_env = re.compile('^(_|PWD|PROMPT_COMMAND|SCRAM_.+|SCRAMV1_.+|SCRAM|LOCALTOP|RELEASETOP|BASE_PATH)$')
         self.shell = {}
