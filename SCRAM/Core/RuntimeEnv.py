@@ -350,7 +350,7 @@ class RuntimeEnv(object):
             st = stat(cache)
             if (st.st_size > 0):
                 toolcache = self.area.toolcachename()
-                if st.st_mtime > stat(toolcache).st_mtime:
+                if st.st_mtime >= stat(toolcache).st_mtime:
                     with open(cache) as ref:
                         self.env['rtstring'] = load(ref)
                         self._update_overrides()
@@ -387,8 +387,11 @@ class RuntimeEnv(object):
         for k in list(self.env):
             if k != 'rtstring':
                 del self.env[k]
-        with open(cache, 'w') as ref:
-            dump(self.env['rtstring'], ref, sort_keys=True, indent=2)
+        try:
+            with open(cache, 'w') as ref:
+                dump(self.env['rtstring'], ref, sort_keys=True, indent=2)
+        except (OSError, IOError) as e:
+            pass
         self._update_overrides()
         return self.env['rtstring']
 
