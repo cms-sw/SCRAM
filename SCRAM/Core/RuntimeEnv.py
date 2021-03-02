@@ -20,6 +20,9 @@ class RuntimeEnv(object):
         self.recursive = True if 'SCRAM_RTBOURNE_SET' in environ else False
         self.optional_paths = {}
         self.area = area
+        for e in [i for i in environ.keys() if i.startswith('SCRAMV3_BACKUP_')] :
+            environ[e[15:]] = environ[e]
+            del environ[e]
         self.OENV = environ.copy()
         self.OENV['SCRAM_ARCH'] = ORIG_SCRAM_ARCH
         self.env_backup_prefix = 'SRT_'
