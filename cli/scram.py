@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 from sys import exit, argv, path
 from os import environ
-from os.path import dirname, abspath, realpath
+from os.path import dirname, abspath, realpath, join
 from inspect import getmembers, isfunction
 from argparse import ArgumentParser
 
 scram_home = dirname(dirname(realpath(argv[0])))
 path.insert(0, scram_home)
 environ['SCRAM_TOOL_HOME'] = scram_home
-environ["SCRAM"] = abspath(argv[0])
+environ["SCRAM"] = join(dirname(abspath(argv[0])), "scram")
 import SCRAM
 
 
