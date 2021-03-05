@@ -299,7 +299,7 @@ class RuntimeEnv(object):
         regexp = re.compile(
             '^runtime:((path:(append|prepend|remove|replace):[a-zA-Z0-9-_]+)|(variable:[a-zA-Z0-9-_]+))=(.*)$',
             re.I)
-        err, out = SCRAM.run_command('%s 2>&1' % hook)
+        err, out = SCRAM.run_command('SCRAMRT_SET=true %s 2>&1' % hook)
         for line in out.split('\n'):
             if not regexp.match(line):
                 continue

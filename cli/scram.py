@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 scram_home = dirname(dirname(realpath(argv[0])))
 path.insert(0, scram_home)
 environ['SCRAM_TOOL_HOME'] = scram_home
-environ["SCRAM"] = join(dirname(abspath(argv[0])), "scram")
+environ["SCRAM"] = join(dirname(realpath(abspath(argv[0]))), "scram")
 import SCRAM
 
 
