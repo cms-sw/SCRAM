@@ -378,6 +378,7 @@ def process(args, main_opts):
         cwd = environ['SCRAM_SOURCEDIR']
     environ['THISDIR'] = cwd
     environ['SCRAM_BUILDFILE'] = 'BuildFile'
+    environ['SCRAMRT_SET'] = 'true'
     chdir(location)
     workdir = join(location, environ['SCRAM_INTwork'])
     if not exists(workdir):
