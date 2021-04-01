@@ -1,8 +1,12 @@
 
 			SCRAM Release Notes
-V2_2_9_pre12
+V2_2_9_pre13
 
 	Set special env variable duringscrma build
+
+V2_2_9_pre12
+
+	Drop gmake fregment support.
 
 V2_2_9_pre11: 2020-09-22
 
