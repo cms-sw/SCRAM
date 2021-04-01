@@ -1,3 +1,8 @@
+2021-04-01 Shahzad Muzaffar  <@smuzaffar>
+
+	* SCRAM/Plugins/RuntimeEnv.pm: Set SCRAM_RUNTIME_TYPE=BUILD during
+	scram build
+
 2021-02-08 Shahzad Muzaffar  <@smuzaffar>
 
 	* BuildSystem/BuildFile.pm: Drop makefile tag support in Buildfile.

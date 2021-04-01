@@ -19,6 +19,7 @@ sub new()
 sub runtimebuildenv()
 {
   my $self=shift;
+  $ENV{"SCRAM_RUNTIME_TYPE"}="BUILD";
   my %save_env = ();
   foreach my $k ("LD_PRELOAD"){
     if (exists $ENV{$k})

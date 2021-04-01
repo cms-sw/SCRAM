@@ -1,5 +1,9 @@
 
 			SCRAM Release Notes
+V2_2_9_pre12
+
+	Set special env variable duringscrma build
+
 V2_2_9_pre11: 2020-09-22
 
 	Allow to override share/override/python.
