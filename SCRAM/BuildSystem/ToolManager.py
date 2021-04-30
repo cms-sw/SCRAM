@@ -110,7 +110,7 @@ class ToolManager(object):
             printmsg('%s' % '\n'.join(self.xml.warnings))
         printmsg("Name : %s" % self.xml.contents['TOOLNAME'])
         printmsg("Version : %s" % self.xml.contents['TOOLVERSION'])
-        tooldata = ToolFile.summarize_tool(self.xml.contents)
+        tooldata, flags = ToolFile.summarize_tool(self.xml.contents)
         for tag in sorted(tooldata):
             printmsg('%s=%s' % (tag, tooldata[tag]))
         return True

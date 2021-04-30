@@ -185,6 +185,7 @@ class ToolFile(object):
 
     def summarize_tool(tool):
         data = {}
+        flags = {}
         if 'SCRAM_PROJECT' in tool:
             data['SCRAM_PROJECT'] = 'yes'
         if 'SCRAM_COMPILER' in tool:
@@ -199,6 +200,7 @@ class ToolFile(object):
             data[''] = ' '.join(tool['MAKEFILE'])
         if 'FLAGS' in tool:
             for flag in tool['FLAGS']:
+                flags[flag] = 1
                 data[flag] = ' '.join(tool['FLAGS'][flag])
         for extra in ['LIB', 'LIBDIR', 'INCLUDE', 'USE']:
             if extra not in tool:
@@ -210,7 +212,7 @@ class ToolFile(object):
                 if ':' in var:
                     vtype, vname = var.split(':', 1)
                 data[vname] = ':'.join(tool['RUNTIME'][var])
-        return data
+        return (data, flags)
 
     def get_feature(tool, tag=None):
         value = ''

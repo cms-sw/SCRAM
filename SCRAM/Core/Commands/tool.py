@@ -42,9 +42,10 @@ def tool_info(args, area):
     msg += "Version : %s\n" % tool['TOOLVERSION']
     msg += "%s\n" % ("+" * 20)
     SCRAM.printmsg(msg)
-    tooldata = ToolFile.summarize_tool(tool)
+    tooldata, flags = ToolFile.summarize_tool(tool)
     for tag in sorted(tooldata):
-        SCRAM.printmsg('%s=%s' % (tag, tooldata[tag]))
+        ch = "+=" if tag in flags else "="
+        SCRAM.printmsg('%s%s%s' % (tag, ch, tooldata[tag]))
     SCRAM.printmsg("")
     return True
 
