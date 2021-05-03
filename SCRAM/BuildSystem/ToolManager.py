@@ -39,7 +39,7 @@ class ToolManager(object):
                         self.path_variables.append(v)
         return
 
-    def setupself(self, dump=True, dev_area=True):
+    def setupself(self, dump=True, dev_area=True, force_save=False):
         selftool = join(self.area.config(), 'Self.xml')
         if not exists(selftool):
             printerror("\nSCRAM: No file config/Self.xml...nothing to do.")
@@ -53,7 +53,8 @@ class ToolManager(object):
         self.tools['self'] = self.xml.contents
         self.init_path_variables()
         tooljson = self.tool_json_path('self')
-        if not isnewer(selftool, tooljson):
+        if (not force_save) and (not isnewer(selftool, tooljson)):
+            print("not newer ",selftool, tooljson)
             return
         self._update_json(tooljson, dump)
         return

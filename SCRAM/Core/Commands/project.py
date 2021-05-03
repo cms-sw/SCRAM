@@ -114,7 +114,7 @@ def project_bootfromrelease(project, version, releasePath, opts):
         with open(join(localarea.config(), 'scram_basedir'), 'w') as ref:
             ref.write(relarea.basedir)
     toolmanager = ToolManager(localarea)
-    toolmanager.setupself(dump=False)
+    toolmanager.setupself(dump=False, force_save=True)
     if not exists(localarea.toolcachename()):
         toolmanager.setupalltools(dump=False)
     SCRAM.printmsg("\n\nInstallation procedure complete.", SCRAM.INTERACTIVE)
