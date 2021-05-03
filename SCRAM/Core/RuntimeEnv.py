@@ -49,9 +49,10 @@ class RuntimeEnv(object):
         for k, v in save_env.items():
             environ[k] = v
         self.setenv("RTBOURNE")
-        if 'RTBOURNE' in self.env['rtstring']:
-            for e in self.env['rtstring']['RTBOURNE']:
-                environ[e] = self.env['rtstring']['RTBOURNE'][e]
+        if 'rtstring' in self.env:
+            if 'RTBOURNE' in self.env['rtstring']:
+                for e in self.env['rtstring']['RTBOURNE']:
+                    environ[e] = self.env['rtstring']['RTBOURNE'][e]
         return True
 
     def _fixpathvar(self, var, sep):
@@ -235,7 +236,7 @@ class RuntimeEnv(object):
         del environ['SCRAMRT_SET']
         sep = self.shell[shell]['SEP']
         backup_env = environ.copy()
-        prefix = penv[4]
+        prefix = self.env_backup_prefix if len(penv)<5 else penv[4]
         bvar = 'SCRAMRT_BACKUP_ENV'
         bval = {} if bvar not in environ else \
             dict([item.split('=', 1)
