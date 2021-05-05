@@ -16,7 +16,11 @@ class ProjectDB(object):
         self.archs = {}
         self.listcache = {}
         self.projects = {}
-        self.domain = getfqdn().split('.', 1)[1]
+        self.domain = 'cern.ch'
+        try:
+            self.domain = getfqdn().split('.', 1)[1]
+        except Exception:
+            pass
         self.prodarch = {}
         self.project_module = None
         self.deprecated = False
