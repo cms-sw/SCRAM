@@ -12,14 +12,14 @@ class MakeInterface:
 
     def exec(self, args, opts):
         gmake_arg = ["bash"]
-        job_args = 0
+        job_args = False
         job_val = ""
 
         for a in args:
             m = regex_j.match(a)
             if m:
                 # if '-j /--jobs' flag passed, store it
-                job_args = 1
+                job_args = True
                 job_val = m.group(2)
                 continue
             if job_args and not job_val:
@@ -32,7 +32,7 @@ class MakeInterface:
             gmake_arg.append(a)  # create arg string minus '-j /--jobs'
         if job_args:  # if '-j /--jobs' flag was passed
             if regex_0_or_none.match(job_val):  # but no core count, get max from the system
-                job_val = cpu_count()
+                job_val = str(cpu_count())
             gmake_arg.append("-j")
             gmake_arg.append(job_val)
 
