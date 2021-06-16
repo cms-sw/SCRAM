@@ -56,5 +56,5 @@ class ProdSymLinks():
                 path = tempfile.mkdtemp(prefix=link + '.', dir=path)
                 if path and isdir(path):
                     symlink(path, path_to_check)
-        makedirs(join(localtop, store), 0o755)
+        makedirs(join(localtop, store), 0o755, exist_ok = True)
         return
