@@ -26,7 +26,7 @@ class SimpleDoc(object):
             "include_path": ["path"],
             "bin": ["name", "file"],
             "library": ["name", "file"],
-            "test": ["name", "command"],
+            "test": ["name", "command", "loop"],
             "environment": [],
             "ifarchitecture": ["name", "match", "value"],
             "ifcxx11_abi": ["value"],

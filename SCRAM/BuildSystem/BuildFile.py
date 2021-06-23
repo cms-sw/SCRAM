@@ -162,11 +162,27 @@ class BuildFile(object):
             tag = 'BIN'
             if tag not in self.contents['BUILDPRODUCTS']:
                 self.contents['BUILDPRODUCTS'][tag] = {}
-            name = data.attrib['name']
-            self.contents['BUILDPRODUCTS'][tag][name] = {'USE': [], 'EXPORT': {}, 'FLAGS': {}}
-            self.product = self.contents['BUILDPRODUCTS'][tag][name]
-            self.product['TYPE'] = 'test'
-            self.product['COMMAND'] = data.attrib['command']
+            loop_items = [1,2,1]
+            loop_test = False
+            if 'loop' in data.attrib:
+                loop_test = True
+                loops_vals = data.attrib['loop'].split(",", 2)
+                loop_items[1] = int(loops_vals[-1])
+                if len(loops_vals)>1:
+                    loop_items[0] = int(loops_vals[0])
+                    if len(loops_vals)>2:
+                        loop_items[2] = loop_items[1]
+                        loop_items[1] = int(loops_vals[1])
+                loop_items[1] += loop_items[2]
+            xname = data.attrib['name']
+            xcmd = data.attrib['command']
+            for i in range(*loop_items):
+                name = xname.replace("${loop}",str(i)) if loop_test else xname
+                cmd = xcmd.replace("${loop}",str(i))   if loop_test else xcmd
+                self.contents['BUILDPRODUCTS'][tag][name] = {'USE': [], 'EXPORT': {}, 'FLAGS': {}}
+                self.product = self.contents['BUILDPRODUCTS'][tag][name]
+                self.product['TYPE'] = 'test'
+                self.product['COMMAND'] = cmd
         elif tag in ['ROOT', 'ENVIRONMENT'] or self.parser.has_filter(data.tag):
             pass
         elif tag == 'PRODUCTSTORE':
