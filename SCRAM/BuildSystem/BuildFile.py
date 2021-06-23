@@ -131,8 +131,8 @@ class BuildFile(object):
     def _replace_variables(self, data):
         m = reReplaceEnv.match(data)
         if m:
-            value = self.variables.get(m.group(3))
-            if not value:
+            value = self.variables.get(m.group(3), default=None)
+            if value is None:
                 value = m.group(2)
             data = "%s%s%s" % (self._replace_variables(m.group(1)),value,self._replace_variables(m.group(4)))
         return data
