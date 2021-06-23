@@ -11,6 +11,7 @@ class BuildFile(object):
         self.tools = {}
         self.flags = {}
         self.selected = {}
+        self.loop_products = []
         self.toolmanager = toolmanager
         self.parser = SimpleDoc()
         self.parser.add_filter('iftool', '', self._check_iftool)
@@ -107,7 +108,19 @@ class BuildFile(object):
         self.filename = filename
         self.flags = {}
         self.selected = {}
+        self.loop_products = []
         self.contents = {'USE': [], 'EXPORT': {}, 'FLAGS': {}, 'BUILDPRODUCTS': {}}
+
+    def _update_product(self, tag, value, key=None):
+        for prod in self.loop_products if self.loop_products else [self.product]:
+            if tag not in prod:
+                prod[tag] = [] if key is None else {}
+            if key is None:
+                prod[tag].append(value)
+            else:
+                if key not in prod[tag]:
+                    prod[tag][key] = []
+                prod[tag][key].append(value)
 
     def _update_contents(self, data):
         inv = self.parser.check_valid_attrib(data)
@@ -125,27 +138,15 @@ class BuildFile(object):
             if ('source_only' in data.attrib) and (data.attrib['source_only'] in ["1", "true"]):
                 self._update_contents(ET.Element("flags", {'USE_SOURCE_ONLY': use}))
             else:
-                if tag not in self.product:
-                    self.product[tag] = []
-                self.product[tag].append(use)
+                self._update_product(tag, use)
         elif tag == 'LIB':
-            if tag not in self.product:
-                self.product[tag] = []
-            self.product[tag].append(data.attrib['name'])
+            self._update_product(tag, data.attrib['name'])
         elif tag == 'INCLUDE_PATH':
             tag = 'INCLUDE'
-            if tag not in self.product:
-                self.product[tag] = []
-            self.product[tag].append(data.attrib['path'])
+            self._update_product(tag, data.attrib['path'])
         elif tag == 'FLAGS':
-            if tag not in self.product:
-                self.product[tag] = {}
             flag_name = list(data.attrib)[0]
-            value = data.attrib[flag_name]
-            flag_name = flag_name.upper()
-            if flag_name not in self.product[tag]:
-                self.product[tag][flag_name] = []
-            self.product[tag][flag_name].append(value)
+            self._update_product(tag, data.attrib[flag_name], flag_name.upper())
         elif tag == 'EXPORT':
             self.contents[tag] = {'LIB': []}
             self.product = self.contents[tag]
@@ -159,6 +160,7 @@ class BuildFile(object):
             self.product['FILES'] = data.attrib['file']
             self.product['TYPE'] = 'bin' if tag == 'BIN' else 'lib'
         elif tag == 'TEST':
+            self.loop_products = []
             tag = 'BIN'
             if tag not in self.contents['BUILDPRODUCTS']:
                 self.contents['BUILDPRODUCTS'][tag] = {}
@@ -188,6 +190,8 @@ class BuildFile(object):
                 self.product = self.contents['BUILDPRODUCTS'][tag][name]
                 self.product['TYPE'] = 'test'
                 self.product['COMMAND'] = cmd
+                if loop_test:
+                    self.loop_products.append(self.product)
         elif tag in ['ROOT', 'ENVIRONMENT'] or self.parser.has_filter(data.tag):
             pass
         elif tag == 'PRODUCTSTORE':
