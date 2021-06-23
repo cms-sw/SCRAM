@@ -177,8 +177,13 @@ class BuildFile(object):
             xname = data.attrib['name']
             xcmd = data.attrib['command']
             for i in range(*loop_items):
-                name = xname.replace("${loop}",str(i)) if loop_test else xname
-                cmd = xcmd.replace("${loop}",str(i))   if loop_test else xcmd
+                name = xname
+                cmd = xcmd
+                if loop_test:
+                    name = xname.replace("${loop}",str(i))
+                    name = name.replace("${step}",str(loop_items[2]))
+                    cmd = xcmd.replace("${loop}",str(i))
+                    cmd = cmd.replace("${step}",str(loop_items[2]))
                 self.contents['BUILDPRODUCTS'][tag][name] = {'USE': [], 'EXPORT': {}, 'FLAGS': {}}
                 self.product = self.contents['BUILDPRODUCTS'][tag][name]
                 self.product['TYPE'] = 'test'
