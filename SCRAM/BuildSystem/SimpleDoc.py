@@ -27,6 +27,7 @@ class SimpleDoc(object):
             "bin": ["name", "file"],
             "library": ["name", "file"],
             "test": ["name", "command", "loop"],
+            "set": ["name", "value"],
             "environment": [],
             "ifarchitecture": ["name", "match", "value"],
             "ifcxx11_abi": ["value"],
