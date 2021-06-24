@@ -118,24 +118,66 @@ class BuildFile(object):
         self.contents = {'USE': [], 'EXPORT': {}, 'FLAGS': {}, 'BUILDPRODUCTS': {}}
 
     def _update_product(self, tag, value, key=None):
-        for prod in self.loop_products if self.loop_products else [self.product]:
+        for (prod,index) in self.loop_products if self.loop_products else [(self.product,None)]:
             if tag not in prod:
                 prod[tag] = [] if key is None else {}
             if key is None:
                 prod[tag].append(value)
             else:
-                if key not in prod[tag]:
-                    prod[tag][key] = []
-                prod[tag][key].append(value)
+                pre_data = {} if index is None else {"index": index}
+                xkey = self._replace_variables(key, pre_data)
+                if xkey not in prod[tag]:
+                    prod[tag][xkey] = []
+                prod[tag][xkey].append(self._replace_variables(value, pre_data))
 
-    def _replace_variables(self, data):
+    def _replace_variables(self, data, pre_data):
+        if not data: return data
         m = reReplaceEnv.match(data)
-        if m:
-            value = self.variables.get(m.group(3), default=None)
-            if value is None:
-                value = m.group(2)
-            data = "%s%s%s" % (self._replace_variables(m.group(1)),value,self._replace_variables(m.group(4)))
-        return data
+        if not m: return data
+        value = pre_data[m.group(3)] if (m.group(3) in pre_data) else self.variables.get(m.group(3), default=None)
+        value = m.group(2) if (value is None) else self._replace_variables(value, pre_data)
+        xdata = "%s%s%s" % (self._replace_variables(m.group(1), pre_data), \
+                            value, \
+                            self._replace_variables(m.group(4), pre_data))
+        return data if (xdata == data) else self._replace_variables(xdata, pre_data)
+
+    def _add_loop_products(self, data, tag_name, prod_type):
+        tag = 'BIN' if tag_name=='TEST' else tag_name
+        if tag not in self.contents['BUILDPRODUCTS']:
+            self.contents['BUILDPRODUCTS'][tag] = {}
+        loop_items = [1,2,1]
+        loop_test = False
+        if 'loop' in data.attrib:
+            loop_test = True
+            loops_vals = data.attrib['loop'].split(",", 2)
+            loop_items[1] = int(loops_vals[-1])
+            if len(loops_vals)>1:
+                loop_items[0] = int(loops_vals[0])
+                if len(loops_vals)>2:
+                    loop_items[2] = loop_items[1]
+                    loop_items[1] = int(loops_vals[1])
+            self.variables.set('step', str(loop_items[2]))
+            self.variables.set('start_index', str(loop_items[0]))
+            self.variables.set('end_index', str(loop_items[1]))
+            loop_items[1] += loop_items[2]
+        xname = data.attrib['name'] if ((tag_name == 'TEST') or ('name' in data.attrib)) \
+                                       else basename(data.attrib['file']).rsplit('.', 1)[0]
+        pre_data = {}
+        for i in range(*loop_items):
+            index = str(i)
+            name = xname
+            if loop_test:
+                pre_data['index'] = index
+                name = "%s_%s" % (xname, index)
+            self.contents['BUILDPRODUCTS'][tag][name] = {'USE': [], 'EXPORT': {}, 'FLAGS': {}}
+            self.product = self.contents['BUILDPRODUCTS'][tag][name]
+            self.product['TYPE'] = prod_type
+            if tag_name == 'TEST':
+                self.product['COMMAND'] = self._replace_variables(data.attrib['command'], pre_data)
+            else:
+                self.product['FILES'] = self._replace_variables(data.attrib['file'], pre_data)
+            if loop_test:
+                self.loop_products.append((self.product,index))
 
     def _update_contents(self, data):
         inv = self.parser.check_valid_attrib(data)
@@ -165,49 +207,13 @@ class BuildFile(object):
         elif tag == 'EXPORT':
             self.contents[tag] = {'LIB': []}
             self.product = self.contents[tag]
-        elif tag in ['BIN', 'LIBRARY']:
+        elif tag in ['BIN', 'LIBRARY', 'TEST']:
             self.loop_products = []
             self.variables.pushstash()
-            if tag not in self.contents['BUILDPRODUCTS']:
-                self.contents['BUILDPRODUCTS'][tag] = {}
-            name = data.attrib['name'] if 'name' in data.attrib \
-                                          else basename(data.attrib['file']).rsplit('.', 1)[0]
-            self.contents['BUILDPRODUCTS'][tag][name] = {'USE': [], 'EXPORT': {}, 'FLAGS': {}}
-            self.product = self.contents['BUILDPRODUCTS'][tag][name]
-            self.product['FILES'] = data.attrib['file']
-            self.product['TYPE'] = 'bin' if tag == 'BIN' else 'lib'
-        elif tag == 'TEST':
-            self.loop_products = []
-            self.variables.pushstash()
-            tag = 'BIN'
-            if tag not in self.contents['BUILDPRODUCTS']:
-                self.contents['BUILDPRODUCTS'][tag] = {}
-            loop_items = [1,2,1]
-            loop_test = False
-            if 'loop' in data.attrib:
-                loop_test = True
-                loops_vals = data.attrib['loop'].split(",", 2)
-                loop_items[1] = int(loops_vals[-1])
-                if len(loops_vals)>1:
-                    loop_items[0] = int(loops_vals[0])
-                    if len(loops_vals)>2:
-                        loop_items[2] = loop_items[1]
-                        loop_items[1] = int(loops_vals[1])
-                loop_items[1] += loop_items[2]
-                self.variables.set("step", str(loop_items[2]))
-            for i in range(*loop_items):
-                if loop_test:
-                    self.variables.pushstash()
-                    self.variables.set("loop", str(i))
-                name = self._replace_variables(data.attrib['name'])
-                cmd = self._replace_variables(data.attrib['command'])
-                self.contents['BUILDPRODUCTS'][tag][name] = {'USE': [], 'EXPORT': {}, 'FLAGS': {}}
-                self.product = self.contents['BUILDPRODUCTS'][tag][name]
-                self.product['TYPE'] = 'test'
-                self.product['COMMAND'] = cmd
-                if loop_test:
-                    self.loop_products.append(self.product)
-                    self.variables.popstash()
+            if tag == 'TEST':
+                self._add_loop_products(data, tag, 'test')
+            else:
+              self._add_loop_products(data, tag, 'bin' if tag == 'BIN' else 'lib')
         elif tag == 'SET':
             self.variables.set(data.attrib['name'], data.attrib['value'])
         elif tag in ['ROOT', 'ENVIRONMENT'] or self.parser.has_filter(data.tag):
@@ -225,8 +231,8 @@ class BuildFile(object):
         for child in list(data):
             if not self._update_contents(child):
                 return False
-        if tag in ['BIN', 'LIBRARY']:
-            for prod in self.loop_products if self.loop_products else [self.product]:
+        if tag in ['BIN', 'LIBRARY', 'TEST']:
+            for prod,index in self.loop_products if self.loop_products else [(self.product,None)]:
                 for key in list(prod):
                     if not prod[key]:
                         del prod[key]
