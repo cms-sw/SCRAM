@@ -3,7 +3,7 @@ from SCRAM.BuildSystem.SimpleDoc import SimpleDoc
 from SCRAM.BuildSystem.TemplateStash import TemplateStash
 from os.path import basename
 from json import dump
-from re import compile
+from re import compile,match
 import xml.etree.ElementTree as ET
 
 reReplaceEnv = compile(r'^(.*)(\$\{(\w+)\})(.*)$')
@@ -124,11 +124,11 @@ class BuildFile(object):
             if key is None:
                 prod[tag].append(value)
             else:
-                pre_data = {} if index is None else {"index": index}
-                xkey = self._replace_variables(key, pre_data)
-                if xkey not in prod[tag]:
-                    prod[tag][xkey] = []
-                prod[tag][xkey].append(self._replace_variables(value, pre_data))
+                pre_data = {} if index is None else {"value": index}
+                if key not in prod[tag]:
+                    prod[tag][key] = []
+                prod[tag][key].append(self._replace_variables(value, pre_data))
+        return
 
     def _replace_variables(self, data, pre_data):
         if not data: return data
@@ -142,33 +142,39 @@ class BuildFile(object):
         return data if (xdata == data) else self._replace_variables(xdata, pre_data)
 
     def _add_loop_products(self, data, tag_name, prod_type):
-        tag = 'BIN' if tag_name=='TEST' else tag_name
-        if tag not in self.contents['BUILDPRODUCTS']:
-            self.contents['BUILDPRODUCTS'][tag] = {}
-        loop_items = [1,2,1]
-        loop_test = False
-        if 'loop' in data.attrib:
-            loop_test = True
-            loops_vals = data.attrib['loop'].split(",", 2)
-            loop_items[1] = int(loops_vals[-1])
+        loop_data = []
+        if 'for' in data.attrib:
+            loops_vals = data.attrib['for'].split(",", 2)
+            loop_items = [1, int(loops_vals[-1]), 1]
             if len(loops_vals)>1:
                 loop_items[0] = int(loops_vals[0])
                 if len(loops_vals)>2:
                     loop_items[2] = loop_items[1]
                     loop_items[1] = int(loops_vals[1])
-            self.variables.set('step', str(loop_items[2]))
-            self.variables.set('start_index', str(loop_items[0]))
-            self.variables.set('end_index', str(loop_items[1]))
+            self.variables.set('step_value', str(loop_items[2]))
+            self.variables.set('start_value', str(loop_items[0]))
+            self.variables.set('end_value', str(loop_items[1]))
             loop_items[1] += loop_items[2]
+            loop_data = [str(x) for x in range(*loop_items)]
+        elif 'foreach' in data.attrib:
+            for item in [x.strip() for x in data.attrib['foreach'].split(",")]:
+                if (not item) or (not match('^[a-zA-Z0-9_.+-]+$', item)):
+                    printerror("ERROR: Invalid 'foreach' item '%s' found in file %s.\n%s" % (item, self.filename, ET.tostring(data)))
+                else:
+                    loop_data.append(item)
+        if not loop_data:
+            loop_data = [""]
+        tag = 'BIN' if tag_name=='TEST' else tag_name
+        if tag not in self.contents['BUILDPRODUCTS']:
+            self.contents['BUILDPRODUCTS'][tag] = {}
         xname = data.attrib['name'] if ((tag_name == 'TEST') or ('name' in data.attrib)) \
                                        else basename(data.attrib['file']).rsplit('.', 1)[0]
         pre_data = {}
-        for i in range(*loop_items):
-            index = str(i)
+        for value in loop_data:
             name = xname
-            if loop_test:
-                pre_data['index'] = index
-                name = "%s_%s" % (xname, index)
+            if value:
+                pre_data['value'] = value
+                name = "%s_%s" % (xname, value)
             self.contents['BUILDPRODUCTS'][tag][name] = {'USE': [], 'EXPORT': {}, 'FLAGS': {}}
             self.product = self.contents['BUILDPRODUCTS'][tag][name]
             self.product['TYPE'] = prod_type
@@ -176,13 +182,14 @@ class BuildFile(object):
                 self.product['COMMAND'] = self._replace_variables(data.attrib['command'], pre_data)
             else:
                 self.product['FILES'] = self._replace_variables(data.attrib['file'], pre_data)
-            if loop_test:
-                self.loop_products.append((self.product,index))
+            if value:
+                self.loop_products.append((self.product,value))
+        return
 
     def _update_contents(self, data):
         inv = self.parser.check_valid_attrib(data)
         if inv:
-            printerror("ERROR: Invalid attribute '%s' in file %s.\n%s" % (inv, self.filename, data))
+            printerror("ERROR: Invalid attribute '%s' in file %s.\n%s" % (inv, self.filename, ET.tostring(data)))
         tag = data.tag.upper()
         if tag == 'USE':
             use = data.attrib['name'].lower()
