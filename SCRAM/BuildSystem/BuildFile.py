@@ -190,6 +190,7 @@ class BuildFile(object):
         inv = self.parser.check_valid_attrib(data)
         if inv:
             printerror("ERROR: Invalid attribute '%s' in file %s.\n%s" % (inv, self.filename, ET.tostring(data)))
+            return False
         tag = data.tag.upper()
         if tag == 'USE':
             use = data.attrib['name'].lower()
