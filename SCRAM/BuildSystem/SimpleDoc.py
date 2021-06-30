@@ -71,7 +71,7 @@ class SimpleDoc(object):
         valid_attrib = self.valid_attribs[tag]
         force_err = False
         for atr in data.attrib:
-            if search('[$][{(]+[^)]+\s', data.attrib[atr]):
+            if search('[$][(]+[^)]+\s', data.attrib[atr]) or search('[$][{]+[^}]+\s', data.attrib[atr]):
                 printerror("Invalid attribute value '%s' found for tag '%s' in %s." % (data.attrib[atr], tag, self.filename))
                 invalid_attrib.append(atr)
                 force_err = True
