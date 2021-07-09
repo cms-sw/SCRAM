@@ -69,16 +69,11 @@ class SimpleDoc(object):
             printerror("Invalid tag '%s' found in %s." % (tag, self.filename))
             return []
         valid_attrib = self.valid_attribs[tag]
-        force_err = False
+        if '*' in valid_attrib:
+            return invalid_attrib
         for atr in data.attrib:
-            if search('[$][(]+[^)]+\s', data.attrib[atr]) or search('[$][{]+[^}]+\s', data.attrib[atr]):
-                printerror("Invalid attribute value '%s' found for tag '%s' in %s." % (data.attrib[atr], tag, self.filename))
+            if atr not in valid_attrib:
                 invalid_attrib.append(atr)
-                force_err = True
-            elif atr not in valid_attrib:
-                invalid_attrib.append(atr)
-        if (not force_err) and ('*' in valid_attrib):
-            return []
         return invalid_attrib
 
     def add_callback(self, tag, callback, args=None):

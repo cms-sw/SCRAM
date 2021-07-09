@@ -3,7 +3,7 @@ from SCRAM.BuildSystem.SimpleDoc import SimpleDoc
 from SCRAM.BuildSystem.TemplateStash import TemplateStash
 from os.path import basename
 from json import dump
-from re import compile,match
+from re import compile,match,search
 import xml.etree.ElementTree as ET
 
 reReplaceEnv = compile(r'^(.*)(\$\{(\w+)\})(.*)$')
@@ -12,6 +12,8 @@ reReplaceEnv = compile(r'^(.*)(\$\{(\w+)\})(.*)$')
 class BuildFile(object):
     def __init__(self, toolmanager=None, contents={}):
         self.contents = contents
+        self.error = False
+        self.tag = ""
         self.tools = {}
         self.flags = {}
         self.selected = {}
@@ -111,6 +113,7 @@ class BuildFile(object):
 
     def _clean(self, filename=None):
         self.filename = filename
+        self.error = False
         self.flags = {}
         self.selected = {}
         self.loop_products = []
@@ -121,25 +124,35 @@ class BuildFile(object):
         for (prod,index) in self.loop_products if self.loop_products else [(self.product,None)]:
             if tag not in prod:
                 prod[tag] = [] if key is None else {}
+            pre_data = {} if index is None else {"value": index}
             if key is None:
-                prod[tag].append(value)
+                prod[tag].append(self._replace_variables(value, pre_data))
             else:
-                pre_data = {} if index is None else {"value": index}
                 if key not in prod[tag]:
                     prod[tag][key] = []
                 prod[tag][key].append(self._replace_variables(value, pre_data))
         return
 
-    def _replace_variables(self, data, pre_data):
+    def _check_value(self, data):
+        if search('[$][(]+[^)]+\s', data) or search('[$][{]+[^}]+\s', data):
+            printerror("Invalid attribute value '%s' found for tag '%s' in %s." % (data, self.tag, self.filename))
+            self.error = True
+            return ""
+        return data
+
+    def _replace_variables(self, data, pre_data, recursive=False):
         if not data: return data
         m = reReplaceEnv.match(data)
-        if not m: return data
+        if not m: return self._check_value(data)
         value = pre_data[m.group(3)] if (m.group(3) in pre_data) else self.variables.get(m.group(3), default=None)
-        value = m.group(2) if (value is None) else self._replace_variables(value, pre_data)
-        xdata = "%s%s%s" % (self._replace_variables(m.group(1), pre_data), \
+        value = m.group(2) if (value is None) else self._replace_variables(value, pre_data, recursive=True)
+        xdata = "%s%s%s" % (self._replace_variables(m.group(1), pre_data, recursive=True), \
                             value, \
-                            self._replace_variables(m.group(4), pre_data))
-        return data if (xdata == data) else self._replace_variables(xdata, pre_data)
+                            self._replace_variables(m.group(4), pre_data, recursive=True))
+        data = data if (xdata == data) else self._replace_variables(xdata, pre_data, recursive=True)
+        if not recursive:
+            data = self._check_value(data)
+        return data
 
     def _add_loop_products(self, data, tag_name, prod_type):
         loop_data = []
@@ -192,6 +205,7 @@ class BuildFile(object):
             printerror("ERROR: Invalid attribute '%s' in file %s.\n%s" % (inv, self.filename, ET.tostring(data)))
             return False
         tag = data.tag.upper()
+        self.tag = tag
         if tag == 'USE':
             use = data.attrib['name'].lower()
             if use == "self":
@@ -249,7 +263,7 @@ class BuildFile(object):
             self.product = self.contents
         elif tag in ["EXPORT"]:
             self.product = self.contents
-        return True
+        return not self.error
 
     def _check_iftool(self, node):
         toolname = node.attrib['name'].lower()
