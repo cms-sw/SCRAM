@@ -635,9 +635,28 @@ unless explicitly turned off by <flags EDM_PLUGIN="0"/>
 To generate an executable/test executable from a <packages>/[plugins|test|bin] directory.
 .TP 3
 .B <test name="<name>" command="<command-to-run>" [for="[start=1,]end[,step=1]"|foreach="comma,separated,values"] >[dependencies/flags]</test>
-To run the command for the test in <package>/test directory.
+To run the command for the test in <package>/test directory. "for and foreach" are only available in SCRAMV3
+.RS 3
+
+When multiple tests are generated then one can make use of ${value}, ${step_value}, ${start_value} and ${end_value} e.g
+.RE
+.RS 3
+.B  <test name="foo" command="echo Run ${value} of max ${end_value}" for="2,6,2"/>
 
 .RE
+.RS 3
+All tests are run from project top level directory. Depending on build rules, scram can set few environment variables for each test too e.g.
+.RE
+.RS 3
+  SCRAM_TEST_NAME=name of the unit tests e.g MyTest
+  SCRAM_TEST_PATH=Full path of the test directory e.g $(LOCALTOP)/src/Subsystem/Package/test
+  SCRAM_TEST_PACKAGE=Name of the project package e.g. Subsystem/Package
+
+.RE
+.TP 3
+.B <set name="VARIABLE" value="VALUE"/>
+Only available in SCRAMV3, this sets VARIABLE=VALUE which one can reuse with in the BuildFile. e.g. if multiple unit tests needs a common arg then you can set it once and then use ${VARIABLE} in unit tests commands.
+
 .TP 3
 .B <if<condition> name|match="[!]<regexp>"/></if<condition>>
 .RE
