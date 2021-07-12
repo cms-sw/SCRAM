@@ -68,10 +68,14 @@ sub check_value()
     {
     my $self=shift;
     my $data=shift;
-    if (($data=~/\$[(]+[^)]+\s/o) || ($data=~/\$[{]+[^}]+\s/o))
+    foreach my $d (split(/\$/, $data))
       {
-        $self->{scramdoc}->parseerror("Invalid value '$data' found.");
-        $data = "";
+      if (($d=~/\(+[^)]+\s/o) || ($d=~/\{+[^}]+\s/o))
+        {
+          if ($d=~/\(shell\s+which\s+[a-zA-Z0-9]+\)/){next;}
+          $self->{scramdoc}->parseerror("Invalid value '$data' found.");
+          return "";
+        }
       }
     return $data;
     }
