@@ -216,7 +216,7 @@ sub parseerror
       print "Parse Error in ".$self->filenameref().", line ".
 	 $line."\n";
       print $string."\n";
-      exit;
+      exit 1;
       }
    }
 
