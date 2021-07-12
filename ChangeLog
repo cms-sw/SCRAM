@@ -1,3 +1,8 @@
+2021-07-12 Shahzad Muzaffar  <@smuzaffar>
+
+	* BuildSystem/BuildFile.pm: Check for valid name and values in
+	BuildFile. To avoid execution of code.
+
 2021-04-01 Shahzad Muzaffar  <@smuzaffar>
 
 	* SCRAM/Plugins/RuntimeEnv.pm: Set SCRAM_RUNTIME_TYPE=BUILD during

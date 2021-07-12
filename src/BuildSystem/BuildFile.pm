@@ -64,6 +64,18 @@ sub parse()
    delete $self->{iftool_filter};
    }
 
+sub check_value()
+    {
+    my $self=shift;
+    my $data=shift;
+    if (($data=~/[$][(]+[^)]+\s/o) || ($data=~/[$][{]+[^}]+\s/o))
+      {
+        $self->{scramdoc}->parseerror("Invalid value '$data' found.");
+        $data = "";
+      }
+    return $data;
+    }
+
 sub classpath()
    {
    my ($object,$name,%attributes)=@_;
@@ -73,8 +85,9 @@ sub classpath()
       return $self->{content}->{CLASSPATH};
       }
    if (!$self->{scramdoc}->_isvalid()){return;}
-   $self->{nested} == 1 ? push(@{$self->{tagcontent}->{CLASSPATH}}, $attributes{'path'})
-      : push(@{$self->{content}->{CLASSPATH}}, $attributes{'path'});
+   my $cp = $self->check_value($attributes{'path'});
+   $self->{nested} == 1 ? push(@{$self->{tagcontent}->{CLASSPATH}}, $cp)
+      : push(@{$self->{content}->{CLASSPATH}}, $cp);
    }
 
 sub productstore()
@@ -102,8 +115,9 @@ sub include_path()
    {
    my ($object,$name,%attributes)=@_;
    if (!$self->{scramdoc}->_isvalid()){return;}
-   $self->{nested} == 1 ? push(@{$self->{tagcontent}->{INCLUDE}}, $attributes{'path'})
-      : push(@{$self->{content}->{INCLUDE}}, $attributes{'path'});
+   my $val = $self->check_value($attributes{'path'});
+   $self->{nested} == 1 ? push(@{$self->{tagcontent}->{INCLUDE}}, $val)
+      : push(@{$self->{content}->{INCLUDE}}, $val);
    }
 
 sub use()
@@ -120,7 +134,7 @@ sub use()
       {
       if (!$self->{scramdoc}->_isvalid()){return;}
       my ($name,%attributes)=@_;
-      my $use = $attributes{'name'};
+      my $use = $self->check_value($attributes{'name'});
       if ((exists $attributes{'source_only'}) && ($attributes{'source_only'} eq "1"))
          {
          my %attrib = ('USE_SOURCE_ONLY'=> $use);
@@ -160,7 +174,7 @@ sub lib()
       return $self->{content}->{LIB};      
       }
    if (!$self->{scramdoc}->_isvalid()){return;}
-   my $libname = $attributes{'name'};
+   my $libname = $self->check_value($attributes{'name'});
    # We have a libname, add it to the list:
    $self->{nested} == 1 ? push(@{$self->{tagcontent}->{LIB}}, $libname)
       : push(@{$self->{content}->{LIB}}, $libname);
@@ -178,12 +192,12 @@ sub flags()
    if (!$self->{scramdoc}->_isvalid()){return;}
    # Extract the flag name and its value:
    my $file="";
-   if (exists $attributes{'file'}){$file="FILE".$attributes{'file'}."_"; delete $attributes{'file'};}
+   if (exists $attributes{'file'}){$file="FILE".$self->check_value($attributes{'file'})."_"; delete $attributes{'file'};}
    my ($flagname,$flagvaluestring) = each %attributes;
    $flagname =~ tr/[a-z]/[A-Z]/; # Keep flag name uppercase
-   $flagname="${file}${flagname}";
+   $flagname=$self->check_value("${file}${flagname}");
    chomp($flagvaluestring);
-   my @flagvalues = ( $flagvaluestring );
+   my @flagvalues = ( $self->check_value($flagvaluestring) );
    # Is current tag within another tag block?
    if ($self->{nested} == 1)
       {
@@ -229,7 +243,7 @@ sub test_()
    {
    my ($object,$name,%attributes) = @_;
    if (!$self->{scramdoc}->_isvalid()){return;}
-   $name = $self->{id}->{'name'};
+   $name = $self->check_value($self->{id}->{'name'});
    $self->productcollector($name,'test','BIN');
    $self->poplevel();
    }
@@ -255,7 +269,7 @@ sub bin_()
       {
       ($name) = ($self->{id}->{'file'} =~ /(.*)?\..*$/o);
       }
-
+   $name = $self->check_value($name);
    # Store the data:
    $self->productcollector($name,'bin','BIN');
    $self->poplevel();
@@ -284,6 +298,7 @@ sub library_()
       }
 
    # Store the data:
+   $name = $self->check_value($name);
    $self->productcollector($name,'lib','LIBRARY');
    $self->poplevel();
    }
@@ -307,18 +322,19 @@ sub productcollector()
        if ($attrib!~/^(command|name)$/o){push @err,"Unknown attribute $attrib found.";}
      }
    }
+   $name =  $self->check_value($name);
    $product->name($name);
    if ($typeshort ne "test")
    {
      if (!exists $self->{id}->{'file'}){push @err,"Missing file='files' attribute";}
      $product->type($typeshort);
-     $product->_files($self->{id}->{'file'},[ $self->{scramdoc}->filetoparse() ]); 
+     $product->_files($self->check_value($self->{id}->{'file'}),[ $self->{scramdoc}->filetoparse() ]);
    }
    else
    {
      if (!exists $self->{id}->{'command'}){push @err,"Missing command='command to run' attribute";}
      $product->type("bin");
-     $product->_command($self->{id}->{'command'});
+     $product->_command($self->check_value($self->{id}->{'command'}));
    }
    if (scalar(@err)>0){$self->{tagcontent}->{ERRORS}=\@err;}
    # Store the data content:
