@@ -128,6 +128,7 @@ class BuildFile(object):
             if key is None:
                 prod[tag].append(self._replace_variables(value, pre_data))
             else:
+                key = self._replace_variables(key, pre_data)
                 if key not in prod[tag]:
                     prod[tag][key] = []
                 prod[tag][key].append(self._replace_variables(value, pre_data))
