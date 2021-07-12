@@ -68,7 +68,7 @@ sub check_value()
     {
     my $self=shift;
     my $data=shift;
-    if (($data=~/[$][(]+[^)]+\s/o) || ($data=~/[$][{]+[^}]+\s/o))
+    if (($data=~/\$[(]+[^)]+\s/o) || ($data=~/\$[{]+[^}]+\s/o))
       {
         $self->{scramdoc}->parseerror("Invalid value '$data' found.");
         $data = "";
