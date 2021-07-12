@@ -1,4 +1,4 @@
-from SCRAM import printerror
+from SCRAM import printerror, scramerror
 from SCRAM.BuildSystem.SimpleDoc import SimpleDoc
 from SCRAM.BuildSystem.TemplateStash import TemplateStash
 from os.path import basename
@@ -12,7 +12,6 @@ reReplaceEnv = compile(r'^(.*)(\$\{(\w+)\})(.*)$')
 class BuildFile(object):
     def __init__(self, toolmanager=None, contents={}):
         self.contents = contents
-        self.error = False
         self.tag = ""
         self.tools = {}
         self.flags = {}
@@ -113,7 +112,6 @@ class BuildFile(object):
 
     def _clean(self, filename=None):
         self.filename = filename
-        self.error = False
         self.flags = {}
         self.selected = {}
         self.loop_products = []
@@ -136,9 +134,7 @@ class BuildFile(object):
 
     def _check_value(self, data):
         if search('[$][(]+[^)]+\s', data) or search('[$][{]+[^}]+\s', data):
-            printerror("Invalid attribute value '%s' found for tag '%s' in %s." % (data, self.tag, self.filename))
-            self.error = True
-            return ""
+            scramerror("Invalid attribute value '%s' found for tag '%s' in %s." % (data, self.tag, self.filename))
         return data
 
     def _replace_variables(self, data, pre_data, recursive=False):
@@ -173,7 +169,7 @@ class BuildFile(object):
         elif 'foreach' in data.attrib:
             for item in [x.strip() for x in data.attrib['foreach'].split(",")]:
                 if (not item) or (not match('^[a-zA-Z0-9_.+-]+$', item)):
-                    printerror("ERROR: Invalid 'foreach' item '%s' found in file %s.\n%s" % (item, self.filename, ET.tostring(data)))
+                    scramerror("ERROR: Invalid 'foreach' item '%s' found in file %s.\n%s" % (item, self.filename, ET.tostring(data)))
                 else:
                     loop_data.append(item)
         if not loop_data:
@@ -264,7 +260,7 @@ class BuildFile(object):
             self.product = self.contents
         elif tag in ["EXPORT"]:
             self.product = self.contents
-        return not self.error
+        return True
 
     def _check_iftool(self, node):
         toolname = node.attrib['name'].lower()
