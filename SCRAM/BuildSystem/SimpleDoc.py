@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 from os import environ
 from re import search
+from sys import platform
 from SCRAM import printerror
 
 DEFAULT_ENV_FILTERS = {
@@ -53,6 +54,7 @@ class SimpleDoc(object):
         self.callbacks = {}
         self.last_filter = []
         self.filename = None
+        self.add_filter('ifos', platform)
         for filt in DEFAULT_ENV_FILTERS:
             value = ""
             filtenv = DEFAULT_ENV_FILTERS[filt]
