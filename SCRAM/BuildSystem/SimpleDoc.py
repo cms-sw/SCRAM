@@ -34,6 +34,7 @@ class SimpleDoc(object):
             "ifcxx11_abi": ["value"],
             "ifrelease": ["name", "match", "value"],
             "iftool": ["name", "match", "version"],
+            "ifos": ["name", "match", "version"],
             "release": ["name", "match", "value"],
             "else": [],
             "architecture": ["name", "match", "value"],
