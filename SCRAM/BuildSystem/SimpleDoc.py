@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 from os import environ
 from re import search
 from sys import platform
+from platform import machine
 from SCRAM import printerror
 
 DEFAULT_ENV_FILTERS = {
@@ -34,7 +35,8 @@ class SimpleDoc(object):
             "ifcxx11_abi": ["value"],
             "ifrelease": ["name", "match", "value"],
             "iftool": ["name", "match", "version"],
-            "ifos": ["name", "match", "version"],
+            "ifos": ["name", "match", "value"],
+            "ifarch": ["name", "match", "value"],
             "release": ["name", "match", "value"],
             "else": [],
             "architecture": ["name", "match", "value"],
@@ -56,6 +58,7 @@ class SimpleDoc(object):
         self.last_filter = []
         self.filename = None
         self.add_filter('ifos', platform)
+        self.add_filter('ifarch', machine())
         for filt in DEFAULT_ENV_FILTERS:
             value = ""
             filtenv = DEFAULT_ENV_FILTERS[filt]
