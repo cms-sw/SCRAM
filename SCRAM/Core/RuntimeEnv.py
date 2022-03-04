@@ -290,6 +290,15 @@ class RuntimeEnv(object):
             for v in ["PYTHONPATH", "PYTHON27PATH", "PYTHON3PATH"]:
                 if v in self.env['rtstring']['path']:
                     self.env['rtstring']['path'][v].insert(0, override)
+        for e in ["PATH", "LD_LIBRARY_PATH", "PYTHONPATH", "PYTHON27PATH", "PYTHON3PATH"]:
+            if e not in self.env['rtstring']['path']:
+                continue
+            ev = "SCRAM_PREFIX_%s" % e
+            if ev not in self.OENV:
+                continue
+            for override in self.OENV[ev].split(":"):
+                if exists(override):
+                    self.env['rtstring']['path'][e].insert(0, override)
         if 'SCRAM_IGNORE_RUNTIME_HOOK' not in self.OENV:
             self._runtime_hooks()
         return
