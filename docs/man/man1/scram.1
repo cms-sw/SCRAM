@@ -746,3 +746,7 @@ Do not run any extra shared library missing symbols checks.
 .TP 3
 .B SCRAM_TEST_RUNNER_PREFIX=<command>
 Prefix each unittest with <command> before running.
+.TP 3
+.B SCRAM_PREFIX_<path-variable>=<path-string>
+SCRAM runtime command prefixes <path-string> for each <path-variable>.
+<path-variable> could be PATH, LD_LIBRARY_PATH, PYTHON*PATH.
