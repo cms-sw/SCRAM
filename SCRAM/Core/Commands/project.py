@@ -5,7 +5,16 @@ from SCRAM.Core.Utils import create_productstores, cmsos, remote_versioncheck
 from argparse import ArgumentParser
 from os.path import exists, join, isdir, basename
 from os import environ, getcwd, chdir
+import re
 
+SCRAM_OS_MAP = [['cs', 'cc', 'alma','rhel', 'rocky', 'el']]
+
+def checkScramOSCompatibility(os1, os2):
+  os1 = re.sub('[0-9]*$', '', os1.split('_')[0])
+  for item in SCRAM_OS_MAP:
+    if os1 in item:
+      return re.sub('[0-9]*$', '', os2.split('_')[0]) in item
+  return False
 
 def process(args):
     parser = ArgumentParser(add_help=False)
@@ -125,7 +134,7 @@ def project_bootfromrelease(project, version, releasePath, opts):
         SCRAM.printmsg("         Developer's area is created for available architecture %s." %
                        (arch))
     os = cmsos()
-    if not arch.startswith(os):
+    if not arch.startswith(os) and not checkScramOSCompatibility(os, arch):
         SCRAM.printmsg("WARNING: Developer's area is created for architecture %s while your current OS is %s." %
                        (arch, os))
     if not SCRAM.COMMANDS_OPTS.force:
