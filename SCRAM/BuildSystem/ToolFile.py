@@ -32,6 +32,7 @@ class ToolFile(object):
         self._update_env(data)
         for k in self.env:
             self.env[k] = self._fix_data(self.env[k])
+            self.menv[k] = [self._fix_data(v) for v in self.menv[k]]
         if not self._update_contents(data):
             if self.warnings:
                 printmsg('%s' % '\n'.join(self.warnings))
@@ -48,6 +49,7 @@ class ToolFile(object):
                          'BINDIR': [], 'TOOLNAME': '', 'TOOLVERSION': '',
                          'VARIABLES': [], 'LIBTYPES': [], 'RUNTIME': {}, 'FLAGS': {}}
         self.env = {}
+        self.menv = {}
 
     def _update_env(self, data):
         if data.tag == 'environment':
@@ -55,13 +57,16 @@ class ToolFile(object):
             if 'value' in data.attrib:
                 key = 'value'
             var = data.attrib['name']
-            self.env[var] = data.attrib[key]
+            val = data.attrib[key]
             if var not in self.contents['VARIABLES']:
                 self.contents['VARIABLES'].append(var)
+                self.menv[var] = []
+            self.env[var] = val
+            self.menv[var].append(val)
         for child in list(data):
             self._update_env(child)
 
-    def _fix_data(self, data):
+    def _fix_data(self, data, sep=''):
         loop = True
         while loop:
             loop = False
@@ -72,7 +77,7 @@ class ToolFile(object):
                     key = m.group(3)
                     value = ''
                     if key in self.env:
-                        value = self.env[key]
+                        value = self.env[key] if not sep else sep.join(self.menv[key])
                     elif key in environ:
                         value = environ[key]
                     else:
@@ -86,7 +91,9 @@ class ToolFile(object):
         if start_event:
             self.parser.add_filter("ifversion", root.attrib['version'])
 
-    def _check_path(self, path, handler):
+    def _check_path(self, path, handler, sep=''):
+        if sep:
+           return (False not in [self._check_path(p, handler, sep='')  for p in path.split(sep) if p])
         msg = 'OK'
         if not exists(path):
             if handler == 'WARN':
@@ -163,11 +170,12 @@ class ToolFile(object):
             handler = ''
             if 'handler' in data.attrib:
                 handler = data.attrib['handler'].upper()
-            value = self._fix_data(value)
+            sep = '' if 'join' not in data.attrib else ':'
+            value = self._fix_data(value, sep)
             if vtype == 'PATH':
                 if not value:
                     return True
-                if not self._check_path(value, handler):
+                if not self._check_path(value, handler, sep):
                     return False
                 tag = 'PATH:%s' % tag
             if tag not in self.contents['RUNTIME']:

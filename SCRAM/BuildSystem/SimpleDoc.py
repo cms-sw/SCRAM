@@ -47,7 +47,7 @@ class SimpleDoc(object):
             "client": [],
             "tool": ["name", "version", "type"],
             "info": ["url"],
-            "runtime": ["name", "value", "type", "default", "handler"],
+            "runtime": ["name", "value", "type", "default", "handler", "join"],
             "project": ["name", "version"],
             "base": ["url"]
         }
