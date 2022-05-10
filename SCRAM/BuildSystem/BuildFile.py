@@ -221,8 +221,12 @@ class BuildFile(object):
             tag = 'INCLUDE'
             self._update_product(tag, data.attrib['path'])
         elif tag == 'FLAGS':
+            fname = ""
+            if 'file' in data.attrib:
+                fname = "FILE"+data.attrib['file']+"_"
+                del data.attrib['file']
             flag_name = list(data.attrib)[0]
-            self._update_product(tag, data.attrib[flag_name], flag_name.upper())
+            self._update_product(tag, data.attrib[flag_name], "%s%s" % (fname, flag_name.upper()))
         elif tag == 'EXPORT':
             self.contents[tag] = {'LIB': []}
             self.product = self.contents[tag]
