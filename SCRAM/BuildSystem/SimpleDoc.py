@@ -22,7 +22,7 @@ DEFAULT_ENV_FILTERS = {
 class SimpleDoc(object):
     def __init__(self, valid_attribs={}):
         self.valid_attribs = {
-            "use": ["name", "source_only"],
+            "use": ["name", "source_only", "when"],
             "lib": ["name", "type"],
             "export": [],
             "include_path": ["path"],

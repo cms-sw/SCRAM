@@ -3,7 +3,7 @@ from SCRAM.BuildSystem.SimpleDoc import SimpleDoc
 from SCRAM.BuildSystem.TemplateStash import TemplateStash
 from os.path import basename
 from json import dump
-from re import compile,match,search
+from re import compile,match,search,sub
 import xml.etree.ElementTree as ET
 
 reReplaceEnv = compile(r'^(.*)(\$\{(\w+)\})(.*)$')
@@ -213,6 +213,8 @@ class BuildFile(object):
                 use = data.attrib['name']
             if ('source_only' in data.attrib) and (data.attrib['source_only'] in ["1", "true"]):
                 self._update_contents(ET.Element("flags", {'USE_SOURCE_ONLY': use}))
+            elif ('when' in data.attrib):
+                self._update_contents(ET.Element("flags", {'USE_%s ' % sub('[-/]','_',data.attrib['when']): use}))
             else:
                 self._update_product(tag, use)
         elif tag == 'LIB':
