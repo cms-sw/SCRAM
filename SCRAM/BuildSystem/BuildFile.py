@@ -213,8 +213,8 @@ class BuildFile(object):
                 use = data.attrib['name']
             if ('source_only' in data.attrib) and (data.attrib['source_only'] in ["1", "true"]):
                 self._update_contents(ET.Element("flags", {'USE_SOURCE_ONLY': use}))
-            elif ('when' in data.attrib):
-                self._update_contents(ET.Element("flags", {'USE_%s ' % sub('[-/]','_',data.attrib['when']): use}))
+            elif ('for' in data.attrib):
+                self._update_contents(ET.Element("flags", {'USE_%s ' % sub('[-/]','_',data.attrib['for']): use}))
             else:
                 self._update_product(tag, use)
         elif tag == 'LIB':
