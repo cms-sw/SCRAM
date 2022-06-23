@@ -16,6 +16,7 @@ class BuildFile(object):
         self.tools = {}
         self.flags = {}
         self.selected = {}
+        self.group = []
         self.loop_products = []
         self.variables = TemplateStash()
         self.toolmanager = toolmanager
@@ -115,6 +116,7 @@ class BuildFile(object):
         self.flags = {}
         self.selected = {}
         self.loop_products = []
+        self.group = []
         self.variables = TemplateStash()
         self.contents = {'USE': [], 'EXPORT': {}, 'FLAGS': {}, 'BUILDPRODUCTS': {}}
 
@@ -207,14 +209,19 @@ class BuildFile(object):
             use = data.attrib['name'].lower()
             if use == "self":
                 return True
+            group = ""
+            if "for" in data.attrib:
+                group = data.attrib["for"]
+            elif self.group:
+                group = "_".join(self.group)
             if use not in self.tools:
                 self.tools[use] = self.toolmanager.hastool(use)
             if not self.tools[use]:
                 use = data.attrib['name']
             if ('source_only' in data.attrib) and (data.attrib['source_only'] in ["1", "true"]):
                 self._update_contents(ET.Element("flags", {'USE_SOURCE_ONLY': use}))
-            elif ('for' in data.attrib):
-                self._update_contents(ET.Element("flags", {'USE_%s' % sub('[-/]','_',data.attrib['for']): use}))
+            elif group:
+                self._update_contents(ET.Element("flags", {'USE_%s' % sub("[-/]", "_", group): use}))
             else:
                 self._update_product(tag, use)
         elif tag == 'LIB':
@@ -251,6 +258,8 @@ class BuildFile(object):
             if tag not in self.contents:
                 self.contents[tag] = []
             self.contents[tag].append(data.attrib['path'])
+        elif tag == 'GROUP':
+            self.group.append(data.attrib['name'])
         else:
             printerror('ERROR: Unknown tag %s found in %s.' % (data.tag, self.filename))
         for child in list(data):
@@ -266,6 +275,8 @@ class BuildFile(object):
             self.product = self.contents
         elif tag in ["EXPORT"]:
             self.product = self.contents
+        elif tag == 'GROUP':
+            self.group.pop()
         return True
 
     def _check_iftool(self, node):

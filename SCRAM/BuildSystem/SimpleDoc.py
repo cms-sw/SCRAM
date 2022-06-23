@@ -49,6 +49,7 @@ class SimpleDoc(object):
             "info": ["url"],
             "runtime": ["name", "value", "type", "default", "handler", "join"],
             "project": ["name", "version"],
+            "group": ["name"],
             "base": ["url"]
         }
         for tag in valid_attribs:
