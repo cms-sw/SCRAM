@@ -76,6 +76,9 @@ class SimpleDoc(object):
             printerror("Invalid tag '%s' found in %s." % (tag, self.filename))
             return []
         valid_attrib = self.valid_attribs[tag]
+        if "comment" in data.attrib:
+            del data.attrib["comment"]
+            print(data.attrib)
         if '*' in valid_attrib:
             return invalid_attrib
         for atr in data.attrib:
