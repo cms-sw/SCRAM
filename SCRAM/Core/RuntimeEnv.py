@@ -36,6 +36,8 @@ class RuntimeEnv(object):
         self.force_tools_env = {}
         self.skip_runtime = {}
         self._unsetenv = False
+        self.ignore_env = {}
+        self._read_ignore_env()
         return
 
     def runtimebuildenv(self):
@@ -47,11 +49,13 @@ class RuntimeEnv(object):
                 del environ[k]
         self.save('RTBOURNE')
         for k, v in save_env.items():
+            if k in self.ignore_env: continue
             environ[k] = v
         self.setenv("RTBOURNE")
         if 'rtstring' in self.env:
             if 'RTBOURNE' in self.env['rtstring']:
                 for e in self.env['rtstring']['RTBOURNE']:
+                    if e in self.ignore_env: continue
                     environ[e] = self.env['rtstring']['RTBOURNE'][e]
         return True
 
@@ -120,6 +124,7 @@ class RuntimeEnv(object):
             print("%s %s;" % (shell_data['UNEXPORT'], unset), file=ostream)
         for d in data:
             for var, val in d.items():
+                if var in self.ignore_env: continue
                 if shell == 'RTBOURNE':
                     if var.startswith('SCRAMRT_') or \
                        var.endswith('_SCRAMRT') or \
@@ -151,6 +156,7 @@ class RuntimeEnv(object):
         backup_vars = ""
         for h in env['variables']:
             for (name, value) in h.items():
+                if name in self.ignore_env: continue
                 btype = '_SCRAMRT'
                 if name not in environ:
                     btype += 'DEL'
@@ -166,6 +172,7 @@ class RuntimeEnv(object):
         for (name, value) in env['path'].items():
             m = regexp.match(name)
             if m:
+                if m.group(2) in self.ignore_env: continue
                 if m.group(1) in self.optional_paths:
                     if not m.group(2) in opt:
                         opt[m.group(2)] = {}
@@ -419,8 +426,10 @@ class RuntimeEnv(object):
         projTool = True if tname == environ['SCRAM_PROJECTNAME'].lower() else False
         gmake = ""
         for trtvar, trtval in tool['RUNTIME'].items():
+            if trtvar in self.ignore_env: continue
             if trtvar.startswith('PATH:'):
                 var = trtvar[5:]
+                if var in self.ignore_env: continue
                 if projTool and environ['SCRAM_ARCH'].startswith('osx') and \
                    var == 'DYLD_LIBRARY_PATH':
                     var = 'LD_LIBRARY_PATH'
@@ -439,6 +448,25 @@ class RuntimeEnv(object):
                             self.env['rtstring']['path'][var].append(val)
             elif trtvar not in self.env['variables']:
                 self.env['rtstring']['variables'].append({trtvar: trtval})
+
+    def _read_ignore_env(self):
+        env_file = join(environ["HOME"], ".scramrc", "runtime")
+        if not exists(env_file): return
+        ignore_env = ""
+        with open(env_file) as f_in:
+            for line in f_in.readlines():
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                items = line.split(":", 1)
+                if (len(items)==2) and (items[0]=="ignore"):
+                    for e in [ x for x in items[1].split(" ") if x]:
+                        ignore_env += "      %s\n" % e
+                        self.ignore_env[e] = 1
+        if ignore_env:
+            SCRAM.printerror("**** Following environment variables are ignored via ~/.scramrc/runtime and will not be set/changed.\n%s" % ignore_env)
+        return
+
 
     def _cleanpath(self, path, sep):
         upath = {}
