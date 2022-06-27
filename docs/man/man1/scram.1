@@ -312,8 +312,25 @@ Creates a developer area based on <release_path> release area.
 .TP 3
 .B runtime -csh|-sh|-win [--dump <file>]
 Shows the list of shell commands needed to set the runtime environment for the
-release. This command needs to be run from a release or developer area. You can
-eval the output of this command to set the runtime environment e.g.
+release. This command needs to be run from a release or developer area.
+.RE
+.RS 3
+For
+.B SCRAM V3
+based projects only, if there is project environment (e.g.
+.B LANG, LC_CTYPE
+) which should not override the user env then please update
+.B ~/.scramrc/runtime
+file and add entries like
+.RS 3
+
+.B ignore: LANG
+.RE
+.RS 3
+.B ignore: LC_CTYPE LC_ALL
+.RE
+.TP 3
+You can eval the output of this command to set the runtime environment e.g.
 .B eval `scram runtime -sh`
 .TP 3
 .SS OPTIONS
