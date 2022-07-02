@@ -450,6 +450,7 @@ class RuntimeEnv(object):
                 self.env['rtstring']['variables'].append({trtvar: trtval})
 
     def _read_ignore_env(self):
+        if not 'HOME' in environ: return
         env_file = join(environ["HOME"], ".scramrc", "runtime")
         if not exists(env_file): return
         ignore_env = ""

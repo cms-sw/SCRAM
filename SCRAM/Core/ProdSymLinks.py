@@ -21,6 +21,7 @@ class ProdSymLinks():
         Will read 'symlink' file from home directory, parse it and expand it.
         Will store results in self.symlink for later use.
         """
+        if not 'HOME' in environ: return
         file = join(environ["HOME"], ".scramrc", "symlinks")
         with open(file) as f_in:
             for line in f_in.readlines():
