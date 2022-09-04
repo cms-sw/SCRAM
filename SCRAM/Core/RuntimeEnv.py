@@ -148,7 +148,7 @@ class RuntimeEnv(object):
         if not ostream:
             ostream = stdout
         if 'SCRAMRT_SET' in environ:
-            self._restore_environment(shell)
+            self._restore_environment(shell, environ)
         env_prefix = self.env_backup_prefix
         env = self._runtime()
         data = []
@@ -232,13 +232,12 @@ class RuntimeEnv(object):
         if 'SCRAMRT_SET' not in environ:
             return
         self._unsetenv = True
-        self._restore_environment(shell)
+        self._restore_environment(shell, environ)
         self.setenv(shell)
         self._unsetenv = False
         return
 
-    def _restore_environment(self, shell):
-        global environ
+    def _restore_environment(self, shell, environ):
         penv = environ['SCRAMRT_SET'].split(':')
         del environ['SCRAMRT_SET']
         sep = self.shell[shell]['SEP']
