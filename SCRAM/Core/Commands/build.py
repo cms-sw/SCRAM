@@ -367,7 +367,12 @@ def process(args, main_opts):
     area.init_env()
     localarea = area.localarea()
     env = RuntimeEnv(localarea)
-    env.runtimebuildenv()
+    new_env = env.runtimebuildenv()
+    for k in environ.keys():
+      if not k in new_env:
+        del environ[k]
+    for k in new_env:
+      environ[k] = new_env[k]
     create_productstores(localarea)
     location = localarea.location()
     cwd = getcwd()

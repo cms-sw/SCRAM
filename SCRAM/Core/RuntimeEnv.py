@@ -57,7 +57,7 @@ class RuntimeEnv(object):
                 for e in self.env['rtstring']['RTBOURNE']:
                     if e in self.ignore_env: continue
                     environ[e] = self.env['rtstring']['RTBOURNE'][e]
-        return True
+        return environ
 
     def _fixpathvar(self, var, sep):
         if (var in environ) and (environ[var] != ''):
@@ -148,7 +148,7 @@ class RuntimeEnv(object):
         if not ostream:
             ostream = stdout
         if 'SCRAMRT_SET' in environ:
-            self._restore_environment(shell, environ)
+            self._restore_environment(shell)
         env_prefix = self.env_backup_prefix
         env = self._runtime()
         data = []
@@ -232,12 +232,13 @@ class RuntimeEnv(object):
         if 'SCRAMRT_SET' not in environ:
             return
         self._unsetenv = True
-        self._restore_environment(shell, environ)
+        self._restore_environment(shell)
         self.setenv(shell)
         self._unsetenv = False
         return
 
-    def _restore_environment(self, shell, environ):
+    def _restore_environment(self, shell):
+        global environ
         penv = environ['SCRAMRT_SET'].split(':')
         del environ['SCRAMRT_SET']
         sep = self.shell[shell]['SEP']
