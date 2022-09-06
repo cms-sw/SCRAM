@@ -125,19 +125,11 @@ class RuntimeEnv(object):
         for d in data:
             for var, val in d.items():
                 if var in self.ignore_env: continue
-                if shell == 'RTBOURNE':
-                    if var.startswith('SCRAMRT_') or \
-                       var.endswith('_SCRAMRT') or \
-                       var.endswith('_SCRAMRTDEL'):
-                        if var != 'SCRAMRT_SET':
-                            del environ[var]
-                            continue
-                    environ[var] = val
-                    continue
+                environ[var] = val
+                if  shell == 'RTBOURNE': continue
                 if var != 'PATH' and var in oenv:
                     if val == oenv[var]:
                         continue
-                environ[var] = val
                 print('%s %s%s\"%s\";' % (shell_data['EXPORT'], var,
                       shell_data['EQUALS'], val), file=stdout)
         return True
