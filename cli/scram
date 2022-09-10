@@ -5,4 +5,6 @@ if [ "${SCRAMRT_SET}" = "" ] ; then
   export LD_LIBRARY_PATH=""
   cmd_python3=$(env -i command -v python3)
 fi
-SCRAM_RUNTIME_TYPE="" PYTHONPATH="" ${cmd_python3} $(dirname $0)/scram.py "$@"
+unset SCRAM_RUNTIME_TYPE
+unset SCRAM_RTBOURNE_SET
+PYTHONPATH="" ${cmd_python3} $(dirname $0)/scram.py "$@"
