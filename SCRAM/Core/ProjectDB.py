@@ -14,6 +14,7 @@ class ProjectDB(object):
         self.scramrc = 'etc/scramrc'
         self.linkfile = 'links.db'
         self.archs = {}
+        self.archmap = self._archmap(environ['SCRAM_ARCH'])
         self.listcache = {}
         self.projects = {}
         self.domain = 'cern.ch'
@@ -84,6 +85,8 @@ class ProjectDB(object):
             project_module = self.getProjectModule(project)
             if project_module:
                 archs = project_module.releaseArchs(version, 1, release)
+                if not archs and '_X_' in version:
+                    archs = project_module.releaseArchs(version.split("_X_")[0]+"_X", 1, release)
         arch = ""
         if len(archs) == 1:
             arch = archs[0]
@@ -173,6 +176,12 @@ class ProjectDB(object):
         return project.upper() in self.projects
 
     ##################################################
+    def _archmap(self, arch):
+        for m in [ "cs", "alma", "rocky", "ubi", "rhel" ]:
+            if arch.startswith(m):
+                return "el" + arch[len(m):]
+        return arch
+
     def _save(self):
         filename = join(environ['SCRAM_LOOKUPDB_WRITE'], self.scramrc)
         makedirs(filename, mode=0o755, exist_ok=True)
@@ -221,8 +230,10 @@ class ProjectDB(object):
                 for path in self.DBS['uniq'][localdb][proj]:
                     self.DBS['uniq'][scramdb][proj][path] = 1
 
-        varch = '_'.join(environ['SCRAM_ARCH'].split('_', 2)[:2])
-        for common in glob('%s/%s_*/cms/cms-common' % (scramdb, varch)):
+        varch =  glob('%s/%s_*/cms/cms-common' % (scramdb, '_'.join(environ['SCRAM_ARCH'].split('_', 2)[:2])))
+        if environ['SCRAM_ARCH'] != self.archmap:
+            varch += glob('%s/%s_*/cms/cms-common' % (scramdb, '_'.join(self.archmap.split('_', 2)[:2])))
+        for common in varch:
             self.archs[common.replace(scramdb, '').split("/", 2)[1]] = 1
         linkdb = self._getLinkDBFile(db)
         if not exists(linkdb):
