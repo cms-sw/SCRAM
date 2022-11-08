@@ -45,7 +45,7 @@ def remote_versioncheck(area):
     sversion = area.scram_version()
     if not sversion:
         SCRAM.scramerror("Unable to determine SCRAM version used to config. remote area.")
-    spawnversion(sversion, area.location().split("/%s/" % environ['SCRAM_ARCH'])[0])
+    spawnversion(sversion, area.basedir)
 
 
 def spawnversion(newversion='V2_99_99', basedir=None):
