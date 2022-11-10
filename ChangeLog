@@ -1,3 +1,8 @@
+2022-11-10 Shahzad Muzaffar  <@smuzaffar>
+
+	* SCRAM/ScramProjectDB.pm: Added mapping for cs|alma|rocky|ubi|rhel to el
+	* SCRAM/SCRAM.pm: Use basedir of remote project to run SCRAM
+
 2021-07-12 Shahzad Muzaffar  <@smuzaffar>
 
 	* BuildSystem/BuildFile.pm: Check for valid name and values in

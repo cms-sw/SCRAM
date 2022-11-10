@@ -17,6 +17,7 @@ sub new()
   $self->{projects}={};
   $self->{domain}='';
   $self->{prodarch}={};
+  $self->{archmap}=$self-> _archmap($ENV{SCRAM_ARCH});
   eval {
     eval "use Net::Domain qw(hostdomain);";
     if(!$@){$self->{domain}=hostdomain();}
@@ -294,6 +295,14 @@ sub _initDB ()
   {
     if ($f=~/^${scramdb}\/([^\/]+)\/cms\/cms-common$/){$self->{archs}{$1}=1;}
   }
+  if ($ENV{SCRAM_ARCH} ne $self->{archmap})
+  {
+    my $varch=$self->{archmap}; $varch=~s/_[^_]+$//;
+    foreach my $f (glob("${scramdb}/${varch}_*/cms/cms-common"))
+    {
+      if ($f=~/^${scramdb}\/([^\/]+)\/cms\/cms-common$/){$self->{archs}{$1}=1;}
+    }
+  }
   if(open($ref, $self->_getLinkDBFile($db)))
   {
     my %uniq=();
@@ -373,6 +382,16 @@ sub _getLinkDBFile()
   if (!-e "${dir}/${linkdb}"){$linkdb=$self->{linkfile};}
   $self->verbose("Reading SCRAM DB at ${dir}/${linkdb}");
   return "${dir}/${linkdb}";
+}
+
+sub _archmap()
+{
+  my ($self,$arch)=@_;
+  foreach my $m ("cs", "alma", "rocky", "ubi", "rhel")
+  {
+     if ($arch=~/^${m}(.+)$/){return "el$1";}
+  }
+  return $arch;
 }
 
 1;

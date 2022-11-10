@@ -197,7 +197,10 @@ sub remote_versioncheck() {
     if (!defined($version)) {
       $self->error("Unable to determine SCRAM version used to config. remote area.\n");
     }
-    my $basedir = $self->scram_basedir($remote_area->location()."/".$remote_area->configurationdir());
+    my $basedir = $remote_area->{basedir};
+    if ($basedir eq ""){
+      $basedir=$self->scram_basedir($remote_area->location()."/".$remote_area->configurationdir());
+    }
     $self->spawnversion($version, $basedir);
     return $self;
 }

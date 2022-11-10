@@ -13,6 +13,7 @@ sub new {
 	$self->{configurationdir} = "config";
 	$self->{forcearch} = shift || "";
 	$self->{arch} = $self->{forcearch} || $ENV{SCRAM_ARCH};
+	$self->{basedir} = "";
 	return $self;
 }
 

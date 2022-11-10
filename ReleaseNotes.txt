@@ -1,5 +1,10 @@
 
 			SCRAM Release Notes
+V2_2_9_pre16
+
+	Add OS mappings for cs|alma|rocky|ubi|rhel to el
+	Use correct basedir to re-run scram
+
 V2_2_9_pre15
 
 	Allow existing (shell which cmd).
