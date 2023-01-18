@@ -277,7 +277,11 @@ class RuntimeEnv(object):
                         del backup_env[var]
                     else:
                         backup_env[var] = val
-        environ = backup_env
+        for e in backup_env:
+            environ[e] = backup_env[e]
+        for e in list(environ.keys()):
+            if not e in backup_env:
+                del environ[e]
 
     def _update_overrides(self):
         if 'PATH' in self.env['rtstring']['path']:
