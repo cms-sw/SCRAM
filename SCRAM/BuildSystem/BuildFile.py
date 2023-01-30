@@ -281,6 +281,10 @@ class BuildFile(object):
 
     def _check_iftool(self, node):
         toolname = node.attrib['name'].lower()
+        pre = ""
+        if toolname[0]=='!':
+          pre = '!'
+          toolname = toolname[1:]
         tool_filter = 'iftool_%s' % toolname
         if node.tag == 'elif':
             del self.parser.last_filter[-1]
@@ -294,5 +298,5 @@ class BuildFile(object):
         if 'version' in node.attrib:
             version = node.attrib['version']
         node.tag = tool_filter
-        node.attrib = {'match': version}
+        node.attrib = {'match': pre+version}
         return node
