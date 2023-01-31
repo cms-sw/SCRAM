@@ -286,8 +286,6 @@ class BuildFile(object):
           pre = '!'
           toolname = toolname[1:]
         tool_filter = 'iftool_%s' % toolname
-        if node.tag == 'elif':
-            del self.parser.last_filter[-1]
         if not self.parser.has_filter(tool_filter):
             tooldata = self.toolmanager.gettool(toolname)
             toolver = ''
