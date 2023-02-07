@@ -32,6 +32,8 @@ class SimpleDoc(object):
             "set": ["name", "value"],
             "environment": [],
             "ifarchitecture": ["name", "match", "value"],
+            "compiler": ["name", "match", "value"],
+            "ifcompiler": ["name", "match", "value"],
             "ifcxx11_abi": ["value"],
             "ifrelease": ["name", "match", "value"],
             "iftool": ["name", "match", "version"],
