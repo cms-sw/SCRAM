@@ -6,12 +6,13 @@ from sys import argv
 
 def create_productstores(area):
     from SCRAM.BuildSystem.BuildFile import BuildFile
+    from SCRAM.BuildSystem.ToolManager import ToolManager
     sym = None
     if area.symlinks() > 0:
         from SCRAM.Core.ProdSymLinks import ProdSymLinks
         sym = ProdSymLinks()
     location = area.location()
-    bf = BuildFile(location)
+    bf = BuildFile(ToolManager(area))
     bf.parse(join(area.config(), 'BuildFile.xml'))
     arch = area.arch()
     for store in bf.contents['PRODUCTSTORE']:
