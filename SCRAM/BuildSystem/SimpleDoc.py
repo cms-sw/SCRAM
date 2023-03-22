@@ -135,7 +135,10 @@ class SimpleDoc(object):
         self.last_filter = []
         root = None
         with open(filename) as ref:
-            root = ET.fromstringlist(['<root>', ref.read(), '</root>'])
+            try:
+              root = ET.fromstringlist(['<root>', ref.read(), '</root>'])
+            except Exception as e:
+              printerror("ERROR: Failed to parse %s\n%s" % (filename, e))
         self.process(root)
         return root
 
