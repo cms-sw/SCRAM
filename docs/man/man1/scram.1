@@ -738,6 +738,10 @@ Various user defined compilation/link flags.
 .B USER_LLVM_CHECKERS
 Used defined extra checkers to be enabled for LLVM Static Analysis.
 .TP 3
+.B USER_SCRAM_TARGET
+To override the default cpu family selection for multi-vectorization builds. e.g.
+"USER_SCRAM_TARGET=haswell cmsenv" to select haswell libs
+.TP 3
 .B SCRAM_USERLOOKUPDB=<path>
 To instruct SCRAM to use <path> as its database and look for projects under this directory.
 .TP 3
