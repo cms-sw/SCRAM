@@ -310,13 +310,20 @@ class RuntimeEnv(object):
 
     def _runtime_hooks(self, hook_dir=None):
         if not hook_dir: hook_dir = self.area.config()
+        debug='SCRAM_HOOKS_DEBUG' in self.OENV
         hook = join(hook_dir, 'SCRAM', 'hooks', 'runtime-hook')
+        if debug:
+          SCRAM.printerror("SCRAM_HOOK:",hook)
         if not exists(hook):
             return
+        if debug:
+          SCRAM.printerror("SCRAM_HOOK: Found")
         regexp = re.compile(
             '^runtime:((path:(append|prepend|remove|replace):[a-zA-Z0-9-_]+)|(variable:[a-zA-Z0-9-_]+))=(.*)$',
             re.I)
         err, out = SCRAM.run_command('SCRAMRT_SET=true %s 2>&1' % hook)
+        if debug:
+          SCRAM.printerror("SCRAM_HOOK: ",out)
         for line in out.split('\n'):
             if not regexp.match(line):
                 continue
