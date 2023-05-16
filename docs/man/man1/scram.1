@@ -781,13 +781,16 @@ Do not run project creation hooks defined by each SCRAM base project in their co
 Do not run runtime environment setup hooks defined by each SCRAM base project in their config/SCRAM/hooks path
 .TP 3
 .B SCRAM_IGNORE_SITE_PROJECT_HOOK=1
-Do not run project creation hooks defined by site in <InstallPath>/etc/SCRAM/hooks
+Do not run project creation hooks defined by site in <InstallPath>/etc/scramrc/SCRAM/hooks
 .TP 3
 .B SCRAM_IGNORE_SITE_RUNTIME_HOOK=1
-Do not run runtime environment setup hooks defined site in <InstallPath>/etc/SCRAM/hooks
+Do not run runtime environment setup hooks defined site in <InstallPath>/etc/scramrc/SCRAM/hooks
 .TP 3
 .B SCRAM_HOOKS_DEBUG=1
 To get debug output from scram runtime hooks
+.TP 3
+.B SCRAM_SITE_HOOKS_DIR=/path/to/site/specific/hooks
+Override the SCRAM site-specific hooks paths, by default SCRAM uses <InstallPath>/etc/scramrc to find hooks
 .TP 3
 .B _SCRAM_TOOL_PATH_HANDLER=1
 Internally used by scram hooks to ignore the missing tool paths e.g. for creating on fly the cuda paths

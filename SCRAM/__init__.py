@@ -3,6 +3,7 @@
 from sys import stdin, stdout, stderr, exit
 import logging
 from os import environ
+from os.path import join
 import traceback
 
 logging_config = {"format": '%(levelname)s %(funcName)10s %(lineno)3d: %(message)s'}
@@ -106,6 +107,12 @@ def run_command(command, debug=False, fail_on_error=False):
     if debug:
         printmsg(out)
     return err, out
+
+
+def get_site_hooks():
+  if 'SCRAM_SITE_HOOKS_DIR' in environ:
+    return environ['SCRAM_SITE_HOOKS_DIR']
+  return join(BASEPATH, 'etc', 'scramrc')
 
 
 # from SCRAM import metadata

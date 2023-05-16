@@ -151,7 +151,7 @@ def project_bootfromrelease(project, version, releasePath, opts):
         if exists(proj_hook):
             SCRAM.run_command(proj_hook)
     if 'SCRAM_IGNORE_SITE_PROJECT_HOOK' not in environ:
-        proj_hook = join(SCRAM.BASEPATH, 'etc', 'scramrc', 'SCRAM', 'hooks', 'project-hook')
+        proj_hook = join(SCRAM.get_site_hooks(), 'SCRAM', 'hooks', 'project-hook')
         if exists(proj_hook):
             err, out = SCRAM.run_command(proj_hook)
             if out:
