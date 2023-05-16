@@ -304,10 +304,13 @@ class RuntimeEnv(object):
                     self.env['rtstring']['path'][e].insert(0, override)
         if 'SCRAM_IGNORE_RUNTIME_HOOK' not in self.OENV:
             self._runtime_hooks()
+        if 'SCRAM_IGNORE_SITE_RUNTIME_HOOK' not in self.OENV:
+            self._runtime_hooks(join(SCRAM.BASEPATH, 'etc', 'scramrc'))
         return
 
-    def _runtime_hooks(self):
-        hook = join(self.area.config(), 'SCRAM', 'hooks', 'runtime-hook')
+    def _runtime_hooks(self, hook_dir=None):
+        if not hook_dir: hook_dir = self.area.config()
+        hook = join(hook_dir, 'SCRAM', 'hooks', 'runtime-hook')
         if not exists(hook):
             return
         regexp = re.compile(

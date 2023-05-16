@@ -167,7 +167,7 @@ class ToolFile(object):
                 vtype = data.attrib['type'].upper()
             elif tag in self.path_variables:
                 vtype = 'PATH'
-            handler = ''
+            handler = '' if not '_SCRAM_TOOL_PATH_HANDLER' in environ else environ['_SCRAM_TOOL_PATH_HANDLER'].upper()
             if 'handler' in data.attrib:
                 handler = data.attrib['handler'].upper()
             sep = '' if 'join' not in data.attrib else ':'

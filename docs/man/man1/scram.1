@@ -773,3 +773,18 @@ Prefix each unittest with <command> before running.
 .B SCRAM_PREFIX_<path-variable>=<path-string>
 SCRAM runtime command prefixes <path-string> for each <path-variable>.
 <path-variable> could be PATH, LD_LIBRARY_PATH, PYTHON*PATH.
+.TP 3
+.B SCRAM_IGNORE_PROJECT_HOOK=1
+Do not run project creation hooks defined by each SCRAM base project in their config/SCRAM/hooks path
+.TP 3
+.B SCRAM_IGNORE_RUNTIME_HOOK=1
+Do not run runtime environment setup hooks defined by each SCRAM base project in their config/SCRAM/hooks path
+.TP 3
+.B SCRAM_IGNORE_SITE_PROJECT_HOOK=1
+Do not run project creation hooks defined by site in <InstallPath>/etc/SCRAM/hooks
+.TP 3
+.B SCRAM_IGNORE_SITE_RUNTIME_HOOK=1
+Do not run runtime environment setup hooks defined site in <InstallPath>/etc/SCRAM/hooks
+.TP 3
+.B _SCRAM_TOOL_PATH_HANDLER=1
+Internally used by scram hooks to ignore the missing tool paths e.g. for creating on fly the cuda paths
