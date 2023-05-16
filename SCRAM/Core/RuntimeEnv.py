@@ -313,7 +313,7 @@ class RuntimeEnv(object):
         debug='SCRAM_HOOKS_DEBUG' in self.OENV
         hook = join(hook_dir, 'SCRAM', 'hooks', 'runtime-hook')
         if debug:
-          SCRAM.printerror("SCRAM_HOOK:",hook)
+          SCRAM.printerror("SCRAM_HOOK: %s" % hook)
         if not exists(hook):
             return
         if debug:
@@ -323,7 +323,7 @@ class RuntimeEnv(object):
             re.I)
         err, out = SCRAM.run_command('SCRAMRT_SET=true %s 2>&1' % hook)
         if debug:
-          SCRAM.printerror("SCRAM_HOOK: ",out)
+          SCRAM.printerror("SCRAM_HOOK:\n%s" % out)
         for line in out.split('\n'):
             if not regexp.match(line):
                 continue
