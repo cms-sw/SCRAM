@@ -868,6 +868,11 @@ sub bootfromrelease() {
            my $proj_hook = $area->location()."/".$area->{configurationdir}."/SCRAM/hooks/project-hook";
            if (-x $proj_hook){system($proj_hook);}
            }
+        if (! exists $ENV{SCRAM_IGNORE_SITE_PROJECT_HOOK})
+           {
+           my $proj_hook = $main::siteHookDir."/SCRAM/hooks/project-hook";
+           if (-x $proj_hook){system($proj_hook);}
+           }
         if ( $ENV{'SCRAM_TOOL_HOME'} =~ /^\/afs\/cern\.ch\// )
            {
            print "****************************** WARNING ******************************\n";

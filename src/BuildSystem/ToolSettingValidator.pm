@@ -145,6 +145,10 @@ sub checkdefaults()
       $data = $vardata;
       }
 
+   if (exists $ENV{_SCRAM_TOOL_PATH_HANDLER})
+      {
+      $$handlertyperef = $ENV{_SCRAM_TOOL_PATH_HANDLER};
+      }
    if (exists($data->{'handler'}))
       {
       $$handlertyperef = $data->{'handler'};

@@ -25,6 +25,11 @@ $ENV{'SCRAM_VERSION'}='@SCRAM_VERSION@';
 my $dbPath = '@CMS_PATH@';
 my $dbPathWrite = '@CMS_PATH@';
 $main::installPath='@CMS_PATH@';
+$main::siteHookDir=$main::installPath."/etc/scramrc";
+if (exists $ENV{SCRAM_SITE_HOOKS_DIR})
+   {
+   $main::siteHookDir=$ENV{SCRAM_SITE_HOOKS_DIR};
+   }
 #### Core settings ####
 $main::bold = "";
 $main::normal = "";

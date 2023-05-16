@@ -373,20 +373,26 @@ sub update_overrides_()
     }
   }
   if (! exists $self->{OENV}{"SCRAM_IGNORE_RUNTIME_HOOK"}){$self->runtime_hooks_();}
+  if (! exists $self->{OENV}{"SCRAM_IGNORE_SITE_RUNTIME_HOOK"}){$self->runtime_hooks_($main::siteHookDir);}
 }
 
 sub runtime_hooks_()
 {
   my $self=shift;
+  my $hook_dir=shift;
+  if (!defined $hook_dir)
+  {
+    my $area = $self->{scram}->localarea();
+    $hook_dir = $area->location()."/".$area->configurationdir();
+  }
   my $debug=0;
   if (exists $self->{OENV}{SCRAM_HOOKS_DEBUG}){$debug=1;}
-  my $area = $self->{scram}->localarea();
-  my $hook=$area->location()."/".$area->configurationdir()."/SCRAM/hooks/runtime-hook";
+  my $hook="${hook_dir}/SCRAM/hooks/runtime-hook";
   if($debug){print STDERR "SCRAM_HOOK: $hook\n";}
   if (! -x $hook){return;}
   if ($debug){print STDERR "SCRAM_HOOK: Found\n";}
   my $out=`$hook 2>&1`;
-  if ($debug){print STDERR "SCRAN_HOOK: $out";}
+  if ($debug){print STDERR "SCRAM_HOOK:\n$out\n";}
   foreach my $line (split("\n",$out))
   {
     if ($line!~/^runtime:((path:(append|prepend|remove|replace):[a-zA-Z0-9-_]+)|(variable:[a-zA-Z0-9-_]+))=/io){print STDERR "$line\n"; next;}
