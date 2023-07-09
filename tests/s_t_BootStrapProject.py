@@ -23,7 +23,7 @@ for path_to_remove in ['/tmp/SCRAM_TEST', '/tmp/SCRAM_TEST_src']:
         pass  # no directory to remove
 
 # Setup
-os.makdirs(tools_path + "/selected")
+os.makedirs(tools_path + "/selected")
 os.makedirs(tools_path + "/available")
 with open(tools_path + "/selected/f", 'w') as f:
     f.write("111\n111\n111\n111\n")
