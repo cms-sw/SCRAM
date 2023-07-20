@@ -8,7 +8,7 @@ Information describing the project.
 package = "SCRAM"
 project = "SCRAM"
 project_no_spaces = project.replace(' ', '')
-version = 'V3_0_0'
+version = '3.0.0'
 description = "SCRAM - A Software Configuration, Release and Management " \
               "tool which supports configuration management and management " \
               "processes for software development. "
