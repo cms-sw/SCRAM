@@ -226,7 +226,7 @@ sub getfeatures()
    my ($feature)=@_;
    my @feature_vars=$self->list_variables();
    my @features;
-   push (@features, @feature_vars, qw(LIB LIBDIR INCLUDE MAKEFILE USE));
+   push (@features, @feature_vars, qw(LIB LIBDIR INCLUDE MAKEFILE USE TOOLVERSION));
 
    # Make sure feature name is uppercase:
    $feature =~ tr/a-z/A-Z/;
