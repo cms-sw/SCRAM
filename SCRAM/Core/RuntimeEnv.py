@@ -365,7 +365,14 @@ class RuntimeEnv(object):
             elif vtype == 'variable':
                 if 'variables' not in self.env['rtstring']:
                     self.env['rtstring']['variables'] = []
-                self.env['rtstring']['variables'].append({items[2]: [vals[1]]})
+                found = False
+                for i, val in enumerate(self.env['rtstring']['variables']):
+                    if items[2] in val:
+                        val[items[2]] = [vals[1]]
+                        found = True
+                        break
+                if not found:
+                    self.env['rtstring']['variables'].append({items[2]: [vals[1]]})
         return
 
     def _runtime(self):
