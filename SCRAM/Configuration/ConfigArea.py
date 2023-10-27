@@ -73,11 +73,9 @@ class ConfigArea(object):
                 localarea.bootstrapfromlocation(self.location())
             if localarea and localarea.configchksum() != self.configchksum():
                 err = "ERROR: Can not setup your current working area for " \
-                      "SCRAM_ARCH: $ENV{SCRAM_ARCH}\n"
-                err += "Your current development area ${location}/${" \
-                       "areaname}\n"
-                err += "is using a different ${areaname}/config then the " \
-                       "one used for\n"
+                      "SCRAM_ARCH: %s\n" % environ['SCRAM_ARCH']
+                err += "Your current development area %s\n" % location
+                err += "is using a different config tag then the one used for release\n"
                 err += self.releasetop()
                 print(err, file=stderr)
                 exit(1)
