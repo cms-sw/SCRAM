@@ -304,11 +304,14 @@ class RuntimeEnv(object):
                     self.env['rtstring']['path'][e].insert(0, override)
         if 'SCRAM_IGNORE_RUNTIME_HOOK' not in self.OENV:
             self._runtime_hooks()
-        if 'SCRAM_IGNORE_SITE_RUNTIME_HOOK' not in self.OENV:
-            self._runtime_hooks(SCRAM.get_site_hooks())
+            if 'SCRAM_IGNORE_SITE_RUNTIME_HOOK' not in self.OENV:
+                ignore_hooks_file = join(self.area.config(), 'SCRAM', 'hooks', 'ignore-site-hooks')
+                if not exists(ignore_hooks_file):
+                    ignore_hooks_file = ""
+                self._runtime_hooks(hook_dir=SCRAM.get_site_hooks(), ignore_hooks_file=ignore_hooks_file)
         return
 
-    def _runtime_hooks(self, hook_dir=None):
+    def _runtime_hooks(self, hook_dir=None, ignore_hooks_file=""):
         if not hook_dir: hook_dir = self.area.config()
         debug='SCRAM_HOOKS_DEBUG' in self.OENV
         hook = join(hook_dir, 'SCRAM', 'hooks', 'runtime-hook')
@@ -321,7 +324,7 @@ class RuntimeEnv(object):
         regexp = re.compile(
             '^runtime:((path:(append|prepend|remove|replace):[a-zA-Z0-9-_]+)|(variable:[a-zA-Z0-9-_]+))=(.*)$',
             re.I)
-        err, out = SCRAM.run_command('SCRAMRT_SET=true %s 2>&1' % hook)
+        err, out = SCRAM.run_command('SCRAM_IGNORE_HOOKS=%s SCRAMRT_SET=true %s 2>&1' % (ignore_hooks_file, hook))
         if debug:
           SCRAM.printerror("SCRAM_HOOK:\n%s" % out)
         for line in out.split('\n'):
