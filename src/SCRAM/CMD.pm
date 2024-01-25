@@ -862,16 +862,22 @@ sub bootfromrelease() {
 	      }
 	   }
         my $tc = $scramdb->getProjectModule($projectname);
-        if (defined $tc) { $tc->getData($projectversion, $ENV{RELEASETOP}); }
+        if (defined $tc) { $tc->getData($projectversion, $ENV{RELEASETOP});}
         if (! exists $ENV{SCRAM_IGNORE_PROJECT_HOOK})
            {
-           my $proj_hook = $area->location()."/".$area->{configurationdir}."/SCRAM/hooks/project-hook";
+           my $hook_dir = $area->location()."/".$area->{configurationdir}."/SCRAM/hooks";
+           my $proj_hook = ${hook_dir}."/project-hook";
            if (-x $proj_hook){system($proj_hook);}
-           }
-        if (! exists $ENV{SCRAM_IGNORE_SITE_PROJECT_HOOK})
-           {
-           my $proj_hook = $main::siteHookDir."/SCRAM/hooks/project-hook";
-           if (-x $proj_hook){system($proj_hook);}
+           if (! exists $ENV{SCRAM_IGNORE_SITE_PROJECT_HOOK})
+              {
+              my $proj_hook = $main::siteHookDir."/SCRAM/hooks/project-hook";
+              if (-x $proj_hook)
+                 {
+                 my $ignore_hooks_file = ${hook_dir}."/ignore-site-hook";
+                 if (! -e $ignore_hooks_file){$ignore_hooks_file="";}
+                 system("SCRAM_IGNORE_HOOKS=${ignore_hooks_file} $proj_hook");
+                 }
+              }
            }
         if ( $ENV{'SCRAM_TOOL_HOME'} =~ /^\/afs\/cern\.ch\// )
            {

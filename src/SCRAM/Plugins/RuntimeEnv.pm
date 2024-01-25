@@ -372,14 +372,25 @@ sub update_overrides_()
       }
     }
   }
-  if (! exists $self->{OENV}{"SCRAM_IGNORE_RUNTIME_HOOK"}){$self->runtime_hooks_();}
-  if (! exists $self->{OENV}{"SCRAM_IGNORE_SITE_RUNTIME_HOOK"}){$self->runtime_hooks_($main::siteHookDir);}
+  if (! exists $self->{OENV}{"SCRAM_IGNORE_RUNTIME_HOOK"})
+  {
+    $self->runtime_hooks_();
+    if (! exists $self->{OENV}{"SCRAM_IGNORE_SITE_RUNTIME_HOOK"})
+    {
+      my $area = $self->{scram}->localarea();
+      my $ignore_hooks_file = $area->location()."/".$area->configurationdir()."/SCRAM/hooks/ignore-site-hooks";
+      if (! -e $ignore_hooks_file) {$ignore_hooks_file="";}
+      $self->runtime_hooks_($main::siteHookDir, $ignore_hooks_file);
+    }
+  }
 }
 
 sub runtime_hooks_()
 {
   my $self=shift;
   my $hook_dir=shift;
+  my $ignore_hooks_file=shift;
+  if (!defined $ignore_hooks_file){$ignore_hooks_file="";}
   if (!defined $hook_dir)
   {
     my $area = $self->{scram}->localarea();
@@ -391,7 +402,7 @@ sub runtime_hooks_()
   if($debug){print STDERR "SCRAM_HOOK: $hook\n";}
   if (! -x $hook){return;}
   if ($debug){print STDERR "SCRAM_HOOK: Found\n";}
-  my $out=`$hook 2>&1`;
+  my $out=`SCRAM_IGNORE_HOOKS=${ignore_hooks_file} $hook 2>&1`;
   if ($debug){print STDERR "SCRAM_HOOK:\n$out\n";}
   foreach my $line (split("\n",$out))
   {
