@@ -56,6 +56,16 @@ def process(args):
     if len(args) == 0:
         SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
     project = args[0]
+    
+    if not project.startswith("/") and len(project.split("/")) == 2:
+        newarch, newproject = project.split("/")
+
+        if SCRAM.FORCED_ARCH is not None:
+            SCRAM.scramwarning("Overriding --arch with value " + newarch)
+        SCRAM.FORCED_ARCH = newarch
+        environ["SCRAM_ARCH"] = newarch
+        project = newproject
+    
     version = args[1] if len(args) > 1 else None
     releasePath = None
     if version is None:
