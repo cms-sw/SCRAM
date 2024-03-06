@@ -59,6 +59,8 @@ def process(args):
     
     if not project.startswith("/") and len(project.split("/")) == 2:
         newarch, newproject = project.split("/")
+        if newarch.startswith("CMSSW_"):
+            newarch, newproject = newproject, newarch
 
         if SCRAM.FORCED_ARCH is not None:
             SCRAM.scramwarning("Overriding --arch with value " + newarch)
