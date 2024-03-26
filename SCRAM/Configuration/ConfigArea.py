@@ -71,7 +71,7 @@ class ConfigArea(object):
             if (not localarea) and exists(envfile):
                 localarea = ConfigArea()
                 localarea.bootstrapfromlocation(self.location())
-            if localarea and localarea.configchksum() != self.configchksum():
+            if localarea and self.location()==localarea.location() and localarea.configchksum() != self.configchksum():
                 err = "ERROR: Can not setup your current working area for " \
                       "SCRAM_ARCH: %s\n" % environ['SCRAM_ARCH']
                 err += "Your current development area %s\n" % location
