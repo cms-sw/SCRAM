@@ -367,7 +367,13 @@ def process(args, main_opts):
     area.init_env()
     localarea = area.localarea()
     env = RuntimeEnv(localarea)
-    new_env = env.runtimebuildenv()
+    runtime_build_type = True
+    for arg in args:
+        arg = arg.split("_")[0]
+        if arg in ["unittests", "runtests"]:
+            runtime_build_type = False
+            break
+    new_env = env.runtimebuildenv(runtime_build_type)
     for k in environ.keys():
       if not k in new_env:
         del environ[k]

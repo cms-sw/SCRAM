@@ -40,9 +40,10 @@ class RuntimeEnv(object):
         self._read_ignore_env()
         return
 
-    def runtimebuildenv(self):
+    def runtimebuildenv(self, runtime_build_type=True):
         save_env = {}
-        environ["SCRAM_RUNTIME_TYPE"]="BUILD"
+        if runtime_build_type:
+            environ["SCRAM_RUNTIME_TYPE"]="BUILD"
         for k in ['LD_PRELOAD']:
             if k in environ:
                 save_env[k] = environ[k]
