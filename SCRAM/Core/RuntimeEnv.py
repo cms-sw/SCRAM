@@ -330,7 +330,7 @@ class RuntimeEnv(object):
           SCRAM.printerror("SCRAM_HOOK:\n%s" % out)
         for line in out.split('\n'):
             if not regexp.match(line):
-                SCRAM.printerror(line)
+                if line.strip(): SCRAM.printerror(line)
                 continue
             vals = line.split('=', 1)
             items = vals[0].split(':')
