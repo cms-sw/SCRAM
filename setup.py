@@ -3,7 +3,7 @@ from __future__ import print_function
 
 import os
 import sys
-import imp
+import importlib
 import subprocess
 
 ## Python 2.6 subprocess.check_output compatibility. Thanks Greg Hewgill!
@@ -40,6 +40,16 @@ DOCS_DIRECTORY = 'docs'
 TESTS_DIRECTORY = 'tests'
 PYTEST_FLAGS = ['--doctest-modules']
 
+def load_source(name, path):
+    """
+    Compatible implementation of `load_source()'
+    from the deprecated `imp' STL module, using `importlib'.
+    """
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
 # Import metadata. Normally this would just be:
 #
 #     from SCRAM import metadata
@@ -51,7 +61,7 @@ PYTEST_FLAGS = ['--doctest-modules']
 # instead, effectively side-stepping the dependency problem. Please make sure
 # metadata has no dependencies, otherwise they will need to be added to
 # the setup_requires keyword.
-metadata = imp.load_source(
+metadata = load_source(
     'metadata', os.path.join(CODE_DIRECTORY, 'metadata.py'))
 
 
