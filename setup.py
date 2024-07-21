@@ -3,7 +3,6 @@ from __future__ import print_function
 
 import os
 import sys
-import importlib
 import subprocess
 
 ## Python 2.6 subprocess.check_output compatibility. Thanks Greg Hewgill!
@@ -40,15 +39,24 @@ DOCS_DIRECTORY = 'docs'
 TESTS_DIRECTORY = 'tests'
 PYTEST_FLAGS = ['--doctest-modules']
 
-def load_source(name, path):
-    """
-    Compatible implementation of `load_source()'
-    from the deprecated `imp' STL module, using `importlib'.
-    """
-    spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+if sys.version_info < (3, 4):
+    # imp is deprecated since Python 3.4
+    from imp import load_source
+else:
+    import importlib
+    def load_source(name, path):
+        """
+        Compatible implementation of `load_source()'
+        from the deprecated `imp' STL module, using `importlib'.
+
+        See this StackOverflow answer for the history of dynamic modlue loading
+        from a given source path:
+        https://stackoverflow.com/questions/67631/how-can-i-import-a-module-dynamically-given-the-full-path/67692#67692
+        """
+        spec = importlib.util.spec_from_file_location(name, path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
 
 # Import metadata. Normally this would just be:
 #
