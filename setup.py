@@ -284,7 +284,7 @@ setup_dict = dict(
     zip_safe=False,  # don't use eggs
     entry_points={
         'console_scripts': [
-            'SCRAM = cli.scram:main'
+            'scram = cli.scram:main'
         ],
         # if you have a gui, use this
         # 'gui_scripts': [
