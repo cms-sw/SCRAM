@@ -185,7 +185,7 @@ def _lint():
     # - The result of subprocess call outputs are byte strings, meaning we need
     #   to pass a byte string to endswith.
     project_python_files = [filename for filename in get_project_files()
-                            if filename.endswith(b'.py')]
+                            if filename.endswith('.py')]
     retcode = subprocess.call(
         ['flake8', '--max-complexity=10'] + project_python_files)
     if retcode == 0:
@@ -284,7 +284,7 @@ setup_dict = dict(
     zip_safe=False,  # don't use eggs
     entry_points={
         'console_scripts': [
-            'SCRAM = cli.scram:main'
+            'scram = cli.scram:main'
         ],
         # if you have a gui, use this
         # 'gui_scripts': [
