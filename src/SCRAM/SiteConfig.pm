@@ -46,10 +46,10 @@ sub dump()
   }
   foreach my $k (@dump)
   {
+    print "  Name        : $k\n";
+    print "  Value       : ",$self->{site}{$k}{value},"\n";
     if (exists $self->{site}{$k}{valid_values})
     {
-      print "  Name        : $k\n";
-      print "  Value       : ",$self->{site}{$k}{value},"\n";
       print "  Valid values: ",$self->{site}{$k}{valid_values},"\n";
       print "  Purpose     : ",$self->{site}{$k}{help},"\n\n";
     }
