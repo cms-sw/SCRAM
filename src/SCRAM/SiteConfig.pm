@@ -14,6 +14,13 @@ sub new()
   $self->{site}{'release-checks-timeout'}{value}=10;
   $self->{site}{'release-checks-timeout'}{valid_values}='[3-9]|[1-9][0-9]+';
   $self->{site}{'release-checks-timeout'}{help}="Time in seconds after which a request to get release information should be timed out (min. value 3s).";
+  $self->{site}{'scram-target'}{value}="none";
+  $self->{site}{'scram-target'}{valid_values}='none|default|auto';
+  my $msg = "Default SCRAM_TARGET when a SCRAM project is installed.\n";
+  $msg .= "none: Do not change SCRAM_TARGET of release.\n";
+  $msg .= "default: Set SCRAM_TARGET to default.";
+  $msg .= "auto: Set SCRAM_TARGET to auto so that scram can use the best target.";
+  $self->{site}{'scram-target'}{help}=$msg;
   $self->readSiteConfig();
   return $self;
 }
