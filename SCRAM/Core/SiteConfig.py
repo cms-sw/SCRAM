@@ -18,12 +18,13 @@ class SiteConfig(object):
         self.site['release-checks-timeout']['help'] = "Time in seconds after which " \
                                                       "a request to get release information should be timed out " \
                                                       "(min. value 3s)."
+        self.site['scram-target'] = {}
         self.site['scram-target']['value'] = "none"
         self.site['scram-target']['valid_values'] = 'none|default|auto'
-        self.site['scram-target']['help'] = "Default SCRAM_TARGET when a SCRAM project is installed." \
-                                            "none: Do not change SCRAM_TARGET of release." \
-                                            "default: Set SCRAM_TARGET to default." \
-                                            "auto: Set SCRAM_TARGET to auto so that scram can use the best target."
+        self.site['scram-target']['help'] = "Default SCRAM_TARGET when a SCRAM project is installed.\n" \
+                                            "\t\tnone: Do not change SCRAM_TARGET of release.\n" \
+                                            "\t\tdefault: Set SCRAM_TARGET to default.\n" \
+                                            "\t\tauto: Set SCRAM_TARGET to auto so that scram can use the best target."
         self.readSiteConfig()
         return
 
