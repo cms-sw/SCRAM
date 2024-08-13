@@ -17,9 +17,9 @@ sub new()
   $self->{site}{'scram-target'}{value}="none";
   $self->{site}{'scram-target'}{valid_values}='none|default|auto';
   my $msg = "Default SCRAM_TARGET when a SCRAM project is installed.\n";
-  $msg .= "none: Do not change SCRAM_TARGET of release.\n";
-  $msg .= "default: Set SCRAM_TARGET to default.";
-  $msg .= "auto: Set SCRAM_TARGET to auto so that scram can use the best target.";
+  $msg .= "\t\tnone: Do not change SCRAM_TARGET of release.\n";
+  $msg .= "\t\tdefault: Set SCRAM_TARGET to default.\n";
+  $msg .= "\t\tauto: Set SCRAM_TARGET to auto so that scram can use the best target.";
   $self->{site}{'scram-target'}{help}=$msg;
   $self->readSiteConfig();
   return $self;
