@@ -57,8 +57,12 @@ sub dump()
     print "  Value       : ",$self->{site}{$k}{value},"\n";
     if (exists $self->{site}{$k}{valid_values})
     {print "  Valid values: ",$self->{site}{$k}{valid_values},"\n";}
+    else
+    {print "  Valid values: unknown\n";}
     if (exists $self->{site}{$k}{help})
     {print "  Purpose     : ",$self->{site}{$k}{help},"\n\n";}
+    else
+    {print "  Purpose     : unknown, looks like it was directly added to $self->{siteconf}\n\n";}
   }
   return 0;
 }
@@ -86,6 +90,7 @@ sub set()
   if (!exists $self->{site}{$key}{valid_values})
   {
     print STDERR "ERROR: Can not set value for '$key' key. SCRAM is missing its valid_values in SiteConfig.pm\n";
+    return 1;
   }
   my $vv=$self->{site}{$key}{valid_values};
   if ($value!~/^$vv$/i)
