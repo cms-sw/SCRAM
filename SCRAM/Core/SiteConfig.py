@@ -54,8 +54,12 @@ class SiteConfig(object):
             print("  Value       : %s" % self.site[key]['value'])
             if 'valid_values' in self.site[key]:
                 print("  Valid values: %s" % self.site[key]['valid_values'])
+            else:
+                print("  Valid values: unknown")
             if 'help' in self.site[key]:
                 print("  Purpose     : %s\n" % self.site[key]['help'])
+            else:
+                print("  Purpose     : unknown, looks like it was directly added to %s\n" % self.siteconf)
         return True
 
     def get(self, key):
