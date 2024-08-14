@@ -44,7 +44,7 @@ class SiteConfig(object):
 
     def dump(self, key=""):
         data = []
-        if key and (key in self.site) and ('valid_values' in self.site[key]):
+        if key and (key in self.site):
             data.append(key)
         else:
             data = sorted(list(self.site))
@@ -59,19 +59,21 @@ class SiteConfig(object):
         return True
 
     def get(self, key):
-        if (key not in self.site) or ('valid_values' not in self.site[key]):
+        if (key not in self.site):
             print("ERROR: Unknown site configuration parameter '%s'. "
                   "Known parameters are" % key, file=stderr)
-            for key in self.site:
-                if 'valid_values' not in self.site[key]:
-                    continue
-                print("  * %s" % key, file=stderr)
+            for k in self.site:
+                print("  * %s" % k, file=stderr)
             return None
         return self.site[key]['value']
 
     def set(self, key, value):
         cvalue = self.get(key)
         if cvalue is None:
+            return False
+        if 'valid_values' not in self.site[key]:
+            print("ERROR: Can not set value for '%s' key. "
+                  "SCRAM is missing its valid_values in SiteConfig.py" % key, file=stderr)
             return False
         valid_value = self.site[key]['valid_values']
         if not match('^%s$' % valid_value, value):
