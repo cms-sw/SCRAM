@@ -45,7 +45,7 @@ sub dump()
 {
   my ($self,$key)=@_;
   my @dump=();
-  if (($key ne "") && (exists $self->{site}{$key}) && (exists $self->{site}{$key}{valid_values})){push @dump,$key;}
+  if (($key ne "") && (exists $self->{site}{$key})){push @dump,$key;}
   else
   {
     @dump=sort keys %{$self->{site}};
@@ -56,10 +56,9 @@ sub dump()
     print "  Name        : $k\n";
     print "  Value       : ",$self->{site}{$k}{value},"\n";
     if (exists $self->{site}{$k}{valid_values})
-    {
-      print "  Valid values: ",$self->{site}{$k}{valid_values},"\n";
-      print "  Purpose     : ",$self->{site}{$k}{help},"\n\n";
-    }
+    {print "  Valid values: ",$self->{site}{$k}{valid_values},"\n";}
+    if (exists $self->{site}{$k}{help})
+    {print "  Purpose     : ",$self->{site}{$k}{help},"\n\n";}
   }
   return 0;
 }
@@ -67,12 +66,12 @@ sub dump()
 sub get()
 {
   my ($self,$key)=@_;
-  if ((!exists $self->{site}{$key}) || (!exists $self->{site}{$key}{valid_values}))
+  if (!exists $self->{site}{$key})
   {
     print STDERR "ERROR: Unknown site configuration parameter '$key'. Known parameters are\n";
     foreach my $k (keys %{$self->{site}})
     {
-      if (exists $self->{site}{$k}{valid_values}){print STDERR "  * $k\n";}
+      print STDERR "  * $k\n";
     }
     return undef;
   }
@@ -84,6 +83,10 @@ sub set()
   my ($self,$key,$value)=@_;
   my $v=$self->get($key);
   if (!defined $v){return 1;}
+  if (!exists $self->{site}{$key}{valid_values})
+  {
+    print STDERR "ERROR: Can not set value for '$key' key. SCRAM is missing its valid_values in SiteConfig.pm\n";
+  }
   my $vv=$self->{site}{$key}{valid_values};
   if ($value!~/^$vv$/i)
   {
