@@ -18,9 +18,9 @@ if stdin.isatty() and stdout.isatty():
     INTERACTIVE = True
 ORIGINAL_INTERACTIVE = INTERACTIVE
 
-VERSION = '@SCRAM_VERSION@'
+VERSION = 'V3_00_99'
 FORCED_ARCH = ""
-BASEPATH = '@CMS_PATH@'
+BASEPATH = '/cvmfs/cms.cern.ch'
 BASEPATH_RW = '@CMS_PATH@'
 COMMANDS_OPTS = None
 

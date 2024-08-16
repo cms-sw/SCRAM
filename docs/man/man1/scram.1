@@ -202,6 +202,20 @@ This avoids accessing releases information from internet. Default value is 1.
 .B release-checks-timeout=[3-9]|[1-9][0-9]+
 Time in seconds after which a request to get release information should be timed
 out (min. value 3s). Default value is 10s.
+.TP 3
+.B scram-target=none|default|auto
+For CMSSW_14 and above, this setting can update the SCRAM_TARGET at install time.
+This is helpfull if you want to change SCRAM_TARGET=default tp0 SCRAM_TARGET=auto
+to enable the automatic selection of best micro architecture. By default CMSSW_14
+and above are built with SCRAM_TARGET=default.
+.TP 3
+.B scram-post-install-script=/path/to/script
+For CMSSW_14 and above, for all scram based projects "scram-post-install-script"
+will run to do any site specific updates to project.
+.TP 3
+.B cmssw-post-install-script=/path/to/script
+For CMSSW_14 and above, for all cmssw type projects e.g. cmssw and cmssw-patch
+"cmssw-post-install-script" will run to do any site specific updates to project.
 .RE
 .RE
 .##############################################################################
@@ -745,11 +759,19 @@ Various user defined compilation/link flags.
 Used defined extra checkers to be enabled for LLVM Static Analysis.
 .TP 3
 .B USER_SCRAM_TARGET
-To override the default cpu family selection for multi-architecture builds. e.g.
-"USER_SCRAM_TARGET=haswell cmsenv" to select "haswell" libs OR "USER_SCRAM_TARGET=x86-64-v3"
-to select "x86-64-v3" instructions set. "USER_SCRAM_TARGET=default" will force select the
-default instructions set and ""USER_SCRAM_TARGET=auto" will let scram use the best available
-instructions set.
+To override the default cpu family selection for multi-architecture builds. e.g. if cmssw
+release is build with extra micro-architecture e.g. "x86-64-v3" then one can use
+"USER_SCRAM_TARGET=x86-64-v3 cmsenv" to select "x86-64-v3" libs build with "x86-64-v3"
+instructions set. "USER_SCRAM_TARGET=default" will force select the default instructions
+set and ""USER_SCRAM_TARGET=auto" will let scram use the best available instructions set.
+NOTE: If a cmssw release is build with SCRAM_TARGET=default (see config/Self.xml) then
+"USER_SCRAM_TARGET=x86-64-v3 cmsenv" in release area will properly setup "x86-64-v3" libs
+but in user development area you need to run "scram build enable-multi-targets" to enable
+the multi-targets support (by default multi-targets are disabled in user dev area for
+such releases). Once we build cmssw release with "SCRAM_TARGET=auto" then multi-targets
+will also be enabled for user dev area and "scram build" in user dev area will build all
+locally checked out packages for mult-archs. One can disable multi-targets fo such releases
+by running ""scram build disable-multi-targets.
 .TP 3
 .B SCRAM_USERLOOKUPDB=<path>
 To instruct SCRAM to use <path> as its database and look for projects under this directory.
