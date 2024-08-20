@@ -44,7 +44,9 @@ def process(args):
         else:
             SCRAM.scramwarning(">>>> There are no SCRAM project yet installed%s. <<<<" % msg)
         return False
-    headstring = "| {:12s}  | {:24s} | {:33} |".format("Project Name", "Project Version", "Project Location")
+    headstring = "--------------------------------------------------------------------------------"
+    headstring += "\n| {:12s}  | {:24s} | {:33} |".format("Project Name", "Project Version", "Project Location")
+    headstring += "\n--------------------------------------------------------------------------------\n"
     for arch in projects:
         if not opts.compact:
             SCRAM.printmsg("\nListing installed projects available for platform >> %s\n" % arch)

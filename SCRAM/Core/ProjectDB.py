@@ -288,7 +288,7 @@ class ProjectDB(object):
                         if ver == version:
                             xdata[arch].append([p, ver, fd, base])
                             return xdata
-                    elif verRE.match(ver) and (not p + ':' + ver in uniq):
+                    elif verRE.search(ver) and (not p + ':' + ver in uniq):
                         uniq[p + ':' + ver] = 1
                         mtime = getmtime(fd)
                         if mtime not in data:
