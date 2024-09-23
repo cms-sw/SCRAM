@@ -135,7 +135,7 @@ class BuildFile(object):
         return
 
     def _check_value(self, data):
-        if search('[$][(]+[^)]+\s', data) or search('[$][{]+[^}]+\s', data):
+        if search('[$][(]+[^)]+\\s', data) or search('[$][{]+[^}]+\\s', data):
             scramerror("Invalid attribute value '%s' found for tag '%s' in %s." % (data, self.tag, self.filename))
         return data
 
