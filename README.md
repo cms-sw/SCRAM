@@ -21,7 +21,7 @@ and management processes for software development. It resolves the issues of
 configuration definition, build, project organization and run-time environment.
 It was designed with a focus on supporting a distributed, multi-project
 development work-model
-.##############################################################################
+
 
 <a name="options"></a>
 
@@ -47,13 +47,13 @@ development work-model
   To show the help message for the selected command e.g.
       **scram list -h**
 * **COMMANDS**  
-  .##############################################################################
+
   .COMMAND: scram arch
 * **arch**  
   Show the current architecture flag. If this command is run from a SCRAM-based
   release/developer area then it shows the architecture for which that release
   was created otherwise shows out the SCRAM_ARCH environment variable value.
-  .##############################################################################
+
   .COMMAND: scram build
 * **build [options] [gmake-options] [&lt;targets&gt;]**  
   Build the productions (shared libraries, plugins, executables and tests) for the
@@ -154,7 +154,7 @@ options. e.g.
       **scram build echo_CXXFLAGS**
       
       shows the default flags used by the CXX compilers
-.##############################################################################
+
 .COMMAND: scram config
 
 * **config [&lt;parameter[=value]**  
@@ -190,7 +190,7 @@ Supported site configuration parameters are
 * **cmssw-post-install-script=/path/to/script**  
   For CMSSW_14 and above, for all cmssw type projects e.g. cmssw and cmssw-patch
   "cmssw-post-install-script" will run to do any site specific updates to project.
-.##############################################################################
+
 .COMMAND: scram db
 
 * **db --show|--link &lt;path&gt;|--unlink &lt;path&gt;**  
@@ -210,7 +210,7 @@ Supported site configuration parameters are
   Show all the external databases linked in to your SCRAM db.
 * -u, --unlink &lt;path&gt;  
   Unlink/Remove an already linked external db &lt;path&gt; from the local scram db.
-.##############################################################################
+
 .COMMAND: scram list
 
 * **list [options] [&lt;project_name&gt;] [&lt;version&gt;]**  
@@ -235,7 +235,7 @@ Supported site configuration parameters are
 * &lt;version&gt;  
   **Optional:**
   To Show only those installed versions which contain &lt;version&gt;
-.##############################################################################
+
 .COMMAND: scram project
 
 * **project [options] &lt;-boot bootstrap_file&gt; | &lt;project_name version&gt; | &lt;release_path&gt;**  
@@ -281,7 +281,7 @@ Supported site configuration parameters are
   Creates a developer area based on an already available release &lt;version&gt;.
 * &lt;release_path&gt;  
   Creates a developer area based on &lt;release_path&gt; release area.
-.##############################################################################
+
 .COMMAND: scram runtime
 
 * **runtime -csh|-sh|-win [--dump &lt;file&gt;]**  
@@ -315,7 +315,7 @@ file and add entries like
 * --dump &lt;file&gt;  
   **Optional:**
   Save the runtime environment in a &lt;file&gt; for the selected shell.
-.##############################################################################
+
 .COMMAND: scram setup
 
 * **setup [&lt;toolname&gt;|&lt;toolfile&gt;.xml]**  
@@ -337,28 +337,28 @@ file and add entries like
 * &lt;toolfile&gt;.xml  
   Full path of the toolfile. SCRAM will make a copy of &lt;toolfile&gt;.xml in to
   config/toolbox/$SCRAM_ARCH/tools for future use.
-.##############################################################################
+
 .COMMAND: scram tool
 
 * **tool**  
   This command consists of many sub-commands which deals with externals tools. This
   command needs to be run from a release or developer area.
-  .##############################################################################
+
   .COMMAND: scram tool list
 * **tool list**  
   Shows the list of all selected tools names and their versions.
-  .##############################################################################
+
   .COMMAND: scram tool info
 * **tool info &lt;toolname&gt;**  
   Shows the current tool definition for tool &lt;toolname&gt;.
-  .##############################################################################
+
   .COMMAND: scram tool remove
 * **tool remove &lt;toolname&gt;**  
   Makes the tool &lt;toolname&gt; unavailable. SCRAM moves the tools definition file
   from config/toolbox/$SCRAM_ARCH/tools/selected/&lt;toolname&gt;.xml to
   config/toolbox/$SCRAM_ARCH/tools/available directory. So if one needs to select
   this tool again then just run 'scram setup &lt;toolname&gt;' command.
-  .##############################################################################
+
   .COMMAND: scram tool tag
 * **tool tag &lt;toolname&gt; &lt;tag_name&gt;**  
   Shows the value of a variable(tag_name) for the &lt;toolname&gt; e.g.
@@ -366,7 +366,7 @@ file and add entries like
       **scram tool tag gcc-cxxcompiler CXX**
       
       shows the c++ compiler's path.
-  .##############################################################################
+
   .COMMAND: scram unsetenv
 * **unsetenv -csh|-sh|-win**  
   Shows the list of shell commands needed to unset the runtime environment set
@@ -385,14 +385,14 @@ file and add entries like
   Show unset commands for sh/bash/zsh shell.
 * -win  
   Show unset commands for cygwin.
-.##############################################################################
+
 .COMMAND: scram version
 
 * **version**  
   Show default version of SCRAM. If this command is run from a SCRAM-based
   release/developer area then it shows the latest available version of SCRAM available
   for that release.
-  .##############################################################################
+
 
 <a name="scram-flags"></a>
 
@@ -431,7 +431,7 @@ e.g. available area types are
 Only for compilation/build in the release area environment.
 **DEV**
 Only for compilation/build user development area.
-.##############################################################################
+
 
 <a name="scram-build-flags"></a>
 
@@ -597,7 +597,7 @@ Valid conditions are
         &lt;iftool name="root" version="6\..="&gt;&lt;/iftool&gt;
 
 Nasted conditions blocks are allowed.
-.##############################################################################
+
 
 <a name="control-flags-via-environment"></a>
 
