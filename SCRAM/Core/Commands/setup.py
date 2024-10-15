@@ -58,4 +58,6 @@ def process(args):
             create_productstores(larea)
             toolmanager.setupself()
         toolmanager.setupalltools()
+    if toolmanager.tools_updated:
+        SCRAM.run_command("%s build ExternalLinks" % environ["SCRAM"])
     return True

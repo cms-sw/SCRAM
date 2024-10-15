@@ -22,6 +22,7 @@ class ToolManager(object):
         self.tools = {}
         self.loaded = False
         self.xml = None
+        self.tools_updated = False
         return
 
     def init_path_variables(self):
@@ -92,6 +93,7 @@ class ToolManager(object):
             if old_contents == loads(dumps(self.xml.contents)):
                 utime(tooljson, None)
                 return False
+        self.tools_updated = True
         if not exists(self.area.toolcachename()):
             makedirs(self.area.toolcachename(), mode=0o755, exist_ok=True)
         self.xml.save_json(tooljson)
