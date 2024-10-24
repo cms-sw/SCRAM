@@ -193,7 +193,7 @@ options. e.g.
 
   **OPTIONS**
 
-  * `-a, --all`  
+  * `-A, --all`
   Show projects for all available architectures.
   * `-c --compact`  
   Show project list in compact format. Output format of each line will be
