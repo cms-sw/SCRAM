@@ -22,7 +22,7 @@ DEFAULT_ENV_FILTERS = {
 class SimpleDoc(object):
     def __init__(self, valid_attribs={}):
         self.valid_attribs = {
-            "use": ["name", "source_only", "for"],
+            "use": ["name", "source_only", "for", "force_link"],
             "lib": ["name", "type"],
             "export": [],
             "include_path": ["path"],
@@ -47,7 +47,7 @@ class SimpleDoc(object):
             "classpath": ["path"],
             "flags": ["*"],
             "client": [],
-            "tool": ["name", "version", "type"],
+            "tool": ["name", "version", "type", "revision"],
             "info": ["url"],
             "runtime": ["name", "value", "type", "default", "handler", "join"],
             "project": ["name", "version"],

@@ -111,6 +111,8 @@ class ToolFile(object):
         if tag == 'TOOL':
             self.contents['TOOLNAME'] = data.attrib['name'].lower()
             self.contents['TOOLVERSION'] = data.attrib['version']
+            if 'revision' in data.attrib:
+                self.contents['TOOLREVISION'] = data.attrib['revision']
             if 'type' in data.attrib:
                 vtype = data.attrib['type'].upper()
                 if vtype == 'SCRAM':

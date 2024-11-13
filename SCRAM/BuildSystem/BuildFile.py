@@ -218,6 +218,8 @@ class BuildFile(object):
                 self.tools[use] = self.toolmanager.hastool(use)
             if not self.tools[use]:
                 use = data.attrib['name']
+            if ('force_link' in data.attrib) and (data.attrib['force_link'] in ["1", "true"]):
+                self._update_contents(ET.Element("flags", {'FORCE_LINK': use}))
             if ('source_only' in data.attrib) and (data.attrib['source_only'] in ["1", "true"]):
                 self._update_contents(ET.Element("flags", {'USE_SOURCE_ONLY': use}))
             elif group:
