@@ -41,7 +41,7 @@ def tool_info(args, area):
     msg += "Name : %s\n" % toolname
     msg += "Version : %s\n" % tool['TOOLVERSION']
     if 'TOOLREVISION' in tool:
-        msg += "Version : %s\n" % tool['TOOLREVISION']
+        msg += "Revision : %s\n" % tool['TOOLREVISION']
     msg += "%s\n" % ("+" * 20)
     SCRAM.printmsg(msg)
     tooldata, flags = ToolFile.summarize_tool(tool)
