@@ -150,7 +150,9 @@ def project_bootfromrelease(project, version, releasePath, opts):
         hook_dir = join(localarea.config(), 'SCRAM', 'hooks')
         proj_hook = join(hook_dir, 'project-hook')
         if exists(proj_hook):
-            SCRAM.run_command(proj_hook)
+            err, out = SCRAM.run_command(proj_hook)
+            if out:
+                SCRAM.printmsg(out)
         if 'SCRAM_IGNORE_SITE_PROJECT_HOOK' not in environ:
             proj_hook = join(SCRAM.get_site_hooks(), 'SCRAM', 'hooks', 'project-hook')
             if exists(proj_hook):
