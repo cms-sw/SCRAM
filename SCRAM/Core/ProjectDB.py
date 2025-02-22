@@ -163,9 +163,9 @@ class ProjectDB(object):
         loc = data[2]
         if not area.bootstrapfromlocation(loc):
             area = None
-            err = "ERROR: Attempt to ressurect %s %s from $loc " \
+            err = "ERROR: Attempt to resurrect %s %s from $loc " \
                   "unsuccessful\n" % (data[0], data[1])
-            err += "ERROR: %s does not look like a valid release area for" \
+            err += "ERROR: %s does not look like a valid release area for " \
                    "SCRAM_ARCH %s." % (loc, arch)
             print(err, file=stderr)
         elif data[3]:
