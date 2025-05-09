@@ -8,7 +8,7 @@ def process(args):
     area = Core()
     area.checklocal()
     if not args or args[0].lower() not in ['list', 'info', 'tag', 'remove']:
-        SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
+        SCRAM.scramfatal("Error parsing arguments. See \"scram --help\" for usage info.")
     return eval('tool_%s' % args[0].lower())(args[1:], area.localarea())
 
 
@@ -28,7 +28,7 @@ def tool_list(args, area):
 
 def tool_info(args, area):
     if not args:
-        SCRAM.scramfatal("No tool name given: see \"scram tool -help\" for usage info.")
+        SCRAM.scramfatal("No tool name given: see \"scram tool --help\" for usage info.")
 
     from SCRAM.BuildSystem.ToolFile import ToolFile
     toolmanager = ToolManager(area)
@@ -54,7 +54,7 @@ def tool_info(args, area):
 
 def tool_tag(args, area):
     if len(args) < 1:
-        SCRAM.scramfatal("No tool name given: see \"scram tool -help\" for usage info.")
+        SCRAM.scramfatal("No tool name given: see \"scram tool --help\" for usage info.")
 
     toolmanager = ToolManager(area)
     toolname = args[0].lower()
@@ -71,7 +71,7 @@ def tool_tag(args, area):
 
 def tool_remove(args, area):
     if len(args) < 1:
-        SCRAM.scramfatal("No tool name given: see \"scram tool -help\" for usage info.")
+        SCRAM.scramfatal("No tool name given: see \"scram tool --help\" for usage info.")
 
     toolname = args[0].lower()
     toolmanager = ToolManager(area)

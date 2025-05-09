@@ -54,7 +54,7 @@ def process(args):
     if opts.bootstrap:
         return project_bootnewproject(opts, args)
     if len(args) == 0:
-        SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
+        SCRAM.scramfatal("Error parsing arguments. See \"scram --help\" for usage info.")
     project = args[0]
     version = args[1] if len(args) > 1 else None
     releasePath = None
@@ -76,7 +76,7 @@ def project_bootfromrelease(project, version, releasePath, opts):
     installname = opts.install_name if opts.install_name else version
     relarea = None
     if not (project and version):
-        SCRAM.scramfatal("Insufficient arguments: see \"scram project -help\" for usage info.")
+        SCRAM.scramfatal("Insufficient arguments: see \"scram project --help\" for usage info.")
     from SCRAM.Core.ProjectDB import ProjectDB
     db = ProjectDB()
     relarea = None
@@ -173,7 +173,7 @@ def project_bootfromrelease(project, version, releasePath, opts):
 
 def project_bootnewproject(opts, args):
     if len(args) != 0:
-        SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
+        SCRAM.scramfatal("Error parsing arguments. See \"scram --help\" for usage info.")
     from SCRAM.Configuration.BootStrapProject import BootStrapProject
     bootstrapfile = opts.bootstrap
     if opts.install_base_dir is None:
