@@ -10,7 +10,7 @@ def clean_build_env():
 
 def process_unsetenv(args):
     if (len(args) != 1) or (args[0] not in RUNTIME_SHELLS):
-        SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
+        SCRAM.scramfatal("Error parsing arguments. See \"scram --help\" for usage info.")
     clean_build_env()
     rt = RuntimeEnv(area=None)
     rt.unsetenv(RUNTIME_SHELLS[args[0]])
@@ -19,7 +19,7 @@ def process_unsetenv(args):
 
 def process_runtime(args):
     if (len(args) == 0) or (args[0] not in RUNTIME_SHELLS):
-        SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
+        SCRAM.scramfatal("Error parsing arguments. See \"scram --help\" for usage info.")
     from SCRAM.Core.Core import Core
     clean_build_env()
     area = Core()

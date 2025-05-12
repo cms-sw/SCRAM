@@ -16,7 +16,7 @@ def process(args):
                         help='Obsolete command-line argument')
     opts, args = parser.parse_known_args(args)
     if len(args) > 1:
-        SCRAM.scramfatal("Error parsing arguments. See \"scram -help\" for usage info.")
+        SCRAM.scramfatal("Error parsing arguments. See \"scram --help\" for usage info.")
     area = Core()
     area.checklocal()
     area.init_env()
