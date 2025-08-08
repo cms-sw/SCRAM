@@ -1,5 +1,4 @@
 #!/bin/bash
-unset PYTHONHOME
 cmd_python3=$(which python3)
 if [ "${SCRAMRT_SET}" = "" ] ; then
   export SCRAMV3_BACKUP_LD_LIBRARY_PATH=${LD_LIBRARY_PATH}
