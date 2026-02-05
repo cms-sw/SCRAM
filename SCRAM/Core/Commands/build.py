@@ -170,6 +170,8 @@ class DirCache(object):
             if not VALID_DIR_NAMES.match(d) or IGNORE_DIR_NAMES.match(d):
                 continue
             st = self.getstats(d)
+            if st is None:
+                SCRAM.die("ERROR: No such file or directory: %s" % d)
             if S_ISDIR(st.st_mode) and (not self.buildclass(d)[2]):
                 dirs.append(d)
         return dirs
