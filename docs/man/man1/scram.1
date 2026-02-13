@@ -77,7 +77,8 @@ You can pass any gmake command-line option which does not conflicit with 'scram 
 options. e.g.
 .TP 3
 -j [N], --jobs[=N]
-Allow N jobs at once; infinite jobs with missing N
+Run N parallel jobs at once. Note that unlike 'make', 'scram build' will assume the
+number of available cpus if N is not given.
 .TP 3
 -k, --keep-going
 Keep going when some targets can't be made
