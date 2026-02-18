@@ -78,7 +78,8 @@ development work-model
 options. e.g.
 
   * `-j [N], --jobs[=N]`
-    Allow N jobs at once; infinite jobs with missing N
+    Run N parallel jobs at once. Note that unlike `make`, `scram build` will assume the
+    number of available cpus if `N` is not given.
   * `-k, --keep-going`
     Keep going when some targets can't be made
 

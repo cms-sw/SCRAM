@@ -1,7 +1,6 @@
 import re
 from SCRAM import scramerror
-from multiprocessing import cpu_count
-from os import environ, execl
+from os import environ, execl, sched_getaffinity
 
 regex_j = re.compile('^(-j|--jobs=)([0-9]*)$')
 regex_number = re.compile('^[0-9]+$')
@@ -32,7 +31,7 @@ class MakeInterface:
             gmake_arg.append(a)  # create arg string minus '-j /--jobs'
         if job_args:  # if '-j /--jobs' flag was passed
             if regex_0_or_none.match(job_val):  # but no core count, get max from the system
-                job_val = str(cpu_count())
+                job_val = str(len(sched_getaffinity(0)))
             gmake_arg.append("-j")
             gmake_arg.append(job_val)
 
