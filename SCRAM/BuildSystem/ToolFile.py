@@ -50,9 +50,10 @@ class ToolFile(object):
                          'VARIABLES': [], 'LIBTYPES': [], 'RUNTIME': {}, 'FLAGS': {}}
         self.env = {}
         self.menv = {}
+        self.variables = {}
 
     def _update_env(self, data):
-        if data.tag == 'environment':
+        if data.tag.lower() == 'environment':
             key = 'default'
             if 'value' in data.attrib:
                 key = 'value'
@@ -63,6 +64,14 @@ class ToolFile(object):
                 self.menv[var] = []
             self.env[var] = val
             self.menv[var].append(val)
+        if data.tag == 'tool' and 'path' in data.attrib:
+            var = '%s_BASE' % data.attrib['name'].upper().replace('-', '_')
+            value = data.attrib['path']
+            self.contents['VARIABLES'].append(var)
+            self.env[var] = value
+            self.menv[var] = [self.env[var]]
+            self.variables['TOOL_BASE'] = value
+            self.contents[var] = value
         for child in list(data):
             self._update_env(child)
 
@@ -78,6 +87,8 @@ class ToolFile(object):
                     value = ''
                     if key in self.env:
                         value = self.env[key] if not sep else sep.join(self.menv[key])
+                    elif key in self.variables:
+                        value = self.variables[key] if not sep else sep.join(self.variables[key])
                     elif key in environ:
                         value = environ[key]
                     else:
@@ -153,6 +164,8 @@ class ToolFile(object):
                     self.contents[tag].append(value)
             else:
                 self.contents[tag] = value
+        elif tag == 'SET':
+            self.variables[data.attrib['name'].upper()] = self._fix_data(data.attrib['value'])
         elif tag == 'FLAGS':
             flag_name = list(data.attrib)[0]
             tag = flag_name.upper()

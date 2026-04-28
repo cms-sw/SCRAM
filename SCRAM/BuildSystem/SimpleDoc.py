@@ -47,7 +47,7 @@ class SimpleDoc(object):
             "classpath": ["path"],
             "flags": ["*"],
             "client": [],
-            "tool": ["name", "version", "type", "revision"],
+            "tool": ["name", "version", "type", "revision", "path"],
             "info": ["url"],
             "runtime": ["name", "value", "type", "default", "handler", "join"],
             "project": ["name", "version"],
