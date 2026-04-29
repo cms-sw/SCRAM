@@ -3,7 +3,7 @@ cmd_python3=$(which python3)
 if [ "${SCRAMRT_SET}" = "" ] ; then
   export SCRAMV3_BACKUP_LD_LIBRARY_PATH=${LD_LIBRARY_PATH}
   export LD_LIBRARY_PATH=""
-  cmd_python3=$(env -i command -v python3)
+  cmd_python3=$(env -i PATH=/usr/bin:/bin bash -c 'command -v python3')
 fi
 unset SCRAM_RUNTIME_TYPE
 unset SCRAM_RTBOURNE_SET
