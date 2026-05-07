@@ -135,10 +135,20 @@ class SimpleDoc(object):
         self.last_filter = []
         root = None
         with open(filename) as ref:
+            xml_data = ref.read()
             try:
-              root = ET.fromstringlist(['<root>', ref.read(), '</root>'])
+                root = ET.fromstringlist(['<root>', xml_data, '</root>'])
             except Exception as e:
-              printerror("ERROR: Failed to parse %s\n%s" % (filename, e))
+                print("ERROR: Failed to parse", filename)
+                if hasattr(e, "position"):
+                    lines = xml_data.splitlines()
+                    lineno = getattr(e, "position", (None, None))[0]
+                    print("\nOffending line:")
+                    print(lines[lineno - 1])
+                    print("\nContext:")
+                    for i in range(max(0, lineno - 3), min(len(lines), lineno + 2)):
+                        print(f"{i+1}: {lines[i]}")
+                printerror("ERROR:\n%s" % e)
         self.process(root)
         return root
 
