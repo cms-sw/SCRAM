@@ -1,5 +1,5 @@
 from SCRAM import printerror, scramerror
-from SCRAM.BuildSystem.SimpleDoc import SimpleDoc
+from SCRAM.BuildSystem.SimpleDoc import SimpleDoc, replaceVariables, loopData
 from SCRAM.BuildSystem.TemplateStash import TemplateStash
 from os.path import basename
 from json import dump
@@ -17,7 +17,7 @@ class BuildFile(object):
         self.flags = {}
         self.selected = {}
         self.group = []
-        self.loop_products = []
+        self.product = None
         self.variables = TemplateStash()
         self.toolmanager = toolmanager
         self.parser = SimpleDoc()
@@ -115,87 +115,35 @@ class BuildFile(object):
         self.filename = filename
         self.flags = {}
         self.selected = {}
-        self.loop_products = []
         self.group = []
         self.variables = TemplateStash()
         self.contents = {'USE': [], 'EXPORT': {}, 'FLAGS': {}, 'BUILDPRODUCTS': {}}
 
     def _update_product(self, tag, value, key=None):
-        for (prod,index) in self.loop_products if self.loop_products else [(self.product,None)]:
-            if tag not in prod:
-                prod[tag] = [] if key is None else {}
-            pre_data = {} if index is None else {"value": index}
-            if key is None:
-                prod[tag].append(self._replace_variables(value, pre_data))
-            else:
-                key = self._replace_variables(key, pre_data)
-                if key not in prod[tag]:
-                    prod[tag][key] = []
-                prod[tag][key].append(self._replace_variables(value, pre_data))
+        if tag not in self.product:
+            self.product[tag] = [] if key is None else {}
+        if key is None:
+            self.product[tag].append(replaceVariables(value, self.variables))
+        else:
+            key = replaceVariables(key, self.variables)
+            if key not in self.product[tag]:
+                self.product[tag][key] = []
+            self.product[tag][key].append(replaceVariables(value, self.variables))
         return
 
-    def _check_value(self, data):
-        if search('[$][(]+[^)]+\\s', data) or search('[$][{]+[^}]+\\s', data):
-            scramerror("Invalid attribute value '%s' found for tag '%s' in %s." % (data, self.tag, self.filename))
-        return data
-
-    def _replace_variables(self, data, pre_data, recursive=False):
-        if not data: return data
-        m = reReplaceEnv.match(data)
-        if not m: return self._check_value(data)
-        value = pre_data[m.group(3)] if (m.group(3) in pre_data) else self.variables.get(m.group(3), default=None)
-        value = m.group(2) if (value is None) else self._replace_variables(value, pre_data, recursive=True)
-        xdata = "%s%s%s" % (self._replace_variables(m.group(1), pre_data, recursive=True), \
-                            value, \
-                            self._replace_variables(m.group(4), pre_data, recursive=True))
-        data = data if (xdata == data) else self._replace_variables(xdata, pre_data, recursive=True)
-        if not recursive:
-            data = self._check_value(data)
-        return data
-
-    def _add_loop_products(self, data, tag_name, prod_type):
-        loop_data = []
-        if 'for' in data.attrib:
-            loops_vals = data.attrib['for'].split(",", 2)
-            loop_items = [1, int(loops_vals[-1]), 1]
-            if len(loops_vals)>1:
-                loop_items[0] = int(loops_vals[0])
-                if len(loops_vals)>2:
-                    loop_items[2] = loop_items[1]
-                    loop_items[1] = int(loops_vals[1])
-            self.variables.set('step_value', str(loop_items[2]))
-            self.variables.set('start_value', str(loop_items[0]))
-            self.variables.set('end_value', str(loop_items[1]))
-            loop_items[1] += loop_items[2]
-            loop_data = [str(x) for x in range(*loop_items)]
-        elif 'foreach' in data.attrib:
-            for item in [x.strip() for x in data.attrib['foreach'].split(",")]:
-                if (not item) or (not match('^[a-zA-Z0-9_.+-]+$', item)):
-                    scramerror("ERROR: Invalid 'foreach' item '%s' found in file %s.\n%s" % (item, self.filename, ET.tostring(data)))
-                else:
-                    loop_data.append(item)
-        if not loop_data:
-            loop_data = [""]
+    def _add_product(self, data, tag_name, prod_type):
         tag = 'BIN' if tag_name=='TEST' else tag_name
         if tag not in self.contents['BUILDPRODUCTS']:
             self.contents['BUILDPRODUCTS'][tag] = {}
-        xname = data.attrib['name'] if ((tag_name == 'TEST') or ('name' in data.attrib)) \
+        name = data.attrib['name'] if ((tag_name == 'TEST') or ('name' in data.attrib)) \
                                        else basename(data.attrib['file']).rsplit('.', 1)[0]
-        pre_data = {}
-        for value in loop_data:
-            name = xname
-            if value:
-                pre_data['value'] = value
-                name = "%s_%s" % (xname, value)
-            self.contents['BUILDPRODUCTS'][tag][name] = {'USE': [], 'EXPORT': {}, 'FLAGS': {}}
-            self.product = self.contents['BUILDPRODUCTS'][tag][name]
-            self.product['TYPE'] = prod_type
-            if tag_name == 'TEST':
-                self.product['COMMAND'] = self._replace_variables(data.attrib['command'], pre_data)
-            else:
-                self.product['FILES'] = self._replace_variables(data.attrib['file'], pre_data)
-            if value:
-                self.loop_products.append((self.product,value))
+        self.contents['BUILDPRODUCTS'][tag][name] = {'USE': [], 'EXPORT': {}, 'FLAGS': {}}
+        self.product = self.contents['BUILDPRODUCTS'][tag][name]
+        self.product['TYPE'] = prod_type
+        if tag_name == 'TEST':
+            self.product['COMMAND'] = replaceVariables(data.attrib['command'], self.variables)
+        else:
+            self.product['FILES'] = replaceVariables(data.attrib['file'], self.variables)
         return
 
     def _update_contents(self, data):
@@ -242,12 +190,11 @@ class BuildFile(object):
             self.contents[tag] = {'LIB': []}
             self.product = self.contents[tag]
         elif tag in ['BIN', 'LIBRARY', 'TEST']:
-            self.loop_products = []
             self.variables.pushstash()
             if tag == 'TEST':
-                self._add_loop_products(data, tag, 'test')
+                self._add_product(data, tag, 'test')
             else:
-              self._add_loop_products(data, tag, 'bin' if tag == 'BIN' else 'lib')
+              self._add_product(data, tag, 'bin' if tag == 'BIN' else 'lib')
         elif tag == 'SET':
             self.variables.set(data.attrib['name'], data.attrib['value'])
         elif tag in ['ROOT', 'ENVIRONMENT'] or self.parser.has_filter(data.tag):
@@ -268,12 +215,10 @@ class BuildFile(object):
             if not self._update_contents(child):
                 return False
         if tag in ['BIN', 'LIBRARY', 'TEST']:
-            for prod,index in self.loop_products if self.loop_products else [(self.product,None)]:
-                for key in list(prod):
-                    if not prod[key]:
-                        del prod[key]
-            self.loop_products = []
             self.variables.popstash()
+            for key in list(self.product):
+                if not self.product[key]:
+                    del self.product[key]
             self.product = self.contents
         elif tag in ["EXPORT"]:
             self.product = self.contents

@@ -1,9 +1,13 @@
 import xml.etree.ElementTree as ET
 from os import environ
-from re import search
+from re import compile, match, search
 from sys import platform
 from platform import machine
+from copy import deepcopy
 from SCRAM import printerror
+from SCRAM.BuildSystem.TemplateStash import TemplateStash
+
+reReplaceEnv = compile(r'^(.*)(\$\{(\w+)\})(.*)$')
 
 DEFAULT_ENV_FILTERS = {
     'ifarchitecture': 'SCRAM_ARCH',
@@ -18,6 +22,41 @@ DEFAULT_ENV_FILTERS = {
     'ifscram': 'SCRAM_VERSION'
 }
 
+def replaceVariables(data, variables):
+    while '${' in data:
+        m = reReplaceEnv.match(data)
+        if not m: return data
+        value = variables.get(m.group(3), default=None)
+        value = m.group(2) if (value is None) else replaceVariables(value, variables)
+        xdata = (
+            replaceVariables(m.group(1), variables) +
+            value +
+            replaceVariables(m.group(4), variables)
+        )
+        if xdata == data: return data
+        data = xdata
+    return data
+
+def loopData(tag, var, value, stash):
+    values = []
+    if tag == "foreach":
+        values = [replaceVariables(v.strip(), stash)
+                  for v in value.split(",") if v.strip()]
+    elif tag == "for":
+        loops_vals = [v.strip() for v in value.split(",", 2)]
+        loop_items = [1, int(loops_vals[-1]), 1]
+        if len(loops_vals)>1:
+            loop_items[0] = int(loops_vals[0])
+            if len(loops_vals)>2:
+                loop_items[2] = loop_items[1]
+                loop_items[1] = int(loops_vals[1])
+        stash.set('step_'+var, str(loop_items[2]))
+        stash.set('start_'+var, str(loop_items[0]))
+        stash.set('end_'+var, str(loop_items[1]))
+        loop_items[1] += loop_items[2]
+        values = [str(x) for x in range(*loop_items)]
+    return values
+
 
 class SimpleDoc(object):
     def __init__(self, valid_attribs={}):
@@ -30,6 +69,8 @@ class SimpleDoc(object):
             "library": ["name", "file", "for", "foreach"],
             "test": ["name", "command", "for", "foreach"],
             "set": ["name", "value"],
+            "foreach": ["set", "value"],
+            "for": ["set", "value"],
             "environment": [],
             "ifarchitecture": ["name", "match", "value"],
             "compiler": ["name", "match", "value"],
@@ -60,6 +101,7 @@ class SimpleDoc(object):
         self.callbacks = {}
         self.last_filter = []
         self.filename = None
+        self.variables = TemplateStash()
         self.add_filter('ifos', platform)
         self.add_filter('ifarch', machine())
         for filt in DEFAULT_ENV_FILTERS:
@@ -149,8 +191,68 @@ class SimpleDoc(object):
                     for i in range(max(0, lineno - 3), min(len(lines), lineno + 2)):
                         print(f"{i+1}: {lines[i]}")
                 printerror("ERROR:\n%s" % e)
+        self._expand(root)
         self.process(root)
         return root
+
+    def _expand_product(self, node, child):
+        if not child.tag.upper() in ['BIN', 'LIBRARY', 'TEST']: return False
+        loop_type = ""
+        if 'for' in child.attrib:
+            loop_type = "for"
+        elif 'foreach' in child.attrib:
+            loop_type = "foreach"
+        if not loop_type: return False
+        self.variables.pushstash()
+        var = "value"
+        values = loopData(loop_type, var, child.attrib[loop_type], self.variables)
+        name = child.attrib['name'] if 'name' in child.attrib else basename(child.attrib['file']).rsplit('.', 1)[0]
+        del child.attrib[loop_type]
+        idx = list(node).index(child)
+        for value in values:
+            self.variables.set(var, value)
+            new_node = deepcopy(child)
+            new_node.attrib['name'] = '%s_%s' % (name, value)
+            self._substitute(new_node)
+            node.insert(idx, new_node)
+            idx += 1
+        node.remove(child)
+        self.variables.popstash()
+        return True
+
+    def _expand(self, node):
+        for child in list(node):
+            if self._expand_product(node, child): continue
+            self._expand(child)
+            values = []
+            var = None
+            if child.tag in ["foreach", "for"]:
+                self.variables.pushstash()
+                var = child.attrib["set"]
+                values = loopData(child.tag, var, child.attrib["value"], self.variables)
+            else:
+                continue
+            idx = list(node).index(child)
+            for value in values:
+                self.variables.set(var, value)
+                for grandchild in child:
+                    new_node = deepcopy(grandchild)
+                    self._substitute(new_node)
+                    node.insert(idx, new_node)
+                    idx += 1
+            node.remove(child)
+            self.variables.popstash()
+
+    def _substitute(self, node):
+        for k in list(node.attrib.keys()):
+            nk = replaceVariables(k, self.variables)
+            nv = replaceVariables(node.attrib[k], self.variables)
+            if k != nk:
+                del node.attrib[k]
+            node.attrib[nk] = nv
+        for child in node:
+            self._substitute(child)
+        return
 
     def process(self, root):
         keep = True
