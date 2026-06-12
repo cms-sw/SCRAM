@@ -191,10 +191,7 @@ class BuildFile(object):
             self.product = self.contents[tag]
         elif tag in ['BIN', 'LIBRARY', 'TEST']:
             self.variables.pushstash()
-            if tag == 'TEST':
-                self._add_product(data, tag, 'test')
-            else:
-              self._add_product(data, tag, 'bin' if tag == 'BIN' else 'lib')
+            self._add_product(data, tag, tag.lower() if tag in ('BIN', 'TEST') else 'lib')
         elif tag == 'SET':
             self.variables.set(data.attrib['name'], data.attrib['value'])
         elif tag in ['ROOT', 'ENVIRONMENT'] or self.parser.has_filter(data.tag):
