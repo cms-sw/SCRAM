@@ -406,23 +406,35 @@ sub runtime_hooks_()
   if ($debug){print STDERR "SCRAM_HOOK:\n$out\n";}
   foreach my $line (split("\n",$out))
   {
-    if ($line!~/^runtime:((path:(append|prepend|remove|replace):[a-zA-Z0-9-_]+)|(variable:[a-zA-Z0-9-_]+))=/io){print STDERR "$line\n"; next;}
+    $line =~ s/^\s+|\s+$//g;
+    if ($line eq "") {next;}
+    if ($line!~/^runtime:((path:(append|prepend|remove|unset|replace):[a-zA-Z0-9-_]+)|(variable:(unset:|)[a-zA-Z0-9-_]+))(=|)/io){print STDERR "$line\n"; next;}
     my @vals = split("=",$line,2);
+    if (scalar(@vals) == 1){push(@vals, "");}
     my @items = split(":",$vals[0]);
     my $vtype = lc($items[1]);
+    if ($vtype eq "variable") { $vtype = "variables";}
+    if (! exists $self->{env}{rtstring}{$vtype})
+    {
+      $self->{env}{rtstring}{$vtype} = ($vtype eq "path") ? {} : [];
+    }
+    my $c = $self->{env}{rtstring}{$vtype};
+    my $evar = $items[-1];
     if ($vtype eq "path")
     {
-      if(! exists $self->{env}{rtstring}{path}){$self->{env}{rtstring}{path}={};}
-      my $c = $self->{env}{rtstring}{path};
       $vtype=lc($items[2]);
-      my $evar = $items[3];
       if ($vtype eq "replace")
       {
         my @xitems = split("=",$vals[1],2);
         $vals[1] = $xitems[0];
         $vals[2] = $xitems[1];
       }
-      if (($vtype ne "remove") && (! exists $c->{$evar})){$c->{$evar}=[];}
+      elsif ($vtype eq "unset")
+      {
+        if (exists $c->{$evar}) {delete $c->{$evar};}
+        next;
+      }
+      elsif (($vtype ne "remove") && (! exists $c->{$evar})){$c->{$evar}=[];}
       foreach my $d (split(":",$vals[1]))
       {
         $d=~s/\s//g;
@@ -448,14 +460,16 @@ sub runtime_hooks_()
         }
       }
     }
-    elsif ($vtype eq "variable")
+    elsif ($vtype eq "variables")
     {
-      if (! exists $self->{env}{rtstring}{variables}){$self->{env}{rtstring}{variables}=[];}
-      my $c = $self->{env}{rtstring}{variables};
-      my $vindex = 0;
-      my $evar = $items[2];
+      my $vindex = -1;
       if (exists $self->{env}{variables}{$evar}){$vindex = $self->{env}{variables}{$evar};}
-      else{$vindex = scalar(@{$c});}
+      if (scalar(@items) == 4)
+      {
+        if (($items[2] eq "unset") && ($vindex >= 0)){$c->[$vindex] = {};}
+        next;
+      }
+      if ($vindex < 0){$vindex = scalar(@{$c});}
       $c->[$vindex]{$evar}=[$vals[1]];
     }
   }
