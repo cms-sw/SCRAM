@@ -407,7 +407,7 @@ def process(args, main_opts):
         e, out = SCRAM.run_command(ProjectInit)
         SCRAM.printmsg(out)
         SCRAM.scramdebug("Script exitted with status %s" % e)
-    if not exists(dircache.has_makerules()):
+    if not dircache.has_makerules():
         opts.reset = True
     if not SCRAM.COMMANDS_OPTS.force:
         dircache.checkfiles(opts.reset)
