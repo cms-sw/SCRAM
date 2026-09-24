@@ -92,7 +92,11 @@ def project_bootfromrelease(project, version, releasePath, opts):
         errmsg = 'ERROR: Project "%s" version "%s" is not available for arch %s.\n' % (project, version, xarch)
         if len(archs) > 1:
             errmsg += '       "%s" is currently available for following archs.\n' % (project)
-            errmsg += '       Please set SCRAM_ARCH properly and re-run the command.\n    %s' % '\n    '.join(archs)
+            errmsg += '       Please set SCRAM_ARCH properly and re-run the command.\n'
+            errmsg += '       bash:\n'
+            errmsg += '\n'.join(['       export SCRAM_ARCH=%s' % (arch) for arch in archs])+'\n'
+            errmsg += '       tcsh:\n'
+            errmsg += '\n'.join(['       setenv SCRAM_ARCH %s' % (arch) for arch in archs])
         else:
             errmsg += '       Please make sure you have used the correct name/version.\n'
             errmsg += '       You can run \"scram list $projectname\" to get the list of available versions.'
