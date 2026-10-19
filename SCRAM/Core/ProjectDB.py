@@ -230,9 +230,9 @@ class ProjectDB(object):
                 for path in self.DBS['uniq'][localdb][proj]:
                     self.DBS['uniq'][scramdb][proj][path] = 1
 
-        varch =  glob('%s/%s_*/cms/cms-common' % (scramdb, '_'.join(environ['SCRAM_ARCH'].split('_', 2)[:2])))
+        varch =  glob('%s/%s_*/cms' % (scramdb, '_'.join(environ['SCRAM_ARCH'].split('_', 2)[:2])))
         if environ['SCRAM_ARCH'] != self.archmap:
-            varch += glob('%s/%s_*/cms/cms-common' % (scramdb, '_'.join(self.archmap.split('_', 2)[:2])))
+            varch += glob('%s/%s_*/cms' % (scramdb, '_'.join(self.archmap.split('_', 2)[:2])))
         for common in varch:
             self.archs[common.replace(scramdb, '').split("/", 2)[1]] = 1
         linkdb = self._getLinkDBFile(db)
