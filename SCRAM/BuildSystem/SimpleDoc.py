@@ -61,7 +61,7 @@ def loopData(tag, var, value, stash):
 class SimpleDoc(object):
     def __init__(self, valid_attribs={}):
         self.valid_attribs = {
-            "use": ["name", "source_only", "for", "force_link"],
+            "use": ["name", "source_only", "for", "force_link", "edmplugin_from"],
             "lib": ["name", "type"],
             "export": [],
             "include_path": ["path"],

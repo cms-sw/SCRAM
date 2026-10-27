@@ -117,7 +117,7 @@ class BuildFile(object):
         self.selected = {}
         self.group = []
         self.variables = TemplateStash()
-        self.contents = {'USE': [], 'EXPORT': {}, 'FLAGS': {}, 'BUILDPRODUCTS': {}}
+        self.contents = {'USE': [], 'EXPORT': {}, 'FLAGS': {}, 'BUILDPRODUCTS': {}, 'EDMPLUGIN_FROM': []}
 
     def _update_product(self, tag, value, key=None):
         if tag not in self.product:
@@ -153,7 +153,9 @@ class BuildFile(object):
             return False
         tag = data.tag.upper()
         self.tag = tag
-        if tag == 'USE':
+        if tag == 'USE' and 'edmplugin_from' in data.attrib:
+            self._update_product('EDMPLUGIN_FROM', data.attrib['edmplugin_from'])
+        elif tag == 'USE':
             use = data.attrib['name'].lower()
             if use == "self":
                 return True
